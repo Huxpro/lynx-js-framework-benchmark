@@ -7,40 +7,87 @@ on:
   workflow_dispatch:
 
 jobs:
-  site:
+  # Integrity + drift guards, then the site build (which imports
+  # results/latest.json and entries/*/entry.json — so a bad manifest or stale
+  # collect can never publish).
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      - uses: pnpm/action-setup@v4 # version comes from package.json packageManager
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter site build
+      - name: Entry manifests + bundle checksums
+        run: node scripts/verify-entries.mjs
+      - name: latest.json matches collect over runs/
+        run: node scripts/verify-collect.mjs
+      - name: Site build
+        run: pnpm --filter site build
       - uses: actions/upload-artifact@v4
         with:
           name: site-dist
           path: site/dist
 
+  # End-to-end harness smoke: headless Chromium actually drives one entry
+  # through one case and must produce records (latency + wire + CPU). Numbers
+  # from CI hardware are not for publication — this validates the instrument,
+  # not the entries.
+  harness-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-chromium-${{ runner.os }}-1.55
+      - run: npx playwright@1.55.1 install --with-deps chromium
+      - name: One-cell benchmark run
+        run: node packages/runner/src/cli.mjs run --entry vue-vdom --case select --scale 1000 --reps 2 --suite table --label ci-smoke
+      - name: Smoke run produced dual-thread records
+        run: |
+          node -e "
+            const fs = require('fs');
+            const file = fs.readdirSync('results/runs').find(f => f.includes('ci-smoke'));
+            const run = JSON.parse(fs.readFileSync('results/runs/' + file, 'utf8'));
+            const metrics = new Set(run.records.map(r => r.metric));
+            for (const m of ['latency', 'btsCpu', 'mtsCpu', 'wireToMtsBytes', 'wireToBtsBytes']) {
+              if (!metrics.has(m)) { console.error('missing metric: ' + m); process.exit(1); }
+            }
+            const lat = run.records.find(r => r.metric === 'latency' && r.workload === 'select');
+            if (!lat || lat.n < 1 || !(lat.median > 0)) { console.error('no usable latency sample'); process.exit(1); }
+            if (!run.meta.calibration || !(run.meta.calibration.score > 0)) { console.error('no calibration score'); process.exit(1); }
+            console.log('smoke ok:', run.records.length, 'records; select latency', lat.median.toFixed(1) + 'ms; calibration', run.meta.calibration.score);
+          "
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-run
+          path: results/runs/*ci-smoke*.json
+          if-no-files-found: ignore
+
+  # Full quick sweep on demand (minutes; artifacts only, never auto-committed).
   quick-bench:
-    # The measured numbers from CI hardware are for smoke-testing the harness,
-    # not for publication — machine fingerprint + calibration mark them.
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright@1.55.1 install --with-deps chromium
       - run: node packages/runner/src/cli.mjs run --quick --label ci
       - uses: actions/upload-artifact@v4
         if: always()
