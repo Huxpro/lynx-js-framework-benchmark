@@ -1,0 +1,144 @@
+// Data layer: results/latest.json + entries/*/entry.json are imported at
+// build time so the site can never drift from the repo's numbers.
+import latest from '../../results/latest.json';
+
+import octaneManifest from '../../entries/octane/entry.json';
+import reactManifest from '../../entries/react/entry.json';
+import vueVaporManifest from '../../entries/vue-vapor/entry.json';
+import vueVaporIfrManifest from '../../entries/vue-vapor-ifr/entry.json';
+import vueVdomManifest from '../../entries/vue-vdom/entry.json';
+import vueVdomIfrEtManifest from '../../entries/vue-vdom-ifr-et/entry.json';
+
+export interface BenchRecord {
+  suite: string;
+  harness: string;
+  environment: string;
+  entry: string;
+  workload: string;
+  scale: number;
+  metric: string;
+  boundary: string;
+  unit: string;
+  n: number;
+  median: number | null;
+  mean: number | null;
+  std: number | null;
+  min: number | null;
+  p95: number | null;
+  ci95: number | null;
+  samples: number[] | null;
+  detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
+  dnfCount: number;
+  machineId: string;
+}
+
+export interface Machine {
+  id: string;
+  hostname: string;
+  platform: string;
+  arch: string;
+  cpuModel: string;
+  cores: number;
+  node: string;
+  calibration: { probeVersion: number; score: number };
+}
+
+export interface EntryMeta {
+  id: string;
+  label: string;
+  framework: string;
+  frameworkVersion: string;
+  config: string;
+  tags: string[];
+  provenance: { source: string; ref: string; commit: string; buildCommand: string };
+}
+
+export const RECORDS = (latest as { records: BenchRecord[] }).records;
+export const MACHINES = (latest as { machines: Record<string, Machine> }).machines;
+export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
+
+// Fixed entry order = legend order = the CVD-validated palette slot order.
+// Color follows the entity on every chart on every page.
+export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] = [
+  { ...(reactManifest as EntryMeta), colorLight: '#2a78d6', colorDark: '#3987e5' },
+  { ...(octaneManifest as EntryMeta), colorLight: '#eb6834', colorDark: '#d95926' },
+  { ...(vueVdomManifest as EntryMeta), colorLight: '#1baf7a', colorDark: '#199e70' },
+  { ...(vueVdomIfrEtManifest as EntryMeta), colorLight: '#eda100', colorDark: '#c98500' },
+  { ...(vueVaporManifest as EntryMeta), colorLight: '#e87ba4', colorDark: '#d55181' },
+  { ...(vueVaporIfrManifest as EntryMeta), colorLight: '#008300', colorDark: '#008300' },
+];
+
+export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
+
+export function entryColor(id: string, theme: 'light' | 'dark'): string {
+  const e = ENTRY_BY_ID.get(id);
+  if (!e) return theme === 'dark' ? '#c3c2b7' : '#6b6a63';
+  return theme === 'dark' ? e.colorDark : e.colorLight;
+}
+
+/** Short label for bars ("ReactLynx 0.122" → "ReactLynx"). */
+export function shortLabel(id: string): string {
+  const label = ENTRY_BY_ID.get(id)?.label ?? id;
+  return label.replace(/\s+[\d.]+.*$/, '').trim() || label;
+}
+
+export interface RecordFilter {
+  suite?: string;
+  harness?: string;
+  entry?: string;
+  workload?: string;
+  scale?: number;
+  metric?: string;
+}
+
+export function select(filter: RecordFilter): BenchRecord[] {
+  return RECORDS.filter((r) =>
+    (filter.suite == null || r.suite === filter.suite)
+    && (filter.harness == null || r.harness === filter.harness)
+    && (filter.entry == null || r.entry === filter.entry)
+    && (filter.workload == null || r.workload === filter.workload)
+    && (filter.scale == null || r.scale === filter.scale)
+    && (filter.metric == null || r.metric === filter.metric),
+  );
+}
+
+export function one(filter: RecordFilter): BenchRecord | null {
+  const rs = select(filter);
+  return rs.length ? rs[0] : null;
+}
+
+export const HARNESSES = [...new Set(RECORDS.map((r) => r.harness))];
+
+export function workloadScales(suite: string, workload: string): number[] {
+  return [...new Set(select({ suite, workload }).map((r) => r.scale))].sort((a, b) => a - b);
+}
+
+export const fmtMs = (v: number | null): string => {
+  if (v == null) return '—';
+  if (v >= 10000) return `${(v / 1000).toFixed(1)}s`;
+  if (v >= 100) return `${Math.round(v)}ms`;
+  if (v >= 10) return `${v.toFixed(1)}ms`;
+  return `${v.toFixed(2)}ms`;
+};
+
+export const fmtBytes = (v: number | null): string => {
+  if (v == null) return '—';
+  if (v >= 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)} MB`;
+  if (v >= 1024) return `${(v / 1024).toFixed(1)} kB`;
+  return `${Math.round(v)} B`;
+};
+
+export const fmtX = (v: number | null): string => {
+  if (v == null) return '—';
+  if (v >= 100) return `${Math.round(v)}×`;
+  if (v >= 10) return `${v.toFixed(0)}×`;
+  if (v >= 2) return `${v.toFixed(1)}×`;
+  return `${v.toFixed(2)}×`;
+};
+
+export const fmtCount = (v: number | null): string => {
+  if (v == null) return '—';
+  if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`;
+  if (v >= 1e3) return `${(v / 1e3).toFixed(1)}k`;
+  return String(Math.round(v));
+};

@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter site build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-dist
+          path: site/dist
+
+  quick-bench:
+    # The measured numbers from CI hardware are for smoke-testing the harness,
+    # not for publication — machine fingerprint + calibration mark them.
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: npx playwright install --with-deps chromium
+      - run: node packages/runner/src/cli.mjs run --quick --label ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-runs
+          path: results/runs/

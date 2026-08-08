@@ -1,0 +1,35 @@
+{
+  "id": "react",
+  "label": "ReactLynx 0.122",
+  "framework": "reactlynx",
+  "frameworkVersion": "0.122.1",
+  "config": "idiomatic keyed hooks (memo + useCallback)",
+  "tags": [
+    "baseline"
+  ],
+  "color": "#1e93b0",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "huxcx/unify-benchmark-system",
+    "commit": "28f7acbab990b3b574f04944e0d21c769719cc68",
+    "patched": true,
+    "patchFile": "entries/_patches/vue-lynx-bench.patch",
+    "buildCommand": "node bench-build-matrix.mjs --only react",
+    "builtAt": "2026-08-08T06:50:28.470Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "2f4b30fa61984d2d4dee813a859bb4ad9848df70ddb9afc9f714609bbf90211f",
+      "rows-0/main.lynx.bundle": "59d774beda03da4be5677bf63b63904d3af780919b5f4991fd5246078e96f735",
+      "rows-1000/main.web.bundle": "f0be81d5c976adbe1d03e7839fcdc31057b70e095d03aee330142798d5a8abd4",
+      "rows-1000/main.lynx.bundle": "36c5238b8af40ce65b5ab6edd57b5412ee18651f9ebdb0bfff85cdcf14f27e42",
+      "rows-10000/main.web.bundle": "4b182ede0404b7af52c6686177b5c8627cf0dfdffb073f09c00fdd47465150b5",
+      "rows-10000/main.lynx.bundle": "eaece1be1f2ad18f347d33669acaa78be27d3eccb14f53234bb8cb04e87b3b74",
+      "rows-30000/main.web.bundle": "cdcca0fb2e0d64b7dbfdf9ea7ec7faa0bc22370bdfc08c9efbeded6a59078fa2",
+      "rows-30000/main.lynx.bundle": "005e993fe9bf709e80ad19a81990c3efd09e0dd36e4c89fce1ff38f8f44ffe2e"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

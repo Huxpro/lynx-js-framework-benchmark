@@ -1,0 +1,35 @@
+{
+  "id": "octane",
+  "label": "Octane 0.1 (.tsrx)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.19",
+  "config": ".tsrx, keyed @for, universal transport",
+  "tags": [
+    "baseline"
+  ],
+  "color": "#ff415a",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "claude/octane-lynx-benchmark-payload-a3zaeu",
+    "commit": "99cae97204ff9ef2b0cb00765ee648078d7872e7",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "builtAt": "2026-08-08T06:50:28.556Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "e68ad21ee193087181ce578fa170b35fac06749391fd0176fe84a2c8b72ae1d3",
+      "rows-0/main.lynx.bundle": "680aee483adc6a86da3fc4dbbe30b9d9b70477df352abc661c8c2bcd1a7f0ead",
+      "rows-1000/main.web.bundle": "b6397f792c422645d4898e6cb3442b8a7018c555dabda5850a345e6f63e22b90",
+      "rows-1000/main.lynx.bundle": "7d74632cc0fa23cfe7fb236bee9df5344f3e10c10760deadadf5c8f1623399b3",
+      "rows-10000/main.web.bundle": "b479ff29da86ad9f787e555693818d2b1dc848129847abbd9eb14a2596a78b67",
+      "rows-10000/main.lynx.bundle": "a514ee9c79f502aefc49f23fdd0db73960ad8e4246d859e0ef53e56950298835",
+      "rows-30000/main.web.bundle": "ff97784c36d641a220f5e39a1b798c69a269369cf7ebec857030b5ff0db5f770",
+      "rows-30000/main.lynx.bundle": "9019f4ef8ffec38690365cadd5615edf2766dc6fa3fd87bf9b388f22586613ad"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

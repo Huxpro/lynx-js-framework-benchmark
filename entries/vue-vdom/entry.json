@@ -1,0 +1,35 @@
+{
+  "id": "vue-vdom",
+  "label": "Vue-Lynx VDOM",
+  "framework": "vue-lynx",
+  "frameworkVersion": "vue 3.6.0-beta.17 / vue-lynx 0.4.2",
+  "config": "vdom, IFR off, ET off",
+  "tags": [
+    "baseline"
+  ],
+  "color": "#42b883",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "huxcx/unify-benchmark-system",
+    "commit": "28f7acbab990b3b574f04944e0d21c769719cc68",
+    "patched": true,
+    "patchFile": "entries/_patches/vue-lynx-bench.patch",
+    "buildCommand": "node bench-build-matrix.mjs --only vue-vdom",
+    "builtAt": "2026-08-08T06:50:28.481Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "9c7209e7662558e939442a0c07caa1e05d48851425afce2f7ffe39b21cd0d00a",
+      "rows-0/main.lynx.bundle": "ade00917b2e87f2d7c4c226f0b0b1bf53126e12f1496e968fbb4c9aa1a68d43e",
+      "rows-1000/main.web.bundle": "f7d8f4435b8d1e9dc246e8c2f76477fdbf2f2867f3e8bfdfe9724540ce18982a",
+      "rows-1000/main.lynx.bundle": "a34aaede54dad04f61ec82df3fe106293898778607eae471ca164093f16ae14b",
+      "rows-10000/main.web.bundle": "ec2386049549d24c6d098762df656a00e00b58bfa3bb5ff61a0ba76e327ea757",
+      "rows-10000/main.lynx.bundle": "4b5cdf37532edfda360d3ca02534213e5c44796cea699449a4af033254fb6c53",
+      "rows-30000/main.web.bundle": "f312faf2b8d3f9dbf8325e45540cd8ab38e7106cc7b0f73ea06a0d1530305f21",
+      "rows-30000/main.lynx.bundle": "1fbafdfb7e7bcc9cbb404c4a8a56d4b9769733600e5f9a5e93025150787a3552"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@lynx-bench/runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless-web benchmark harness: builds/serves entries, drives workloads, collects dual-thread metrics.",
+  "bin": {
+    "lynx-bench": "./src/cli.mjs"
+  },
+  "dependencies": {
+    "@lynx-bench/shared": "workspace:*",
+    "@lynx-js/web-core": "0.22.1",
+    "@lynx-js/web-elements": "^0.8.5",
+    "playwright-core": "^1.55.0"
+  }
+}

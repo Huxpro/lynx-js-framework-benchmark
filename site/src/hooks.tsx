@@ -1,0 +1,56 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export function useTheme(): ['light' | 'dark', () => void] {
+  const get = (): 'light' | 'dark' => {
+    const stamped = document.documentElement.dataset.theme;
+    if (stamped === 'dark' || stamped === 'light') return stamped;
+    return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  };
+  const [theme, setTheme] = useState<'light' | 'dark'>(get);
+  useEffect(() => {
+    const mq = matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => setTheme(get());
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  const toggle = useCallback(() => {
+    const next = get() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('theme', next);
+    setTheme(next);
+  }, []);
+  return [theme, toggle];
+}
+
+export interface TipContent {
+  head: string;
+  lines: string[];
+}
+
+/** Imperative tooltip: content via state (set on enter), position via ref on
+ * mousemove so hovering never re-renders the chart under it. */
+export function useTooltip() {
+  const [tip, setTip] = useState<TipContent | null>(null);
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const place = useCallback((e: { clientX: number; clientY: number }) => {
+    const node = nodeRef.current;
+    if (!node) return;
+    const pad = 14;
+    const { innerWidth, innerHeight } = window;
+    const rect = node.getBoundingClientRect();
+    let x = e.clientX + pad;
+    let y = e.clientY + pad;
+    if (x + rect.width > innerWidth - 8) x = e.clientX - rect.width - pad;
+    if (y + rect.height > innerHeight - 8) y = e.clientY - rect.height - pad;
+    node.style.left = `${x}px`;
+    node.style.top = `${y}px`;
+  }, []);
+  const onMove = useCallback((e: React.MouseEvent) => place(e), [place]);
+  const tipNode = tip ? (
+    <div className="viz-tip" ref={(n) => { nodeRef.current = n; }}>
+      <div className="tip-head">{tip.head}</div>
+      {tip.lines.map((l, i) => <div key={i} className="tip-sub">{l}</div>)}
+    </div>
+  ) : null;
+  return { tip, setTip, onMove, place, tipNode };
+}

@@ -1,0 +1,35 @@
+{
+  "id": "vue-vapor-ifr",
+  "label": "Vue-Lynx Vapor +IFR",
+  "framework": "vue-lynx",
+  "frameworkVersion": "vue 3.6.0-beta.17 vapor / vue-lynx 0.4.2",
+  "config": "vapor mode, enableIFR",
+  "tags": [
+    "optimized"
+  ],
+  "color": "#9d4b8f",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "huxcx/unify-benchmark-system",
+    "commit": "28f7acbab990b3b574f04944e0d21c769719cc68",
+    "patched": true,
+    "patchFile": "entries/_patches/vue-lynx-bench.patch",
+    "buildCommand": "node bench-build-matrix.mjs --only vue-vapor-ifr",
+    "builtAt": "2026-08-08T06:50:28.535Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "1a780d411f4c3f30a7002630a6f0df9ef474ad4152519dbf3c82c6c3e1c1d8a5",
+      "rows-0/main.lynx.bundle": "d4dc7b95db57c246106c0f4e9e30d833ecefbebef4841f4016a3353b6e802167",
+      "rows-1000/main.web.bundle": "1e8688cff07c31b707836a0ee3bc75f92a727ef84e58074266435c2c4dd3ed1d",
+      "rows-1000/main.lynx.bundle": "33ee2d47362aeb744905dee4c07b09e8c2bf7e9854fb4b4cdab5178d8aade79a",
+      "rows-10000/main.web.bundle": "7d4fc62791173ed35b9d1722410326a50e6ac119a1402afd4864bbc9ffb4b953",
+      "rows-10000/main.lynx.bundle": "9f430c0d838f411b0300e858c4376994a808f1a6964f9d441cdfc1c22d111bab",
+      "rows-30000/main.web.bundle": "93342db6537c1c38aeb50649878665b36cee152dfb8aee8c1a69003213651ee8",
+      "rows-30000/main.lynx.bundle": "5e964556668407032840f75a87a3732dcaacfb7f928b8b866b2eea5f1b63fe2f"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
