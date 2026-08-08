@@ -148,6 +148,10 @@ async function resolvePredicate(page, kase, scale) {
     const label = await evalX(page, 'x.labelAt(998)');
     return { type: 'labelAt', index: 1, equals: label };
   }
+  if (kase.predicate === 'replace-first-id') {
+    const lastId = await evalX(page, `x.idAt(${scale - 1})`);
+    return { type: 'idAt', index: 0, equals: String(Number(lastId) + 1) };
+  }
   return kase.predicate(scale);
 }
 
@@ -254,6 +258,37 @@ export async function runTableSuite({
       records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
+  }
+
+  // Memory snapshot: GC'd heap per realm holding a 10k-row table (indicative —
+  // one scenario, deliberately simple; the unified benchmark's heap markers).
+  try {
+    await clickButton(page, CREATE_BUTTON[10000]);
+    await untilPredicate(page, { type: 'rowCount', value: 10000 }, 240000);
+    await settle(page, 200);
+    await gc(page);
+    const registry = await page.evaluate(() => globalThis.__LYNX_WIRE__.workers);
+    const sessions = [{ key: 'heapMts', sessionId: attach.pageSession }];
+    for (const w of attach.workers.values()) {
+      const reg = registry.find((r) => r.blobUrl === w.url || r.url === w.url);
+      if (reg?.name === 'lynx-bg') sessions.push({ key: 'heapBts', sessionId: w.sessionId });
+    }
+    for (const s of sessions) {
+      const { usedSize } = await cdp.send('Runtime.getHeapUsage', {}, s.sessionId);
+      records.push(makeRecord({
+        suite: 'table',
+        entry: entry.id,
+        workload: 'memory',
+        scale: 10000,
+        metric: s.key,
+        boundary: 'gc-heap-with-10k-rows',
+        unit: 'bytes',
+        value: usedSize,
+      }));
+    }
+    log(`  ${entry.id} memory@10k: ${sessions.map((s) => s.key).join('+')} captured`);
+  } catch (e) {
+    log(`  [warn] ${entry.id} memory snapshot failed: ${String(e).slice(0, 120)}`);
   }
   await page.close();
 

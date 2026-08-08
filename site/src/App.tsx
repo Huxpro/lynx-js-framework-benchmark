@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 
+import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { MethodPage } from './components/Method';
@@ -150,6 +151,7 @@ export default function App() {
             0 ≈ scale-independent).
           </p>
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          <CostSpace harness={harness} theme={theme} selected={selected} />
           {TREND_SPECS.map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={selected} />
           ))}

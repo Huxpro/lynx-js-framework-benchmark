@@ -35,6 +35,16 @@ export const TABLE_CASES = [
     timeoutMs: 240000,
   },
   {
+    name: 'replace',
+    pre: 'rows',
+    // expected id is computed by the harness: last row's id + 1 (ids are
+    // globally monotonic in every entry's buildData)
+    trigger: { button: (scale) => CREATE_BUTTON[scale] },
+    predicate: 'replace-first-id',
+    scales: [1000],
+    defaultScales: [1000],
+  },
+  {
     name: 'append1k',
     pre: 'rows',
     trigger: { button: () => 'Append 1,000 rows' },

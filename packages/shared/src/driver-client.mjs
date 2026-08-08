@@ -90,6 +90,10 @@ export const DRIVER_CLIENT_JS = `(() => {
     const r = rowEls()[i];
     return r ? cellOf(r, 'col-label')?.textContent ?? null : null;
   };
+  x.idAt = (i) => {
+    const r = rowEls()[i];
+    return r ? cellOf(r, 'col-id')?.textContent ?? null : null;
+  };
   x.dangerAt = (i) => {
     const r = rowEls()[i];
     return r ? hasClass(r, 'danger') : false;
@@ -118,6 +122,7 @@ export const DRIVER_CLIENT_JS = `(() => {
     switch (spec.type) {
       case 'rowCount': return x.rowCount() === spec.value;
       case 'labelAt': return x.labelAt(spec.index) === spec.equals;
+      case 'idAt': return x.idAt(spec.index) === spec.equals;
       case 'labelAtStartsWith': return (x.labelAt(spec.index) ?? '').startsWith(spec.prefix);
       case 'dangerAt': return x.dangerAt(spec.index);
       case 'contentAtLeast': return x.contentCount() >= spec.value;

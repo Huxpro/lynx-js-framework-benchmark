@@ -255,8 +255,77 @@ export function ThreadsPage({
       </div>
 
       <EndpointTable workload={active.workload} scale={active.scale} harness={harness} selected={selected} />
+      <div className="grid-2">
+        <MemoryCard harness={harness} theme={theme} selected={selected} />
+      </div>
       <BundleSections theme={theme} selected={selected} />
     </>
+  );
+}
+
+function MemoryCard({
+  harness,
+  theme,
+  selected,
+}: {
+  harness: string;
+  theme: 'light' | 'dark';
+  selected: Set<string>;
+}) {
+  const { setTip, onMove, tipNode } = useTooltip();
+  const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => ({
+    id: e.id,
+    mts: one({ suite: 'table', harness, entry: e.id, workload: 'memory', scale: 10000, metric: 'heapMts' })?.median ?? null,
+    bts: one({ suite: 'table', harness, entry: e.id, workload: 'memory', scale: 10000, metric: 'heapBts' })?.median ?? null,
+  })).filter((r) => r.mts != null || r.bts != null);
+  if (!rows.length) return null;
+  rows.sort((a, b) => ((a.bts ?? 0) + (a.mts ?? 0)) - ((b.bts ?? 0) + (b.mts ?? 0)));
+  const max = Math.max(1e-9, ...rows.flatMap((r) => [r.mts ?? 0, r.bts ?? 0])) * 1.08;
+
+  return (
+    <div className="card" onMouseMove={onMove}>
+      <div className="card-title">memory — GC'd heap holding 10k rows</div>
+      <div className="card-desc">
+        Used JS heap per realm after creating 10,000 rows and forcing GC. Indicative (one
+        scenario), but the BTS/MTS asymmetry shows where each framework keeps its state.
+      </div>
+      <div className="bars" aria-hidden="true">
+        {rows.map((r) => (
+          <div key={r.id} className="bar-row" style={{ alignItems: 'start' }}>
+            <div className="bar-label" style={{ paddingTop: 2 }}>{shortLabel(r.id)}</div>
+            <div
+              onMouseEnter={(e) => {
+                setTip({
+                  head: shortLabel(r.id),
+                  lines: [`BTS heap ${fmtBytes(r.bts)} · MTS heap ${fmtBytes(r.mts)}`],
+                });
+                onMove(e);
+              }}
+              onMouseLeave={() => setTip(null)}
+            >
+              {(['bts', 'mts'] as const).map((k) => (
+                <div key={k} className="bar-track" style={{ height: '0.62rem', marginBottom: 2 }}>
+                  {r[k] != null && (
+                    <div
+                      className="bar-fill"
+                      style={{ width: `${((r[k] as number) / max) * 100}%`, background: entryColor(r.id, theme), opacity: k === 'bts' ? 1 : 0.45 }}
+                    />
+                  )}
+                  <span className="bar-value" style={{ left: `${((r[k] ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}>
+                    {fmtBytes(r[k])}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="legend">
+        <span className="item" style={{ cursor: 'default' }}><span className="swatch" style={{ background: 'currentColor' }} /> BTS heap</span>
+        <span className="item" style={{ cursor: 'default' }}><span className="swatch" style={{ background: 'currentColor', opacity: 0.45 }} /> MTS heap</span>
+      </div>
+      {tipNode}
+    </div>
   );
 }
 
