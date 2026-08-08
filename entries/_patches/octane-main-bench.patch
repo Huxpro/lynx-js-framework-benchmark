@@ -1,0 +1,548 @@
+[33mdiff --git a/benchmarks/lynx-table/app/dist-rows1000/main.lynx.bundle b/benchmarks/lynx-table/app/dist-rows1000/main.lynx.bundle[m
+[33mnew file mode 100644[m
+[33mindex 00000000..fad72ff6[m
+Binary files /dev/null and b/benchmarks/lynx-table/app/dist-rows1000/main.lynx.bundle differ
+[33mdiff --git a/benchmarks/lynx-table/app/dist-rows1000/main.web.bundle b/benchmarks/lynx-table/app/dist-rows1000/main.web.bundle[m
+[33mnew file mode 100644[m
+[33mindex 00000000..177a00d5[m
+Binary files /dev/null and b/benchmarks/lynx-table/app/dist-rows1000/main.web.bundle differ
+[33mdiff --git a/benchmarks/lynx-table/app/dist-rows10000/main.lynx.bundle b/benchmarks/lynx-table/app/dist-rows10000/main.lynx.bundle[m
+[33mnew file mode 100644[m
+[33mindex 00000000..605cc188[m
+Binary files /dev/null and b/benchmarks/lynx-table/app/dist-rows10000/main.lynx.bundle differ
+[33mdiff --git a/benchmarks/lynx-table/app/dist-rows10000/main.web.bundle b/benchmarks/lynx-table/app/dist-rows10000/main.web.bundle[m
+[33mnew file mode 100644[m
+[33mindex 00000000..a9c9c7ed[m
+Binary files /dev/null and b/benchmarks/lynx-table/app/dist-rows10000/main.web.bundle differ
+[33mdiff --git a/benchmarks/lynx-table/app/dist-rows30000/main.lynx.bundle b/benchmarks/lynx-table/app/dist-rows30000/main.lynx.bundle[m
+[33mnew file mode 100644[m
+[33mindex 00000000..86745cd2[m
+Binary files /dev/null and b/benchmarks/lynx-table/app/dist-rows30000/main.lynx.bundle differ
+[33mdiff --git a/benchmarks/lynx-table/app/dist-rows30000/main.web.bundle b/benchmarks/lynx-table/app/dist-rows30000/main.web.bundle[m
+[33mnew file mode 100644[m
+[33mindex 00000000..f6a05b5d[m
+Binary files /dev/null and b/benchmarks/lynx-table/app/dist-rows30000/main.web.bundle differ
+[33mdiff --git a/benchmarks/lynx-table/app/lynx.config.mjs b/benchmarks/lynx-table/app/lynx.config.mjs[m
+[33mnew file mode 100644[m
+[33mindex 00000000..d06ebc28[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/app/lynx.config.mjs[m
+[35m@@ -0,0 +1,45 @@[m
+[32m+[m[32mimport { defineConfig } from '@lynx-js/rspeedy';[m
+[32m+[m[32mimport { pluginOctane } from '@octanejs/rspeedy-plugin';[m
+[32m+[m
+[32m+[m[32m// BENCH_AUTOROWS=N builds a variant whose table is already populated at mount,[m
+[32m+[m[32m// so create cost is measurable without taps (mount-create ladder).[m
+[32m+[m[32mconst autoRows = Number(process.env.BENCH_AUTOROWS ?? '0') || 0;[m
+[32m+[m[32mconst autoSuffix = autoRows > 0 ? `-rows${autoRows}` : '';[m
+[32m+[m
+[32m+[m[32m// OCTANE_LYNX_PROFILE=1 turns on the wire-cost counters in @octanejs/lynx[m
+[32m+[m[32m// (globalThis.__OCTANE_LYNX_PROF on both threads). Off by default so the[m
+[32m+[m[32m// default bundle measures the shipping configuration.[m
+[32m+[m[32mconst profile = process.env.OCTANE_LYNX_PROFILE === '1';[m
+[32m+[m
+[32m+[m[32mexport default defineConfig(({ command }) => {[m
+[32m+[m	[32m// BENCH_DEV=1 keeps development diagnostics (transport self-checks, error[m
+[32m+[m	[32m// reporting) in a `rspeedy build` bundle, for debugging the web harness.[m
+[32m+[m	[32mconst development = command === 'dev' || process.env.BENCH_DEV === '1';[m
+[32m+[m
+[32m+[m	[32mreturn {[m
+[32m+[m		[32mmode: development ? 'development' : 'production',[m
+[32m+[m		[32menvironments: {[m
+[32m+[m			[32mlynx: {},[m
+[32m+[m			[32mweb: {},[m
+[32m+[m		[32m},[m
+[32m+[m		[32moutput: {[m
+[32m+[m			[32mcleanDistPath: true,[m
+[32m+[m			[32mfilename: {[m
+[32m+[m				[32mbundle: '[name].[platform].bundle',[m
+[32m+[m			[32m},[m
+[32m+[m			[32mfilenameHash: false,[m
+[32m+[m			[32mdistPath: { root: 'dist' + autoSuffix + (profile ? '-profile' : '') },[m
+[32m+[m		[32m},[m
+[32m+[m		[32msource: {[m
+[32m+[m			[32mentry: {[m
+[32m+[m				[32mmain: './src/index.ts',[m
+[32m+[m			[32m},[m
+[32m+[m			[32mdefine: {[m
+[32m+[m				[32m__BENCH_AUTOROWS__: JSON.stringify(autoRows),[m
+[32m+[m				[32m__OCTANE_LYNX_PROFILE__: JSON.stringify(profile),[m
+[32m+[m			[32m},[m
+[32m+[m		[32m},[m
+[32m+[m		[32msplitChunks: false,[m
+[32m+[m		[32mplugins: [pluginOctane({ dev: development, hmr: command === 'dev' })],[m
+[32m+[m	[32m};[m
+[32m+[m[32m});[m
+[33mdiff --git a/benchmarks/lynx-table/app/src/App.lynx.tsrx b/benchmarks/lynx-table/app/src/App.lynx.tsrx[m
+[33mnew file mode 100644[m
+[33mindex 00000000..b405cf0b[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/app/src/App.lynx.tsrx[m
+[35m@@ -0,0 +1,195 @@[m
+[32m+[m[32m/** @jsxImportSource @octanejs/lynx/intrinsics */[m
+[32m+[m[32m// Black-box cross-framework benchmark UI — Octane variant.[m
+[32m+[m[32m//[m
+[32m+[m[32m// Mirrors apps/ui-vdom/src/App.vue and apps/ui-react/src/App.tsx[m
+[32m+[m[32m// operation-for-operation, written idiomatically for Octane: immutable state[m
+[32m+[m[32m// updates + a keyed `@for` over a `Row` component. The rendered class[m
+[32m+[m[32m// structure (.page/.toolbar/.btn>.btn-text/.rows/.row(.danger)>.col-*) is the[m
+[32m+[m[32m// harness contract and must match the other apps exactly.[m
+[32m+[m[32mimport { useCallback, useRef, useState } from 'octane';[m
+[32m+[m
+[32m+[m[32mimport { buildData, buildDataSeeded } from './data.js';[m
+[32m+[m[32mimport type { RowData } from './data.js';[m
+[32m+[m
+[32m+[m[32m// Mount-create ladder: BENCH_AUTOROWS=N builds a variant whose table is[m
+[32m+[m[32m// already populated at mount, so create cost is measurable without taps.[m
+[32m+[m[32mdeclare const __BENCH_AUTOROWS__: number;[m
+[32m+[m[32mconst INITIAL_ROWS: RowData[] =[m
+[32m+[m	[32m__BENCH_AUTOROWS__ > 0 ? buildDataSeeded(__BENCH_AUTOROWS__) : [];[m
+[32m+[m
+[32m+[m[32m// -- storms: N sequential state→render→DOM ticks from one click --------------[m
+[32m+[m[32m// Each tick runs in its own macrotask (MessageChannel avoids the nested[m
+[32m+[m[32m// setTimeout 4ms clamp) so every mutation goes through a full render cycle[m
+[32m+[m[32m// instead of batching. Mirrors the Vue and React apps.[m
+[32m+[m[32mconst STORM_UPDATE_TICKS = 50;[m
+[32m+[m[32mconst STORM_SELECT_TICKS = 30;[m
+[32m+[m
+[32m+[m[32mconst _stormChannel = new MessageChannel();[m
+[32m+[m[32mlet _stormPending: (() => void) | null = null;[m
+[32m+[m[32m_stormChannel.port1.onmessage = () => {[m
+[32m+[m	[32mconst cb = _stormPending;[m
+[32m+[m	[32m_stormPending = null;[m
+[32m+[m	[32mif (cb) cb();[m
+[32m+[m[32m};[m
+[32m+[m[32mfunction nextMacrotask(cb: () => void) {[m
+[32m+[m	[32m_stormPending = cb;[m
+[32m+[m	[32m_stormChannel.port2.postMessage(0);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction runStorm(ticks: number, step: (t: number) => void) {[m
+[32m+[m	[32mlet t = 0;[m
+[32m+[m	[32mconst tick = () => {[m
+[32m+[m		[32mt += 1;[m
+[32m+[m		[32mstep(t);[m
+[32m+[m		[32mif (t < ticks) nextMacrotask(tick);[m
+[32m+[m	[32m};[m
+[32m+[m	[32mnextMacrotask(tick);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32minterface RowProps {[m
+[32m+[m	[32mrow: RowData;[m
+[32m+[m	[32misSelected: boolean;[m
+[32m+[m	[32monSelect: (id: number) => void;[m
+[32m+[m	[32monRemove: (id: number) => void;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction Row(props: RowProps) @{[m
+[32m+[m	[32m<view class={['row', props.isSelected && 'danger']}>[m
+[32m+[m		[32m<text class="col-id">{String(props.row.id)}</text>[m
+[32m+[m		[32m<text class="col-label" bindtap={() => props.onSelect(props.row.id)}>{props.row.label}</text>[m
+[32m+[m		[32m<text class="col-remove" bindtap={() => props.onRemove(props.row.id)}>{'x'}</text>[m
+[32m+[m	[32m</view>[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport function App() @{[m
+[32m+[m	[32mconst [rows, setRows] = useState<RowData[]>(INITIAL_ROWS);[m
+[32m+[m	[32mconst [selected, setSelected] = useState<number | undefined>(undefined);[m
+[32m+[m
+[32m+[m	[32mconst run = useCallback(() => {[m
+[32m+[m		[32msetRows(buildData());[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst run3k = useCallback(() => {[m
+[32m+[m		[32msetRows(buildData(3000));[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst run5k = useCallback(() => {[m
+[32m+[m		[32msetRows(buildData(5000));[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst runLots = useCallback(() => {[m
+[32m+[m		[32msetRows(buildData(10000));[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst run20k = useCallback(() => {[m
+[32m+[m		[32msetRows(buildData(20000));[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst run30k = useCallback(() => {[m
+[32m+[m		[32msetRows(buildData(30000));[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst add = useCallback(() => {[m
+[32m+[m		[32msetRows((prev) => prev.concat(buildData(1000)));[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst update = useCallback(() => {[m
+[32m+[m		[32msetRows((prev) => {[m
+[32m+[m			[32mconst next = prev.slice();[m
+[32m+[m			[32mfor (let i = 0; i < next.length; i += 10) {[m
+[32m+[m				[32mnext[i] = { id: next[i]!.id, label: `${next[i]!.label} !!!` };[m
+[32m+[m			[32m}[m
+[32m+[m			[32mreturn next;[m
+[32m+[m		[32m});[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst select = useCallback((id: number) => {[m
+[32m+[m		[32msetSelected(id);[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst remove = useCallback((id: number) => {[m
+[32m+[m		[32msetRows((prev) => {[m
+[32m+[m			[32mconst idx = prev.findIndex((d) => d.id === id);[m
+[32m+[m			[32mreturn prev.slice(0, idx).concat(prev.slice(idx + 1));[m
+[32m+[m		[32m});[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst swapRows = useCallback(() => {[m
+[32m+[m		[32msetRows((prev) => {[m
+[32m+[m			[32mif (prev.length <= 998) return prev;[m
+[32m+[m			[32mconst next = prev.slice();[m
+[32m+[m			[32mconst d1 = next[1]!;[m
+[32m+[m			[32mnext[1] = next[998]!;[m
+[32m+[m			[32mnext[998] = d1;[m
+[32m+[m			[32mreturn next;[m
+[32m+[m		[32m});[m
+[32m+[m	[32m}, []);[m
+[32m+[m	[32mconst clear = useCallback(() => {[m
+[32m+[m		[32msetRows([]);[m
+[32m+[m		[32msetSelected(undefined);[m
+[32m+[m	[32m}, []);[m
+[32m+[m
+[32m+[m	[32m// Storm drivers read ids off a ref so the module-scope tick loop never[m
+[32m+[m	[32m// captures a stale rows binding (same shape as the React app).[m
+[32m+[m	[32mconst idsRef = useRef<number[]>([]);[m
+[32m+[m	[32midsRef.current = rows.map((r) => r.id);[m
+[32m+[m
+[32m+[m	[32mconst stormUpdate = useCallback(() => {[m
+[32m+[m		[32mrunStorm([m
+[32m+[m			[32mSTORM_UPDATE_TICKS,[m
+[32m+[m			[32m(t) => setRows([m
+[32m+[m				[32m(prev) => prev.map((r, i) => (i % 10 === 0 ? { id: r.id, label: 'bench ' + t } : r)),[m
+[32m+[m			[32m),[m
+[32m+[m		[32m);[m
+[32m+[m	[32m}, []);[m
+[32m+[m
+[32m+[m	[32mconst stormSelect = useCallback(() => {[m
+[32m+[m		[32mrunStorm(STORM_SELECT_TICKS, (t) => {[m
+[32m+[m			[32mconst ids = idsRef.current;[m
+[32m+[m			[32msetSelected(t < STORM_SELECT_TICKS ? ids[(t * 97) % ids.length]! : ids[0]!);[m
+[32m+[m		[32m});[m
+[32m+[m	[32m}, []);[m
+[32m+[m
+[32m+[m	[32m<view class="page">[m
+[32m+[m		[32m<text class="title">{'Octane UI Benchmark on Lynx · ready'}</text>[m
+[32m+[m		[32m<view class="toolbar">[m
+[32m+[m			[32m<view class="btn" bindtap={run}>[m
+[32m+[m				[32m<text class="btn-text">{'Create 1,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={run3k}>[m
+[32m+[m				[32m<text class="btn-text">{'Create 3,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={run5k}>[m
+[32m+[m				[32m<text class="btn-text">{'Create 5,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={runLots}>[m
+[32m+[m				[32m<text class="btn-text">{'Create 10,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={run20k}>[m
+[32m+[m				[32m<text class="btn-text">{'Create 20,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={run30k}>[m
+[32m+[m				[32m<text class="btn-text">{'Create 30,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={add}>[m
+[32m+[m				[32m<text class="btn-text">{'Append 1,000 rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={update}>[m
+[32m+[m				[32m<text class="btn-text">{'Update every 10th row'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={swapRows}>[m
+[32m+[m				[32m<text class="btn-text">{'Swap Rows'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={clear}>[m
+[32m+[m				[32m<text class="btn-text">{'Clear'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={stormUpdate}>[m
+[32m+[m				[32m<text class="btn-text">{'Update storm'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m			[32m<view class="btn" bindtap={stormSelect}>[m
+[32m+[m				[32m<text class="btn-text">{'Select storm'}</text>[m
+[32m+[m			[32m</view>[m
+[32m+[m		[32m</view>[m
+[32m+[m		[32m<view class="rows">[m
+[32m+[m			[32m@for (const row of rows; key row.id) {[m
+[32m+[m				[32m<Row row={row} isSelected={selected === row.id} onSelect={select} onRemove={remove} />[m
+[32m+[m			[32m}[m
+[32m+[m		[32m</view>[m
+[32m+[m	[32m</view>[m
+[32m+[m[32m}[m
+[33mdiff --git a/benchmarks/lynx-table/app/src/app.css b/benchmarks/lynx-table/app/src/app.css[m
+[33mnew file mode 100644[m
+[33mindex 00000000..ebda3de6[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/app/src/app.css[m
+[35m@@ -0,0 +1,54 @@[m
+[32m+[m[32m.page {[m
+[32m+[m	[32mflex: 1;[m
+[32m+[m	[32mdisplay: flex;[m
+[32m+[m	[32mflex-direction: column;[m
+[32m+[m	[32mbackground-color: #fff;[m
+[32m+[m[32m}[m
+[32m+[m[32m.title {[m
+[32m+[m	[32mfont-size: 14px;[m
+[32m+[m	[32mfont-weight: bold;[m
+[32m+[m	[32mmargin: 4px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.toolbar {[m
+[32m+[m	[32mdisplay: flex;[m
+[32m+[m	[32mflex-direction: row;[m
+[32m+[m	[32mflex-wrap: wrap;[m
+[32m+[m[32m}[m
+[32m+[m[32m.btn {[m
+[32m+[m	[32mbackground-color: #e8e8e8;[m
+[32m+[m	[32mborder-radius: 3px;[m
+[32m+[m	[32mmargin: 2px;[m
+[32m+[m	[32mpadding: 4px 8px;[m
+[32m+[m[32m}[m
+[32m+[m[32m.btn-text {[m
+[32m+[m	[32mfont-size: 11px;[m
+[32m+[m	[32mcolor: #222;[m
+[32m+[m[32m}[m
+[32m+[m[32m.rows {[m
+[32m+[m	[32mdisplay: flex;[m
+[32m+[m	[32mflex-direction: column;[m
+[32m+[m[32m}[m
+[32m+[m[32m.row {[m
+[32m+[m	[32mdisplay: flex;[m
+[32m+[m	[32mflex-direction: row;[m
+[32m+[m	[32mheight: 18px;[m
+[32m+[m	[32malign-items: center;[m
+[32m+[m[32m}[m
+[32m+[m[32m.danger {[m
+[32m+[m	[32mbackground-color: #f2dede;[m
+[32m+[m[32m}[m
+[32m+[m[32m.col-id {[m
+[32m+[m	[32mwidth: 60px;[m
+[32m+[m	[32mfont-size: 11px;[m
+[32m+[m	[32mcolor: #333;[m
+[32m+[m[32m}[m
+[32m+[m[32m.col-label {[m
+[32m+[m	[32mflex: 1;[m
+[32m+[m	[32mfont-size: 11px;[m
+[32m+[m	[32mcolor: #111;[m
+[32m+[m[32m}[m
+[32m+[m[32m.col-remove {[m
+[32m+[m	[32mwidth: 30px;[m
+[32m+[m	[32mfont-size: 11px;[m
+[32m+[m	[32mcolor: #c00;[m
+[32m+[m[32m}[m
+[33mdiff --git a/benchmarks/lynx-table/app/src/data.ts b/benchmarks/lynx-table/app/src/data.ts[m
+[33mnew file mode 100644[m
+[33mindex 00000000..ea94699e[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/app/src/data.ts[m
+[35m@@ -0,0 +1,106 @@[m
+[32m+[m[32m// Same word lists and row semantics as the Vue/React benchmark apps.[m
+[32m+[m[32m// Labels are plain strings (immutable state), matching apps/ui-react/src/data.ts.[m
+[32m+[m[32mlet ID = 1;[m
+[32m+[m
+[32m+[m[32mfunction _random(max: number): number {[m
+[32m+[m	[32mreturn Math.round(Math.random() * 1000) % max;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport interface RowData {[m
+[32m+[m	[32mid: number;[m
+[32m+[m	[32mlabel: string;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mconst adjectives = [[m
+[32m+[m	[32m'pretty',[m
+[32m+[m	[32m'large',[m
+[32m+[m	[32m'big',[m
+[32m+[m	[32m'small',[m
+[32m+[m	[32m'tall',[m
+[32m+[m	[32m'short',[m
+[32m+[m	[32m'long',[m
+[32m+[m	[32m'handsome',[m
+[32m+[m	[32m'plain',[m
+[32m+[m	[32m'quaint',[m
+[32m+[m	[32m'clean',[m
+[32m+[m	[32m'elegant',[m
+[32m+[m	[32m'easy',[m
+[32m+[m	[32m'angry',[m
+[32m+[m	[32m'crazy',[m
+[32m+[m	[32m'helpful',[m
+[32m+[m	[32m'mushy',[m
+[32m+[m	[32m'odd',[m
+[32m+[m	[32m'unsightly',[m
+[32m+[m	[32m'adorable',[m
+[32m+[m	[32m'important',[m
+[32m+[m	[32m'inexpensive',[m
+[32m+[m	[32m'cheap',[m
+[32m+[m	[32m'expensive',[m
+[32m+[m	[32m'fancy',[m
+[32m+[m[32m];[m
+[32m+[m[32mconst colours = [[m
+[32m+[m	[32m'red',[m
+[32m+[m	[32m'yellow',[m
+[32m+[m	[32m'blue',[m
+[32m+[m	[32m'green',[m
+[32m+[m	[32m'pink',[m
+[32m+[m	[32m'brown',[m
+[32m+[m	[32m'purple',[m
+[32m+[m	[32m'brown',[m
+[32m+[m	[32m'white',[m
+[32m+[m	[32m'black',[m
+[32m+[m	[32m'orange',[m
+[32m+[m[32m];[m
+[32m+[m[32mconst nouns = [[m
+[32m+[m	[32m'table',[m
+[32m+[m	[32m'chair',[m
+[32m+[m	[32m'house',[m
+[32m+[m	[32m'bbq',[m
+[32m+[m	[32m'desk',[m
+[32m+[m	[32m'car',[m
+[32m+[m	[32m'pony',[m
+[32m+[m	[32m'cookie',[m
+[32m+[m	[32m'sandwich',[m
+[32m+[m	[32m'burger',[m
+[32m+[m	[32m'pizza',[m
+[32m+[m	[32m'mouse',[m
+[32m+[m	[32m'keyboard',[m
+[32m+[m[32m];[m
+[32m+[m
+[32m+[m[32m/**[m
+[32m+[m[32m * Deterministic variant for the mount-create ladder — mirrors[m
+[32m+[m[32m * packages/benchmark/shared/data.ts buildDataSeeded. Octane paints the first[m
+[32m+[m[32m * screen on the main thread and re-renders it on the background thread, so[m
+[32m+[m[32m * random labels would make every row a first-tree mismatch.[m
+[32m+[m[32m */[m
+[32m+[m[32mexport function buildDataSeeded(count = 1000): RowData[] {[m
+[32m+[m	[32mconst data: RowData[] = [];[m
+[32m+[m	[32mfor (let i = 0; i < count; i++) {[m
+[32m+[m		[32mdata.push({[m
+[32m+[m			[32mid: ID++,[m
+[32m+[m			[32mlabel:[m
+[32m+[m				[32madjectives[i % adjectives.length]! +[m
+[32m+[m				[32m' ' +[m
+[32m+[m				[32mcolours[(i * 7) % colours.length]! +[m
+[32m+[m				[32m' ' +[m
+[32m+[m				[32mnouns[(i * 13) % nouns.length]!,[m
+[32m+[m		[32m});[m
+[32m+[m	[32m}[m
+[32m+[m	[32mreturn data;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport function buildData(count = 1000): RowData[] {[m
+[32m+[m	[32mconst data: RowData[] = [];[m
+[32m+[m	[32mfor (let i = 0; i < count; i++) {[m
+[32m+[m		[32mdata.push({[m
+[32m+[m			[32mid: ID++,[m
+[32m+[m			[32mlabel:[m
+[32m+[m				[32madjectives[_random(adjectives.length)]! +[m
+[32m+[m				[32m' ' +[m
+[32m+[m				[32mcolours[_random(colours.length)]! +[m
+[32m+[m				[32m' ' +[m
+[32m+[m				[32mnouns[_random(nouns.length)]!,[m
+[32m+[m		[32m});[m
+[32m+[m	[32m}[m
+[32m+[m	[32mreturn data;[m
+[32m+[m[32m}[m
+[33mdiff --git a/benchmarks/lynx-table/app/src/index.ts b/benchmarks/lynx-table/app/src/index.ts[m
+[33mnew file mode 100644[m
+[33mindex 00000000..cc48ff77[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/app/src/index.ts[m
+[35m@@ -0,0 +1,6 @@[m
+[32m+[m[32mimport { root } from '@octanejs/lynx';[m
+[32m+[m
+[32m+[m[32mimport { App } from './App.lynx.tsrx';[m
+[32m+[m[32mimport './app.css';[m
+[32m+[m
+[32m+[m[32mvoid root.render(App);[m
+[33mdiff --git a/benchmarks/lynx-table/app/tsconfig.json b/benchmarks/lynx-table/app/tsconfig.json[m
+[33mnew file mode 100644[m
+[33mindex 00000000..844f55e6[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/app/tsconfig.json[m
+[35m@@ -0,0 +1,22 @@[m
+[32m+[m[32m{[m
+[32m+[m[32m  "compilerOptions": {[m
+[32m+[m[32m    "target": "esnext",[m
+[32m+[m[32m    "module": "esnext",[m
+[32m+[m[32m    "moduleResolution": "bundler",[m
+[32m+[m[32m    "lib": ["esnext", "dom", "dom.iterable"],[m
+[32m+[m[32m    "strict": true,[m
+[32m+[m[32m    "noEmit": true,[m
+[32m+[m[32m    "allowImportingTsExtensions": true,[m
+[32m+[m[32m    "isolatedModules": true,[m
+[32m+[m[32m    "skipLibCheck": false,[m
+[32m+[m[32m    "jsx": "react-jsx",[m
+[32m+[m[32m    "jsxImportSource": "octane",[m
+[32m+[m[32m    "types": ["@lynx-js/rspeedy/client"],[m
+[32m+[m[32m    "plugins": [[m
+[32m+[m[32m      {[m
+[32m+[m[32m        "name": "@tsrx/typescript-plugin"[m
+[32m+[m[32m      }[m
+[32m+[m[32m    ][m
+[32m+[m[32m  },[m
+[32m+[m[32m  "include": ["src/**/*"][m
+[32m+[m[32m}[m
+[33mdiff --git a/benchmarks/lynx-table/scripts/build-app.mjs b/benchmarks/lynx-table/scripts/build-app.mjs[m
+[33mnew file mode 100644[m
+[33mindex 00000000..ed70830c[m
+[33m--- /dev/null[m
+[33m+++ b/benchmarks/lynx-table/scripts/build-app.mjs[m
+[35m@@ -0,0 +1,54 @@[m
+[32m+[m[32m// Build the table app's Lynx bundles with the repo's own Rspeedy toolchain.[m
+[32m+[m[32m//[m
+[32m+[m[32m// The app sources are staged into packages/rspeedy-plugin-octane/examples so[m
+[32m+[m[32m// `@octanejs/lynx`, `octane`, and the @lynx-js build plugins all resolve[m
+[32m+[m[32m// through that package's installed dependencies, then `rspeedy build` emits[m
+[32m+[m[32m// `main.lynx.bundle` + `main.web.bundle` into benchmarks/lynx-table/app/dist.[m
+[32m+[m[32m//[m
+[32m+[m[32m//   node scripts/build-app.mjs[m
+[32m+[m[32m//   OCTANE_LYNX_PROFILE=1 node scripts/build-app.mjs   # wire-counter build[m
+[32m+[m[32m//   BENCH_AUTOROWS=1000 node scripts/build-app.mjs     # pre-populated table[m
+[32m+[m[32mimport { execFileSync } from 'node:child_process';[m
+[32m+[m[32mimport fs from 'node:fs';[m
+[32m+[m[32mimport path from 'node:path';[m
+[32m+[m[32mimport { fileURLToPath } from 'node:url';[m
+[32m+[m
+[32m+[m[32mconst root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');[m
+[32m+[m[32mconst repo = path.resolve(root, '../..');[m
+[32m+[m
+[32m+[m[32mconst STAGE_NAME = 'lynx-table-bench';[m
+[32m+[m
+[32m+[m[32mexport function buildTableApp({ silent = false } = {}) {[m
+[32m+[m	[32mconst pluginDir = path.join(repo, 'packages/rspeedy-plugin-octane');[m
+[32m+[m	[32mconst src = path.join(root, 'app');[m
+[32m+[m	[32mconst stage = path.join(pluginDir, 'examples', STAGE_NAME);[m
+[32m+[m	[32mfs.rmSync(stage, { recursive: true, force: true });[m
+[32m+[m	[32mfs.mkdirSync(path.join(stage, 'src'), { recursive: true });[m
+[32m+[m	[32mfor (const file of ['lynx.config.mjs', 'tsconfig.json']) {[m
+[32m+[m		[32mfs.copyFileSync(path.join(src, file), path.join(stage, file));[m
+[32m+[m	[32m}[m
+[32m+[m	[32mfor (const file of fs.readdirSync(path.join(src, 'src'))) {[m
+[32m+[m		[32mfs.copyFileSync(path.join(src, 'src', file), path.join(stage, 'src', file));[m
+[32m+[m	[32m}[m
+[32m+[m
+[32m+[m	[32mif (!silent) console.log('[lynx-table] building octane table app (production)…');[m
+[32m+[m	[32mexecFileSync('npx', ['rspeedy', 'build', '--root', `examples/${STAGE_NAME}`], {[m
+[32m+[m		[32mcwd: pluginDir,[m
+[32m+[m		[32mstdio: silent ? 'pipe' : 'inherit',[m
+[32m+[m		[32menv: { ...process.env, NODE_ENV: 'production' },[m
+[32m+[m	[32m});[m
+[32m+[m
+[32m+[m	[32mconst autoRows = Number(process.env.BENCH_AUTOROWS ?? '0') || 0;[m
+[32m+[m	[32mconst profile = process.env.OCTANE_LYNX_PROFILE === '1';[m
+[32m+[m	[32mconst suffix = (autoRows > 0 ? `-rows${autoRows}` : '') + (profile ? '-profile' : '');[m
+[32m+[m	[32mconst from = path.join(stage, `dist${suffix}`);[m
+[32m+[m	[32mconst to = path.join(src, `dist${suffix}`);[m
+[32m+[m	[32mfs.rmSync(to, { recursive: true, force: true });[m
+[32m+[m	[32mfs.cpSync(from, to, { recursive: true });[m
+[32m+[m	[32mfs.rmSync(stage, { recursive: true, force: true });[m
+[32m+[m	[32mif (!silent) console.log(`[lynx-table] staged bundles → app/dist${suffix}`);[m
+[32m+[m	[32mreturn to;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mconst isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);[m
+[32m+[m[32mif (isMain) buildTableApp();[m

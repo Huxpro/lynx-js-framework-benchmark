@@ -18,6 +18,8 @@ const VUE_BUILD = process.env.VUE_LYNX_BUILD
   ?? path.join(os.homedir(), 'github/vue-lynx-bench-build');
 const OCTANE_BUILD = process.env.OCTANE_BUILD
   ?? path.join(os.homedir(), 'github/octane-bench-build');
+const OCTANE_MAIN_BUILD = process.env.OCTANE_MAIN_BUILD
+  ?? path.join(os.homedir(), 'github/octane-main-build');
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 
@@ -176,11 +178,11 @@ vendor({
 });
 vendor({
   id: 'octane',
-  label: 'Octane 0.1 (.tsrx)',
+  label: 'Octane (wire-fix PR)',
   framework: 'octane',
   frameworkVersion: '0.1.19',
-  config: '.tsrx, keyed @for, universal transport',
-  tags: ['baseline'],
+  config: '.tsrx, keyed @for; PR#1: commit wire cost proportional to change size',
+  tags: ['optimized'],
   color: '#ff415a',
   source: octaneSource,
   ref: 'claude/octane-lynx-benchmark-payload-a3zaeu',
@@ -194,5 +196,52 @@ vendor({
     ),
   })),
 });
+
+// Same framework, different ref — the version/commit dimension: octane@main
+// with the identical app (benchmarks/lynx-table sources copied from the PR
+// branch; only the framework packages differ).
+if (fs.existsSync(path.join(OCTANE_MAIN_BUILD, 'benchmarks/lynx-table/app/dist'))) {
+  const mainGit = gitInfo(OCTANE_MAIN_BUILD);
+  // The app sources sit on top of main as untracked files; capture them (app +
+  // scripts only, not the vendored reference bundles) as the provenance patch.
+  execSync('git add -N benchmarks/lynx-table/app benchmarks/lynx-table/scripts', { cwd: OCTANE_MAIN_BUILD });
+  fs.writeFileSync(
+    path.join(patchesDir, 'octane-main-bench.patch'),
+    execSync('git diff -- benchmarks/lynx-table/app benchmarks/lynx-table/scripts', {
+      cwd: OCTANE_MAIN_BUILD,
+      maxBuffer: 64 * 1024 * 1024,
+    }),
+  );
+  const mainVersion = JSON.parse(
+    fs.readFileSync(path.join(OCTANE_MAIN_BUILD, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id: 'octane-main',
+    label: 'Octane (main)',
+    framework: 'octane',
+    frameworkVersion: mainVersion,
+    config: '.tsrx, keyed @for; main branch (pre wire-fix)',
+    tags: ['baseline'],
+    color: '#4a3aa7',
+    source: {
+      url: 'https://github.com/octanejs/octane',
+      commit: mainGit.commit,
+      dirty: true, // benchmarks/lynx-table app is copied in from the PR branch
+      patchName: 'octane-main-bench.patch',
+    },
+    ref: 'main',
+    buildCommand: 'cp -r <pr>/benchmarks/lynx-table . && BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(
+        OCTANE_MAIN_BUILD,
+        'benchmarks/lynx-table/app',
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
+      ),
+    })),
+  });
+} else {
+  console.log('[vendor] octane-main skipped (no build at ' + OCTANE_MAIN_BUILD + ')');
+}
 
 console.log('[vendor] done');

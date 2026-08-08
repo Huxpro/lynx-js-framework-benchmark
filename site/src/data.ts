@@ -2,6 +2,7 @@
 // build time so the site can never drift from the repo's numbers.
 import latest from '../../results/latest.json';
 
+import octaneMainManifest from '../../entries/octane-main/entry.json';
 import octaneManifest from '../../entries/octane/entry.json';
 import reactManifest from '../../entries/react/entry.json';
 import vueVaporManifest from '../../entries/vue-vapor/entry.json';
@@ -66,6 +67,7 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
   { ...(vueVdomIfrEtManifest as EntryMeta), colorLight: '#eda100', colorDark: '#c98500' },
   { ...(vueVaporManifest as EntryMeta), colorLight: '#e87ba4', colorDark: '#d55181' },
   { ...(vueVaporIfrManifest as EntryMeta), colorLight: '#008300', colorDark: '#008300' },
+  { ...(octaneMainManifest as EntryMeta), colorLight: '#4a3aa7', colorDark: '#9085e9' },
 ];
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
