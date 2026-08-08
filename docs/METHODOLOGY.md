@@ -15,6 +15,20 @@ had a documented weakness, the fix is noted.
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
   IFR-capable configs exercise their real first-frame path.
+- **Startup loading model: local/cached, never online.** The FCP window *does* contain the
+  bundle fetch (and the background worker chunk fetch), but both come from a loopback
+  `node:http` server: measured 1.6–3ms regardless of bundle size (93kB and 368kB alike —
+  loopback cost is syscalls, not bandwidth), i.e. 0.1–4% of any measured FCP and constant
+  across entries. This approximates the dominant real deployment — native Lynx loading a
+  local/preloaded bundle via IO — and matches the field convention: krausest and octane both
+  serve fixtures from localhost with no network emulation for their core numbers (octane's
+  only "online" numbers live in a separate Lighthouse suite with `throttlingMethod:
+  'simulate'`, never mixed in). We standardize on this local/cached model. An online
+  cold-start scenario is *capturable* in this harness (CDP
+  `Network.emulateNetworkConditions`, or cache-warm A/B) — if ever added it becomes a new
+  comparability dimension, never a change to these numbers. What the loopback model cannot
+  capture is native's binary-template decode vs web's JSON decode — that difference belongs
+  to `harness: "native"`, which the schema already isolates.
 - Storm predicates await the final tick's state (`bench 50` label / final selection), so a
   storm number is end-to-end throughput of N sequential render cycles.
 
