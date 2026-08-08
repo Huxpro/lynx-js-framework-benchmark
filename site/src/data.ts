@@ -51,6 +51,9 @@ export interface EntryMeta {
   frameworkVersion: string;
   config: string;
   tags: string[];
+  /** featured = default public view; lab = author-development variants
+   * (versions/PRs/permutations), hidden until Lab mode is on. */
+  tier?: 'featured' | 'lab';
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
 }
 
@@ -58,17 +61,26 @@ export const RECORDS = (latest as { records: BenchRecord[] }).records;
 export const MACHINES = (latest as { machines: Record<string, Machine> }).machines;
 export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
 
-// Fixed entry order = legend order = the CVD-validated palette slot order.
-// Color follows the entity on every chart on every page.
+// Fixed entry order = legend order. Featured entries occupy the CVD-validated
+// categorical slots (validated adjacency order — don't reorder casually);
+// color follows the entity on every chart on every page. Lab entries (same
+// framework, different version/PR/flags) wear an ordinal lightness step of
+// their framework's hue — identity is carried by direct labels + tables (the
+// relief rule), since arbitrary lab permutations cannot be adjacency-validated
+// by construction.
 export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] = [
   { ...(reactManifest as EntryMeta), colorLight: '#2a78d6', colorDark: '#3987e5' },
-  { ...(octaneManifest as EntryMeta), colorLight: '#eb6834', colorDark: '#d95926' },
+  { ...(octaneMainManifest as EntryMeta), colorLight: '#eb6834', colorDark: '#d95926' },
   { ...(vueVdomManifest as EntryMeta), colorLight: '#1baf7a', colorDark: '#199e70' },
   { ...(vueVdomIfrEtManifest as EntryMeta), colorLight: '#eda100', colorDark: '#c98500' },
   { ...(vueVaporManifest as EntryMeta), colorLight: '#e87ba4', colorDark: '#d55181' },
   { ...(vueVaporIfrManifest as EntryMeta), colorLight: '#008300', colorDark: '#008300' },
-  { ...(octaneMainManifest as EntryMeta), colorLight: '#4a3aa7', colorDark: '#9085e9' },
+  // lab: octane family ramp (darker step of the octane orange)
+  { ...(octaneManifest as EntryMeta), colorLight: '#9f3c0d', colorDark: '#f59e72' },
 ];
+
+export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
+export const LAB_IDS = ENTRIES.filter((e) => e.tier === 'lab').map((e) => e.id);
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 

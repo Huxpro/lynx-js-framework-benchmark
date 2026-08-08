@@ -68,6 +68,13 @@ entries/<id>/
 ```
 
 Nothing else changes — the runner and site discover entries by scanning `entries/*/entry.json`.
+
+**Tiers.** `"tier": "featured"` entries form the default public view; `"tier": "lab"` entries
+(versions, PRs, flag permutations — as many as you like) stay hidden until the site's **⚗ Lab**
+mode. Any comparison subset is addressable:
+`/?entries=octane-main,octane&lab=1` — so a framework author can benchmark 8 PRs
+(`pnpm bench run --entry my-pr-entry` each, `collect` merges) and share exact-permutation
+links, while the public page stays curated.
 Bundles are vendored with provenance (source repo, commit, build command, checksums);
 `scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same

@@ -7,8 +7,39 @@ import { MethodPage } from './components/Method';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, TREND_SPECS } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
-import { ENTRIES, HARNESSES, select, workloadScales } from './data';
+import { ENTRIES, FEATURED_IDS, LAB_IDS, select, workloadScales } from './data';
 import { useTheme } from './hooks';
+
+// Sharable comparison state: ?entries=a,b,c picks an exact set (any
+// permutation, incl. lab entries); ?lab=1 reveals the lab tier. This is the
+// author-development mechanism — the default URL always shows the featured
+// public view.
+function initialSelection(): { selected: Set<string>; labMode: boolean } {
+  const params = new URLSearchParams(location.search);
+  const ids = params.get('entries')?.split(',').map((s) => s.trim())
+    .filter((id) => ENTRIES.some((e) => e.id === id));
+  const selected = new Set(ids?.length ? ids : FEATURED_IDS);
+  const labMode = params.get('lab') === '1'
+    || [...selected].some((id) => LAB_IDS.includes(id));
+  return { selected, labMode };
+}
+
+function syncUrl(selected: Set<string>, labMode: boolean) {
+  const params = new URLSearchParams(location.search);
+  const isDefault = !labMode
+    && selected.size === FEATURED_IDS.length
+    && FEATURED_IDS.every((id) => selected.has(id));
+  if (isDefault) {
+    params.delete('entries');
+    params.delete('lab');
+  } else {
+    params.set('entries', ENTRIES.filter((e) => selected.has(e.id)).map((e) => e.id).join(','));
+    if (labMode) params.set('lab', '1');
+    else params.delete('lab');
+  }
+  const qs = params.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+}
 
 type Page = 'overview' | 'scale' | 'threads' | 'method';
 
@@ -25,15 +56,33 @@ export default function App() {
   const [theme, toggleTheme] = useTheme();
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>('web');
-  const [selected, setSelected] = useState<Set<string>>(new Set(ENTRIES.map((e) => e.id)));
+  const [init] = useState(initialSelection);
+  const [selected, setSelected] = useState<Set<string>>(init.selected);
+  const [labMode, setLabMode] = useState<boolean>(init.labMode);
 
   const toggleEntry = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      syncUrl(next, labMode);
       return next;
     });
+
+  const toggleLab = () => {
+    const nextLab = !labMode;
+    setLabMode(nextLab);
+    if (!nextLab) {
+      // leaving lab mode hides + deselects lab entries
+      setSelected((prev) => {
+        const next = new Set([...prev].filter((id) => !LAB_IDS.includes(id)));
+        syncUrl(next, nextLab);
+        return next;
+      });
+    } else {
+      syncUrl(selected, nextLab);
+    }
+  };
 
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
@@ -76,6 +125,17 @@ export default function App() {
             </button>
           ))}
         </div>
+        {LAB_IDS.length > 0 && (
+          <button
+            className="theme-toggle"
+            aria-pressed={labMode}
+            onClick={toggleLab}
+            title="Lab: framework-author variants (versions, PRs, flag permutations). Selections are sharable via the URL."
+            style={labMode ? { background: 'var(--surface-2)', color: 'var(--text-primary)' } : undefined}
+          >
+            ⚗ Lab
+          </button>
+        )}
         <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'dark' ? '☀' : '☾'}
         </button>
@@ -95,11 +155,11 @@ export default function App() {
         <>
           <h1>How fast is each framework on Lynx?</h1>
           <p className="subtitle">
-            The same table app, {ENTRIES.length} framework configurations, one instrument. Headless
-            Chromium running Lynx for Web; medians, lower is better. Pick entries, hover anything,
-            open any card's data table for exact numbers.
+            The same table app, one instrument. Headless Chromium running Lynx for Web; medians,
+            lower is better. Pick entries, hover anything, open any card's data table for exact
+            numbers.{labMode && ' Lab entries (version/PR variants) are marked ⚗ — your selection is sharable via the URL.'}
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           <RankedBars
             title="interactive @1k"
@@ -150,7 +210,7 @@ export default function App() {
             log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing;
             0 ≈ scale-independent).
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <CostSpace harness={harness} theme={theme} selected={selected} />
           {TREND_SPECS.map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={selected} />
@@ -165,7 +225,7 @@ export default function App() {
             here it's split apart: per-realm CPU, bytes and messages in each direction, and which
             rpc endpoints carried them.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <ThreadsPage harness={harness} theme={theme} selected={selected} />
         </>
       ) : (

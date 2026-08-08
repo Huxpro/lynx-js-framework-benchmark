@@ -32,7 +32,7 @@ const gitInfo = (dir) => ({
     .toString().trim().length > 0,
 });
 
-function vendor({ id, label, framework, frameworkVersion, config, tags, color, source, ref, buildCommand, cells }) {
+function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', color, source, ref, buildCommand, cells }) {
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
   fs.rmSync(dist, { recursive: true, force: true });
@@ -59,6 +59,7 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, color, s
     frameworkVersion,
     config,
     tags,
+    tier,
     color,
     kind: 'vendored',
     provenance: {
@@ -113,6 +114,7 @@ const vueCells = (entryId) =>
 
 vendor({
   id: 'react',
+  tier: 'featured',
   label: 'ReactLynx 0.122',
   framework: 'reactlynx',
   frameworkVersion: '0.122.1',
@@ -126,6 +128,7 @@ vendor({
 });
 vendor({
   id: 'vue-vdom',
+  tier: 'featured',
   label: 'Vue-Lynx VDOM',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} / vue-lynx 0.4.2`,
@@ -139,6 +142,7 @@ vendor({
 });
 vendor({
   id: 'vue-vdom-ifr-et',
+  tier: 'featured',
   label: 'Vue-Lynx VDOM +IFR+ET',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} / vue-lynx 0.4.2`,
@@ -152,6 +156,7 @@ vendor({
 });
 vendor({
   id: 'vue-vapor',
+  tier: 'featured',
   label: 'Vue-Lynx Vapor',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} vapor / vue-lynx 0.4.2`,
@@ -165,6 +170,7 @@ vendor({
 });
 vendor({
   id: 'vue-vapor-ifr',
+  tier: 'featured',
   label: 'Vue-Lynx Vapor +IFR',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} vapor / vue-lynx 0.4.2`,
@@ -178,6 +184,7 @@ vendor({
 });
 vendor({
   id: 'octane',
+  tier: 'lab',
   label: 'Octane (wire-fix PR)',
   framework: 'octane',
   frameworkVersion: '0.1.19',
