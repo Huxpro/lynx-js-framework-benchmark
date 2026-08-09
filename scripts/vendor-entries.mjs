@@ -182,17 +182,20 @@ vendor({
   buildCommand: 'node bench-build-matrix.mjs --only vue-vapor-ifr',
   cells: vueCells('vue-vapor-ifr'),
 });
+const octaneVersion = JSON.parse(
+  fs.readFileSync(path.join(OCTANE_BUILD, 'packages/octane/package.json'), 'utf-8'),
+).version;
 vendor({
   id: 'octane',
   tier: 'lab',
-  label: 'Octane (wire-fix PR)',
+  label: 'Octane (hux)',
   framework: 'octane',
-  frameworkVersion: '0.1.19',
-  config: '.tsrx, keyed @for; PR#1: commit wire cost proportional to change size',
+  frameworkVersion: octaneVersion,
+  config: '.tsrx, keyed @for; hux perf stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
   tags: ['optimized'],
   color: '#ff415a',
   source: octaneSource,
-  ref: 'claude/octane-lynx-benchmark-payload-a3zaeu',
+  ref: 'lynx/receiver-diet',
   buildCommand: 'BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
   cells: AUTOROWS.map((rows) => ({
     rows,
