@@ -2,6 +2,7 @@
 // build time so the site can never drift from the repo's numbers.
 import latest from '../../results/latest.json';
 
+import octaneHux2Manifest from '../../entries/octane-hux2/entry.json';
 import octaneMainManifest from '../../entries/octane-main/entry.json';
 import octaneManifest from '../../entries/octane/entry.json';
 import reactManifest from '../../entries/react/entry.json';
@@ -77,6 +78,7 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
   { ...(vueVaporIfrManifest as EntryMeta), colorLight: '#008300', colorDark: '#008300' },
   // lab: octane family ramp (darker step of the octane orange)
   { ...(octaneManifest as EntryMeta), colorLight: '#9f3c0d', colorDark: '#f59e72' },
+  { ...(octaneHux2Manifest as EntryMeta), colorLight: '#702a08', colorDark: '#ffc09f' },
 ];
 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);

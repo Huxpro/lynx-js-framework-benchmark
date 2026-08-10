@@ -4,8 +4,10 @@
 // Sources (override with env):
 //   VUE_LYNX_BUILD   a vue-lynx checkout where bench-build-matrix.mjs ran
 //   OCTANE_BUILD     an octane checkout where lynx-table autoRows builds ran
+//   OCTANE_HUX2_BUILD an optional Octane S3 checkout with the same autoRows builds
 //
 // Usage: node scripts/vendor-entries.mjs
+//        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -18,10 +20,13 @@ const VUE_BUILD = process.env.VUE_LYNX_BUILD
   ?? path.join(os.homedir(), 'github/vue-lynx-bench-build');
 const OCTANE_BUILD = process.env.OCTANE_BUILD
   ?? path.join(os.homedir(), 'github/octane-bench-build');
+const OCTANE_HUX2_BUILD = process.env.OCTANE_HUX2_BUILD ?? null;
 const OCTANE_MAIN_BUILD = process.env.OCTANE_MAIN_BUILD
   ?? path.join(os.homedir(), 'github/octane-main-build');
 
 const AUTOROWS = [0, 1000, 10000, 30000];
+const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
+const wants = (id) => ONLY.size === 0 || ONLY.has(id);
 
 const sha256 = (file) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
@@ -33,6 +38,7 @@ const gitInfo = (dir) => ({
 });
 
 function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', color, source, ref, buildCommand, cells }) {
+  if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
   fs.rmSync(dist, { recursive: true, force: true });
@@ -82,24 +88,25 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
 const patchesDir = path.join(root, 'entries', '_patches');
 fs.mkdirSync(patchesDir, { recursive: true });
 
-const vueGit = gitInfo(VUE_BUILD);
-if (vueGit.dirty) {
+const vueIds = ['react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr'];
+const vueGit = vueIds.some(wants) ? gitInfo(VUE_BUILD) : null;
+if (vueGit?.dirty) {
   const patch = execSync('git diff -- packages', { cwd: VUE_BUILD }).toString();
   fs.writeFileSync(path.join(patchesDir, 'vue-lynx-bench.patch'), patch);
 }
-const octaneGit = gitInfo(OCTANE_BUILD);
-if (octaneGit.dirty) {
+const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
+if (octaneGit?.dirty) {
   const patch = execSync('git diff -- packages benchmarks', { cwd: OCTANE_BUILD }).toString();
   fs.writeFileSync(path.join(patchesDir, 'octane-bench.patch'), patch);
 }
 
-const vueSource = {
+const vueSource = vueGit === null ? null : {
   url: 'https://github.com/Huxpro/vue-lynx',
   commit: vueGit.commit,
   dirty: vueGit.dirty,
   patchName: 'vue-lynx-bench.patch',
 };
-const octaneSource = {
+const octaneSource = octaneGit === null ? null : {
   url: 'https://github.com/Huxpro/octane',
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
@@ -182,9 +189,11 @@ vendor({
   buildCommand: 'node bench-build-matrix.mjs --only vue-vapor-ifr',
   cells: vueCells('vue-vapor-ifr'),
 });
-const octaneVersion = JSON.parse(
-  fs.readFileSync(path.join(OCTANE_BUILD, 'packages/octane/package.json'), 'utf-8'),
-).version;
+const octaneVersion = wants('octane')
+  ? JSON.parse(
+      fs.readFileSync(path.join(OCTANE_BUILD, 'packages/octane/package.json'), 'utf-8'),
+    ).version
+  : null;
 vendor({
   id: 'octane',
   tier: 'lab',
@@ -207,10 +216,58 @@ vendor({
   })),
 });
 
+if (
+  wants('octane-hux2')
+  && OCTANE_HUX2_BUILD
+  && fs.existsSync(path.join(OCTANE_HUX2_BUILD, 'benchmarks/lynx-table/app/dist'))
+) {
+  const hux2Git = gitInfo(OCTANE_HUX2_BUILD);
+  if (hux2Git.dirty) {
+    fs.writeFileSync(
+      path.join(patchesDir, 'octane-hux2-bench.patch'),
+      execSync('git diff -- packages benchmarks', { cwd: OCTANE_HUX2_BUILD }),
+    );
+  }
+  const hux2Version = JSON.parse(
+    fs.readFileSync(path.join(OCTANE_HUX2_BUILD, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id: 'octane-hux2',
+    tier: 'lab',
+    label: 'Octane (Hux2)',
+    framework: 'octane',
+    frameworkVersion: hux2Version,
+    config: '.tsrx, keyed @for; S3 final stack (#25→#31→#32→#33), BTS materialization and retained-state diet',
+    tags: ['optimized'],
+    color: '#d63384',
+    source: {
+      url: 'https://github.com/Huxpro/octane',
+      commit: hux2Git.commit,
+      dirty: hux2Git.dirty,
+      patchName: 'octane-hux2-bench.patch',
+    },
+    ref: 'perf/lynx-s3-teardown-constants',
+    buildCommand: 'BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(
+        OCTANE_HUX2_BUILD,
+        'benchmarks/lynx-table/app',
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
+      ),
+    })),
+  });
+} else {
+  console.log('[vendor] octane-hux2 skipped (set OCTANE_HUX2_BUILD to a built checkout)');
+}
+
 // Same framework, different ref — the version/commit dimension: octane@main
 // with the identical app (benchmarks/lynx-table sources copied from the PR
 // branch; only the framework packages differ).
-if (fs.existsSync(path.join(OCTANE_MAIN_BUILD, 'benchmarks/lynx-table/app/dist'))) {
+if (
+  wants('octane-main')
+  && fs.existsSync(path.join(OCTANE_MAIN_BUILD, 'benchmarks/lynx-table/app/dist'))
+) {
   const mainGit = gitInfo(OCTANE_MAIN_BUILD);
   // The app sources sit on top of main as untracked files; capture them (app +
   // scripts only, not the vendored reference bundles) as the provenance patch.
@@ -250,7 +307,7 @@ if (fs.existsSync(path.join(OCTANE_MAIN_BUILD, 'benchmarks/lynx-table/app/dist')
       ),
     })),
   });
-} else {
+} else if (wants('octane-main')) {
   console.log('[vendor] octane-main skipped (no build at ' + OCTANE_MAIN_BUILD + ')');
 }
 

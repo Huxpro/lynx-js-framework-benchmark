@@ -1,0 +1,36 @@
+{
+  "id": "octane-hux2",
+  "label": "Octane (Hux2)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.31",
+  "config": ".tsrx, keyed @for; S3 final stack (#25→#31→#32→#33), BTS materialization and retained-state diet",
+  "tags": [
+    "optimized"
+  ],
+  "tier": "lab",
+  "color": "#d63384",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "perf/lynx-s3-teardown-constants",
+    "commit": "e9d0fab6d0dde33a70c77be05f4d2e5372431fbf",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "builtAt": "2026-08-10T13:35:37.054Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "e369989f6b3c53b0648864b651a0dc3f78e9dbdf7fdf05163482ca8b9d959805",
+      "rows-0/main.lynx.bundle": "3a00ec1f092119d34607224b0d0a6ce60aaaf75ad917fc99c973632ef58eb5f9",
+      "rows-1000/main.web.bundle": "e115ec6d3ebbcb6924df1f494763cbcfc320c0f1eb8a484d6f5c1fc70eff27d7",
+      "rows-1000/main.lynx.bundle": "215e306935cd00ce215007ae8003c222072474e807924549a2a29dbd86fc4a4f",
+      "rows-10000/main.web.bundle": "474016a87c2d20eea9e2606c0837ac94a22d2fd3bc8d0eaae2ad8d8cebb1db6e",
+      "rows-10000/main.lynx.bundle": "7488547f68eab6cbfb874c4927a3c4cb99f717c1de95c756fe56ed6d582ab752",
+      "rows-30000/main.web.bundle": "80ba1fb77227233038520454e2ac9f06f513a12543a599c189d78ce66fe4a4d0",
+      "rows-30000/main.lynx.bundle": "eb81da6a2f73b10f392c2fc42d0b928dcaf7b17db06ead991ad15d8b47257f6c"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
