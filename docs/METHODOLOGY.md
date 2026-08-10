@@ -87,9 +87,11 @@ had a documented weakness, the fix is noted.
 - Every run embeds a machine fingerprint (CPU model, cores, OS, node) and a **preflight
   calibration score**: a fixed, versioned, seeded CPU probe (~1s of JSON/array/string churn
   approximating render work) run in the same headless browser. Higher = faster machine.
-- Default comparisons are within-machine. Cross-machine relations divide by calibration
-  scores and are labeled estimates; the probe corrects scalar CPU speed only — never memory
-  hierarchy or core count. Probe version bumps invalidate cross-version comparison.
+- Default comparisons use records from one physical run. The incremental archive retains
+  source-run calibration on every record, but the site never composes a ranking from separate
+  runs, even on the same machine. Cross-run calibration is estimate-only; the probe corrects
+  scalar CPU speed, never memory hierarchy or core count. Probe version bumps invalidate
+  cross-version comparison.
 
 ## Harness separation
 

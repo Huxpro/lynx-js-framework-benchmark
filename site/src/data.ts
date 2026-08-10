@@ -33,6 +33,9 @@ export interface BenchRecord {
   detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
   dnfCount: number;
   machineId: string;
+  runFile: string;
+  runGeneratedAt: string;
+  calibration: { probeVersion: number; score: number };
 }
 
 export interface Machine {
@@ -43,7 +46,18 @@ export interface Machine {
   cpuModel: string;
   cores: number;
   node: string;
+  latestCalibration: { probeVersion: number; score: number };
+  latestRunFile: string;
+  latestRunGeneratedAt: string;
+}
+
+export interface ComparisonRun {
+  runFile: string;
+  generatedAt: string;
+  machineId: string;
   calibration: { probeVersion: number; score: number };
+  entryIds: string[];
+  recordCount: number;
 }
 
 export interface EntryMeta {
@@ -59,8 +73,11 @@ export interface EntryMeta {
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
 }
 
-export const RECORDS = (latest as { records: BenchRecord[] }).records;
+// Charts deliberately use one physical run. `records` remains the incremental
+// per-machine archive, but is not a valid source for a default ranking.
+export const RECORDS = (latest as { comparisonRecords: BenchRecord[] }).comparisonRecords;
 export const MACHINES = (latest as { machines: Record<string, Machine> }).machines;
+export const COMPARISON = (latest as { comparison: ComparisonRun }).comparison;
 export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
 
 // Fixed entry order = legend order. Featured entries occupy the CVD-validated

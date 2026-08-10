@@ -187,11 +187,12 @@ mode switch with its own data availability.
   Probe version bumps invalidate comparisons.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
   (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
-  coexist, each carrying its calibration score. The site's default view is **within-machine
-  ratios** (self-baselined, machine-error-free); absolute-ms views label the machine and, when
-  the user opts into cross-machine overlay, scales by calibration ratio with an explicit
-  "estimated" badge. Calibration corrects scalar CPU speed only — it cannot correct
-  memory-hierarchy or core-count differences, and the UI says so.
+  coexist, each carrying its own source run and calibration. Separately, the collector chooses
+  one coherent physical run for `comparisonRecords` (broadest entry coverage, then matrix
+  coverage, then newest); every default chart reads only that cohort. Partial reruns therefore
+  update the archive without silently mixing machines or calibration epochs in a ranking.
+  Calibration is estimate-only and never applied to default charts; it cannot correct memory
+  hierarchy or core-count differences.
 - Hypothesis mode: `bench run --entry vue-vapor --workload select --scale 10000 --reps 20`
   gives a focused, high-N answer; `collect` folds it in without touching other cells.
 

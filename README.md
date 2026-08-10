@@ -33,8 +33,10 @@ pnpm bench preflight                                                     # machi
 Every `run` writes an independent run file stamped with a machine fingerprint and a
 **preflight calibration score** (a fixed CPU probe in the same browser); `collect` merges any
 number of run files — from any machines — into `results/latest.json`, newest-per-cell,
-per-machine. Comparisons are always within one machine's run; calibration relates
-cross-machine numbers as labeled estimates.
+per-machine, with source-run calibration attached to every record. Charts use
+`comparisonRecords`, selected from the single run with the broadest entry coverage (then
+matrix coverage), so partial or cross-machine runs cannot be mixed into a ranking. Calibration
+may relate separate runs as an explicit estimate; it is not applied to the default charts.
 
 ## What is measured
 
