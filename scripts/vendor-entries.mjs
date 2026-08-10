@@ -5,9 +5,11 @@
 //   VUE_LYNX_BUILD   a vue-lynx checkout where bench-build-matrix.mjs ran
 //   OCTANE_BUILD     an octane checkout where lynx-table autoRows builds ran
 //   OCTANE_HUX2_BUILD an optional Octane S3 checkout with the same autoRows builds
+//   OCTANE_DOM_BUILD an optional octanejs/octane PR #693 checkout with the same builds
 //
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
+//        VENDOR_ONLY=octane-dom OCTANE_DOM_BUILD=<checkout> node scripts/vendor-entries.mjs
 import crypto from 'node:crypto';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -21,6 +23,7 @@ const VUE_BUILD = process.env.VUE_LYNX_BUILD
 const OCTANE_BUILD = process.env.OCTANE_BUILD
   ?? path.join(os.homedir(), 'github/octane-bench-build');
 const OCTANE_HUX2_BUILD = process.env.OCTANE_HUX2_BUILD ?? null;
+const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
 const OCTANE_MAIN_BUILD = process.env.OCTANE_MAIN_BUILD
   ?? path.join(os.homedir(), 'github/octane-main-build');
 
@@ -259,6 +262,51 @@ if (
   });
 } else {
   console.log('[vendor] octane-hux2 skipped (set OCTANE_HUX2_BUILD to a built checkout)');
+}
+
+if (
+  wants('octane-dom')
+  && OCTANE_DOM_BUILD
+  && fs.existsSync(path.join(OCTANE_DOM_BUILD, 'benchmarks/lynx-table/app/dist'))
+) {
+  const domGit = gitInfo(OCTANE_DOM_BUILD);
+  if (domGit.dirty) {
+    fs.writeFileSync(
+      path.join(patchesDir, 'octane-dom-bench.patch'),
+      execSync('git diff -- packages benchmarks', { cwd: OCTANE_DOM_BUILD }),
+    );
+  }
+  const domVersion = JSON.parse(
+    fs.readFileSync(path.join(OCTANE_DOM_BUILD, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id: 'octane-dom',
+    tier: 'lab',
+    label: 'Octane (DOM)',
+    framework: 'octane',
+    frameworkVersion: domVersion,
+    config: '.tsrx, keyed @for; octanejs/octane PR #693, shared template programs, compact ACKs, and lazy handles',
+    tags: ['optimized'],
+    color: '#a14718',
+    source: {
+      url: 'https://github.com/octanejs/octane',
+      commit: domGit.commit,
+      dirty: domGit.dirty,
+      patchName: 'octane-dom-bench.patch',
+    },
+    ref: 'fix/lynx-renderer-performance',
+    buildCommand: 'BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(
+        OCTANE_DOM_BUILD,
+        'benchmarks/lynx-table/app',
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
+      ),
+    })),
+  });
+} else {
+  console.log('[vendor] octane-dom skipped (set OCTANE_DOM_BUILD to a built checkout)');
 }
 
 // Same framework, different ref — the version/commit dimension: octane@main
