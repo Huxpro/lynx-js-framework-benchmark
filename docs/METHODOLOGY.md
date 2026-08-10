@@ -46,6 +46,10 @@ had a documented weakness, the fix is noted.
   overhead; the UI thread) and the `lynx-bg` worker (BTS), summing non-idle sample time.
   Includes GC and microtasks. The two threads run concurrently — per-realm CPU values are
   not additive into wall latency, and the site never stacks them into one bar.
+- **Heap**: one fresh page holds a 10k-row table. After the table settles, the harness sends
+  `HeapProfiler.collectGarbage` to the MTS and BTS CDP sessions independently, then records
+  each realm's `Runtime.getHeapUsage().usedSize`. These are absolute live-heap snapshots,
+  not retained-heap deltas or native-process memory.
 - Boundaries are recorded on every record (`boundary` field); records with different
   boundaries are never comparable.
 
