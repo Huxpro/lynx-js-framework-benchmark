@@ -16,14 +16,16 @@ export function discoverEntries({ only = null } = {}) {
   const root = repoRoot();
   const entriesDir = path.join(root, 'entries');
   const out = [];
-  for (const id of fs.readdirSync(entriesDir).sort()) {
+  const ids = only === null
+    ? fs.readdirSync(entriesDir).sort()
+    : [...new Set(only)];
+  for (const id of ids) {
     const manifestPath = path.join(entriesDir, id, 'entry.json');
     if (!fs.existsSync(manifestPath)) continue;
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
     if (manifest.id !== id) {
       throw new Error(`entry ${id}: manifest id mismatch (${manifest.id})`);
     }
-    if (only && !only.includes(id)) continue;
     out.push({
       ...manifest,
       dir: path.join(entriesDir, id),

@@ -1,10 +1,12 @@
-// Vendor the exact Octane Hux2 stack checkpoints without rewriting unrelated
-// framework entries. Each input must be a clean checkout at the expected SHA
+// Vendor the exact Octane Hux2 stack checkpoints and the live upstream main
+// without rewriting unrelated framework entries. Each input must be a clean checkout at the expected SHA
 // with all four BENCH_AUTOROWS variants already built.
 //
 // Defaults point at the worktrees used by the published Hux2 benchmark run:
 //   /tmp/octane-bench-{b0,p2,p3,p6,p7}
-// Override any checkout with OCTANE_<CHECKPOINT>_BUILD.
+// Override any checkout with OCTANE_<CHECKPOINT>_BUILD. Set
+// OCTANE_CHECKPOINTS to a comma-separated subset (for example, MAIN) when only
+// one source changed.
 //
 // Usage:
 //   pnpm vendor:octane-checkpoints
@@ -67,6 +69,82 @@ const CHECKPOINTS = [
     config: '.tsrx, keyed @for; complete mergeable Hux2 performance stack (P0–P7)',
     tags: ['optimized'],
     color: '#dc2626',
+  },
+  {
+    key: 'MAIN',
+    id: 'octane-main',
+    label: 'Octane (upstream main)',
+    commit: '9b147781c9b4ec4df053a059633978ddc0ed922a',
+    source: 'https://github.com/octanejs/octane',
+    ref: 'main',
+    config: '.tsrx, keyed @for; clean live upstream main after #693/#696/#700',
+    tags: ['baseline'],
+    color: '#4a3aa7',
+  },
+  {
+    key: 'UPSTREAM_P1',
+    id: 'octane-upstream-p1',
+    label: 'Octane (upstream P1)',
+    commit: 'aa3ebe22e327a0509bb40937592771e5eeab4529',
+    source: 'https://github.com/octanejs/octane',
+    ref: 'perf/lynx-upstream-pacing-live',
+    config: '.tsrx, keyed @for; live upstream main plus frame-aligned commit pacing',
+    tags: ['checkpoint'],
+    color: '#0f766e',
+  },
+  {
+    key: 'UPSTREAM_PACING_ONLY',
+    id: 'octane-upstream-pacing-only',
+    label: 'Octane (upstream adaptive pacing)',
+    commit: '6303f760f7cee36b79eae5d66a9e1d0e585d03bd',
+    source: 'https://github.com/octanejs/octane',
+    ref: 'perf/lynx-adaptive-pacing-only',
+    config: '.tsrx, keyed @for; demand-driven frame pacing for large roots, without P6',
+    tags: ['checkpoint'],
+    color: '#15803d',
+  },
+  {
+    key: 'UPSTREAM_P1_P6',
+    id: 'octane-upstream-p1-p6',
+    label: 'Octane (upstream P1+P6)',
+    commit: 'f9c60a22eff16cbdd4d0c9f77e44e46a8320d26d',
+    source: 'https://github.com/octanejs/octane',
+    ref: 'perf/lynx-upstream-worklet-bridge-after-pacing',
+    config: '.tsrx, keyed @for; frame-aligned pacing plus lazy worklet bridge',
+    tags: ['checkpoint'],
+    color: '#0369a1',
+  },
+  {
+    key: 'UPSTREAM_FUSION',
+    id: 'octane-upstream-fusion',
+    label: 'Octane (upstream fusion v1)',
+    commit: '7ff554ea51e43d0177ac4a72ac46f2fdc189a718',
+    source: 'https://github.com/octanejs/octane',
+    ref: 'perf/lynx-demand-pacing',
+    config: '.tsrx, keyed @for; lazy worklet bridge plus demand-driven frame pacing (v1)',
+    tags: ['checkpoint'],
+    color: '#be123c',
+  },
+  {
+    key: 'UPSTREAM_FUSION_V2',
+    id: 'octane-upstream-fusion-v2',
+    label: 'Octane (upstream fusion v2)',
+    commit: '7f16f8bc19c9eeb1297ea3e42c2cf004e21e6aa8',
+    source: 'https://github.com/octanejs/octane',
+    ref: 'perf/lynx-demand-pacing',
+    config: '.tsrx, keyed @for; lazy worklet bridge plus demand-driven pacing for large roots',
+    tags: ['optimized'],
+    color: '#e11d48',
+  },
+  {
+    key: 'UPSTREAM_P6',
+    id: 'octane-upstream-p6',
+    label: 'Octane (upstream P6)',
+    commit: '57d1a8fdc63daf7e0db0ce35b469d736d8faacb9',
+    ref: 'perf/lynx-upstream-worklet-bridge-live',
+    config: '.tsrx, keyed @for; live upstream main plus lazy worklet bridge',
+    tags: ['checkpoint'],
+    color: '#7c3aed',
   },
 ];
 
@@ -150,7 +228,7 @@ function vendor(checkpoint) {
     color: checkpoint.color,
     kind: 'vendored',
     provenance: {
-      source: 'https://github.com/Huxpro/octane',
+      source: checkpoint.source ?? 'https://github.com/Huxpro/octane',
       ref: checkpoint.ref,
       commit: checkpoint.commit,
       patched: false,
@@ -184,5 +262,17 @@ function vendor(checkpoint) {
   console.log(`[vendor] ${checkpoint.id}: ${Object.keys(checks).length} bundles from ${checkpoint.commit}`);
 }
 
-for (const checkpoint of CHECKPOINTS) vendor(checkpoint);
-console.log('[vendor] Octane Hux2 checkpoints done');
+const requested = new Set(
+  (process.env.OCTANE_CHECKPOINTS ?? CHECKPOINTS.map(({ key }) => key).join(','))
+    .split(',')
+    .map((key) => key.trim().toUpperCase())
+    .filter(Boolean),
+);
+const selected = CHECKPOINTS.filter(({ key }) => requested.has(key));
+if (selected.length !== requested.size) {
+  const known = new Set(CHECKPOINTS.map(({ key }) => key));
+  const unknown = [...requested].filter((key) => !known.has(key));
+  throw new Error(`unknown Octane checkpoint(s): ${unknown.join(', ')}`);
+}
+for (const checkpoint of selected) vendor(checkpoint);
+console.log(`[vendor] Octane checkpoints done: ${selected.map(({ key }) => key).join(', ')}`);

@@ -1,9 +1,9 @@
 {
   "id": "octane-main",
-  "label": "Octane (main)",
+  "label": "Octane (upstream main)",
   "framework": "octane",
-  "frameworkVersion": "0.1.31",
-  "config": ".tsrx, keyed @for; main branch (pre wire-fix)",
+  "frameworkVersion": "0.1.35",
+  "config": ".tsrx, keyed @for; clean live upstream main after #693/#696/#700",
   "tags": [
     "baseline"
   ],
@@ -13,20 +13,24 @@
   "provenance": {
     "source": "https://github.com/octanejs/octane",
     "ref": "main",
-    "commit": "e81fd879308a4367c8c1af920e0d59ef648b8ffe",
-    "patched": true,
-    "patchFile": "entries/_patches/octane-main-bench.patch",
-    "buildCommand": "cp -r <pr>/benchmarks/lynx-table . && BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs",
-    "builtAt": "2026-08-09T19:56:50.102Z",
+    "commit": "9b147781c9b4ec4df053a059633978ddc0ed922a",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<0|1000|10000|30000> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "packageManager": "pnpm@11.15.1",
+    "sourceLockSha256": "47137830d3f76e5a87be45044717ec5360f2f11880e3f8a8de83cb9b1d01db28",
+    "sourceBenchmarkTree": "40fc02e0febf0572512291f755e96869985af725",
+    "sourceBuildScriptBlob": "ed70830c1e19e2c630a52a8e7a18835b5d065e54",
+    "builtAt": "2026-08-11T06:10:51.955Z",
     "sha256": {
-      "rows-0/main.web.bundle": "a36eba1742cd6f39899a7799e29419413632bd84ee1db49f2e6d636d2b3e71d4",
-      "rows-0/main.lynx.bundle": "9ed89e9faa849ec7ff8e9ffd354d3eb4244dbeddfce00a8f5a58c2cac6ba94bc",
-      "rows-1000/main.web.bundle": "3697e3999d8525b439cdc3b641aac9995756d0f6dbd9e4ce3d7107c14b662d9c",
-      "rows-1000/main.lynx.bundle": "871922e8d8e73f20de6e4c54570aba8e488b2758823926579cadb017de9c680e",
-      "rows-10000/main.web.bundle": "4248ca7e3306ac8108d5a15dbd811d2e7f20df5009b3d128ebabe7c0cfde36cb",
-      "rows-10000/main.lynx.bundle": "80b17c5a1eb67a5435fafcf4a26295b545f3016adc51bb9757068b7d7e485150",
-      "rows-30000/main.web.bundle": "4abab0079fa93f448f0582980022d3b7a323ed07d3ddad2bc01aa23b55fdaf37",
-      "rows-30000/main.lynx.bundle": "350530418710093c0853435d165e77e5e75d6f3445d6066eb9956bc0a1b9318a"
+      "rows-0/main.web.bundle": "436001a8d90c53d852f92cd6c9aacc69c816f74a1684e28444fd0004c7f92cf4",
+      "rows-0/main.lynx.bundle": "d19c0fc83763d63bcb754c00ea129f4947ab6656368440477775977b5ab71994",
+      "rows-1000/main.web.bundle": "51ae8912018dbc9e7d8e45b9a80761e3a542b84b52f457d176547c49c4951d7d",
+      "rows-1000/main.lynx.bundle": "5563581fe5978d445a66da93bba4ba787f10d89eec40743b043a072d409c5c57",
+      "rows-10000/main.web.bundle": "f9e8abdfbe85180c041a95c01e5a8cb8a9a34a214b48ed467c6d0ed635d759c8",
+      "rows-10000/main.lynx.bundle": "1c69fdfd42583a45203feec36c3aee646a8783e2da31aba7906873297c9a4272",
+      "rows-30000/main.web.bundle": "cfa32cb088e77637de558f9f0aec1669496ad3e47f82fe7906364229ef57ba2e",
+      "rows-30000/main.lynx.bundle": "04177db3d28c4d6513e8c20b3cc1ee6f1b87b9ad2b3d9c9ba9104067d16ca611"
     }
   },
   "bundles": {

@@ -1,0 +1,40 @@
+{
+  "id": "octane-upstream-fusion-v2",
+  "label": "Octane (upstream fusion v2)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.35",
+  "config": ".tsrx, keyed @for; lazy worklet bridge plus demand-driven pacing for large roots",
+  "tags": [
+    "optimized"
+  ],
+  "tier": "lab",
+  "color": "#e11d48",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "perf/lynx-demand-pacing",
+    "commit": "7f16f8bc19c9eeb1297ea3e42c2cf004e21e6aa8",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<0|1000|10000|30000> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "packageManager": "pnpm@11.15.1",
+    "sourceLockSha256": "47137830d3f76e5a87be45044717ec5360f2f11880e3f8a8de83cb9b1d01db28",
+    "sourceBenchmarkTree": "40fc02e0febf0572512291f755e96869985af725",
+    "sourceBuildScriptBlob": "ed70830c1e19e2c630a52a8e7a18835b5d065e54",
+    "builtAt": "2026-08-11T10:01:51.665Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "ed5f4de16a6f361b7046d2876e17c202730c15fc9d414170331b8709a0692f2d",
+      "rows-0/main.lynx.bundle": "5c223274e7f76246db2b7851f8de063ecd5c733ddcab1ad0055728f6fb94108f",
+      "rows-1000/main.web.bundle": "076fc33dd1781f874a6e1ab33d8ef5e5baeaa3278c0a1127c52c5bdca213a8e9",
+      "rows-1000/main.lynx.bundle": "2777fdc76980ec3cd72802c8e1aeee0cf874931157765c26ef545e7f1083eaf1",
+      "rows-10000/main.web.bundle": "d1c1a408179e7b3cc3778f25732d21cb2626222f268811ee7f6e5025a37d6d63",
+      "rows-10000/main.lynx.bundle": "3f560d2cf761821ecc15677714eff4c84ac396ddec522df0f33226be96399f95",
+      "rows-30000/main.web.bundle": "bab1c9197459c5951c4774049d30e5098c2b11796300d08197f5c53d5d30e856",
+      "rows-30000/main.lynx.bundle": "df9789675619b8fa42a6b13ae932f574182e612041eed3ab820b4ad33db7a7f5"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

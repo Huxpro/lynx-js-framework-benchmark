@@ -1,0 +1,40 @@
+{
+  "id": "octane-upstream-p6",
+  "label": "Octane (upstream P6)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.35",
+  "config": ".tsrx, keyed @for; live upstream main plus lazy worklet bridge",
+  "tags": [
+    "checkpoint"
+  ],
+  "tier": "lab",
+  "color": "#7c3aed",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "perf/lynx-upstream-worklet-bridge-live",
+    "commit": "57d1a8fdc63daf7e0db0ce35b469d736d8faacb9",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<0|1000|10000|30000> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "packageManager": "pnpm@11.15.1",
+    "sourceLockSha256": "47137830d3f76e5a87be45044717ec5360f2f11880e3f8a8de83cb9b1d01db28",
+    "sourceBenchmarkTree": "40fc02e0febf0572512291f755e96869985af725",
+    "sourceBuildScriptBlob": "ed70830c1e19e2c630a52a8e7a18835b5d065e54",
+    "builtAt": "2026-08-11T06:59:00.324Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "bb6cbb8070dbe8b1eb9224c43c76558308becdc151e92ef109ef3b8ab9b5fe53",
+      "rows-0/main.lynx.bundle": "327441872f6093d8dfa9cf5b80ea1284e7bdfd98dc4604ebcb9c969060cc2618",
+      "rows-1000/main.web.bundle": "f9bf210cbe57bca680c1f8ab67d1b8f63b02a523508cffdbca171b35bf73123c",
+      "rows-1000/main.lynx.bundle": "459c9b891c352917763970e8fdb072be26dbcf3181681947a56b1973ece00be4",
+      "rows-10000/main.web.bundle": "25cdf0fc59fa5e63ae992d5c061839978fa6239f5f193358f7a0bc86d03eb0cc",
+      "rows-10000/main.lynx.bundle": "48ae98363eb16d6f69b00bf37ca10b194edd6cba7b95169a29e540e006da1174",
+      "rows-30000/main.web.bundle": "109f07429209fc2f7f6b5e14655c69d3bb10db71257b32d80526d31824593644",
+      "rows-30000/main.lynx.bundle": "df3d32f980e50af3708b464aa726e299787bde1097230ff04115dee82affb827"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

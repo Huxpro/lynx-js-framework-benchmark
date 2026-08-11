@@ -79,7 +79,11 @@ links, while the public page stays curated.
 Bundles are vendored with provenance (source repo, commit, build command, checksums);
 `scripts/vendor-entries.mjs` rebuilds the original framework matrix and
 `pnpm vendor:octane-checkpoints` vendors the exact B0/P2/P3/P6/P7 checkouts from the Octane
-Hux2 stack. The app must
+Hux2 stack plus pinned live-upstream residual checkpoints. `OCTANE_CHECKPOINTS=MAIN` updates
+only that entry, and an explicit `--entry` list is measured in the requested order so
+reverse-order confirmation runs are reproducible. The final live-upstream landing audit is
+generated with `pnpm report:octane-upstream-residual` and records negative results as well as
+wins. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
 

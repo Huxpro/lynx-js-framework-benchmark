@@ -22,6 +22,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Entry manifests + bundle checksums
         run: node scripts/verify-entries.mjs
+      - name: Runner unit tests
+        run: node --test packages/runner/src/*.test.mjs
       - name: latest.json matches collect over runs/
         run: node scripts/verify-collect.mjs
       - name: Site build

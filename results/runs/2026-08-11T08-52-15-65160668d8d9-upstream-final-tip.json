@@ -1,0 +1,8895 @@
+{
+ "schemaVersion": 2,
+ "meta": {
+  "generatedAt": "2026-08-11T08:52:15.570Z",
+  "machine": {
+   "id": "65160668d8d9",
+   "hostname": "n251-227-236",
+   "platform": "linux",
+   "arch": "x64",
+   "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+   "cores": 32,
+   "memGB": 67,
+   "node": "v22.22.2"
+  },
+  "calibration": {
+   "probeVersion": 1,
+   "score": 2416,
+   "iterations": 2416
+  },
+  "chromium": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+  "argv": [
+   "run",
+   "--entry",
+   "octane-main,octane-upstream-p1-p6",
+   "--scale",
+   "1000,10000,30000",
+   "--reps",
+   "5",
+   "--storm-reps",
+   "3",
+   "--startup-reps",
+   "5",
+   "--label",
+   "upstream-final-tip"
+  ],
+  "entryCommits": {
+   "octane-main": "9b147781c9b4ec4df053a059633978ddc0ed922a",
+   "octane-upstream-p1-p6": "f9c60a22eff16cbdd4d0c9f77e44e46a8320d26d"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 158.78999996185303,
+   "mean": 159.43700003623962,
+   "std": 4.6667850940229005,
+   "min": 155.05999994277954,
+   "p95": 167.20500016212463,
+   "ci95": 5.793650081914286,
+   "samples": [
+    167.20500016212463,
+    158.78999996185303,
+    159.375,
+    155.05999994277954,
+    156.75500011444092
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 54.786,
+   "mean": 53.8926,
+   "std": 5.1691842006258595,
+   "min": 46.071,
+   "p95": 59.896,
+   "ci95": 6.417360959205782,
+   "samples": [
+    59.896,
+    52.301,
+    56.409,
+    46.071,
+    54.786
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 144.091,
+   "mean": 145.04500000000002,
+   "std": 3.2000202343110176,
+   "min": 142.229,
+   "p95": 150.569,
+   "ci95": 3.972712931732962,
+   "samples": [
+    150.569,
+    144.352,
+    144.091,
+    142.229,
+    143.984
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1721700,
+   "mean": 1721699.6,
+   "std": 1.140175425099138,
+   "min": 1721698,
+   "p95": 1721701,
+   "ci95": 1.4154878169733571,
+   "samples": [
+    1721699,
+    1721698,
+    1721700,
+    1721700,
+    1721701
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 1721379
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 322
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "p95": 3,
+   "ci95": 0,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 34956,
+   "mean": 34986.6,
+   "std": 59.935798985247544,
+   "min": 34951,
+   "p95": 35092,
+   "ci95": 74.40819315747426,
+   "samples": [
+    35092,
+    34955,
+    34979,
+    34951,
+    34956
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 34956
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "p95": 1,
+   "ci95": 0,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 2047.0950000286102,
+   "mean": 1990.8269999980926,
+   "std": 170.98922935952984,
+   "min": 1690.0899999141693,
+   "p95": 2119.3499999046326,
+   "ci95": 212.27713355691102,
+   "samples": [
+    1690.0899999141693,
+    2119.3499999046326,
+    2041.710000038147,
+    2047.0950000286102,
+    2055.890000104904
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 937.231,
+   "mean": 881.0021999999999,
+   "std": 246.4474421731741,
+   "min": 476.172,
+   "p95": 1111.97,
+   "ci95": 305.955859283708,
+   "samples": [
+    476.172,
+    937.231,
+    1028.225,
+    1111.97,
+    851.413
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 1620.279,
+   "mean": 1624.7256000000002,
+   "std": 26.905290935055888,
+   "min": 1586.204,
+   "p95": 1656.144,
+   "ci95": 33.40197542617962,
+   "samples": [
+    1586.204,
+    1656.144,
+    1617.499,
+    1643.502,
+    1620.279
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 17420706,
+   "mean": 17390131.4,
+   "std": 68366.88398852182,
+   "min": 17267833,
+   "p95": 17420707,
+   "ci95": 84875.08960453971,
+   "samples": [
+    17267833,
+    17420705,
+    17420707,
+    17420706,
+    17420706
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 17420379
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "p95": 3,
+   "ci95": 0,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 350518,
+   "mean": 350093.8,
+   "std": 1271.085048295353,
+   "min": 347846,
+   "p95": 350951,
+   "ci95": 1578.0075246251013,
+   "samples": [
+    347846,
+    350458,
+    350696,
+    350518,
+    350951
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 350885
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 1.8,
+   "std": 0.44721359549995804,
+   "min": 1,
+   "p95": 2,
+   "ci95": 0.5552,
+   "samples": [
+    1,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 6250.400000095367,
+   "mean": 6107.476000022888,
+   "std": 299.82603623919357,
+   "min": 5656.5599999427795,
+   "p95": 6373.514999866486,
+   "ci95": 372.2235124223004,
+   "samples": [
+    5656.5599999427795,
+    6373.514999866486,
+    5949.325000047684,
+    6250.400000095367,
+    6307.580000162125
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 2826.605,
+   "mean": 2738.6916,
+   "std": 474.5228245546255,
+   "min": 1956.383,
+   "p95": 3250.644,
+   "ci95": 589.1034504400545,
+   "samples": [
+    1956.383,
+    2796.64,
+    3250.644,
+    2826.605,
+    2863.186
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 4829.804,
+   "mean": 4791.2252,
+   "std": 141.82971712479716,
+   "min": 4557.727,
+   "p95": 4939.226,
+   "ci95": 176.07662141768404,
+   "samples": [
+    4939.226,
+    4787.777,
+    4557.727,
+    4829.804,
+    4841.592
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 52347888,
+   "mean": 52530176.2,
+   "std": 331059.0306896944,
+   "min": 52260762,
+   "p95": 52890762,
+   "ci95": 410998.1800384143,
+   "samples": [
+    52260763,
+    52260762,
+    52347888,
+    52890762,
+    52890706
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 52890379
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 3.8,
+   "std": 0.44721359549995787,
+   "min": 3,
+   "p95": 4,
+   "ci95": 0.5551999999999998,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    3
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1080343,
+   "mean": 1071664.8,
+   "std": 13477.951910435057,
+   "min": 1049994,
+   "p95": 1080626,
+   "ci95": 16732.404774743136,
+   "samples": [
+    1049994,
+    1066852,
+    1080626,
+    1080343,
+    1080509
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 1080443
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 3,
+   "mean": 2.8,
+   "std": 0.44721359549995787,
+   "min": 2,
+   "p95": 3,
+   "ci95": 0.5551999999999998,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 250.8400001525879,
+   "mean": 420.41100001335144,
+   "std": 382.54330220723944,
+   "min": 246.4150002002716,
+   "p95": 1104.7099997997284,
+   "ci95": 474.9140981459256,
+   "samples": [
+    1104.7099997997284,
+    250.8400001525879,
+    247.36999988555908,
+    252.72000002861023,
+    246.4150002002716
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 113.086,
+   "mean": 437.95200000000006,
+   "std": 732.4907507344377,
+   "min": 102.945,
+   "p95": 1748.246,
+   "ci95": 909.3615867225977,
+   "samples": [
+    1748.246,
+    113.086,
+    114.873,
+    102.945,
+    110.61
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 250.785,
+   "mean": 268.6702,
+   "std": 46.370635694370215,
+   "min": 244.303,
+   "p95": 351.432,
+   "ci95": 57.56751851144642,
+   "samples": [
+    351.432,
+    250.785,
+    245.476,
+    251.355,
+    244.303
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 2071757,
+   "mean": 2071757,
+   "std": 0,
+   "min": 2071757,
+   "p95": 2071757,
+   "ci95": 0,
+   "samples": [
+    2071757,
+    2071757,
+    2071757,
+    2071757,
+    2071757
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 2071379
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 322
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 410086,
+   "mean": 410094.4,
+   "std": 84.86636554018322,
+   "min": 410002,
+   "p95": 410210,
+   "ci95": 105.35861749738365,
+   "samples": [
+    410210,
+    410029,
+    410086,
+    410002,
+    410145
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 410079
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2.4,
+   "std": 0.8944271909999159,
+   "min": 2,
+   "p95": 4,
+   "ci95": 1.1103999999999998,
+   "samples": [
+    4,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 160.75500011444092,
+   "mean": 167.9590000629425,
+   "std": 17.91251561996314,
+   "min": 157.36500000953674,
+   "p95": 199.7699999809265,
+   "ci95": 22.237760149231576,
+   "samples": [
+    199.7699999809265,
+    163.09500002861023,
+    157.36500000953674,
+    158.81000018119812,
+    160.75500011444092
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 49.713,
+   "mean": 52.0092,
+   "std": 4.018006744643418,
+   "min": 49.23,
+   "p95": 58.629,
+   "ci95": 4.988214506609817,
+   "samples": [
+    58.629,
+    53.049,
+    49.425,
+    49.23,
+    49.713
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 165.187,
+   "mean": 170.90580000000003,
+   "std": 14.444329776767079,
+   "min": 162.768,
+   "p95": 196.681,
+   "ci95": 17.932129015656987,
+   "samples": [
+    196.681,
+    165.292,
+    165.187,
+    162.768,
+    164.601
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1763760,
+   "mean": 1763759.8,
+   "std": 0.44721359549995804,
+   "min": 1763759,
+   "p95": 1763760,
+   "ci95": 0.5552,
+   "samples": [
+    1763760,
+    1763760,
+    1763760,
+    1763760,
+    1763759
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 1763379
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 324
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 37046,
+   "mean": 37027.8,
+   "std": 94.36471798294106,
+   "min": 36886,
+   "p95": 37111,
+   "ci95": 117.15048905335391,
+   "samples": [
+    37109,
+    36987,
+    37111,
+    37046,
+    36886
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 36820
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 20.425000190734863,
+   "mean": 22.206000089645386,
+   "std": 5.189776492159041,
+   "min": 17.134999990463257,
+   "p95": 28.755000114440918,
+   "ci95": 6.442925567201299,
+   "samples": [
+    18.12000012397766,
+    17.134999990463257,
+    20.425000190734863,
+    26.59500002861023,
+    28.755000114440918
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 7.54,
+   "mean": 7.895999999999999,
+   "std": 1.4616126367817155,
+   "min": 6.583,
+   "p95": 10.382,
+   "ci95": 1.81454084604475,
+   "samples": [
+    10.382,
+    7.54,
+    6.583,
+    7.187,
+    7.788
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 23.208,
+   "mean": 24.531599999999997,
+   "std": 2.7409035553992043,
+   "min": 22.033,
+   "p95": 28.945,
+   "ci95": 3.4027356709860603,
+   "samples": [
+    28.945,
+    25.332,
+    22.033,
+    23.208,
+    23.14
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 26063,
+   "mean": 26061.2,
+   "std": 3.492849839314596,
+   "min": 26055,
+   "p95": 26063,
+   "ci95": 4.336250620063374,
+   "samples": [
+    26063,
+    26063,
+    26062,
+    26055,
+    26063
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 25679
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 8300,
+   "mean": 8300,
+   "std": 632.4555320336759,
+   "min": 7500,
+   "p95": 9100,
+   "ci95": 785.1713698295423,
+   "samples": [
+    7500,
+    7900,
+    8300,
+    8700,
+    9100
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 9034
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 144.59500002861023,
+   "mean": 147.1909999847412,
+   "std": 11.359439022965546,
+   "min": 139.53999996185303,
+   "p95": 167.02999997138977,
+   "ci95": 14.10234529766451,
+   "samples": [
+    167.02999997138977,
+    144.7699999809265,
+    140.0199999809265,
+    139.53999996185303,
+    144.59500002861023
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 53.642,
+   "mean": 58.95540000000001,
+   "std": 10.184732387254956,
+   "min": 53.24,
+   "p95": 76.876,
+   "ci95": 12.643988193343024,
+   "samples": [
+    76.876,
+    57.645,
+    53.642,
+    53.374,
+    53.24
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 268.811,
+   "mean": 273.24219999999997,
+   "std": 11.814041590412652,
+   "min": 263.363,
+   "p95": 293.306,
+   "ci95": 14.666718447287725,
+   "samples": [
+    263.363,
+    268.811,
+    273.678,
+    267.053,
+    293.306
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 253763,
+   "mean": 253762.8,
+   "std": 0.447213595499958,
+   "min": 253762,
+   "p95": 253763,
+   "ci95": 0.5552,
+   "samples": [
+    253762,
+    253763,
+    253763,
+    253763,
+    253763
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 253379
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 80287,
+   "mean": 80287,
+   "std": 6324.555320336759,
+   "min": 72287,
+   "p95": 88287,
+   "ci95": 7851.7136982954235,
+   "samples": [
+    72287,
+    76287,
+    80287,
+    84287,
+    88287
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 88221
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 11.269999980926514,
+   "mean": 14.594000053405761,
+   "std": 6.04206859939973,
+   "min": 8.625,
+   "p95": 21.97000002861023,
+   "ci95": 7.501016337923575,
+   "samples": [
+    10.910000085830688,
+    11.269999980926514,
+    21.97000002861023,
+    8.625,
+    20.195000171661377
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 4.874,
+   "mean": 4.784599999999999,
+   "std": 0.46878065233113014,
+   "min": 4.291,
+   "p95": 5.337,
+   "ci95": 0.5819747449387815,
+   "samples": [
+    5.337,
+    5.105,
+    4.874,
+    4.291,
+    4.316
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 4.921,
+   "mean": 5.0492,
+   "std": 0.43681254560738053,
+   "min": 4.633,
+   "p95": 5.616,
+   "ci95": 0.5422874612076511,
+   "samples": [
+    5.616,
+    4.921,
+    4.633,
+    5.393,
+    4.683
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1280,
+   "mean": 1280,
+   "std": 0,
+   "min": 1280,
+   "p95": 1280,
+   "ci95": 0,
+   "samples": [
+    1280,
+    1280,
+    1280,
+    1280,
+    1280
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 881
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 343
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 415,
+   "mean": 415,
+   "std": 0,
+   "min": 415,
+   "p95": 415,
+   "ci95": 0,
+   "samples": [
+    415,
+    415,
+    415,
+    415,
+    415
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 349
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 60.02500009536743,
+   "mean": 61.22000002861023,
+   "std": 11.189296241294077,
+   "min": 50.80999994277954,
+   "p95": 79.88499999046326,
+   "ci95": 13.89111899923681,
+   "samples": [
+    60.02500009536743,
+    54.71499991416931,
+    60.665000200271606,
+    79.88499999046326,
+    50.80999994277954
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 41.1,
+   "mean": 44.1044,
+   "std": 8.303255283321114,
+   "min": 37.339,
+   "p95": 58.555,
+   "ci95": 10.308200331311966,
+   "samples": [
+    40.988,
+    42.54,
+    41.1,
+    58.555,
+    37.339
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 63.23,
+   "mean": 64.62539999999998,
+   "std": 8.862901347752889,
+   "min": 56.682,
+   "p95": 78.695,
+   "ci95": 11.002981299733017,
+   "samples": [
+    63.23,
+    56.682,
+    66.733,
+    78.695,
+    57.787
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1280,
+   "mean": 1279.6,
+   "std": 0.5477225575051661,
+   "min": 1279,
+   "p95": 1280,
+   "ci95": 0.6799783525966101,
+   "samples": [
+    1279,
+    1280,
+    1280,
+    1280,
+    1279
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 881
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 342
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 415,
+   "mean": 415,
+   "std": 0,
+   "min": 415,
+   "p95": 415,
+   "ci95": 0,
+   "samples": [
+    415,
+    415,
+    415,
+    415,
+    415
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 349
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 53.355000019073486,
+   "mean": 80.0840000152588,
+   "std": 61.21506626248908,
+   "min": 50.36500000953674,
+   "p95": 189.55999994277954,
+   "ci95": 75.99635863247617,
+   "samples": [
+    189.55999994277954,
+    54.0699999332428,
+    53.07000017166138,
+    50.36500000953674,
+    53.355000019073486
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 6.481,
+   "mean": 86.5892,
+   "std": 177.01411109061337,
+   "min": 6.235,
+   "p95": 403.225,
+   "ci95": 219.75681300037257,
+   "samples": [
+    403.225,
+    6.433,
+    10.572,
+    6.481,
+    6.235
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 59.161,
+   "mean": 63.057399999999994,
+   "std": 8.639599602990867,
+   "min": 58.452,
+   "p95": 78.454,
+   "ci95": 10.725760012322747,
+   "samples": [
+    78.454,
+    59.161,
+    58.787,
+    58.452,
+    60.433
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 764,
+   "mean": 764,
+   "std": 0,
+   "min": 764,
+   "p95": 764,
+   "ci95": 0,
+   "samples": [
+    764,
+    764,
+    764,
+    764,
+    764
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 380
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 56134,
+   "mean": 56147.2,
+   "std": 29.516097302997224,
+   "min": 56134,
+   "p95": 56200,
+   "ci95": 36.64319999999999,
+   "samples": [
+    56200,
+    56134,
+    56134,
+    56134,
+    56134
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 56068
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2.2,
+   "std": 0.4472135954999579,
+   "min": 2,
+   "p95": 3,
+   "ci95": 0.5551999999999999,
+   "samples": [
+    3,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 25.540000200271606,
+   "mean": 27.14500002861023,
+   "std": 4.368695506805209,
+   "min": 23.329999923706055,
+   "p95": 34.62000012397766,
+   "ci95": 5.423582310074202,
+   "samples": [
+    26.899999856948853,
+    23.329999923706055,
+    25.335000038146973,
+    25.540000200271606,
+    34.62000012397766
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 6.995,
+   "mean": 7.418000000000001,
+   "std": 1.389746739517672,
+   "min": 6.325,
+   "p95": 9.833,
+   "ci95": 1.7253218541301791,
+   "samples": [
+    9.833,
+    6.325,
+    6.728,
+    7.209,
+    6.995
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 4.335,
+   "mean": 4.486199999999999,
+   "std": 0.5255242144754132,
+   "min": 3.942,
+   "p95": 5.325,
+   "ci95": 0.6524198879744854,
+   "samples": [
+    4.604,
+    3.942,
+    4.225,
+    4.335,
+    5.325
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1091,
+   "mean": 1090.4,
+   "std": 1.3416407864998738,
+   "min": 1088,
+   "p95": 1091,
+   "ci95": 1.6655999999999997,
+   "samples": [
+    1088,
+    1091,
+    1091,
+    1091,
+    1091
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 689
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 346
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 677,
+   "mean": 676.6,
+   "std": 0.894427190999916,
+   "min": 675,
+   "p95": 677,
+   "ci95": 1.1104,
+   "samples": [
+    675,
+    677,
+    677,
+    677,
+    677
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 611
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 922.4400000572205,
+   "mean": 913.1130000114441,
+   "std": 27.39356005961466,
+   "min": 875.1549999713898,
+   "p95": 945.454999923706,
+   "ci95": 34.008144426144774,
+   "samples": [
+    922.4400000572205,
+    875.1549999713898,
+    896.75,
+    925.7650001049042,
+    945.454999923706
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 131.818,
+   "mean": 141.8872,
+   "std": 26.922063214025773,
+   "min": 122.824,
+   "p95": 188.975,
+   "ci95": 33.42279762250321,
+   "samples": [
+    131.818,
+    127.621,
+    122.824,
+    188.975,
+    138.198
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 1010.571,
+   "mean": 1012.676,
+   "std": 26.496446280586355,
+   "min": 986.071,
+   "p95": 1052.002,
+   "ci95": 32.89440912129633,
+   "samples": [
+    991.666,
+    986.071,
+    1010.571,
+    1023.07,
+    1052.002
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 3080765,
+   "mean": 3080765,
+   "std": 0,
+   "min": 3080765,
+   "p95": 3080765,
+   "ci95": 0,
+   "samples": [
+    3080765,
+    3080765,
+    3080765,
+    3080765,
+    3080765
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 3080381
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 3730238,
+   "mean": 3730238,
+   "std": 0,
+   "min": 3730238,
+   "p95": 3730238,
+   "ci95": 0,
+   "samples": [
+    3730238,
+    3730238,
+    3730238,
+    3730238,
+    3730238
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 3730238
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "p95": 1,
+   "ci95": 0,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapMts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "n": 1,
+   "median": 137922188,
+   "mean": 137922188,
+   "std": null,
+   "min": 137922188,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapBts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "n": 1,
+   "median": 143122936,
+   "mean": 143122936,
+   "std": null,
+   "min": 143122936,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 83.67499995231628,
+   "mean": 82.63833332061768,
+   "std": 3.9630302029373294,
+   "min": 78.25999999046326,
+   "p95": 85.98000001907349,
+   "ci95": 9.845507353895101,
+   "samples": [
+    83.67499995231628,
+    78.25999999046326,
+    85.98000001907349
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 71.215,
+   "mean": 72.901,
+   "std": 3.5228373507728135,
+   "min": 70.538,
+   "p95": 76.95,
+   "ci95": 8.751919432232134,
+   "samples": [
+    76.95,
+    70.538,
+    71.215
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 48.92,
+   "mean": 49.510333333333335,
+   "std": 1.9748231144417288,
+   "min": 47.898,
+   "p95": 51.713,
+   "ci95": 4.906128517886932,
+   "samples": [
+    51.713,
+    47.898,
+    48.92
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 100590,
+   "mean": 100585.33333333333,
+   "std": 8.082903768654761,
+   "min": 100576,
+   "p95": 100590,
+   "ci95": 20.08066666666667,
+   "samples": [
+    100590,
+    100590,
+    100576
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 12,
+      "bytes": 99684
+     },
+     "markTiming": {
+      "messages": 1,
+      "bytes": 240
+     },
+     "postTimingFlags": {
+      "messages": 6,
+      "bytes": 336
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 316
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 20,
+   "mean": 20,
+   "std": 0,
+   "min": 20,
+   "p95": 20,
+   "ci95": 0,
+   "samples": [
+    20,
+    20,
+    20
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 23576,
+   "mean": 23532,
+   "std": 76.2102355330306,
+   "min": 23444,
+   "p95": 23576,
+   "ci95": 189.332,
+   "samples": [
+    23576,
+    23444,
+    23576
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 6,
+      "bytes": 23246
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 5,
+      "bytes": 330
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 11,
+   "mean": 10.333333333333334,
+   "std": 1.1547005383792517,
+   "min": 9,
+   "p95": 11,
+   "ci95": 2.868666666666667,
+   "samples": [
+    11,
+    9,
+    11
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 615.2799999713898,
+   "mean": 633.9049999713898,
+   "std": 44.11685477229763,
+   "min": 602.1549999713898,
+   "p95": 684.2799999713898,
+   "ci95": 109.6011879418541,
+   "samples": [
+    615.2799999713898,
+    684.2799999713898,
+    602.1549999713898
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 463.724,
+   "mean": 476.16533333333336,
+   "std": 23.131581059956417,
+   "min": 461.917,
+   "p95": 502.855,
+   "ci95": 57.46667064616943,
+   "samples": [
+    463.724,
+    502.855,
+    461.917
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 401.011,
+   "mean": 399.53000000000003,
+   "std": 10.955834107908,
+   "min": 387.909,
+   "p95": 409.67,
+   "ci95": 27.217997278323733,
+   "samples": [
+    401.011,
+    409.67,
+    387.909
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 988374,
+   "mean": 1070674.6666666667,
+   "std": 142549.80218973767,
+   "min": 988373,
+   "p95": 1235277,
+   "ci95": 354141.9201688453,
+   "samples": [
+    988373,
+    1235277,
+    988374
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 10,
+      "bytes": 987990
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 12,
+   "mean": 12.666666666666666,
+   "std": 1.1547005383792517,
+   "min": 12,
+   "p95": 14,
+   "ci95": 2.868666666666667,
+   "samples": [
+    12,
+    14,
+    12
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 223539,
+   "mean": 242231,
+   "std": 32375.493695077454,
+   "min": 223539,
+   "p95": 279615,
+   "ci95": 80431.67599999999,
+   "samples": [
+    223539,
+    279615,
+    223539
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 5,
+      "bytes": 223539
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 5,
+   "mean": 5.333333333333333,
+   "std": 0.5773502691896258,
+   "min": 5,
+   "p95": 6,
+   "ci95": 1.4343333333333335,
+   "samples": [
+    5,
+    6,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 1812.7949998378754,
+   "mean": 1892.3499999046326,
+   "std": 160.87686600298608,
+   "min": 1786.75,
+   "p95": 2077.5049998760223,
+   "ci95": 399.6725450464713,
+   "samples": [
+    1812.7949998378754,
+    1786.75,
+    2077.5049998760223
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 1315.129,
+   "mean": 1351.7353333333333,
+   "std": 71.79128001598342,
+   "min": 1305.626,
+   "p95": 1434.451,
+   "ci95": 178.35381996812015,
+   "samples": [
+    1315.129,
+    1305.626,
+    1434.451
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 1038.23,
+   "mean": 1056.4286666666667,
+   "std": 35.52178426449518,
+   "min": 1033.694,
+   "p95": 1097.362,
+   "ci95": 88.24812587609067,
+   "samples": [
+    1033.694,
+    1038.23,
+    1097.362
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 2983237,
+   "mean": 3231776.3333333335,
+   "std": 430483.6190383245,
+   "min": 2983236,
+   "p95": 3728856,
+   "ci95": 1069466.9028340548,
+   "samples": [
+    2983237,
+    2983236,
+    3728856
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 12,
+      "bytes": 3728473
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 12,
+   "mean": 12.666666666666666,
+   "std": 1.1547005383792517,
+   "min": 12,
+   "p95": 14,
+   "ci95": 2.868666666666667,
+   "samples": [
+    12,
+    12,
+    14
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 675827,
+   "mean": 732376.3333333334,
+   "std": 97946.31846748163,
+   "min": 675827,
+   "p95": 845475,
+   "ci95": 243331.78133333335,
+   "samples": [
+    675827,
+    675827,
+    845475
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 6,
+      "bytes": 845475
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 5,
+   "mean": 5.333333333333333,
+   "std": 0.5773502691896258,
+   "min": 5,
+   "p95": 6,
+   "ci95": 1.4343333333333335,
+   "samples": [
+    5,
+    5,
+    6
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 32.41499996185303,
+   "mean": 34.35999997456869,
+   "std": 5.387585333000109,
+   "min": 30.21499991416931,
+   "p95": 40.450000047683716,
+   "ci95": 13.384584093372547,
+   "samples": [
+    30.21499991416931,
+    40.450000047683716,
+    32.41499996185303
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 33.185,
+   "mean": 33.58866666666666,
+   "std": 3.662223413902179,
+   "min": 30.145,
+   "p95": 37.436,
+   "ci95": 9.098201554572134,
+   "samples": [
+    30.145,
+    37.436,
+    33.185
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 27.785,
+   "mean": 27.920666666666666,
+   "std": 0.4039632821598186,
+   "min": 27.602,
+   "p95": 28.375,
+   "ci95": 1.0035814166291859,
+   "samples": [
+    28.375,
+    27.785,
+    27.602
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 2960,
+   "mean": 3248,
+   "std": 501.4309523752996,
+   "min": 2957,
+   "p95": 3827,
+   "ci95": 1245.7240738217274,
+   "samples": [
+    2960,
+    3827,
+    2957
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 8,
+      "bytes": 2224
+     },
+     "markTiming": {
+      "messages": 1,
+      "bytes": 238
+     },
+     "postTimingFlags": {
+      "messages": 3,
+      "bytes": 168
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 13,
+   "mean": 15,
+   "std": 3.4641016151377544,
+   "min": 13,
+   "p95": 19,
+   "ci95": 8.606,
+   "samples": [
+    13,
+    19,
+    13
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 1164,
+   "mean": 1342.6666666666667,
+   "std": 309.4597442856394,
+   "min": 1164,
+   "p95": 1700,
+   "ci95": 768.8026666666666,
+   "samples": [
+    1164,
+    1700,
+    1164
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 4,
+      "bytes": 1098
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 5,
+   "mean": 6,
+   "std": 1.7320508075688772,
+   "min": 5,
+   "p95": 8,
+   "ci95": 4.303,
+   "samples": [
+    5,
+    8,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 240.09500002861023,
+   "mean": 238.79166666666666,
+   "std": 14.7332992424655,
+   "min": 223.45000004768372,
+   "p95": 252.82999992370605,
+   "ci95": 36.60249824271276,
+   "samples": [
+    223.45000004768372,
+    240.09500002861023,
+    252.82999992370605
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 124.371,
+   "mean": 127.217,
+   "std": 5.114112630750329,
+   "min": 124.159,
+   "p95": 133.121,
+   "ci95": 12.705185410240091,
+   "samples": [
+    124.371,
+    124.159,
+    133.121
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 311.724,
+   "mean": 312.469,
+   "std": 8.199921889871902,
+   "min": 304.667,
+   "p95": 321.016,
+   "ci95": 20.37137925627258,
+   "samples": [
+    304.667,
+    311.724,
+    321.016
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 1908,
+   "mean": 1907.6666666666667,
+   "std": 0.5773502691896258,
+   "min": 1907,
+   "p95": 1908,
+   "ci95": 1.4343333333333335,
+   "samples": [
+    1908,
+    1907,
+    1908
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 4,
+      "bytes": 1468
+     },
+     "postTimingFlags": {
+      "messages": 2,
+      "bytes": 112
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 7,
+   "mean": 7,
+   "std": 0,
+   "min": 7,
+   "p95": 7,
+   "ci95": 0,
+   "samples": [
+    7,
+    7,
+    7
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 694,
+   "mean": 694,
+   "std": 0,
+   "min": 694,
+   "p95": 694,
+   "ci95": 0,
+   "samples": [
+    694,
+    694,
+    694
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 2,
+      "bytes": 628
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "p95": 3,
+   "ci95": 0,
+   "samples": [
+    3,
+    3,
+    3
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 605.8550000190735,
+   "mean": 594.869999965032,
+   "std": 21.6721232137172,
+   "min": 569.9049999713898,
+   "p95": 608.8499999046326,
+   "ci95": 53.84088375532061,
+   "samples": [
+    605.8550000190735,
+    569.9049999713898,
+    608.8499999046326
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 357.601,
+   "mean": 372.73966666666666,
+   "std": 35.24701328245179,
+   "min": 347.591,
+   "p95": 413.027,
+   "ci95": 87.56550182686183,
+   "samples": [
+    413.027,
+    347.591,
+    357.601
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 843.134,
+   "mean": 828.3906666666667,
+   "std": 27.97029503479239,
+   "min": 796.133,
+   "p95": 845.905,
+   "ci95": 69.4876726530007,
+   "samples": [
+    845.905,
+    796.133,
+    843.134
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 1851,
+   "mean": 1851,
+   "std": 0,
+   "min": 1851,
+   "p95": 1851,
+   "ci95": 0,
+   "samples": [
+    1851,
+    1851,
+    1851
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 4,
+      "bytes": 1468
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 6,
+   "mean": 6,
+   "std": 0,
+   "min": 6,
+   "p95": 6,
+   "ci95": 0,
+   "samples": [
+    6,
+    6,
+    6
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 628,
+   "mean": 628,
+   "std": 0,
+   "min": 628,
+   "p95": 628,
+   "ci95": 0,
+   "samples": [
+    628,
+    628,
+    628
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 2,
+      "bytes": 628
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 49.515000104904175,
+   "mean": 49.42000002861023,
+   "std": 1.04450351444875,
+   "min": 47.799999952316284,
+   "p95": 50.40000009536743,
+   "ci95": 1.2967144940520943,
+   "samples": [
+    47.799999952316284,
+    49.515000104904175,
+    50.40000009536743,
+    50.25,
+    49.13499999046326
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 49.515000104904175,
+   "mean": 49.42000002861023,
+   "std": 1.04450351444875,
+   "min": 47.799999952316284,
+   "p95": 50.40000009536743,
+   "ci95": 1.2967144940520943,
+   "samples": [
+    47.799999952316284,
+    49.515000104904175,
+    50.40000009536743,
+    50.25,
+    49.13499999046326
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 47.596,
+   "mean": 46.6344,
+   "std": 3.011820346567837,
+   "min": 43.187,
+   "p95": 49.567,
+   "ci95": 3.7390693691793637,
+   "samples": [
+    47.596,
+    49.129,
+    43.187,
+    49.567,
+    43.693
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 7503,
+   "mean": 7501.8,
+   "std": 4.207136793592526,
+   "min": 7496,
+   "p95": 7506,
+   "ci95": 5.223012831690153,
+   "samples": [
+    7499,
+    7505,
+    7503,
+    7496,
+    7506
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 18667,
+   "mean": 18666.6,
+   "std": 4.393176527297759,
+   "min": 18660,
+   "p95": 18671,
+   "ci95": 5.453974638738247,
+   "samples": [
+    18665,
+    18671,
+    18667,
+    18660,
+    18670
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 260.27500009536743,
+   "mean": 265.1830000400543,
+   "std": 9.842463826294221,
+   "min": 257.8399999141693,
+   "p95": 281.5699999332428,
+   "ci95": 12.219073774466825,
+   "samples": [
+    267.1400001049042,
+    259.0900001525879,
+    260.27500009536743,
+    257.8399999141693,
+    281.5699999332428
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 260.27500009536743,
+   "mean": 265.1830000400543,
+   "std": 9.842463826294221,
+   "min": 257.8399999141693,
+   "p95": 281.5699999332428,
+   "ci95": 12.219073774466825,
+   "samples": [
+    267.1400001049042,
+    259.0900001525879,
+    260.27500009536743,
+    257.8399999141693,
+    281.5699999332428
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 755.017,
+   "mean": 756.1270000000001,
+   "std": 10.17121298076095,
+   "min": 742.354,
+   "p95": 769.883,
+   "ci95": 12.62720432415613,
+   "samples": [
+    760.754,
+    742.354,
+    755.017,
+    752.627,
+    769.883
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1039858,
+   "mean": 1039858,
+   "std": 0,
+   "min": 1039858,
+   "p95": 1039858,
+   "ci95": 0,
+   "samples": [
+    1039858,
+    1039858,
+    1039858,
+    1039858,
+    1039858
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 2897769,
+   "mean": 2897771,
+   "std": 5.244044240850758,
+   "min": 2897765,
+   "p95": 2897777,
+   "ci95": 6.51029707463492,
+   "samples": [
+    2897777,
+    2897768,
+    2897776,
+    2897765,
+    2897769
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 1809.0650000572205,
+   "mean": 1816.6180000782012,
+   "std": 37.75291160940283,
+   "min": 1779.1200001239777,
+   "p95": 1865.255000114441,
+   "ci95": 46.8689161878184,
+   "samples": [
+    1809.0650000572205,
+    1779.1200001239777,
+    1784.2799999713898,
+    1865.255000114441,
+    1845.3700001239777
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 1809.0650000572205,
+   "mean": 1816.6180000782012,
+   "std": 37.75291160940283,
+   "min": 1779.1200001239777,
+   "p95": 1865.255000114441,
+   "ci95": 46.8689161878184,
+   "samples": [
+    1809.0650000572205,
+    1779.1200001239777,
+    1784.2799999713898,
+    1865.255000114441,
+    1845.3700001239777
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 3359.647,
+   "mean": 3364.971,
+   "std": 36.579719797997434,
+   "min": 3314.441,
+   "p95": 3410.237,
+   "ci95": 45.412439684763754,
+   "samples": [
+    3314.441,
+    3388.508,
+    3359.647,
+    3410.237,
+    3352.022
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 60,
+   "mean": 60,
+   "std": 0,
+   "min": 60,
+   "p95": 60,
+   "ci95": 0,
+   "samples": [
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1627,
+   "mean": 1627,
+   "std": 2.7386127875258306,
+   "min": 1624,
+   "p95": 1631,
+   "ci95": 3.3998917629830507,
+   "samples": [
+    1627,
+    1624,
+    1625,
+    1628,
+    1631
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 5541.544999837875,
+   "mean": 5518.973999977112,
+   "std": 106.88253256617367,
+   "min": 5366.3949999809265,
+   "p95": 5632.839999914169,
+   "ci95": 132.6909169977262,
+   "samples": [
+    5541.544999837875,
+    5593.414999961853,
+    5366.3949999809265,
+    5632.839999914169,
+    5460.675000190735
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 5541.544999837875,
+   "mean": 5518.973999977112,
+   "std": 106.88253256617367,
+   "min": 5366.3949999809265,
+   "p95": 5632.839999914169,
+   "ci95": 132.6909169977262,
+   "samples": [
+    5541.544999837875,
+    5593.414999961853,
+    5366.3949999809265,
+    5632.839999914169,
+    5460.675000190735
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 10309.588,
+   "mean": 10288.2818,
+   "std": 221.99898296546291,
+   "min": 10009.043,
+   "p95": 10572.033,
+   "ci95": 275.60395431322837,
+   "samples": [
+    10309.588,
+    10412.955,
+    10009.043,
+    10572.033,
+    10137.79
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 256,
+   "mean": 256,
+   "std": 0,
+   "min": 256,
+   "p95": 256,
+   "ci95": 0,
+   "samples": [
+    256,
+    256,
+    256,
+    256,
+    256
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 36960347,
+   "mean": 36960347.4,
+   "std": 3.361547262794322,
+   "min": 36960343,
+   "p95": 36960352,
+   "ci95": 4.173243074636319,
+   "samples": [
+    36960343,
+    36960352,
+    36960347,
+    36960349,
+    36960346
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 165.16499996185303,
+   "mean": 168.34299998283387,
+   "std": 11.551083615420437,
+   "min": 155.71000003814697,
+   "p95": 183.11500000953674,
+   "ci95": 14.340265340350165,
+   "samples": [
+    183.11500000953674,
+    177.38499999046326,
+    165.16499996185303,
+    155.71000003814697,
+    160.3399999141693
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 58.398,
+   "mean": 59.5338,
+   "std": 11.71212545612452,
+   "min": 48.343,
+   "p95": 77.967,
+   "ci95": 14.540193139635765,
+   "samples": [
+    77.967,
+    58.398,
+    62.126,
+    50.835,
+    48.343
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 149.534,
+   "mean": 152.6694,
+   "std": 9.889363745964651,
+   "min": 141.851,
+   "p95": 164.551,
+   "ci95": 12.277298380478438,
+   "samples": [
+    164.551,
+    161.484,
+    149.534,
+    141.851,
+    145.927
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1721889,
+   "mean": 1721888.4,
+   "std": 1.8165902124584952,
+   "min": 1721886,
+   "p95": 1721890,
+   "ci95": 2.2552330611269427,
+   "samples": [
+    1721887,
+    1721886,
+    1721889,
+    1721890,
+    1721890
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 1721568
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 322
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 34968,
+   "mean": 34998.6,
+   "std": 59.935798985247544,
+   "min": 34963,
+   "p95": 35104,
+   "ci95": 74.40819315747426,
+   "samples": [
+    35104,
+    34967,
+    34991,
+    34963,
+    34968
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 34968
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "p95": 1,
+   "ci95": 0,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 2015.920000076294,
+   "mean": 1992.955000114441,
+   "std": 96.88436363416315,
+   "min": 1833.0700001716614,
+   "p95": 2086.680000066757,
+   "ci95": 120.27854079336109,
+   "samples": [
+    1833.0700001716614,
+    2044.0350000858307,
+    2086.680000066757,
+    2015.920000076294,
+    1985.0700001716614
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 904.386,
+   "mean": 850.5064,
+   "std": 208.62288526261926,
+   "min": 488.56,
+   "p95": 1024.17,
+   "ci95": 258.99799796631424,
+   "samples": [
+    488.56,
+    904.386,
+    1024.17,
+    940.009,
+    895.407
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 1588.906,
+   "mean": 1609.1992,
+   "std": 67.33376529795432,
+   "min": 1552.838,
+   "p95": 1723.004,
+   "ci95": 83.59250897019687,
+   "samples": [
+    1723.004,
+    1569.348,
+    1611.9,
+    1588.906,
+    1552.838
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 17420896,
+   "mean": 17390320.8,
+   "std": 68367.66661002845,
+   "min": 17268021,
+   "p95": 17420896,
+   "ci95": 84876.06120170235,
+   "samples": [
+    17268021,
+    17420895,
+    17420896,
+    17420896,
+    17420896
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 17420568
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "p95": 4,
+   "ci95": 0,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 350530,
+   "mean": 350105.8,
+   "std": 1271.085048295353,
+   "min": 347858,
+   "p95": 350963,
+   "ci95": 1578.0075246251013,
+   "samples": [
+    347858,
+    350470,
+    350708,
+    350530,
+    350963
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 350897
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 1.8,
+   "std": 0.44721359549995804,
+   "min": 1,
+   "p95": 2,
+   "ci95": 0.5552,
+   "samples": [
+    1,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 6401.609999895096,
+   "mean": 6192.267999982834,
+   "std": 396.863670152953,
+   "min": 5502.2300000190735,
+   "p95": 6436.25,
+   "ci95": 492.6923328942941,
+   "samples": [
+    5502.2300000190735,
+    6204.600000143051,
+    6416.649999856949,
+    6436.25,
+    6401.609999895096
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 2862.991,
+   "mean": 2757.7594,
+   "std": 441.2631525737222,
+   "min": 2011.586,
+   "p95": 3191.809,
+   "ci95": 547.8127337230148,
+   "samples": [
+    2011.586,
+    2862.991,
+    2836.68,
+    3191.809,
+    2885.731
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 4891.346,
+   "mean": 4878.4908000000005,
+   "std": 99.6611328989392,
+   "min": 4756.402,
+   "p95": 4979.04,
+   "ci95": 123.72580248512648,
+   "samples": [
+    4756.402,
+    4797.655,
+    4891.346,
+    4979.04,
+    4968.011
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 52348077,
+   "mean": 52530363.6,
+   "std": 331060.65829512273,
+   "min": 52260943,
+   "p95": 52890951,
+   "ci95": 411000.20065349154,
+   "samples": [
+    52260943,
+    52260952,
+    52348077,
+    52890951,
+    52890895
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 52890568
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 4.8,
+   "std": 0.44721359549995787,
+   "min": 4,
+   "p95": 5,
+   "ci95": 0.5551999999999998,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    4
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1080355,
+   "mean": 1071676.8,
+   "std": 13477.951910435057,
+   "min": 1050006,
+   "p95": 1080638,
+   "ci95": 16732.404774743136,
+   "samples": [
+    1050006,
+    1066864,
+    1080638,
+    1080355,
+    1080521
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 1080455
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "create",
+   "scale": 30000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 3,
+   "mean": 2.8,
+   "std": 0.44721359549995787,
+   "min": 2,
+   "p95": 3,
+   "ci95": 0.5551999999999998,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 271.47000002861023,
+   "mean": 402.7160000324249,
+   "std": 299.2606684991448,
+   "min": 262.52499985694885,
+   "p95": 937.9900000095367,
+   "ci95": 371.5216281941965,
+   "samples": [
+    937.9900000095367,
+    271.47000002861023,
+    267.22500014305115,
+    274.37000012397766,
+    262.52499985694885
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 114.524,
+   "mean": 419.20820000000003,
+   "std": 676.2447678327723,
+   "min": 111.722,
+   "p95": 1628.847,
+   "ci95": 839.5341708720267,
+   "samples": [
+    1628.847,
+    114.524,
+    112.184,
+    111.722,
+    128.764
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 273.234,
+   "mean": 278.85119999999995,
+   "std": 23.26057582477271,
+   "min": 260.425,
+   "p95": 319.011,
+   "ci95": 28.877189396436904,
+   "samples": [
+    319.011,
+    275.816,
+    265.77,
+    273.234,
+    260.425
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 2071946,
+   "mean": 2071945.6,
+   "std": 0.5477225575051661,
+   "min": 2071945,
+   "p95": 2071946,
+   "ci95": 0.6799783525966101,
+   "samples": [
+    2071945,
+    2071946,
+    2071945,
+    2071946,
+    2071946
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 2071568
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 322
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 410098,
+   "mean": 410106.4,
+   "std": 84.86636554018322,
+   "min": 410014,
+   "p95": 410222,
+   "ci95": 105.35861749738365,
+   "samples": [
+    410222,
+    410041,
+    410098,
+    410014,
+    410157
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 410091
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2.4,
+   "std": 0.8944271909999159,
+   "min": 2,
+   "p95": 4,
+   "ci95": 1.1103999999999998,
+   "samples": [
+    4,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 171.46000003814697,
+   "mean": 170.84000000953674,
+   "std": 5.628584426636224,
+   "min": 164.32999992370605,
+   "p95": 177.11500000953674,
+   "ci95": 6.987690233734688,
+   "samples": [
+    177.11500000953674,
+    164.32999992370605,
+    175.36500000953674,
+    165.9300000667572,
+    171.46000003814697
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 56.917,
+   "mean": 55.8014,
+   "std": 3.724533836602912,
+   "min": 50.949,
+   "p95": 59.446,
+   "ci95": 4.623878180112552,
+   "samples": [
+    59.446,
+    52.897,
+    58.798,
+    50.949,
+    56.917
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 171.743,
+   "mean": 171.3198,
+   "std": 3.44582453122616,
+   "min": 166.96,
+   "p95": 175.748,
+   "ci95": 4.2778703487267835,
+   "samples": [
+    171.743,
+    166.96,
+    175.748,
+    169.003,
+    173.145
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1763949,
+   "mean": 1763949,
+   "std": 0,
+   "min": 1763949,
+   "p95": 1763949,
+   "ci95": 0,
+   "samples": [
+    1763949,
+    1763949,
+    1763949,
+    1763949,
+    1763949
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 1763568
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 325
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 37058,
+   "mean": 37039.8,
+   "std": 94.36471798294106,
+   "min": 36898,
+   "p95": 37123,
+   "ci95": 117.15048905335391,
+   "samples": [
+    37121,
+    36999,
+    37123,
+    37058,
+    36898
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 36832
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 20.825000047683716,
+   "mean": 22.46399998664856,
+   "std": 6.3731217314631445,
+   "min": 16.43499994277954,
+   "p95": 29.725000143051147,
+   "ci95": 7.9120071950242625,
+   "samples": [
+    29.725000143051147,
+    16.72499990463257,
+    16.43499994277954,
+    20.825000047683716,
+    28.609999895095825
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 7.236,
+   "mean": 7.827800000000001,
+   "std": 1.4283687199039334,
+   "min": 7.074,
+   "p95": 10.38,
+   "ci95": 1.773269688735879,
+   "samples": [
+    10.38,
+    7.245,
+    7.204,
+    7.236,
+    7.074
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 24.282,
+   "mean": 24.892599999999998,
+   "std": 3.259204013252315,
+   "min": 21.837,
+   "p95": 30.022,
+   "ci95": 4.046187518370861,
+   "samples": [
+    30.022,
+    21.837,
+    22.518,
+    25.804,
+    24.282
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 26252,
+   "mean": 26250.2,
+   "std": 3.492849839314596,
+   "min": 26244,
+   "p95": 26252,
+   "ci95": 4.336250620063374,
+   "samples": [
+    26252,
+    26251,
+    26252,
+    26252,
+    26244
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 25868
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 320
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 8312,
+   "mean": 8312,
+   "std": 632.4555320336759,
+   "min": 7512,
+   "p95": 9112,
+   "ci95": 785.1713698295423,
+   "samples": [
+    7512,
+    7912,
+    8312,
+    8712,
+    9112
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 9046
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 166.68999981880188,
+   "mean": 156.9499999523163,
+   "std": 14.400440084557323,
+   "min": 139.20499992370605,
+   "p95": 168.77499985694885,
+   "ci95": 17.877641501502556,
+   "samples": [
+    166.68999981880188,
+    168.77499985694885,
+    166.7150001525879,
+    143.36500000953674,
+    139.20499992370605
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 55.56,
+   "mean": 59.2812,
+   "std": 9.546639759622233,
+   "min": 53.982,
+   "p95": 76.29,
+   "ci95": 11.85181856695759,
+   "samples": [
+    76.29,
+    56.129,
+    54.445,
+    55.56,
+    53.982
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 252.768,
+   "mean": 250.1596,
+   "std": 7.552154315160677,
+   "min": 239.397,
+   "p95": 258.909,
+   "ci95": 9.375734812108595,
+   "samples": [
+    258.909,
+    239.397,
+    246.069,
+    252.768,
+    253.655
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 253951,
+   "mean": 253948.6,
+   "std": 4.219004621945797,
+   "min": 253944,
+   "p95": 253952,
+   "ci95": 5.2377463245178255,
+   "samples": [
+    253944,
+    253951,
+    253952,
+    253944,
+    253952
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 253568
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 80299,
+   "mean": 80299,
+   "std": 6324.555320336759,
+   "min": 72299,
+   "p95": 88299,
+   "ci95": 7851.7136982954235,
+   "samples": [
+    72299,
+    76299,
+    80299,
+    84299,
+    88299
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 88233
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 15.415000200271606,
+   "mean": 16.88900008201599,
+   "std": 6.320450270300666,
+   "min": 10.5,
+   "p95": 27.47499990463257,
+   "ci95": 7.846617422594121,
+   "samples": [
+    15.415000200271606,
+    27.47499990463257,
+    10.5,
+    14.81000018119812,
+    16.24500012397766
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 4.075,
+   "mean": 4.2466,
+   "std": 0.5175681597625573,
+   "min": 3.729,
+   "p95": 5.107,
+   "ci95": 0.6425427249789386,
+   "samples": [
+    5.107,
+    4.075,
+    4.063,
+    4.259,
+    3.729
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 4.477,
+   "mean": 4.4394,
+   "std": 0.12109417822504931,
+   "min": 4.3,
+   "p95": 4.55,
+   "ci95": 0.15033417683866834,
+   "samples": [
+    4.3,
+    4.55,
+    4.477,
+    4.322,
+    4.548
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1469,
+   "mean": 1467.4,
+   "std": 3.577708763999664,
+   "min": 1461,
+   "p95": 1469,
+   "ci95": 4.4416,
+   "samples": [
+    1461,
+    1469,
+    1469,
+    1469,
+    1469
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 1070
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 343
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 427,
+   "mean": 427,
+   "std": 0,
+   "min": 427,
+   "p95": 427,
+   "ci95": 0,
+   "samples": [
+    427,
+    427,
+    427,
+    427,
+    427
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 361
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 99.61500000953674,
+   "mean": 99.44699997901917,
+   "std": 2.7010521149481916,
+   "min": 96.4300000667572,
+   "p95": 103.15499997138977,
+   "ci95": 3.3532615048134797,
+   "samples": [
+    99.61500000953674,
+    96.4300000667572,
+    100.74000000953674,
+    97.29499983787537,
+    103.15499997138977
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 39.987,
+   "mean": 39.6686,
+   "std": 1.8526615449131538,
+   "min": 37.697,
+   "p95": 41.921,
+   "ci95": 2.300014355748448,
+   "samples": [
+    41.921,
+    40.867,
+    39.987,
+    37.697,
+    37.871
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 38.206,
+   "mean": 37.778800000000004,
+   "std": 1.2485442322961555,
+   "min": 35.993,
+   "p95": 39.26,
+   "ci95": 1.5500238918181337,
+   "samples": [
+    37.142,
+    39.26,
+    38.206,
+    35.993,
+    38.293
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1469,
+   "mean": 1468.8,
+   "std": 0.44721359549995804,
+   "min": 1468,
+   "p95": 1469,
+   "ci95": 0.5552,
+   "samples": [
+    1469,
+    1469,
+    1468,
+    1469,
+    1469
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 1070
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 343
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 427,
+   "mean": 427,
+   "std": 0,
+   "min": 427,
+   "p95": 427,
+   "ci95": 0,
+   "samples": [
+    427,
+    427,
+    427,
+    427,
+    427
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 361
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 53.75,
+   "mean": 89.51699995994568,
+   "std": 82.84879120628817,
+   "min": 49.80499982833862,
+   "p95": 237.69000005722046,
+   "ci95": 102.85386969577384,
+   "samples": [
+    237.69000005722046,
+    53.75,
+    52.18999981880188,
+    49.80499982833862,
+    54.15000009536743
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 7.374,
+   "mean": 93.24780000000001,
+   "std": 190.7954849117243,
+   "min": 6.569,
+   "p95": 434.538,
+   "ci95": 236.8659054395838,
+   "samples": [
+    434.538,
+    7.374,
+    10.995,
+    6.569,
+    6.763
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 59.846,
+   "mean": 64.3456,
+   "std": 10.833593554310594,
+   "min": 57.838,
+   "p95": 83.632,
+   "ci95": 13.449526583888943,
+   "samples": [
+    83.632,
+    60.769,
+    59.846,
+    57.838,
+    59.643
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 953,
+   "mean": 952.8,
+   "std": 0.44721359549995804,
+   "min": 952,
+   "p95": 953,
+   "ci95": 0.5552,
+   "samples": [
+    953,
+    953,
+    953,
+    953,
+    952
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 569
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 56146,
+   "mean": 56159.2,
+   "std": 29.516097302997224,
+   "min": 56146,
+   "p95": 56212,
+   "ci95": 36.64319999999999,
+   "samples": [
+    56212,
+    56146,
+    56146,
+    56146,
+    56146
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 56080
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2.2,
+   "std": 0.4472135954999579,
+   "min": 2,
+   "p95": 3,
+   "ci95": 0.5551999999999999,
+   "samples": [
+    3,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 27.459999799728394,
+   "mean": 25.160999965667724,
+   "std": 9.519782866300043,
+   "min": 9.225000143051147,
+   "p95": 34.924999952316284,
+   "ci95": 11.818476675471018,
+   "samples": [
+    34.924999952316284,
+    27.55999994277954,
+    9.225000143051147,
+    27.459999799728394,
+    26.634999990463257
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 7.013,
+   "mean": 7.9464,
+   "std": 1.6951494919327914,
+   "min": 6.759,
+   "p95": 10.736,
+   "ci95": 2.1044686641714008,
+   "samples": [
+    10.736,
+    6.759,
+    7.013,
+    8.389,
+    6.835
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 5.172,
+   "mean": 5.2782,
+   "std": 0.5044583233528812,
+   "min": 4.818,
+   "p95": 5.959,
+   "ci95": 0.626267322692666,
+   "samples": [
+    5.959,
+    5.172,
+    5.624,
+    4.818,
+    4.818
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1280,
+   "mean": 1278.6,
+   "std": 3.361547262794322,
+   "min": 1273,
+   "p95": 1281,
+   "ci95": 4.173243074636319,
+   "samples": [
+    1278,
+    1281,
+    1273,
+    1280,
+    1281
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 879
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 346
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 689,
+   "mean": 688.6,
+   "std": 0.894427190999916,
+   "min": 687,
+   "p95": 689,
+   "ci95": 1.1104,
+   "samples": [
+    687,
+    689,
+    689,
+    689,
+    689
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 623
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 5,
+   "median": 979.9250001907349,
+   "mean": 972.3259999752045,
+   "std": 24.853021328498116,
+   "min": 933.5599999427795,
+   "p95": 994.2799999713898,
+   "ci95": 30.854154659936874,
+   "samples": [
+    990.8199999332428,
+    933.5599999427795,
+    963.0449998378754,
+    994.2799999713898,
+    979.9250001907349
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 5,
+   "median": 136.253,
+   "mean": 141.4992,
+   "std": 14.814672109095097,
+   "min": 131.612,
+   "p95": 167.466,
+   "ci95": 18.391896037450344,
+   "samples": [
+    167.466,
+    139.218,
+    132.947,
+    136.253,
+    131.612
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 1077.767,
+   "mean": 1075.0844,
+   "std": 33.47288957201036,
+   "min": 1039.276,
+   "p95": 1124.008,
+   "ci95": 41.555418881226515,
+   "samples": [
+    1048.828,
+    1039.276,
+    1077.767,
+    1124.008,
+    1085.543
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 3080955,
+   "mean": 3080954.8,
+   "std": 0.44721359549995787,
+   "min": 3080954,
+   "p95": 3080955,
+   "ci95": 0.5551999999999998,
+   "samples": [
+    3080955,
+    3080955,
+    3080954,
+    3080955,
+    3080955
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 3,
+      "bytes": 3080571
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 5,
+   "mean": 5,
+   "std": 0,
+   "min": 5,
+   "p95": 5,
+   "ci95": 0,
+   "samples": [
+    5,
+    5,
+    5,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 3730250,
+   "mean": 3730250,
+   "std": 0,
+   "min": 3730250,
+   "p95": 3730250,
+   "ci95": 0,
+   "samples": [
+    3730250,
+    3730250,
+    3730250,
+    3730250,
+    3730250
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 3730250
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 5,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "p95": 1,
+   "ci95": 0,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapMts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "n": 1,
+   "median": 137932972,
+   "mean": 137932972,
+   "std": null,
+   "min": 137932972,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapBts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "n": 1,
+   "median": 184374620,
+   "mean": 184374620,
+   "std": null,
+   "min": 184374620,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 93.44000005722046,
+   "mean": 91.71666677792867,
+   "std": 4.921738271401753,
+   "min": 86.1650002002716,
+   "p95": 95.54500007629395,
+   "ci95": 12.227262439008772,
+   "samples": [
+    86.1650002002716,
+    93.44000005722046,
+    95.54500007629395
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 76.083,
+   "mean": 75.027,
+   "std": 5.058357144370098,
+   "min": 69.524,
+   "p95": 79.474,
+   "ci95": 12.566669925102053,
+   "samples": [
+    69.524,
+    76.083,
+    79.474
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 50.677,
+   "mean": 52.903999999999996,
+   "std": 5.087258888635412,
+   "min": 49.31,
+   "p95": 58.725,
+   "ci95": 12.63847163266755,
+   "samples": [
+    49.31,
+    50.677,
+    58.725
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 101340,
+   "mean": 109646.33333333333,
+   "std": 14387.85739202795,
+   "min": 101339,
+   "p95": 126260,
+   "ci95": 35744.30385491697,
+   "samples": [
+    101339,
+    101340,
+    126260
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 19,
+      "bytes": 125356
+     },
+     "markTiming": {
+      "messages": 1,
+      "bytes": 241
+     },
+     "postTimingFlags": {
+      "messages": 6,
+      "bytes": 336
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 24,
+   "mean": 25,
+   "std": 1.7320508075688772,
+   "min": 24,
+   "p95": 27,
+   "ci95": 4.303,
+   "samples": [
+    24,
+    24,
+    27
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 23624,
+   "mean": 25512.333333333332,
+   "std": 3328.0105668902756,
+   "min": 23558,
+   "p95": 29355,
+   "ci95": 8267.903809028065,
+   "samples": [
+    23624,
+    23558,
+    29355
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 7,
+      "bytes": 29025
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 5,
+      "bytes": 330
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 11,
+   "mean": 11,
+   "std": 1,
+   "min": 10,
+   "p95": 12,
+   "ci95": 2.48433820832296,
+   "samples": [
+    11,
+    10,
+    12
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 585.460000038147,
+   "mean": 605.6566666762034,
+   "std": 45.42724533220794,
+   "min": 573.8300001621246,
+   "p95": 657.6799998283386,
+   "ci95": 112.856641277665,
+   "samples": [
+    657.6799998283386,
+    573.8300001621246,
+    585.460000038147
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 475.746,
+   "mean": 471.37999999999994,
+   "std": 25.988524602216252,
+   "min": 443.485,
+   "p95": 494.909,
+   "ci95": 64.56428464722708,
+   "samples": [
+    494.909,
+    475.746,
+    443.485
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 388.845,
+   "mean": 391.42333333333335,
+   "std": 6.050587106499117,
+   "min": 387.089,
+   "p95": 398.336,
+   "ci95": 15.031704731462018,
+   "samples": [
+    398.336,
+    388.845,
+    387.089
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 989126,
+   "mean": 1071489,
+   "std": 142657.76669007546,
+   "min": 989125,
+   "p95": 1236216,
+   "ci95": 354410.1405021769,
+   "samples": [
+    1236216,
+    989125,
+    989126
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 14,
+      "bytes": 988742
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 328
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 16,
+   "mean": 17,
+   "std": 1.7320508075688772,
+   "min": 16,
+   "p95": 19,
+   "ci95": 4.303,
+   "samples": [
+    19,
+    16,
+    16
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 223587,
+   "mean": 242283,
+   "std": 32382.42189830773,
+   "min": 223587,
+   "p95": 279675,
+   "ci95": 80448.88799999999,
+   "samples": [
+    279675,
+    223587,
+    223587
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 5,
+      "bytes": 223587
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 5,
+   "mean": 5.333333333333333,
+   "std": 0.5773502691896258,
+   "min": 5,
+   "p95": 6,
+   "ci95": 1.4343333333333335,
+   "samples": [
+    6,
+    5,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 2145.7400000095367,
+   "mean": 1993.761666615804,
+   "std": 269.2536851043332,
+   "min": 1682.8799998760223,
+   "p95": 2152.664999961853,
+   "ci95": 668.9172176364536,
+   "samples": [
+    1682.8799998760223,
+    2145.7400000095367,
+    2152.664999961853
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 1354.689,
+   "mean": 1335.4826666666668,
+   "std": 34.955496139138624,
+   "min": 1295.135,
+   "p95": 1356.624,
+   "ci95": 86.8412746493478,
+   "samples": [
+    1295.135,
+    1354.689,
+    1356.624
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 1107.831,
+   "mean": 1108.0426666666665,
+   "std": 16.434522333592067,
+   "min": 1091.715,
+   "p95": 1124.582,
+   "ci95": 40.828911768879784,
+   "samples": [
+    1091.715,
+    1124.582,
+    1107.831
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 3729796,
+   "mean": 3481193.6666666665,
+   "std": 430591.8722135072,
+   "min": 2983989,
+   "p95": 3729796,
+   "ci95": 1069735.8403333332,
+   "samples": [
+    2983989,
+    3729796,
+    3729796
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 17,
+      "bytes": 3729413
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 19,
+   "mean": 18,
+   "std": 1.7320508075688772,
+   "min": 16,
+   "p95": 19,
+   "ci95": 4.303,
+   "samples": [
+    16,
+    19,
+    19
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 845535,
+   "mean": 788981.6666666666,
+   "std": 97953.2466707119,
+   "min": 675875,
+   "p95": 845535,
+   "ci95": 243348.99333333335,
+   "samples": [
+    675875,
+    845535,
+    845535
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 6,
+      "bytes": 845535
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "updateStorm",
+   "scale": 30000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 6,
+   "mean": 5.666666666666667,
+   "std": 0.5773502691896258,
+   "min": 5,
+   "p95": 6,
+   "ci95": 1.4343333333333335,
+   "samples": [
+    5,
+    6,
+    6
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 35.5699999332428,
+   "mean": 35.583333333333336,
+   "std": 1.1750568083091064,
+   "min": 34.41499996185303,
+   "p95": 36.765000104904175,
+   "ci95": 2.9192385258323412,
+   "samples": [
+    36.765000104904175,
+    35.5699999332428,
+    34.41499996185303
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 32.993,
+   "mean": 33.55166666666667,
+   "std": 2.799130281593433,
+   "min": 31.074,
+   "p95": 36.588,
+   "ci95": 6.953986308636371,
+   "samples": [
+    36.588,
+    32.993,
+    31.074
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 29.488,
+   "mean": 29.376,
+   "std": 0.5979197270537239,
+   "min": 28.73,
+   "p95": 29.91,
+   "ci95": 1.4854348234296015,
+   "samples": [
+    29.488,
+    28.73,
+    29.91
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 3391,
+   "mean": 3517.6666666666665,
+   "std": 220.25969520848187,
+   "min": 3390,
+   "p95": 3772,
+   "ci95": 547.1995765600011,
+   "samples": [
+    3390,
+    3772,
+    3391
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 10,
+      "bytes": 2600
+     },
+     "markTiming": {
+      "messages": 1,
+      "bytes": 240
+     },
+     "postTimingFlags": {
+      "messages": 4,
+      "bytes": 224
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 16,
+   "mean": 16.666666666666668,
+   "std": 1.1547005383792515,
+   "min": 16,
+   "p95": 18,
+   "ci95": 2.8686666666666665,
+   "samples": [
+    16,
+    18,
+    16
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 1320,
+   "mean": 1332.3333333333333,
+   "std": 150.87853834569492,
+   "min": 1188,
+   "p95": 1489,
+   "ci95": 374.8333176281307,
+   "samples": [
+    1320,
+    1489,
+    1188
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 4,
+      "bytes": 1122
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 7,
+   "mean": 6.333333333333333,
+   "std": 1.1547005383792517,
+   "min": 5,
+   "p95": 7,
+   "ci95": 2.868666666666667,
+   "samples": [
+    7,
+    7,
+    5
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 224.30499982833862,
+   "mean": 221.65833322207132,
+   "std": 23.342804639572307,
+   "min": 197.1050000190735,
+   "p95": 243.56499981880188,
+   "ci95": 57.99142145550793,
+   "samples": [
+    243.56499981880188,
+    224.30499982833862,
+    197.1050000190735
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 123.881,
+   "mean": 121.72533333333332,
+   "std": 4.241443897228083,
+   "min": 116.839,
+   "p95": 124.456,
+   "ci95": 10.537181132341969,
+   "samples": [
+    123.881,
+    124.456,
+    116.839
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 314.478,
+   "mean": 297.896,
+   "std": 31.34595367826603,
+   "min": 261.742,
+   "p95": 317.468,
+   "ci95": 77.87395039923793,
+   "samples": [
+    314.478,
+    317.468,
+    261.742
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 2284,
+   "mean": 2265,
+   "std": 32.90896534380867,
+   "min": 2227,
+   "p95": 2284,
+   "ci95": 81.757,
+   "samples": [
+    2284,
+    2284,
+    2227
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 6,
+      "bytes": 1844
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 327
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 9,
+   "mean": 8.666666666666666,
+   "std": 0.5773502691896257,
+   "min": 8,
+   "p95": 9,
+   "ci95": 1.4343333333333332,
+   "samples": [
+    9,
+    9,
+    8
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 718,
+   "mean": 696,
+   "std": 38.1051177665153,
+   "min": 652,
+   "p95": 718,
+   "ci95": 94.666,
+   "samples": [
+    718,
+    718,
+    652
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 2,
+      "bytes": 652
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 3,
+   "mean": 2.6666666666666665,
+   "std": 0.5773502691896258,
+   "min": 2,
+   "p95": 3,
+   "ci95": 1.4343333333333335,
+   "samples": [
+    3,
+    3,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "n": 3,
+   "median": 544.920000076294,
+   "mean": 556.585000038147,
+   "std": 28.171132056676626,
+   "min": 536.1199998855591,
+   "p95": 588.7150001525879,
+   "ci95": 69.98661974011351,
+   "samples": [
+    544.920000076294,
+    536.1199998855591,
+    588.7150001525879
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "n": 3,
+   "median": 341.584,
+   "mean": 344.036,
+   "std": 21.706119690078165,
+   "min": 323.66,
+   "p95": 366.864,
+   "ci95": 53.925342500492505,
+   "samples": [
+    323.66,
+    341.584,
+    366.864
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 3,
+   "median": 803.814,
+   "mean": 807.3939999999999,
+   "std": 41.16392242000271,
+   "min": 768.137,
+   "p95": 850.231,
+   "ci95": 102.26510527245486,
+   "samples": [
+    803.814,
+    768.137,
+    850.231
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 2218,
+   "mean": 2221,
+   "std": 5.196152422706632,
+   "min": 2218,
+   "p95": 2227,
+   "ci95": 12.909000000000002,
+   "samples": [
+    2227,
+    2218,
+    2218
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 6,
+      "bytes": 1844
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 318
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 8,
+   "mean": 8,
+   "std": 0,
+   "min": 8,
+   "p95": 8,
+   "ci95": 0,
+   "samples": [
+    8,
+    8,
+    8
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 3,
+   "median": 652,
+   "mean": 652,
+   "std": 0,
+   "min": 652,
+   "p95": 652,
+   "ci95": 0,
+   "samples": [
+    652,
+    652,
+    652
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 2,
+      "bytes": 652
+     }
+    }
+   },
+   "dnfCount": 0
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "selectStorm",
+   "scale": 30000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "n": 3,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "p95": 2,
+   "ci95": 0,
+   "samples": [
+    2,
+    2,
+    2
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 49.00999999046326,
+   "mean": 49.38599996566772,
+   "std": 1.9688112053745666,
+   "min": 46.980000019073486,
+   "p95": 51.950000047683716,
+   "ci95": 2.4442100871328765,
+   "samples": [
+    49.00999999046326,
+    48.27499985694885,
+    46.980000019073486,
+    50.71499991416931,
+    51.950000047683716
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 49.00999999046326,
+   "mean": 49.38599996566772,
+   "std": 1.9688112053745666,
+   "min": 46.980000019073486,
+   "p95": 51.950000047683716,
+   "ci95": 2.4442100871328765,
+   "samples": [
+    49.00999999046326,
+    48.27499985694885,
+    46.980000019073486,
+    50.71499991416931,
+    51.950000047683716
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 46.412,
+   "mean": 45.178799999999995,
+   "std": 6.187211787226941,
+   "min": 38.292,
+   "p95": 52.665,
+   "ci95": 7.681206517051694,
+   "samples": [
+    39.443,
+    38.292,
+    46.412,
+    49.082,
+    52.665
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 7515,
+   "mean": 7516.2,
+   "std": 5.718391382198319,
+   "min": 7511,
+   "p95": 7524,
+   "ci95": 7.099182420532662,
+   "samples": [
+    7511,
+    7511,
+    7524,
+    7515,
+    7520
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 18865,
+   "mean": 18866.4,
+   "std": 4.722287581247038,
+   "min": 18860,
+   "p95": 18872,
+   "ci95": 5.862554473947341,
+   "samples": [
+    18865,
+    18860,
+    18872,
+    18865,
+    18870
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 268.585000038147,
+   "mean": 269.1789999485016,
+   "std": 3.627125873010265,
+   "min": 264.4800000190735,
+   "p95": 274.4949998855591,
+   "ci95": 4.502949608327567,
+   "samples": [
+    268.18499994277954,
+    270.14999985694885,
+    264.4800000190735,
+    274.4949998855591,
+    268.585000038147
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 268.585000038147,
+   "mean": 269.1789999485016,
+   "std": 3.627125873010265,
+   "min": 264.4800000190735,
+   "p95": 274.4949998855591,
+   "ci95": 4.502949608327567,
+   "samples": [
+    268.18499994277954,
+    270.14999985694885,
+    264.4800000190735,
+    274.4949998855591,
+    268.585000038147
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 774.279,
+   "mean": 778.6274,
+   "std": 23.080868415204847,
+   "min": 752.28,
+   "p95": 814.932,
+   "ci95": 28.654088947801085,
+   "samples": [
+    782.306,
+    769.34,
+    752.28,
+    814.932,
+    774.279
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1039870,
+   "mean": 1039870,
+   "std": 0,
+   "min": 1039870,
+   "p95": 1039870,
+   "ci95": 0,
+   "samples": [
+    1039870,
+    1039870,
+    1039870,
+    1039870,
+    1039870
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 2897967,
+   "mean": 2897960.2,
+   "std": 23.99374918598592,
+   "min": 2897919,
+   "p95": 2897982,
+   "ci95": 29.78739842013733,
+   "samples": [
+    2897968,
+    2897982,
+    2897967,
+    2897919,
+    2897965
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 1798.7200000286102,
+   "mean": 1802.0460000038147,
+   "std": 23.532865154220772,
+   "min": 1775.2699999809265,
+   "p95": 1826.7249999046326,
+   "ci95": 29.215227052784446,
+   "samples": [
+    1798.7200000286102,
+    1825.5350000858307,
+    1775.2699999809265,
+    1826.7249999046326,
+    1783.9800000190735
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 1798.7200000286102,
+   "mean": 1802.0460000038147,
+   "std": 23.532865154220772,
+   "min": 1775.2699999809265,
+   "p95": 1826.7249999046326,
+   "ci95": 29.215227052784446,
+   "samples": [
+    1798.7200000286102,
+    1825.5350000858307,
+    1775.2699999809265,
+    1826.7249999046326,
+    1783.9800000190735
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 3336.701,
+   "mean": 3344.7474,
+   "std": 78.27667951439939,
+   "min": 3259.17,
+   "p95": 3454.754,
+   "ci95": 97.17775332346449,
+   "samples": [
+    3287.134,
+    3336.701,
+    3385.978,
+    3454.754,
+    3259.17
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 60,
+   "mean": 60,
+   "std": 0,
+   "min": 60,
+   "p95": 60,
+   "ci95": 0,
+   "samples": [
+    60,
+    60,
+    60,
+    60,
+    60
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 1636,
+   "mean": 1637.8,
+   "std": 4.147288270665544,
+   "min": 1634,
+   "p95": 1644,
+   "ci95": 5.148712988699214,
+   "samples": [
+    1635,
+    1640,
+    1634,
+    1636,
+    1644
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "view-attach-to-first-content",
+   "unit": "ms",
+   "n": 5,
+   "median": 5269.995000123978,
+   "mean": 5336.9370000839235,
+   "std": 129.85783322317573,
+   "min": 5220.485000133514,
+   "p95": 5542.625,
+   "ci95": 161.21394727480714,
+   "samples": [
+    5384.330000162125,
+    5542.625,
+    5220.485000133514,
+    5269.995000123978,
+    5267.25
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "view-attach-to-dom-settled",
+   "unit": "ms",
+   "n": 5,
+   "median": 5269.995000123978,
+   "mean": 5336.9370000839235,
+   "std": 129.85783322317573,
+   "min": 5220.485000133514,
+   "p95": 5542.625,
+   "ci95": 161.21394727480714,
+   "samples": [
+    5384.330000162125,
+    5542.625,
+    5220.485000133514,
+    5269.995000123978,
+    5267.25
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "n": 5,
+   "median": 10099.37,
+   "mean": 10078.4686,
+   "std": 171.07397647450645,
+   "min": 9861.693,
+   "p95": 10323.318,
+   "ci95": 212.3823441290145,
+   "samples": [
+    10119.12,
+    10323.318,
+    10099.37,
+    9988.842,
+    9861.693
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 256,
+   "mean": 256,
+   "std": 0,
+   "min": 256,
+   "p95": 256,
+   "ci95": 0,
+   "samples": [
+    256,
+    256,
+    256,
+    256,
+    256
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "startup",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "n": 5,
+   "median": 36960358,
+   "mean": 36960357.4,
+   "std": 4.979959839195493,
+   "min": 36960352,
+   "p95": 36960364,
+   "ci95": 6.182445548486455,
+   "samples": [
+    36960360,
+    36960353,
+    36960352,
+    36960358,
+    36960364
+   ],
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 484693,
+   "mean": 484693,
+   "std": null,
+   "min": 484693,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 131677,
+   "mean": 131677,
+   "std": null,
+   "min": 131677,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 474560,
+   "mean": 474560,
+   "std": null,
+   "min": 474560,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-main",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 158662,
+   "mean": 158662,
+   "std": null,
+   "min": 158662,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 479896,
+   "mean": 479896,
+   "std": null,
+   "min": 479896,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 130647,
+   "mean": 130647,
+   "std": null,
+   "min": 130647,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 469979,
+   "mean": 469979,
+   "std": null,
+   "min": 469979,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "octane-upstream-p1-p6",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "n": 1,
+   "median": 156890,
+   "mean": 156890,
+   "std": null,
+   "min": 156890,
+   "p95": null,
+   "ci95": null,
+   "samples": null,
+   "detail": null,
+   "dnfCount": 0
+  }
+ ]
+}

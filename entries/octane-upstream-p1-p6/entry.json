@@ -1,0 +1,40 @@
+{
+  "id": "octane-upstream-p1-p6",
+  "label": "Octane (upstream P1+P6)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.35",
+  "config": ".tsrx, keyed @for; frame-aligned pacing plus lazy worklet bridge",
+  "tags": [
+    "checkpoint"
+  ],
+  "tier": "lab",
+  "color": "#0369a1",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "perf/lynx-upstream-worklet-bridge-after-pacing",
+    "commit": "f9c60a22eff16cbdd4d0c9f77e44e46a8320d26d",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<0|1000|10000|30000> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "packageManager": "pnpm@11.15.1",
+    "sourceLockSha256": "47137830d3f76e5a87be45044717ec5360f2f11880e3f8a8de83cb9b1d01db28",
+    "sourceBenchmarkTree": "40fc02e0febf0572512291f755e96869985af725",
+    "sourceBuildScriptBlob": "ed70830c1e19e2c630a52a8e7a18835b5d065e54",
+    "builtAt": "2026-08-11T08:10:07.049Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "eb90a26be264e866a35e403593c5a8e90237c74a0e4b6a6bfdbf4aafd3956324",
+      "rows-0/main.lynx.bundle": "6191bcfd78ca140467d69abe2416412905d3b1205004c5c5107ee82d59258f55",
+      "rows-1000/main.web.bundle": "454c55851ecef99d3564478fad5553f2cddcbba8d158042498e02b9bed13569d",
+      "rows-1000/main.lynx.bundle": "a4ce59a6b128c22d973d82c0735b2e39eb7bc9154196e2a141d90c3c64c92396",
+      "rows-10000/main.web.bundle": "9d972fb0d139adc0443f4a8366f379f05acb0edf9b6967ba07976b1e64820fca",
+      "rows-10000/main.lynx.bundle": "c13a90d87d284d7025f43d4db57edf35a9db860c3d889da6c32dc061564bde04",
+      "rows-30000/main.web.bundle": "19e8c9e25aa0de63b3955de3c531fe2db2e327015e4fc0d867948ada807c165d",
+      "rows-30000/main.lynx.bundle": "2a4eeea5e310742c0008f1e030c3158da1403762f7554b9ebb56376ddc567273"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
