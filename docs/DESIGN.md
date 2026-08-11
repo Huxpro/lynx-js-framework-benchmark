@@ -188,11 +188,13 @@ mode switch with its own data availability.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
   (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
-  one coherent physical run for `comparisonRecords` (broadest entry coverage, then matrix
-  coverage, then newest); every default chart reads only that cohort. Partial reruns therefore
-  update the archive without silently mixing machines or calibration epochs in a ranking.
-  Calibration is estimate-only and never applied to default charts; it cannot correct memory
-  hierarchy or core-count differences.
+  one coherent physical run for `comparisonRecords` (featured-entry coverage, then featured
+  matrix coverage, then newest); every default chart reads only that cohort. Partial reruns and
+  historical Lab variants therefore cannot replace the public ranking. For opt-in Lab mode, the
+  collector chooses one complete source run per entry and emits `labComparisonRecords`: `ms`
+  fields are scaled by source-score / comparison-score and marked `calibrated-estimate`; heap,
+  wire, bundle, and count fields remain `historical`. Calibration cannot correct memory hierarchy
+  or core-count differences.
 - Hypothesis mode: `bench run --entry vue-vapor --workload select --scale 10000 --reps 20`
   gives a focused, high-N answer; `collect` folds it in without touching other cells.
 

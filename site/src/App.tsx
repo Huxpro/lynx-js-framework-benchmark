@@ -157,7 +157,7 @@ export default function App() {
           <p className="subtitle">
             The same table app, one instrument. Headless Chromium running Lynx for Web; medians,
             lower is better. Pick entries, hover anything, open any card's data table for exact
-            numbers.{labMode && ' Lab entries (version/PR variants) are marked ⚗ — your selection is sharable via the URL.'}
+            numbers.{labMode && ' Lab entries are historical calibration-only estimates marked ≈ calibrated; non-time fields remain historical. Your selection is sharable via the URL.'}
           </p>
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />

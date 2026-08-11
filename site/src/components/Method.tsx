@@ -41,11 +41,13 @@ export function MethodPage() {
       <div className="card">
         <div className="card-title">machines &amp; calibration</div>
         <div className="card-desc">
-          Every chart is sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
+          Every featured chart is sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
           <code>{COMPARISON.machineId}</code>, preflight score {COMPARISON.calibration.score} (v
           {COMPARISON.calibration.probeVersion}). The collector keeps partial and cross-machine
-          records for provenance, but never merges them into the default ranking. Calibration can
-          relate separate runs only as an estimate; it is not applied to the charts.
+          records for provenance, but never merges them into the default ranking. Opt-in Lab
+          variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
+          millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
+          and count fields cannot be CPU-calibrated and remain explicitly historical values.
         </div>
         <details className="data-table" open>
           <summary>Machines in this dataset</summary>
@@ -66,6 +68,27 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
+        {COMPARISON.labEstimates.length > 0 && (
+          <details className="data-table">
+            <summary>Calibration-only Lab sources</summary>
+            <table>
+              <thead>
+                <tr><th>entry</th><th>source run</th><th>source score</th><th>target score</th><th>ratio</th></tr>
+              </thead>
+              <tbody>
+                {COMPARISON.labEstimates.map((estimate) => (
+                  <tr key={estimate.entryId}>
+                    <td>{estimate.entryId}</td>
+                    <td style={{ textAlign: 'left' }}>{estimate.sourceRunFile}</td>
+                    <td>{estimate.sourceCalibration.score}</td>
+                    <td>{estimate.targetCalibration.score}</td>
+                    <td>{estimate.calibrationRatio?.toFixed(4) ?? 'incompatible'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
         <div className="note">dataset generated {new Date(GENERATED_AT).toLocaleString()}</div>
       </div>
 

@@ -3,9 +3,11 @@
 //
 // Sources (override with env):
 //   VUE_LYNX_BUILD   a vue-lynx checkout where bench-build-matrix.mjs ran
-//   OCTANE_BUILD     an octane checkout where lynx-table autoRows builds ran
+//   OCTANE_BUILD     the latest upstream octane main checkout with autoRows builds
+//   OCTANE_HUX1_BUILD an optional Hux1 checkout with the same autoRows builds
 //   OCTANE_HUX2_BUILD an optional Octane S3 checkout with the same autoRows builds
 //   OCTANE_DOM_BUILD an optional octanejs/octane PR #693 checkout with the same builds
+//   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
 //
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
@@ -21,11 +23,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VUE_BUILD = process.env.VUE_LYNX_BUILD
   ?? path.join(os.homedir(), 'github/vue-lynx-bench-build');
 const OCTANE_BUILD = process.env.OCTANE_BUILD
-  ?? path.join(os.homedir(), 'github/octane-bench-build');
+  ?? path.join(os.homedir(), 'github/octane-upstream-main-build');
+const OCTANE_HUX1_BUILD = process.env.OCTANE_HUX1_BUILD ?? null;
 const OCTANE_HUX2_BUILD = process.env.OCTANE_HUX2_BUILD ?? null;
 const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
-const OCTANE_MAIN_BUILD = process.env.OCTANE_MAIN_BUILD
-  ?? path.join(os.homedir(), 'github/octane-main-build');
+const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
@@ -110,7 +112,7 @@ const vueSource = vueGit === null ? null : {
   patchName: 'vue-lynx-bench.patch',
 };
 const octaneSource = octaneGit === null ? null : {
-  url: 'https://github.com/Huxpro/octane',
+  url: 'https://github.com/octanejs/octane',
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
   patchName: 'octane-bench.patch',
@@ -199,15 +201,15 @@ const octaneVersion = wants('octane')
   : null;
 vendor({
   id: 'octane',
-  tier: 'lab',
-  label: 'Octane (hux)',
+  tier: 'featured',
+  label: 'Octane',
   framework: 'octane',
   frameworkVersion: octaneVersion,
-  config: '.tsrx, keyed @for; hux perf stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
+  config: '.tsrx, keyed @for; latest upstream main',
   tags: ['optimized'],
   color: '#ff415a',
   source: octaneSource,
-  ref: 'lynx/receiver-diet',
+  ref: 'main',
   buildCommand: 'BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
   cells: AUTOROWS.map((rows) => ({
     rows,
@@ -218,6 +220,51 @@ vendor({
     ),
   })),
 });
+
+if (
+  wants('octane-hux1')
+  && OCTANE_HUX1_BUILD
+  && fs.existsSync(path.join(OCTANE_HUX1_BUILD, 'benchmarks/lynx-table/app/dist'))
+) {
+  const hux1Git = gitInfo(OCTANE_HUX1_BUILD);
+  if (hux1Git.dirty) {
+    fs.writeFileSync(
+      path.join(patchesDir, 'octane-hux1-bench.patch'),
+      execSync('git diff -- packages benchmarks', { cwd: OCTANE_HUX1_BUILD }),
+    );
+  }
+  const hux1Version = JSON.parse(
+    fs.readFileSync(path.join(OCTANE_HUX1_BUILD, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id: 'octane-hux1',
+    tier: 'lab',
+    label: 'Octane (Hux1)',
+    framework: 'octane',
+    frameworkVersion: hux1Version,
+    config: '.tsrx, keyed @for; hux perf stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
+    tags: ['optimized'],
+    color: '#9f3c0d',
+    source: {
+      url: 'https://github.com/Huxpro/octane',
+      commit: hux1Git.commit,
+      dirty: hux1Git.dirty,
+      patchName: 'octane-hux1-bench.patch',
+    },
+    ref: 'lynx/receiver-diet',
+    buildCommand: 'BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(
+        OCTANE_HUX1_BUILD,
+        'benchmarks/lynx-table/app',
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
+      ),
+    })),
+  });
+} else if (wants('octane-hux1')) {
+  console.log('[vendor] octane-hux1 skipped (set OCTANE_HUX1_BUILD to a built checkout)');
+}
 
 if (
   wants('octane-hux2')
@@ -260,7 +307,7 @@ if (
       ),
     })),
   });
-} else {
+} else if (wants('octane-hux2')) {
   console.log('[vendor] octane-hux2 skipped (set OCTANE_HUX2_BUILD to a built checkout)');
 }
 
@@ -305,58 +352,58 @@ if (
       ),
     })),
   });
-} else {
+} else if (wants('octane-dom')) {
   console.log('[vendor] octane-dom skipped (set OCTANE_DOM_BUILD to a built checkout)');
 }
 
-// Same framework, different ref — the version/commit dimension: octane@main
-// with the identical app (benchmarks/lynx-table sources copied from the PR
-// branch; only the framework packages differ).
+// Historical upstream main retained as a calibration-only Lab comparison.
 if (
-  wants('octane-main')
-  && fs.existsSync(path.join(OCTANE_MAIN_BUILD, 'benchmarks/lynx-table/app/dist'))
+  wants('octane-prior')
+  && OCTANE_PRIOR_BUILD
+  && fs.existsSync(path.join(OCTANE_PRIOR_BUILD, 'benchmarks/lynx-table/app/dist'))
 ) {
-  const mainGit = gitInfo(OCTANE_MAIN_BUILD);
+  const priorGit = gitInfo(OCTANE_PRIOR_BUILD);
   // The app sources sit on top of main as untracked files; capture them (app +
   // scripts only, not the vendored reference bundles) as the provenance patch.
-  execSync('git add -N benchmarks/lynx-table/app benchmarks/lynx-table/scripts', { cwd: OCTANE_MAIN_BUILD });
+  execSync('git add -N benchmarks/lynx-table/app benchmarks/lynx-table/scripts', { cwd: OCTANE_PRIOR_BUILD });
   fs.writeFileSync(
-    path.join(patchesDir, 'octane-main-bench.patch'),
+    path.join(patchesDir, 'octane-prior-bench.patch'),
     execSync('git diff -- benchmarks/lynx-table/app benchmarks/lynx-table/scripts', {
-      cwd: OCTANE_MAIN_BUILD,
+      cwd: OCTANE_PRIOR_BUILD,
       maxBuffer: 64 * 1024 * 1024,
     }),
   );
-  const mainVersion = JSON.parse(
-    fs.readFileSync(path.join(OCTANE_MAIN_BUILD, 'packages/octane/package.json'), 'utf-8'),
+  const priorVersion = JSON.parse(
+    fs.readFileSync(path.join(OCTANE_PRIOR_BUILD, 'packages/octane/package.json'), 'utf-8'),
   ).version;
   vendor({
-    id: 'octane-main',
-    label: 'Octane (main)',
+    id: 'octane-prior',
+    tier: 'lab',
+    label: 'Octane (prior)',
     framework: 'octane',
-    frameworkVersion: mainVersion,
-    config: '.tsrx, keyed @for; main branch (pre wire-fix)',
+    frameworkVersion: priorVersion,
+    config: '.tsrx, keyed @for; prior upstream main before the Lynx renderer performance stack',
     tags: ['baseline'],
     color: '#4a3aa7',
     source: {
       url: 'https://github.com/octanejs/octane',
-      commit: mainGit.commit,
+      commit: priorGit.commit,
       dirty: true, // benchmarks/lynx-table app is copied in from the PR branch
-      patchName: 'octane-main-bench.patch',
+      patchName: 'octane-prior-bench.patch',
     },
     ref: 'main',
     buildCommand: 'cp -r <pr>/benchmarks/lynx-table . && BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
     cells: AUTOROWS.map((rows) => ({
       rows,
       from: path.join(
-        OCTANE_MAIN_BUILD,
+        OCTANE_PRIOR_BUILD,
         'benchmarks/lynx-table/app',
         rows === 0 ? 'dist' : `dist-rows${rows}`,
       ),
     })),
   });
-} else if (wants('octane-main')) {
-  console.log('[vendor] octane-main skipped (no build at ' + OCTANE_MAIN_BUILD + ')');
+} else if (wants('octane-prior')) {
+  console.log('[vendor] octane-prior skipped (set OCTANE_PRIOR_BUILD to a built checkout)');
 }
 
 console.log('[vendor] done');

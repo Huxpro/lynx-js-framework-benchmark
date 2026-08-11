@@ -89,9 +89,11 @@ had a documented weakness, the fix is noted.
   approximating render work) run in the same headless browser. Higher = faster machine.
 - Default comparisons use records from one physical run. The incremental archive retains
   source-run calibration on every record, but the site never composes a ranking from separate
-  runs, even on the same machine. Cross-run calibration is estimate-only; the probe corrects
-  scalar CPU speed, never memory hierarchy or core count. Probe version bumps invalidate
-  cross-version comparison.
+  runs, even on the same machine. Run selection ranks featured-entry coverage and featured
+  matrix coverage; Lab variants cannot keep an older cohort public. Opt-in historical Lab time
+  fields are multiplied by source-score / comparison-score and marked as calibrated estimates.
+  Heap, wire, bundle, and count fields are not scaled. The probe corrects scalar CPU speed,
+  never memory hierarchy or core count; probe version bumps invalidate cross-version estimates.
 
 ## Harness separation
 

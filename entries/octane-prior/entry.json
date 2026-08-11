@@ -1,9 +1,9 @@
 {
-  "id": "octane-main",
-  "label": "Octane (main)",
+  "id": "octane-prior",
+  "label": "Octane (prior)",
   "framework": "octane",
   "frameworkVersion": "0.1.31",
-  "config": ".tsrx, keyed @for; main branch (pre wire-fix)",
+  "config": ".tsrx, keyed @for; prior upstream main before the Lynx renderer performance stack",
   "tags": [
     "baseline"
   ],
@@ -15,7 +15,7 @@
     "ref": "main",
     "commit": "e81fd879308a4367c8c1af920e0d59ef648b8ffe",
     "patched": true,
-    "patchFile": "entries/_patches/octane-main-bench.patch",
+    "patchFile": "entries/_patches/octane-prior-bench.patch",
     "buildCommand": "cp -r <pr>/benchmarks/lynx-table . && BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs",
     "builtAt": "2026-08-09T19:56:50.102Z",
     "sha256": {

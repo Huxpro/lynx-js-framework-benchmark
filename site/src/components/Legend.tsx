@@ -1,4 +1,4 @@
-import { ENTRIES, entryColor } from '../data';
+import { CALIBRATED_LAB_IDS, ENTRIES, entryColor } from '../data';
 
 export function Legend({
   theme,
@@ -20,7 +20,7 @@ export function Legend({
           className="item"
           aria-pressed={selected.has(e.id)}
           onClick={() => onToggle(e.id)}
-          title={`${e.label} — ${e.config}${e.tier === 'lab' ? ` · lab variant (${e.provenance.ref} @ ${e.provenance.commit.slice(0, 8)})` : ''}`}
+          title={`${e.label} — ${e.config}${e.tier === 'lab' ? ` · calibrated historical Lab estimate (${e.provenance.ref} @ ${e.provenance.commit.slice(0, 8)})` : ''}`}
         >
           <span className="swatch" style={{ background: entryColor(e.id, theme) }} />
           {e.label}
@@ -35,7 +35,7 @@ export function Legend({
                 color: 'var(--text-muted)',
               }}
             >
-              ⚗ lab
+              {CALIBRATED_LAB_IDS.has(e.id) ? '≈ calibrated' : '⚗ lab'}
             </span>
           )}
         </button>
