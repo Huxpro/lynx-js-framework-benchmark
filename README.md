@@ -6,7 +6,8 @@ wiring that changes every equation on Lynx: background-thread vs main-thread tim
 bytes that cross between them).
 
 **Entries today:** ReactLynx · Vue-Lynx VDOM (baseline & +IFR+ET) · Vue-Lynx Vapor (baseline
-& +IFR) · Octane. Adding a framework, a version, or a config is one directory.
+& +IFR) · Octane (main, Hux1, and Hux2 checkpoints). Adding a framework, a version, or a
+config is one directory.
 
 ## Quick start
 
@@ -76,7 +77,9 @@ mode. Any comparison subset is addressable:
 (`pnpm bench run --entry my-pr-entry` each, `collect` merges) and share exact-permutation
 links, while the public page stays curated.
 Bundles are vendored with provenance (source repo, commit, build command, checksums);
-`scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
+`scripts/vendor-entries.mjs` rebuilds the original framework matrix and
+`pnpm vendor:octane-checkpoints` vendors the exact B0/P2/P3/P6/P7 checkouts from the Octane
+Hux2 stack. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
 

@@ -69,6 +69,14 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
       patched: source.dirty,
       patchFile: source.dirty ? `entries/_patches/${source.patchName}` : null,
       buildCommand,
+      ...(source.packageManager ? { packageManager: source.packageManager } : {}),
+      ...(source.sourceLockSha256 ? { sourceLockSha256: source.sourceLockSha256 } : {}),
+      ...(source.sourceBenchmarkTree
+        ? { sourceBenchmarkTree: source.sourceBenchmarkTree }
+        : {}),
+      ...(source.sourceBuildScriptBlob
+        ? { sourceBuildScriptBlob: source.sourceBuildScriptBlob }
+        : {}),
       builtAt: new Date().toISOString(),
       sha256: checks,
     },
@@ -104,6 +112,18 @@ const octaneSource = {
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
   patchName: 'octane-bench.patch',
+  packageManager: JSON.parse(
+    fs.readFileSync(path.join(OCTANE_BUILD, 'package.json'), 'utf-8'),
+  ).packageManager,
+  sourceLockSha256: sha256(path.join(OCTANE_BUILD, 'pnpm-lock.yaml')),
+  sourceBenchmarkTree: execSync(
+    'git rev-parse HEAD:benchmarks/lynx-table/app',
+    { cwd: OCTANE_BUILD },
+  ).toString().trim(),
+  sourceBuildScriptBlob: execSync(
+    'git rev-parse HEAD:benchmarks/lynx-table/scripts/build-app.mjs',
+    { cwd: OCTANE_BUILD },
+  ).toString().trim(),
 };
 
 const vueCells = (entryId) =>
@@ -188,10 +208,10 @@ const octaneVersion = JSON.parse(
 vendor({
   id: 'octane',
   tier: 'lab',
-  label: 'Octane (hux)',
+  label: 'Octane (Hux1)',
   framework: 'octane',
   frameworkVersion: octaneVersion,
-  config: '.tsrx, keyed @for; hux perf stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
+  config: '.tsrx, keyed @for; first Hux performance stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
   tags: ['optimized'],
   color: '#ff415a',
   source: octaneSource,

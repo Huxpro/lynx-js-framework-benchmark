@@ -1,0 +1,40 @@
+{
+  "id": "octane-hux2-p6",
+  "label": "Octane (Hux2 P6)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.33",
+  "config": ".tsrx, keyed @for; Hux2 direct serialization checkpoint (P0–P6)",
+  "tags": [
+    "checkpoint"
+  ],
+  "tier": "lab",
+  "color": "#2563eb",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "perf/lynx-upstream-serialization",
+    "commit": "68b2b0546b28d54b7cd8d44665f95d36b58e48b3",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<0|1000|10000|30000> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "packageManager": "pnpm@11.15.1",
+    "sourceLockSha256": "9bfa66384d7cd40cb59b589c777f176cc5f8dc6a3f17a865039e902402bea226",
+    "sourceBenchmarkTree": "7de49ecb635b8bcf7b9498a20d7c191db65a23fc",
+    "sourceBuildScriptBlob": "c59125dc3628b52bef5d9923f732f9302b1c2aa6",
+    "builtAt": "2026-08-11T05:49:33.539Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "1a7e231eec89eb2f120f142fbf38784696791d2f3ebf8448987429feee77b842",
+      "rows-0/main.lynx.bundle": "71af7ae72eb5470a2d81faca3871bb33e43fffdfda6ba37c5fad2f697eeea2bd",
+      "rows-1000/main.web.bundle": "7a172d1a5afa392738276a0b4a1b72495cded2c8716beb8ed1cc0571b389224a",
+      "rows-1000/main.lynx.bundle": "809752fb12150b447fd2df1841165c82f07be8285ef77f688a6a95b9ab26bf55",
+      "rows-10000/main.web.bundle": "d8e02f332d5aff2734ba1871ed682df1226ffeb018f244f564f8f9f1bcdf92be",
+      "rows-10000/main.lynx.bundle": "7b86aeeff0a744e4a5b76ffa95056c54df6eda4b96098ec36f386cce96e9bc3b",
+      "rows-30000/main.web.bundle": "cfa647f790ae0f77882f98dcd17d577167f63257211d3e02656bb0e12aaac98c",
+      "rows-30000/main.lynx.bundle": "6bc9cd7b87f128d75bee4d4ff206d2c0dee3b07b6cd206e0fdbd34233eee5e84"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
