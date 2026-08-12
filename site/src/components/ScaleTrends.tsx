@@ -188,7 +188,7 @@ export const TREND_SPECS: TrendSpec[] = [
   },
   {
     title: 'create — BTS→MTS wire bytes vs rows',
-    desc: 'serialized payload crossing the thread boundary to build N rows. The transport cost curve, measured at the web-core rpc channel.',
+    desc: 'serialized render payload sent from BTS to MTS to build N rows. This is one direction only, not total wire traffic; the Threads view shows BTS→MTS and MTS→BTS separately plus their two-direction total.',
     suite: 'table', workload: 'create', metric: 'wireToMtsBytes', unit: 'bytes',
   },
 ];
