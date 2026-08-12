@@ -33,8 +33,12 @@ pnpm bench preflight                                                     # machi
 Every `run` writes an independent run file stamped with a machine fingerprint and a
 **preflight calibration score** (a fixed CPU probe in the same browser); `collect` merges any
 number of run files — from any machines — into `results/latest.json`, newest-per-cell,
-per-machine. Comparisons are always within one machine's run; calibration relates
-cross-machine numbers as labeled estimates.
+per-machine, with source-run calibration attached to every record. Charts use
+`comparisonRecords`, selected from the single run with the broadest **featured-entry** coverage
+(then featured matrix coverage), so Lab-heavy, partial, or cross-machine runs cannot replace the
+public ranking. Opt-in Lab entries use one complete historical run per entry; millisecond fields
+are scaled by source-score / comparison-score and marked as estimates. Non-time fields remain
+explicitly historical because the CPU probe cannot calibrate them.
 
 ## What is measured
 
@@ -70,11 +74,10 @@ entries/<id>/
 Nothing else changes — the runner and site discover entries by scanning `entries/*/entry.json`.
 
 **Tiers.** `"tier": "featured"` entries form the default public view; `"tier": "lab"` entries
-(versions, PRs, flag permutations — as many as you like) stay hidden until the site's **⚗ Lab**
-mode. Any comparison subset is addressable:
-`/?entries=octane-main,octane&lab=1` — so a framework author can benchmark 8 PRs
-(`pnpm bench run --entry my-pr-entry` each, `collect` merges) and share exact-permutation
-links, while the public page stays curated.
+(versions, prior releases, PRs, flag permutations) stay hidden until the site's **⚗ Lab** mode.
+Historical Lab entries can remain calibration-only instead of being rerun: time fields are shown
+as `≈ calibrated`, while heap/wire/bundle/count fields retain their historical label. Any subset
+is addressable, for example `/?entries=octane,octane-prior,octane-hux1,octane-hux2&lab=1`.
 Bundles are vendored with provenance (source repo, commit, build command, checksums);
 `scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same

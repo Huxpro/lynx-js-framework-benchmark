@@ -1,0 +1,36 @@
+{
+  "id": "octane-dom",
+  "label": "Octane (DOM)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.34",
+  "config": ".tsrx, keyed @for; octanejs/octane PR #693, shared template programs, compact ACKs, and lazy handles",
+  "tags": [
+    "optimized"
+  ],
+  "tier": "lab",
+  "color": "#a14718",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "fix/lynx-renderer-performance",
+    "commit": "654001bf3a80753dab2e9c5fa18136c5cda144f1",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs",
+    "builtAt": "2026-08-10T19:56:01.688Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "e08ea17d6d5af52e1e0d4e0707fc1544d540007d43fd73146684d4182a826e43",
+      "rows-0/main.lynx.bundle": "a372ec71bc0fc802111bcdb849cf1ce99f2235e1a6ace5fdbd47218cd841721d",
+      "rows-1000/main.web.bundle": "250ba685f9b3dff01a47cd4c48f4687b07a1fa28076e5a5b506b6d72db5c7b8b",
+      "rows-1000/main.lynx.bundle": "97696a41330adf9e291a6165917a69f4e694f9974cc5bda2cf9f661db32ce48e",
+      "rows-10000/main.web.bundle": "a1a1c01c71acb4df080c59dc188584ac3db7899b4e51791721cf4b73b2b5fbfb",
+      "rows-10000/main.lynx.bundle": "0e368954ffd7fa7c9baf00682241f7bb8b464fafc4652d87216424db18ae2548",
+      "rows-30000/main.web.bundle": "e7ed1cb92cd433bece24e2127271d308b56ac91d11f56deba3f989263635b99e",
+      "rows-30000/main.lynx.bundle": "bf23a869deab92f52426dc9f3c355c8e247a0404f14539d6be71276d39af75f9"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

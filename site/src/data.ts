@@ -2,7 +2,10 @@
 // build time so the site can never drift from the repo's numbers.
 import latest from '../../results/latest.json';
 
-import octaneMainManifest from '../../entries/octane-main/entry.json';
+import octaneDomManifest from '../../entries/octane-dom/entry.json';
+import octaneHux1Manifest from '../../entries/octane-hux1/entry.json';
+import octaneHux2Manifest from '../../entries/octane-hux2/entry.json';
+import octanePriorManifest from '../../entries/octane-prior/entry.json';
 import octaneManifest from '../../entries/octane/entry.json';
 import reactManifest from '../../entries/react/entry.json';
 import vueVaporManifest from '../../entries/vue-vapor/entry.json';
@@ -31,6 +34,15 @@ export interface BenchRecord {
   detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
   dnfCount: number;
   machineId: string;
+  runFile: string;
+  runGeneratedAt: string;
+  calibration: { probeVersion: number; score: number };
+  entryCommit: string | null;
+  comparisonKind: 'same-run' | 'calibrated-estimate' | 'historical' | 'archive';
+  sourceEntry?: string;
+  sourceMedian?: number | null;
+  targetCalibration?: { probeVersion: number; score: number };
+  calibrationRatio?: number | null;
 }
 
 export interface Machine {
@@ -41,7 +53,28 @@ export interface Machine {
   cpuModel: string;
   cores: number;
   node: string;
+  latestCalibration: { probeVersion: number; score: number };
+  latestRunFile: string;
+  latestRunGeneratedAt: string;
+}
+
+export interface ComparisonRun {
+  runFile: string;
+  generatedAt: string;
+  machineId: string;
   calibration: { probeVersion: number; score: number };
+  entryIds: string[];
+  recordCount: number;
+  labEstimates: {
+    entryId: string;
+    sourceRunFile: string;
+    sourceGeneratedAt: string;
+    sourceMachineId: string;
+    sourceCalibration: { probeVersion: number; score: number };
+    targetCalibration: { probeVersion: number; score: number };
+    calibrationRatio: number | null;
+    recordCount: number;
+  }[];
 }
 
 export interface EntryMeta {
@@ -57,8 +90,15 @@ export interface EntryMeta {
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
 }
 
-export const RECORDS = (latest as { records: BenchRecord[] }).records;
+// Featured charts use one physical run. Opt-in Lab records are historical and
+// explicitly tagged; millisecond values are calibrated to that run's probe.
+const collected = latest as {
+  comparisonRecords: BenchRecord[];
+  labComparisonRecords: BenchRecord[];
+};
+export const RECORDS = [...collected.comparisonRecords, ...collected.labComparisonRecords];
 export const MACHINES = (latest as { machines: Record<string, Machine> }).machines;
+export const COMPARISON = (latest as { comparison: ComparisonRun }).comparison;
 export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
 
 // Fixed entry order = legend order. Featured entries occupy the CVD-validated
@@ -70,17 +110,21 @@ export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
 // by construction.
 export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] = [
   { ...(reactManifest as EntryMeta), colorLight: '#2a78d6', colorDark: '#3987e5' },
-  { ...(octaneMainManifest as EntryMeta), colorLight: '#eb6834', colorDark: '#d95926' },
+  { ...(octaneManifest as EntryMeta), colorLight: '#eb6834', colorDark: '#d95926' },
   { ...(vueVdomManifest as EntryMeta), colorLight: '#1baf7a', colorDark: '#199e70' },
   { ...(vueVdomIfrEtManifest as EntryMeta), colorLight: '#eda100', colorDark: '#c98500' },
   { ...(vueVaporManifest as EntryMeta), colorLight: '#e87ba4', colorDark: '#d55181' },
   { ...(vueVaporIfrManifest as EntryMeta), colorLight: '#008300', colorDark: '#008300' },
   // lab: octane family ramp (darker step of the octane orange)
-  { ...(octaneManifest as EntryMeta), colorLight: '#9f3c0d', colorDark: '#f59e72' },
+  { ...(octanePriorManifest as EntryMeta), colorLight: '#bd4c18', colorDark: '#f59e72' },
+  { ...(octaneHux1Manifest as EntryMeta), colorLight: '#9f3c0d', colorDark: '#ffaf87' },
+  { ...(octaneHux2Manifest as EntryMeta), colorLight: '#702a08', colorDark: '#ffc09f' },
+  { ...(octaneDomManifest as EntryMeta), colorLight: '#4f1d05', colorDark: '#ffd6bf' },
 ];
 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
 export const LAB_IDS = ENTRIES.filter((e) => e.tier === 'lab').map((e) => e.id);
+export const CALIBRATED_LAB_IDS = new Set(COMPARISON.labEstimates.map((e) => e.entryId));
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 

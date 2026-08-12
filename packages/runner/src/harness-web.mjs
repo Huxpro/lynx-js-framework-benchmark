@@ -260,20 +260,26 @@ export async function runTableSuite({
     }
   }
 
-  // Memory snapshot: GC'd heap per realm holding a 10k-row table (indicative —
-  // one scenario, deliberately simple; the unified benchmark's heap markers).
+  // Do not measure memory on the warm page above: its heaps include allocation
+  // history from every preceding workload. Use one fresh page for the 10k
+  // scenario and collect garbage in each CDP realm before reading its heap.
+  await page.close();
+  let memoryPage = null;
   try {
-    await clickButton(page, CREATE_BUTTON[10000]);
-    await untilPredicate(page, { type: 'rowCount', value: 10000 }, 240000);
-    await settle(page, 200);
-    await gc(page);
-    const registry = await page.evaluate(() => globalThis.__LYNX_WIRE__.workers);
-    const sessions = [{ key: 'heapMts', sessionId: attach.pageSession }];
-    for (const w of attach.workers.values()) {
+    const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
+    memoryPage = fresh.page;
+    await waitReady(memoryPage);
+    await clickButton(memoryPage, CREATE_BUTTON[10000]);
+    await untilPredicate(memoryPage, { type: 'rowCount', value: 10000 }, 240000);
+    await settle(memoryPage, 200);
+    const registry = await memoryPage.evaluate(() => globalThis.__LYNX_WIRE__.workers);
+    const sessions = [{ key: 'heapMts', sessionId: fresh.attach.pageSession }];
+    for (const w of fresh.attach.workers.values()) {
       const reg = registry.find((r) => r.blobUrl === w.url || r.url === w.url);
       if (reg?.name === 'lynx-bg') sessions.push({ key: 'heapBts', sessionId: w.sessionId });
     }
     for (const s of sessions) {
+      await cdp.send('HeapProfiler.collectGarbage', {}, s.sessionId);
       const { usedSize } = await cdp.send('Runtime.getHeapUsage', {}, s.sessionId);
       records.push(makeRecord({
         suite: 'table',
@@ -289,8 +295,9 @@ export async function runTableSuite({
     log(`  ${entry.id} memory@10k: ${sessions.map((s) => s.key).join('+')} captured`);
   } catch (e) {
     log(`  [warn] ${entry.id} memory snapshot failed: ${String(e).slice(0, 120)}`);
+  } finally {
+    await memoryPage?.close();
   }
-  await page.close();
 
   // Storm cases: fresh page per rep.
   for (const kase of cases) {

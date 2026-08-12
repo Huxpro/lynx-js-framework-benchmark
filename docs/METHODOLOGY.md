@@ -46,6 +46,10 @@ had a documented weakness, the fix is noted.
   overhead; the UI thread) and the `lynx-bg` worker (BTS), summing non-idle sample time.
   Includes GC and microtasks. The two threads run concurrently — per-realm CPU values are
   not additive into wall latency, and the site never stacks them into one bar.
+- **Heap**: one fresh page holds a 10k-row table. After the table settles, the harness sends
+  `HeapProfiler.collectGarbage` to the MTS and BTS CDP sessions independently, then records
+  each realm's `Runtime.getHeapUsage().usedSize`. These are absolute live-heap snapshots,
+  not retained-heap deltas or native-process memory.
 - Boundaries are recorded on every record (`boundary` field); records with different
   boundaries are never comparable.
 
@@ -83,9 +87,13 @@ had a documented weakness, the fix is noted.
 - Every run embeds a machine fingerprint (CPU model, cores, OS, node) and a **preflight
   calibration score**: a fixed, versioned, seeded CPU probe (~1s of JSON/array/string churn
   approximating render work) run in the same headless browser. Higher = faster machine.
-- Default comparisons are within-machine. Cross-machine relations divide by calibration
-  scores and are labeled estimates; the probe corrects scalar CPU speed only — never memory
-  hierarchy or core count. Probe version bumps invalidate cross-version comparison.
+- Default comparisons use records from one physical run. The incremental archive retains
+  source-run calibration on every record, but the site never composes a ranking from separate
+  runs, even on the same machine. Run selection ranks featured-entry coverage and featured
+  matrix coverage; Lab variants cannot keep an older cohort public. Opt-in historical Lab time
+  fields are multiplied by source-score / comparison-score and marked as calibrated estimates.
+  Heap, wire, bundle, and count fields are not scaled. The probe corrects scalar CPU speed,
+  never memory hierarchy or core count; probe version bumps invalidate cross-version estimates.
 
 ## Harness separation
 

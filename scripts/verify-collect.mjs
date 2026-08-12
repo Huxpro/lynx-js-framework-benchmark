@@ -15,7 +15,7 @@ const before = JSON.parse(fs.readFileSync(latestPath, 'utf-8'));
 const regenerated = collectRuns({ log: () => {} });
 
 // generatedAt necessarily differs; everything else must match exactly.
-const strip = (o) => JSON.stringify({ machines: o.machines, records: o.records });
+const strip = ({ generatedAt: _generatedAt, ...rest }) => JSON.stringify(rest);
 if (strip(before) !== strip(regenerated)) {
   // restore the committed file so a local run doesn't leave noise behind
   fs.writeFileSync(latestPath, JSON.stringify(before, null, 1));

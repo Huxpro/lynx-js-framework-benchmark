@@ -1,4 +1,4 @@
-import { ENTRIES, GENERATED_AT, MACHINES } from '../data';
+import { COMPARISON, ENTRIES, GENERATED_AT, MACHINES } from '../data';
 
 export function MethodPage() {
   return (
@@ -41,16 +41,19 @@ export function MethodPage() {
       <div className="card">
         <div className="card-title">machines &amp; calibration</div>
         <div className="card-desc">
-          Comparisons are always within one machine's run. The preflight score (a fixed, seeded CPU
-          probe run in the same browser, iterations/second — higher is faster) lets cross-machine
-          numbers be <i>related as estimates</i>; it corrects scalar CPU speed only, not memory
-          hierarchy or core count.
+          Every featured chart is sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
+          <code>{COMPARISON.machineId}</code>, preflight score {COMPARISON.calibration.score} (v
+          {COMPARISON.calibration.probeVersion}). The collector keeps partial and cross-machine
+          records for provenance, but never merges them into the default ranking. Opt-in Lab
+          variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
+          millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
+          and count fields cannot be CPU-calibrated and remain explicitly historical values.
         </div>
         <details className="data-table" open>
           <summary>Machines in this dataset</summary>
           <table>
             <thead>
-              <tr><th>machine</th><th>cpu</th><th>cores</th><th>node</th><th>preflight score</th></tr>
+              <tr><th>machine</th><th>cpu</th><th>cores</th><th>node</th><th>latest preflight</th></tr>
             </thead>
             <tbody>
               {Object.values(MACHINES).map((m) => (
@@ -59,12 +62,33 @@ export function MethodPage() {
                   <td style={{ textAlign: 'left' }}>{m.cpuModel} ({m.platform}/{m.arch})</td>
                   <td>{m.cores}</td>
                   <td>{m.node}</td>
-                  <td>{m.calibration?.score ?? '—'} (v{m.calibration?.probeVersion ?? '?'})</td>
+                  <td>{m.latestCalibration?.score ?? '—'} (v{m.latestCalibration?.probeVersion ?? '?'})</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </details>
+        {COMPARISON.labEstimates.length > 0 && (
+          <details className="data-table">
+            <summary>Calibration-only Lab sources</summary>
+            <table>
+              <thead>
+                <tr><th>entry</th><th>source run</th><th>source score</th><th>target score</th><th>ratio</th></tr>
+              </thead>
+              <tbody>
+                {COMPARISON.labEstimates.map((estimate) => (
+                  <tr key={estimate.entryId}>
+                    <td>{estimate.entryId}</td>
+                    <td style={{ textAlign: 'left' }}>{estimate.sourceRunFile}</td>
+                    <td>{estimate.sourceCalibration.score}</td>
+                    <td>{estimate.targetCalibration.score}</td>
+                    <td>{estimate.calibrationRatio?.toFixed(4) ?? 'incompatible'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
         <div className="note">dataset generated {new Date(GENERATED_AT).toLocaleString()}</div>
       </div>
 
