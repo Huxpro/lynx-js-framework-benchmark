@@ -59,9 +59,12 @@ startup FCP at 0/1k/10k/30k pre-rendered rows. See
 
 - **`web` (primary):** headless Chromium running Lynx for Web. Everything above.
 - **`native` (preserved):** every entry ships `main.lynx.bundle`; the schema, runner flag
-  (`--harness native`), and site carry the dimension end to end. No automated device adapter
-  is wired yet — the adapter contract lives in `packages/runner/src/harness-native.mjs`.
-  Native and web numbers are never mixed in one chart.
+  (`--harness native --adapter <module.mjs>`), and site carry the dimension end to end. The
+  runner side is executable — entry discovery, workload sequencing, DNF accounting, and
+  native-record emission live in `packages/runner/src/harness-native.mjs` behind a validated
+  adapter contract — and a device adapter (lynx-devtool CDP, agent-device, …) plugs in as a
+  module; no proxy adapter ships in this repo. Native and web numbers are never mixed in one
+  chart.
 
 ## Adding an entry
 

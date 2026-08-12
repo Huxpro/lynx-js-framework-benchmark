@@ -43,8 +43,7 @@ const numList = (v) => list(v)?.map(Number);
 
 async function cmdRun(args) {
   const harness = args.harness ?? 'web';
-  if (harness === 'native') return runNativeHarness();
-  if (harness !== 'web') throw new Error(`unknown harness: ${harness}`);
+  if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
 
   const entries = discoverEntries({ only: list(args.entry) });
   if (entries.length === 0) throw new Error('no entries matched');
@@ -53,6 +52,42 @@ async function cmdRun(args) {
     ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
     : TABLE_CASES;
   const suites = list(args.suite) ?? ['table', 'startup'];
+
+  if (harness === 'native') {
+    const reps = args.reps ? Number(args.reps) : 5;
+    const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : 3;
+    const scales = numList(args.scale) ?? [1000, 10000];
+    console.log(`[run:native] entries: ${entries.map((e) => e.id).join(', ')}`);
+    const records = await runNativeHarness({
+      adapterPath: args.adapter,
+      entries, cases, suites, scales, reps, startupReps,
+      log: (line) => console.log(line),
+    });
+    const machine = machineFingerprint();
+    const now = new Date();
+    const label = args.label ? `-${args.label}` : '';
+    const run = {
+      schemaVersion: SCHEMA_VERSION,
+      meta: {
+        generatedAt: now.toISOString(),
+        machine,
+        calibration: null,
+        harness: 'native',
+        adapter: path.resolve(args.adapter),
+        argv: process.argv.slice(2),
+        entryCommits: Object.fromEntries(
+          entries.map((e) => [e.id, e.provenance?.commit ?? null]),
+        ),
+      },
+      records,
+    };
+    const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const outPath = path.join(repoRoot(), 'results/runs', `${stamp}-${machine.id}-native${label}.json`);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, JSON.stringify(run, null, 1));
+    console.log(`[run:native] ${records.length} records → ${path.relative(repoRoot(), outPath)}`);
+    return;
+  }
   const quick = Boolean(args.quick);
   const scales = numList(args.scale)
     ?? (quick ? [1000] : [1000, 10000]);
