@@ -1,0 +1,36 @@
+{
+ "id": "a-octane-run-teardown",
+ "label": "Octane (run-teardown rev)",
+ "framework": "octane",
+ "frameworkVersion": "0.1.36",
+ "config": ".tsrx, keyed @for; perf/lynx-clear-teardown-runs @ 555f491d (destroy-run teardown, stacked on cliff-fix)",
+ "tags": [
+  "optimized"
+ ],
+ "tier": "lab",
+ "color": "#2d7dd2",
+ "kind": "vendored",
+ "provenance": {
+  "source": "https://github.com/Huxpro/octane",
+  "ref": "perf/lynx-clear-teardown-runs",
+  "commit": "555f491db56aa43a84f0383d153417e9c0c25dba",
+  "patched": false,
+  "patchFile": null,
+  "buildCommand": "BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs",
+  "builtAt": "2026-08-12T22:05:00.000Z",
+  "sha256": {
+   "rows-0/main.web.bundle": "2fb601c2866b8893cbf3db8851135761785bb4656b2d513a8d328cebbd8d115a",
+   "rows-0/main.lynx.bundle": "4c09cbc0de2dda19bcc966ee9b082ca845728ac9864ad02cb8c774f6da9e96ca",
+   "rows-1000/main.web.bundle": "ec6e9468cf20b80eb9ab0afc93311a9f2d22459403a6b560c26c8d60ccdb5b60",
+   "rows-1000/main.lynx.bundle": "994112335539369ae6b6a2d9dccb04b18b63fc745866383480b7674c3413bb01",
+   "rows-10000/main.web.bundle": "e4ccab9975cdd8437103a252cb4b08c3d8900759f80de68a75e5a9b513881fbd",
+   "rows-10000/main.lynx.bundle": "b7ac40078644fc29192ac4fa83052c11c5d4436a9ff86036fc8c3ca65f9b6d62",
+   "rows-30000/main.web.bundle": "d0924142d5ef2aab4e12ee4cc0e8899c2ccc51cb9cd5ef4364d0ce67af361d6c",
+   "rows-30000/main.lynx.bundle": "8e6e204940ac765b771e983b03413a0e373af482924ee3d11ecc3834c0917b15"
+  }
+ },
+ "bundles": {
+  "web": "dist/rows-0/main.web.bundle",
+  "lynx": "dist/rows-0/main.lynx.bundle"
+ }
+}
