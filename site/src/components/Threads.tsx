@@ -131,7 +131,13 @@ function WireBars({
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => {
     const down = one({ suite: 'table', harness, entry: e.id, workload, scale, metric: `wireToMts${metric}` });
     const up = one({ suite: 'table', harness, entry: e.id, workload, scale, metric: `wireToBts${metric}` });
-    return { id: e.id, down: down?.median ?? null, up: up?.median ?? null, detail: down?.detail ?? null };
+    return {
+      id: e.id,
+      down: down?.median ?? null,
+      up: up?.median ?? null,
+      downDetail: down?.detail ?? null,
+      upDetail: up?.detail ?? null,
+    };
   }).filter((r) => r.down != null || r.up != null);
   rows.sort((a, b) => ((a.down ?? 0) + (a.up ?? 0)) - ((b.down ?? 0) + (b.up ?? 0)));
   const max = Math.max(1e-9, ...rows.flatMap((r) => [r.down ?? 0, r.up ?? 0])) * 1.08;
@@ -144,12 +150,16 @@ function WireBars({
             <div className="bar-label" style={{ paddingTop: 2 }}>{shortLabel(r.id)}</div>
             <div
               onMouseEnter={(e) => {
-                const names = r.detail?.byName ? Object.entries(r.detail.byName) : [];
+                const names = [
+                  ...Object.entries(r.downDetail?.byName ?? {}).map(([name, value]) => [`BTS→MTS ${name}`, value] as const),
+                  ...Object.entries(r.upDetail?.byName ?? {}).map(([name, value]) => [`MTS→BTS ${name}`, value] as const),
+                ];
                 names.sort((a, b) => b[1].bytes - a[1].bytes);
                 setTip({
                   head: `${shortLabel(r.id)} — ${workload}`,
                   lines: [
                     `BTS→MTS ${fmt(r.down)} · MTS→BTS ${fmt(r.up)}`,
+                    `two-direction total ${fmt((r.down ?? 0) + (r.up ?? 0))}`,
                     ...names.slice(0, 4).map(([n, v]) => `${n}: ${fmtBytes(v.bytes)} / ${v.messages} msg`),
                   ],
                 });
@@ -188,6 +198,7 @@ function WireBars({
         <span className="item" style={{ cursor: 'default' }}>
           <span className="swatch" style={{ background: 'currentColor', opacity: 0.45 }} /> MTS→BTS (events, timing)
         </span>
+        <span className="note">rows sorted by the two-direction total</span>
       </div>
       {tipNode}
     </div>
@@ -237,15 +248,17 @@ export function ThreadsPage({
 
       <div className="grid-2">
         <div className="card">
-          <div className="card-title">wire bytes — {active.label}</div>
+          <div className="card-title">wire bytes by direction — {active.label}</div>
           <div className="card-desc">
             Serialized payload crossing the BTS↔MTS boundary during the op, measured at web-core's
-            rpc channel with one instrument for every framework. Hover for the per-endpoint split.
+            rpc channel with one instrument for every framework. Each framework has separate
+            directional bars, sorted by their two-direction total, so it can be lowest in one
+            direction and highest in the other. Hover for the per-endpoint split.
           </div>
           <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Bytes" fmt={fmtBytes} />
         </div>
         <div className="card">
-          <div className="card-title">wire messages — {active.label}</div>
+          <div className="card-title">wire messages by direction — {active.label}</div>
           <div className="card-desc">
             Message count both directions. Chatty protocols pay per-message overhead (structured
             clone, scheduling) even when bytes are small.
