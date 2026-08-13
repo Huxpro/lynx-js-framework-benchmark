@@ -1,9 +1,10 @@
 // "Every case at a glance": rows = workload@scale, columns = entries, cell =
 // × vs baseline (selectable entry) or vs the row's fastest. Log-scaled
 // diverging tint saturating at 4× either way; the numeral stays legible.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { BenchRecord, ENTRIES, entryColor, fmtX, select, shortLabel } from '../data';
+import { completeRowGeomeans } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 
 function tintFor(v: number): string {
@@ -35,7 +36,11 @@ export function HeatGrid({
 }) {
   const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
   const [mode, setMode] = useState<'fastest' | string>('fastest');
+  const activeMode = mode === 'fastest' || selected.has(mode) ? mode : 'fastest';
   const { setTip, onMove, tipNode } = useTooltip();
+  useEffect(() => {
+    if (mode !== 'fastest' && !selected.has(mode)) setMode('fastest');
+  }, [mode, selected]);
 
   const grid = useMemo(() => {
     return rows.map((spec) => {
@@ -52,32 +57,20 @@ export function HeatGrid({
   }, [rows, harness, ids.join(',')]);
 
   const geo = useMemo(() => {
-    const acc = new Map<string, number[]>(ids.map((id) => [id, []]));
-    for (const row of grid) {
-      const base = mode === 'fastest'
-        ? row.fastest
-        : row.recs.get(mode)?.median ?? null;
-      if (base == null || base <= 0) continue;
-      ids.forEach((id, i) => {
-        const v = row.values[i];
-        if (v != null && v > 0) acc.get(id)!.push(v / base);
-      });
-    }
-    return new Map(ids.map((id) => {
-      const vals = acc.get(id)!;
-      if (!vals.length) return [id, null] as const;
-      return [id, Math.exp(vals.reduce((a, v) => a + Math.log(v), 0) / vals.length)] as const;
-    }));
-  }, [grid, mode, ids.join(',')]);
+    return completeRowGeomeans(ids, grid.map((row) => ({
+      key: row.spec.key,
+      values: Object.fromEntries(ids.map((id, index) => [id, row.values[index]])),
+    })), activeMode === 'fastest' ? null : activeMode);
+  }, [grid, activeMode, ids.join(',')]);
 
   return (
     <div className="card" onMouseMove={onMove}>
       <div className="controls-row">
         <div className="card-title">All cases at a glance</div>
         <div className="seg" role="group" aria-label="Baseline">
-          <button aria-pressed={mode === 'fastest'} onClick={() => setMode('fastest')}>vs fastest</button>
+          <button aria-pressed={activeMode === 'fastest'} onClick={() => setMode('fastest')}>vs fastest</button>
           {ENTRIES.filter((e) => selected.has(e.id)).map((e) => (
-            <button key={e.id} aria-pressed={mode === e.id} onClick={() => setMode(e.id)}>
+            <button key={e.id} aria-pressed={activeMode === e.id} onClick={() => setMode(e.id)}>
               vs {shortLabel(e.id)}
             </button>
           ))}
@@ -105,13 +98,13 @@ export function HeatGrid({
                 <th className="rowhead">{row.spec.label}</th>
                 {ids.map((id, i) => {
                   const v = row.values[i];
-                  const base = mode === 'fastest' ? row.fastest : row.recs.get(mode)?.median ?? null;
+                  const base = activeMode === 'fastest' ? row.fastest : row.recs.get(activeMode)?.median ?? null;
                   if (v == null || base == null || base <= 0) {
                     return <td key={id} className="null" aria-label="no data">—</td>;
                   }
                   const ratio = v / base;
-                  const isRef = mode !== 'fastest' && id === mode;
-                  const isFastest = mode === 'fastest' && id === row.fastestId;
+                  const isRef = activeMode !== 'fastest' && id === activeMode;
+                  const isFastest = activeMode === 'fastest' && id === row.fastestId;
                   return (
                     <td
                       key={id}
@@ -121,7 +114,7 @@ export function HeatGrid({
                         setTip({
                           head: `${shortLabel(id)} · ${row.spec.label}`,
                           lines: [
-                            `${fmtX(ratio)} vs ${mode === 'fastest' ? `fastest (${shortLabel(row.fastestId!)})` : shortLabel(mode)}`,
+                            `${fmtX(ratio)} vs ${activeMode === 'fastest' ? `fastest (${shortLabel(row.fastestId!)})` : shortLabel(activeMode)}`,
                             `median ${row.recs.get(id)?.median?.toFixed(1)}ms, n=${row.recs.get(id)?.n}`,
                           ],
                         });
@@ -140,8 +133,8 @@ export function HeatGrid({
             <tr>
               <th className="rowhead" style={{ borderTop: '2px solid var(--border)' }}>geomean</th>
               {ids.map((id) => {
-                const g = geo.get(id);
-                const isRef = mode !== 'fastest' && id === mode;
+                const g = geo.values.get(id);
+                const isRef = activeMode !== 'fastest' && id === activeMode;
                 return (
                   <td
                     key={id}
@@ -161,9 +154,10 @@ export function HeatGrid({
         </table>
       </div>
       <div className="note" style={{ marginTop: '0.5rem' }}>
-        Each cell is that entry's median relative to the {mode === 'fastest' ? "row's fastest entry" : `${shortLabel(mode)} baseline`},
+        Each cell is that entry's median relative to the {activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`},
         per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers;
-        per-case cards below carry the full data tables.
+        the geomean is recomputed over {geo.rowCount} rows with complete data for every selected entry.
+        Per-case cards below carry the full data tables.
       </div>
       {tipNode}
     </div>

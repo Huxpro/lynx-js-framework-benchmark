@@ -137,7 +137,10 @@ async function cmdRun(args) {
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(run, null, 1));
   console.log(`[run] ${records.length} records → ${path.relative(root, outPath)}`);
-  console.log('[run] next: lynx-bench collect');
+  // The run file is the source; latest.json is only a materialized view. Keep
+  // it synchronized immediately so no consumer can observe the previous run's
+  // derived cohort/statistics between `run` and a later build.
+  collectRuns();
 }
 
 async function cmdPreflight() {

@@ -12,8 +12,7 @@ export function repoRoot() {
   throw new Error('repo root not found');
 }
 
-export function discoverEntries({ only = null } = {}) {
-  const root = repoRoot();
+export function discoverEntries({ only = null, root = repoRoot() } = {}) {
   const entriesDir = path.join(root, 'entries');
   const out = [];
   for (const id of fs.readdirSync(entriesDir).sort()) {

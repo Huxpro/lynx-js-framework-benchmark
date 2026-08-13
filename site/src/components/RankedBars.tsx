@@ -1,7 +1,7 @@
 // Per-suite card: operation chips, ranked bars (absolute for one op, geomean
 // ×-vs-fastest for "overall"), and the exact-number table (the relief channel).
 // Visual language follows octanejs.dev/benchmarks; implementation is ours.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   BenchRecord,
@@ -12,6 +12,7 @@ import {
   select,
   shortLabel,
 } from '../data';
+import { completeEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 
 interface OpSpec {
@@ -19,12 +20,6 @@ interface OpSpec {
   label: string;
   workload: string;
   scale: number;
-}
-
-function geomean(vals: number[]): number | null {
-  const clean = vals.filter((v) => Number.isFinite(v) && v > 0);
-  if (!clean.length) return null;
-  return Math.exp(clean.reduce((a, v) => a + Math.log(v), 0) / clean.length);
 }
 
 export function RankedBars({
@@ -50,6 +45,10 @@ export function RankedBars({
 }) {
   const [op, setOp] = useState<'overall' | string>('overall');
   const { setTip, onMove, tipNode } = useTooltip();
+  const activeOp = op === 'overall' || ops.some((spec) => spec.key === op) ? op : 'overall';
+  useEffect(() => {
+    if (op !== 'overall' && !ops.some((spec) => spec.key === op)) setOp('overall');
+  }, [op, ops]);
 
   const byOp = useMemo(() => {
     const m = new Map<string, Map<string, BenchRecord>>();
@@ -65,26 +64,26 @@ export function RankedBars({
 
   const view = useMemo(() => {
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
-    if (op === 'overall') {
-      // per op: ratio vs fastest entry present; overall: geomean of ratios.
-      const ratios = new Map<string, number[]>(ids.map((id) => [id, []]));
-      for (const spec of ops) {
-        const inner = byOp.get(spec.key)!;
-        const present = ids
-          .map((id) => [id, inner.get(id)?.median] as const)
-          .filter(([, v]) => v != null && (v as number) > 0);
-        if (present.length < 2) continue;
-        const fastest = Math.min(...present.map(([, v]) => v as number));
-        for (const [id, v] of present) ratios.get(id)!.push((v as number) / fastest);
-      }
-      const rows = ids
-        .map((id) => ({ id, value: geomean(ratios.get(id)!), dnf: false }))
-        .filter((r) => r.value != null) as { id: string; value: number; dnf: boolean }[];
+    if (activeOp === 'overall') {
+      // Score only entries with the complete operation matrix. This keeps every
+      // geomean on the same denominator when a run contains a DNF/missing cell.
+      const score = completeEntryScores(ids, ops.map((spec) => ({
+        key: spec.key,
+        values: Object.fromEntries(ids.map((id) => [id, byOp.get(spec.key)?.get(id)?.median])),
+      })));
+      const rows = score.scores
+        .filter((row): row is { id: string; value: number } => row.value != null)
+        .map((row) => ({ ...row, dnf: false }));
       rows.sort((a, b) => a.value - b.value);
-      const missing = ids.filter((id) => !rows.some((r) => r.id === id));
-      return { rows, missing, fmt: fmtX, caption: 'geometric mean of per-op × vs the fastest entry — lower is better, 1× = fastest' };
+      return {
+        rows,
+        missing: score.missing,
+        fmt: fmtX,
+        scoreOps: score.cellCount,
+        caption: `geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
+      };
     }
-    const spec = ops.find((o) => o.key === op)!;
+    const spec = ops.find((o) => o.key === activeOp)!;
     const inner = byOp.get(spec.key)!;
     const rows = ENTRIES.map((e) => e.id)
       .filter((id) => selected.has(id))
@@ -101,11 +100,11 @@ export function RankedBars({
     const present = rows.filter((r) => r.value != null) as { id: string; value: number; ci95: number | null; n: number; dnf: boolean }[];
     present.sort((a, b) => a.value - b.value);
     const missing = rows.filter((r) => r.value == null).map((r) => r.id);
-    return { rows: present, missing, fmt: unitFmt, caption: `median ${spec.label} — lower is better` };
-  }, [op, byOp, selected, ops, unitFmt]);
+    return { rows: present, missing, fmt: unitFmt, scoreOps: 1, caption: `median ${spec.label} — lower is better` };
+  }, [activeOp, byOp, selected, ops, unitFmt]);
 
   const scaleMax = Math.max(1e-9, ...view.rows.map((r) => r.value as number)) * 1.08;
-  const refValue = op === 'overall' ? 1 : null;
+  const refValue = activeOp === 'overall' ? 1 : null;
 
   return (
     <figure className="card" role="group" aria-label={title} style={{ margin: '1rem 0' }} onMouseMove={onMove}>
@@ -114,9 +113,9 @@ export function RankedBars({
         <div className="card-desc">{description}</div>
       </figcaption>
       <div className="chips" role="group" aria-label="Operation">
-        <button className="chip" aria-pressed={op === 'overall'} onClick={() => setOp('overall')}>overall</button>
+        <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>overall</button>
         {ops.map((o) => (
-          <button key={o.key} className="chip" aria-pressed={op === o.key} onClick={() => setOp(o.key)}>
+          <button key={o.key} className="chip" aria-pressed={activeOp === o.key} onClick={() => setOp(o.key)}>
             {o.label}
           </button>
         ))}
@@ -130,11 +129,11 @@ export function RankedBars({
               key={r.id}
               className="bar-row"
               onMouseEnter={(e) => {
-                const rec = op === 'overall' ? null : byOp.get(op)?.get(r.id);
+                const rec = activeOp === 'overall' ? null : byOp.get(activeOp)?.get(r.id);
                 setTip({
                   head: shortLabel(r.id),
-                  lines: op === 'overall'
-                    ? [`${fmtX(r.value as number)} vs fastest (geomean across ${ops.length} ops)`]
+                  lines: activeOp === 'overall'
+                    ? [`${fmtX(r.value as number)} vs fastest (geomean across ${view.scoreOps} complete ops)`]
                     : [
                       `${unitFmt(r.value as number)} median${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
                       `n = ${rec?.n ?? '?'}${rec?.dnfCount ? `, ${rec.dnfCount} DNF` : ''}`,
@@ -163,7 +162,7 @@ export function RankedBars({
         {view.missing.map((id) => (
           <div key={id} className="bar-row">
             <div className="bar-label">{shortLabel(id)}</div>
-            <div className="bar-dnf">— no data{op !== 'overall' ? ' (DNF or not run)' : ''}</div>
+            <div className="bar-dnf">— {activeOp === 'overall' ? 'incomplete matrix' : 'no data (DNF or not run)'}</div>
           </div>
         ))}
       </div>

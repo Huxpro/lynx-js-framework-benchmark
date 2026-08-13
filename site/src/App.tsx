@@ -87,13 +87,13 @@ export default function App() {
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
     for (const w of ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
-      for (const s of workloadScales('table', w)) {
+      for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
           rows.push({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
         }
       }
     }
-    for (const s of workloadScales('startup', 'startup')) {
+    for (const s of workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })) {
       if (select({ suite: 'startup', harness, workload: 'startup', scale: s, metric: 'fcp' }).length >= 2) {
         rows.push({ key: `startup@${s}`, label: `startup @${scaleLabel(s)}`, suite: 'startup', workload: 'startup', scale: s, metric: 'fcp' });
       }
@@ -103,7 +103,7 @@ export default function App() {
 
   const tableOps = (scales: number[]) =>
     ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
-      workloadScales('table', w)
+      workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
         .filter((s) => scales.includes(s))
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
 
@@ -184,7 +184,8 @@ export default function App() {
             description="one tap, many sequential render cycles (50 update / 30 select ticks through a MessageChannel pump). Throughput of the full state→render→wire→apply loop."
             suite="table"
             ops={['updateStorm', 'selectStorm'].flatMap((w) =>
-              workloadScales('table', w).map((s) => ({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, workload: w, scale: s })))}
+              workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
+                .map((s) => ({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, workload: w, scale: s })))}
             harness={harness}
             theme={theme}
             selected={selected}
@@ -194,7 +195,7 @@ export default function App() {
             description="view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration."
             suite="startup"
             metric="fcp"
-            ops={workloadScales('startup', 'startup').map((s) => ({
+            ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' }).map((s) => ({
               key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
             }))}
             harness={harness}
@@ -244,7 +245,7 @@ export default function App() {
           github.com/Huxpro/lynx-js-framework-benchmark
         </a>
         {' '}· reproduce with <code>pnpm bench run</code> · results are the checked-in{' '}
-        <code>results/latest.json</code> — the site cannot drift from the numbers.
+        <code>results/latest.json</code> materialized cache, regenerated from source before every build.
       </footer>
     </div>
   );

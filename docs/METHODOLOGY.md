@@ -77,6 +77,8 @@ had a documented weakness, the fix is noted.
   sample (page-load variance is inside the sample, stated on the site).
 - Reported per sample set: median (headline), mean, sample std, min, p95, and a
   t-distribution 95% CI (octane's `stats` discipline); raw samples retained in run files.
+- Raw `samples`/one-shot `value` are authoritative. Collection recalculates every statistic and
+  ignores stored aggregate snapshots in run files; see [DATA_MODEL.md](./DATA_MODEL.md).
 - **DNF is data**: timeouts are counted (`dnfCount`) and shown; a slow framework looks slow,
   never absent. Non-timeout errors abort the run — they are harness bugs.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's

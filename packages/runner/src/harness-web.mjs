@@ -352,13 +352,11 @@ function fmtSummary(samples) {
 function emitOpRecords({ entry, kase, scale, samples, dnfCount }) {
   const records = [];
   const base = { suite: 'table', entry: entry.id, workload: kase.name, scale };
-  const lat = summarize(samples.latency);
   records.push(makeRecord({
     ...base,
     metric: 'latency',
     boundary: BOUNDARIES.latency,
     unit: 'ms',
-    stat: lat,
     samples: samples.latency,
     dnfCount,
   }));
@@ -366,14 +364,12 @@ function emitOpRecords({ entry, kase, scale, samples, dnfCount }) {
     ['btsCpu', 'btsCpu', BOUNDARIES.btsCpu],
     ['mtsCpu', 'mtsCpu', BOUNDARIES.mtsCpu],
   ]) {
-    const stat = summarize(samples[key]);
-    if (stat) {
+    if (samples[key].length) {
       records.push(makeRecord({
         ...base,
         metric,
         boundary,
         unit: 'ms',
-        stat,
         samples: samples[key],
       }));
     }
@@ -391,12 +387,14 @@ function emitOpRecords({ entry, kase, scale, samples, dnfCount }) {
         metric,
         boundary: BOUNDARIES.wire,
         unit: metric.endsWith('Bytes') ? 'bytes' : 'count',
-        stat: summarize(vals),
         samples: vals,
-        detail: metric === 'wireToMtsBytes'
-          ? { byName: samples.wire.at(-1)?.toMts.byName }
+        // Keep every endpoint observation as source. makeRecord derives the
+        // display detail from the sample nearest the total median, so changing
+        // or adding a sample cannot leave an old "last sample" visualization.
+        detailSamples: metric === 'wireToMtsBytes'
+          ? samples.wire.map((wire) => ({ byName: wire.toMts.byName }))
           : metric === 'wireToBtsBytes'
-            ? { byName: samples.wire.at(-1)?.toBts.byName }
+            ? samples.wire.map((wire) => ({ byName: wire.toBts.byName }))
             : null,
       }));
     }
@@ -461,7 +459,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       metric: 'fcp',
       boundary: BOUNDARIES.fcp,
       unit: 'ms',
-      stat: summarize(samples.fcp),
       samples: samples.fcp,
       dnfCount,
     }));
@@ -470,7 +467,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       metric: 'settled',
       boundary: BOUNDARIES.settled,
       unit: 'ms',
-      stat: summarize(samples.settled),
       samples: samples.settled,
       dnfCount,
     }));
@@ -480,7 +476,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         metric: 'mtsCpu',
         boundary: BOUNDARIES.mtsCpu,
         unit: 'ms',
-        stat: summarize(samples.mtsCpu),
         samples: samples.mtsCpu,
       }));
     }
@@ -494,7 +489,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
           metric,
           boundary: BOUNDARIES.wire,
           unit: 'bytes',
-          stat: summarize(samples[key]),
           samples: samples[key],
         }));
       }

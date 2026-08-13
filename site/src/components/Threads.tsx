@@ -15,18 +15,11 @@ import {
 } from '../data';
 import { useTooltip } from '../hooks';
 
-const CASE_OPTIONS = [
-  { key: 'create@1000', workload: 'create', scale: 1000, label: 'create @1k' },
-  { key: 'create@10000', workload: 'create', scale: 10000, label: 'create @10k' },
-  { key: 'update10th@1000', workload: 'update10th', scale: 1000, label: 'update10th @1k' },
-  { key: 'update10th@10000', workload: 'update10th', scale: 10000, label: 'update10th @10k' },
-  { key: 'select@1000', workload: 'select', scale: 1000, label: 'select @1k' },
-  { key: 'select@10000', workload: 'select', scale: 10000, label: 'select @10k' },
-  { key: 'updateStorm@1000', workload: 'updateStorm', scale: 1000, label: 'updateStorm @1k' },
-  { key: 'updateStorm@10000', workload: 'updateStorm', scale: 10000, label: 'updateStorm @10k' },
-  { key: 'selectStorm@1000', workload: 'selectStorm', scale: 1000, label: 'selectStorm @1k' },
-  { key: 'selectStorm@10000', workload: 'selectStorm', scale: 10000, label: 'selectStorm @10k' },
-];
+const THREAD_WORKLOADS = ['create', 'update10th', 'select', 'updateStorm', 'selectStorm'];
+const scaleLabel = (scale: number) => scale >= 1000 ? `${scale / 1000}k` : String(scale);
+const endpointDetailLabel = (kind: string | null | undefined) => kind === 'sample-nearest-median'
+  ? 'sample nearest the median total'
+  : 'legacy final sample';
 
 function GroupedTimeBars({
   workload,
@@ -137,6 +130,7 @@ function WireBars({
       up: up?.median ?? null,
       downDetail: down?.detail ?? null,
       upDetail: up?.detail ?? null,
+      detailKind: down?.detailKind ?? up?.detailKind ?? null,
     };
   }).filter((r) => r.down != null || r.up != null);
   rows.sort((a, b) => ((a.down ?? 0) + (a.up ?? 0)) - ((b.down ?? 0) + (b.up ?? 0)));
@@ -160,6 +154,7 @@ function WireBars({
                   lines: [
                     `BTS→MTS ${fmt(r.down)} · MTS→BTS ${fmt(r.up)}`,
                     `two-direction total ${fmt((r.down ?? 0) + (r.up ?? 0))}`,
+                    `endpoint detail: ${endpointDetailLabel(r.detailKind)}`,
                     ...names.slice(0, 4).map(([n, v]) => `${n}: ${fmtBytes(v.bytes)} / ${v.messages} msg`),
                   ],
                 });
@@ -215,8 +210,14 @@ export function ThreadsPage({
   selected: Set<string>;
 }) {
   const available = useMemo(
-    () => CASE_OPTIONS.filter((c) =>
-      select({ suite: 'table', harness, workload: c.workload, scale: c.scale, metric: 'latency' }).length > 0),
+    () => THREAD_WORKLOADS.flatMap((workload) => [...new Set(
+      select({ suite: 'table', harness, workload, metric: 'latency' }).map((record) => record.scale),
+    )].sort((a, b) => a - b).map((scale) => ({
+      key: `${workload}@${scale}`,
+      workload,
+      scale,
+      label: `${workload} @${scaleLabel(scale)}`,
+    }))),
     [harness],
   );
   const [caseKey, setCaseKey] = useState<string | null>(null);
@@ -362,12 +363,16 @@ function EndpointTable({
         merge[`${dir} ${name}`] = { ...v, dir };
       }
     }
-    return { id: e.id, endpoints: merge };
+    return { id: e.id, endpoints: merge, detailKind: down?.detailKind ?? up?.detailKind ?? null };
   });
+  const detailKinds = new Set(rows.flatMap((row) => row.detailKind ? [row.detailKind] : []));
+  const detailDescription = detailKinds.size === 1
+    ? endpointDetailLabel([...detailKinds][0])
+    : 'source-labelled samples (see row data)';
 
   return (
     <div className="card">
-      <div className="card-title">per-endpoint breakdown — last sample</div>
+      <div className="card-title">per-endpoint breakdown — {detailDescription}</div>
       <div className="card-desc">
         Which rpc endpoints carried the traffic. <code>callLepusMethod</code> carries most
         frameworks' render payloads; <code>publishEvent</code>/<code>publicComponentEvent</code> carry input

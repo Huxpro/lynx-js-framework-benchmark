@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
 
-const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'kind', 'provenance', 'bundles'];
+const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab']);
 
 let failures = 0;
@@ -30,6 +30,13 @@ for (const id of ids) {
   }
   if (manifest.id !== id) fail(`${id}: manifest id mismatch (${manifest.id})`);
   if (!TIERS.has(manifest.tier)) fail(`${id}: invalid tier "${manifest.tier}"`);
+  if (!/^#[\da-f]{6}$/i.test(manifest.color ?? '')) fail(`${id}: invalid color "${manifest.color}"`);
+  if (!Number.isFinite(manifest.presentation?.order)) fail(`${id}: invalid presentation.order`);
+  for (const key of ['colorLight', 'colorDark']) {
+    if (!/^#[\da-f]{6}$/i.test(manifest.presentation?.[key] ?? '')) {
+      fail(`${id}: invalid presentation.${key} "${manifest.presentation?.[key]}"`);
+    }
+  }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
   if (manifest.provenance?.patched && manifest.provenance?.patchFile) {
     if (!fs.existsSync(path.join(root, manifest.provenance.patchFile))) {

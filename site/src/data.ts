@@ -1,17 +1,6 @@
-// Data layer: results/latest.json + entries/*/entry.json are imported at
-// build time so the site can never drift from the repo's numbers.
+// Data layer. The site build regenerates results/latest.json from immutable
+// run observations first; entry manifests are discovered automatically.
 import latest from '../../results/latest.json';
-
-import octaneDomManifest from '../../entries/octane-dom/entry.json';
-import octaneHux1Manifest from '../../entries/octane-hux1/entry.json';
-import octaneHux2Manifest from '../../entries/octane-hux2/entry.json';
-import octanePriorManifest from '../../entries/octane-prior/entry.json';
-import octaneManifest from '../../entries/octane/entry.json';
-import reactManifest from '../../entries/react/entry.json';
-import vueVaporManifest from '../../entries/vue-vapor/entry.json';
-import vueVaporIfrManifest from '../../entries/vue-vapor-ifr/entry.json';
-import vueVdomManifest from '../../entries/vue-vdom/entry.json';
-import vueVdomIfrEtManifest from '../../entries/vue-vdom-ifr-et/entry.json';
 
 export interface BenchRecord {
   suite: string;
@@ -30,15 +19,19 @@ export interface BenchRecord {
   min: number | null;
   p95: number | null;
   ci95: number | null;
+  max?: number | null;
+  value?: number | null;
   samples: number[] | null;
   detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
+  detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
+  detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
-  machineId: string;
-  runFile: string;
-  runGeneratedAt: string;
-  calibration: { probeVersion: number; score: number };
+  machineId: string | null;
+  runFile: string | null;
+  runGeneratedAt: string | null;
+  calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'calibrated-estimate' | 'historical' | 'archive';
+  comparisonKind: 'same-run' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
   sourceEntry?: string;
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
@@ -64,6 +57,7 @@ export interface ComparisonRun {
   machineId: string;
   calibration: { probeVersion: number; score: number };
   entryIds: string[];
+  sourceRecordCount: number;
   recordCount: number;
   labEstimates: {
     entryId: string;
@@ -73,6 +67,7 @@ export interface ComparisonRun {
     sourceCalibration: { probeVersion: number; score: number };
     targetCalibration: { probeVersion: number; score: number };
     calibrationRatio: number | null;
+    sourceRecordCount: number;
     recordCount: number;
   }[];
 }
@@ -87,6 +82,8 @@ export interface EntryMeta {
   /** featured = default public view; lab = author-development variants
    * (versions/PRs/permutations), hidden until Lab mode is on. */
   tier?: 'featured' | 'lab';
+  color: string;
+  presentation: { order: number; colorLight: string; colorDark: string };
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
 }
 
@@ -101,26 +98,21 @@ export const MACHINES = (latest as { machines: Record<string, Machine> }).machin
 export const COMPARISON = (latest as { comparison: ComparisonRun }).comparison;
 export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
 
-// Fixed entry order = legend order. Featured entries occupy the CVD-validated
-// categorical slots (validated adjacency order — don't reorder casually);
-// color follows the entity on every chart on every page. Lab entries (same
-// framework, different version/PR/flags) wear an ordinal lightness step of
-// their framework's hue — identity is carried by direct labels + tables (the
-// relief rule), since arbitrary lab permutations cannot be adjacency-validated
-// by construction.
-export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] = [
-  { ...(reactManifest as EntryMeta), colorLight: '#2a78d6', colorDark: '#3987e5' },
-  { ...(octaneManifest as EntryMeta), colorLight: '#eb6834', colorDark: '#d95926' },
-  { ...(vueVdomManifest as EntryMeta), colorLight: '#1baf7a', colorDark: '#199e70' },
-  { ...(vueVdomIfrEtManifest as EntryMeta), colorLight: '#eda100', colorDark: '#c98500' },
-  { ...(vueVaporManifest as EntryMeta), colorLight: '#e87ba4', colorDark: '#d55181' },
-  { ...(vueVaporIfrManifest as EntryMeta), colorLight: '#008300', colorDark: '#008300' },
-  // lab: octane family ramp (darker step of the octane orange)
-  { ...(octanePriorManifest as EntryMeta), colorLight: '#bd4c18', colorDark: '#f59e72' },
-  { ...(octaneHux1Manifest as EntryMeta), colorLight: '#9f3c0d', colorDark: '#ffaf87' },
-  { ...(octaneHux2Manifest as EntryMeta), colorLight: '#702a08', colorDark: '#ffc09f' },
-  { ...(octaneDomManifest as EntryMeta), colorLight: '#4f1d05', colorDark: '#ffd6bf' },
-];
+const manifestModules = import.meta.glob('../../entries/*/entry.json', {
+  eager: true,
+  import: 'default',
+}) as Record<string, EntryMeta>;
+
+// Entry identity, membership and colors come from manifests. New entries are
+// picked up without touching site code; order is deterministic presentation.
+export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] =
+  Object.values(manifestModules)
+    .sort((a, b) => a.presentation.order - b.presentation.order || a.label.localeCompare(b.label))
+    .map((entry) => ({
+      ...entry,
+      colorLight: entry.presentation.colorLight,
+      colorDark: entry.presentation.colorDark,
+    }));
 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
 export const LAB_IDS = ENTRIES.filter((e) => e.tier === 'lab').map((e) => e.id);
@@ -147,6 +139,9 @@ export interface RecordFilter {
   workload?: string;
   scale?: number;
   metric?: string;
+  environment?: string;
+  boundary?: string;
+  unit?: string;
 }
 
 export function select(filter: RecordFilter): BenchRecord[] {
@@ -156,19 +151,25 @@ export function select(filter: RecordFilter): BenchRecord[] {
     && (filter.entry == null || r.entry === filter.entry)
     && (filter.workload == null || r.workload === filter.workload)
     && (filter.scale == null || r.scale === filter.scale)
-    && (filter.metric == null || r.metric === filter.metric),
+    && (filter.metric == null || r.metric === filter.metric)
+    && (filter.environment == null || r.environment === filter.environment)
+    && (filter.boundary == null || r.boundary === filter.boundary)
+    && (filter.unit == null || r.unit === filter.unit),
   );
 }
 
 export function one(filter: RecordFilter): BenchRecord | null {
   const rs = select(filter);
+  if (rs.length > 1) {
+    throw new Error(`ambiguous benchmark record (${rs.length} matches): ${JSON.stringify(filter)}`);
+  }
   return rs.length ? rs[0] : null;
 }
 
 export const HARNESSES = [...new Set(RECORDS.map((r) => r.harness))];
 
-export function workloadScales(suite: string, workload: string): number[] {
-  return [...new Set(select({ suite, workload }).map((r) => r.scale))].sort((a, b) => a - b);
+export function workloadScales(filter: Omit<RecordFilter, 'scale'>): number[] {
+  return [...new Set(select(filter).map((r) => r.scale))].sort((a, b) => a - b);
 }
 
 export const fmtMs = (v: number | null): string => {

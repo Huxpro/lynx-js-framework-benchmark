@@ -5,6 +5,10 @@ A neutral, extensible benchmark infrastructure for JS frameworks on [Lynx](https
 wiring that changes every equation on Lynx: background-thread vs main-thread time, and the
 bytes that cross between them).
 
+The source/derived boundary is strict: run files retain observations, entry manifests and bundles
+retain build provenance, and every statistic, score, cohort, and visualization is recalculated.
+See [docs/DATA_MODEL.md](./docs/DATA_MODEL.md).
+
 **Entries today:** ReactLynx · Vue-Lynx VDOM (baseline & +IFR+ET) · Vue-Lynx Vapor (baseline
 & +IFR) · Octane. Adding a framework, a version, or a config is one directory.
 
@@ -13,8 +17,8 @@ bytes that cross between them).
 ```bash
 pnpm install
 pnpm bench run            # full matrix → results/runs/<stamp>-<machine>.json
-pnpm bench collect        # merge runs → results/latest.json
-pnpm site:dev             # the results site (imports results/latest.json at build time)
+pnpm bench collect        # explicitly regenerate the derived results/latest.json cache
+pnpm site:dev             # regenerates the cache, then starts the results site
 ```
 
 Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
@@ -30,7 +34,7 @@ pnpm bench list                                                          # entri
 pnpm bench preflight                                                     # machine calibration only
 ```
 
-Every `run` writes an independent run file stamped with a machine fingerprint and a
+Every `run` writes an independent source run file stamped with a machine fingerprint and
 **preflight calibration score** (a fixed CPU probe in the same browser); `collect` merges any
 number of run files — from any machines — into `results/latest.json`, newest-per-cell,
 per-machine, with source-run calibration attached to every record. Charts use
@@ -39,6 +43,7 @@ per-machine, with source-run calibration attached to every record. Charts use
 public ranking. Opt-in Lab entries use one complete historical run per entry; millisecond fields
 are scaled by source-score / comparison-score and marked as estimates. Non-time fields remain
 explicitly historical because the CPU probe cannot calibrate them.
+`run` refreshes the derived cache immediately; site dev/build refresh it again before loading.
 
 ## What is measured
 
@@ -94,7 +99,7 @@ packages/runner/    lynx-bench CLI: run / collect / preflight / list; web + nati
 entries/            one directory per framework×config, vendored bundles + provenance
 results/            runs/ (one file per invocation) + latest.json (collected)
 site/               the results site (React + Vite + Observable Plot)
-docs/               DESIGN.md, METHODOLOGY.md
+docs/               DESIGN.md, METHODOLOGY.md, DATA_MODEL.md
 ```
 
 ## Lineage
