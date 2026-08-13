@@ -14,9 +14,9 @@ const latestPath = path.join(root, 'results/latest.json');
 const before = JSON.parse(fs.readFileSync(latestPath, 'utf-8'));
 const regenerated = collectRuns({ log: () => {} });
 
-// generatedAt necessarily differs; everything else must match exactly.
-const strip = ({ generatedAt: _generatedAt, ...rest }) => JSON.stringify(rest);
-if (strip(before) !== strip(regenerated)) {
+// Collection is deterministic, including generatedAt (the newest source run
+// timestamp), so the materialized view must match byte-for-byte as JSON data.
+if (JSON.stringify(before) !== JSON.stringify(regenerated)) {
   // restore the committed file so a local run doesn't leave noise behind
   fs.writeFileSync(latestPath, JSON.stringify(before, null, 1));
   console.error(

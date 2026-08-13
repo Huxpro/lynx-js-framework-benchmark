@@ -33,6 +33,21 @@ const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
 const wants = (id) => ONLY.size === 0 || ONLY.has(id);
 
+// Presentation metadata is source configuration, colocated with the manifest
+// generator so re-vendoring cannot silently reset legend order or chart colors.
+const PRESENTATION = {
+  react: { order: 0, colorLight: '#2a78d6', colorDark: '#3987e5' },
+  octane: { order: 1, colorLight: '#eb6834', colorDark: '#d95926' },
+  'vue-vdom': { order: 2, colorLight: '#1baf7a', colorDark: '#199e70' },
+  'vue-vdom-ifr-et': { order: 3, colorLight: '#eda100', colorDark: '#c98500' },
+  'vue-vapor': { order: 4, colorLight: '#e87ba4', colorDark: '#d55181' },
+  'vue-vapor-ifr': { order: 5, colorLight: '#008300', colorDark: '#008300' },
+  'octane-prior': { order: 100, colorLight: '#bd4c18', colorDark: '#f59e72' },
+  'octane-hux1': { order: 101, colorLight: '#9f3c0d', colorDark: '#ffaf87' },
+  'octane-hux2': { order: 102, colorLight: '#702a08', colorDark: '#ffc09f' },
+  'octane-dom': { order: 103, colorLight: '#4f1d05', colorDark: '#ffd6bf' },
+};
+
 const sha256 = (file) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
@@ -72,6 +87,7 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
     tags,
     tier,
     color,
+    presentation: PRESENTATION[id] ?? { order: 999, colorLight: color, colorDark: color },
     kind: 'vendored',
     provenance: {
       source: source.url,

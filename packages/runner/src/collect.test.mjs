@@ -16,7 +16,9 @@ const record = (entry, workload = 'create') => ({
   std: null, min: 1, p95: null, ci95: null, samples: [1], detail: null, dnfCount: 0,
 });
 
-const writeRun = (root, file, { machineId, score, entries, generatedAt = file }) => {
+const writeRun = (root, file, {
+  machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z',
+}) => {
   fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
     schemaVersion: 2,
     meta: { generatedAt, machine: machine(machineId), calibration: { probeVersion: 1, score } },
@@ -134,6 +136,124 @@ test('featured cohort wins over broad Lab run and legacy Octane IDs become calib
     assert.equal(prior.median, 42);
     assert.equal(prior.comparisonKind, 'historical');
     assert.equal(prior.calibrationRatio, null);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector ignores stale aggregate snapshots and re-derives display detail from source observations', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const wire = {
+      ...record('react'),
+      metric: 'wireToMtsBytes',
+      unit: 'bytes',
+      boundary: 'wire',
+      samples: [100, 300, 900],
+      n: 99,
+      median: 777,
+      mean: 777,
+      min: 777,
+      p95: 777,
+      detail: { byName: { stale: { messages: 9, bytes: 777 } } },
+      detailSamples: [
+        { byName: { first: { messages: 1, bytes: 100 } } },
+        { byName: { middle: { messages: 2, bytes: 300 } } },
+        { byName: { last: { messages: 3, bytes: 900 } } },
+      ],
+    };
+    const scalar = {
+      ...record('react', 'memory'),
+      metric: 'heapMts',
+      boundary: 'heap',
+      unit: 'bytes',
+      samples: null,
+      n: 1,
+      median: 42,
+      mean: 999,
+      min: 999,
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/z-old-name.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-04T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [wire, scalar],
+    }));
+
+    const out = collectRuns({
+      root,
+      log: () => {},
+      entryTiers: entryTiers(['react']),
+    });
+    const derivedWire = out.comparisonRecords.find((r) => r.metric === 'wireToMtsBytes');
+    assert.equal(derivedWire.n, 3);
+    assert.equal(derivedWire.median, 300);
+    assert.equal(derivedWire.mean, 1300 / 3);
+    assert.equal(derivedWire.min, 100);
+    assert.equal(derivedWire.max, 900);
+    assert.deepEqual(derivedWire.detail, wire.detailSamples[1]);
+    assert.equal(derivedWire.detailKind, 'sample-nearest-median');
+
+    const derivedScalar = out.comparisonRecords.find((r) => r.metric === 'heapMts');
+    assert.equal(derivedScalar.value, 42);
+    assert.equal(derivedScalar.mean, 42);
+    assert.equal(derivedScalar.min, 42);
+    assert.equal(out.generatedAt, '2026-01-04T00:00:00Z');
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('newest-per-cell uses source generatedAt rather than a misleading filename', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'z-looks-new.json', {
+      machineId: 'a', score: 100, entries: ['react'], generatedAt: '2026-01-01T00:00:00Z',
+    });
+    const newer = {
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-02T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 101 },
+      },
+      records: [{ ...record('react'), samples: [2], median: 1 }],
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/a-looks-old.json'), JSON.stringify(newer));
+
+    const out = collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) });
+    const latest = out.records.find((r) => r.entry === 'react' && r.metric === 'latency');
+    assert.equal(latest.runFile, 'a-looks-old.json');
+    assert.equal(latest.median, 2);
+    assert.equal(out.machines.a.latestCalibration.score, 101);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector rejects ambiguous duplicate source cells', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const duplicated = record('react');
+    fs.writeFileSync(path.join(root, 'results/runs/duplicate.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [duplicated, { ...duplicated, median: 999 }],
+    }));
+    assert.throws(
+      () => collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) }),
+      /duplicate source record/,
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

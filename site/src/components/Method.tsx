@@ -4,6 +4,25 @@ export function MethodPage() {
   return (
     <>
       <div className="card">
+        <div className="card-title">source data vs derived data</div>
+        <div className="card-desc" style={{ maxWidth: '80ch' }}>
+          <p>
+            <b>Benchmark source</b> is limited to run/environment identity, record identity,
+            raw repeated <code>samples</code>, one-shot <code>value</code>, <code>dnfCount</code>,
+            and per-repetition wire <code>detailSamples</code>. Entry manifests and their checked
+            bundles are build source.
+          </p>
+          <p>
+            <b>Everything else is derived:</b> median/mean/CI, endpoint display samples, cohort and
+            Lab calibration, available entries/cases/scales, rankings, interactive scores,
+            geomeans, ratios, trend α, axes, totals, sorting, and every visual mark. The site build
+            regenerates <code>results/latest.json</code> from source before loading it; stored
+            aggregate fields in historical run files are ignored and recomputed.
+          </p>
+        </div>
+      </div>
+
+      <div className="card">
         <div className="card-title">how the numbers are made</div>
         <div className="card-desc" style={{ maxWidth: '80ch' }}>
           <p>
@@ -89,7 +108,7 @@ export function MethodPage() {
             </table>
           </details>
         )}
-        <div className="note">dataset generated {new Date(GENERATED_AT).toLocaleString()}</div>
+        <div className="note">newest source run {new Date(GENERATED_AT).toLocaleString()}</div>
       </div>
 
       <div className="card">

@@ -5,6 +5,7 @@ import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ENTRIES, entryColor, select, shortLabel } from '../data';
+import { slopeFit } from '../derive.mjs';
 
 interface TrendSpec {
   title: string;
@@ -13,19 +14,6 @@ interface TrendSpec {
   workload: string;
   metric: string;
   unit: 'ms' | 'bytes';
-}
-
-function slopeFit(points: [number, number][]): number | null {
-  const pts = points.filter(([x, y]) => x > 0 && y > 0).map(([x, y]) => [Math.log10(x), Math.log10(y)]);
-  if (pts.length < 2) return null;
-  const n = pts.length;
-  const sx = pts.reduce((a, p) => a + p[0], 0);
-  const sy = pts.reduce((a, p) => a + p[1], 0);
-  const sxx = pts.reduce((a, p) => a + p[0] * p[0], 0);
-  const sxy = pts.reduce((a, p) => a + p[0] * p[1], 0);
-  const denom = n * sxx - sx * sx;
-  if (Math.abs(denom) < 1e-12) return null;
-  return (n * sxy - sx * sy) / denom;
 }
 
 export function ScaleTrend({
@@ -57,10 +45,13 @@ export function ScaleTrend({
 
   const alphas = useMemo(() => {
     const out: { entry: string; alpha: number | null }[] = [];
-    for (const e of ENTRIES) {
-      if (!selected.has(e.id)) continue;
-      const pts = data.filter((d) => d.entry === e.id).map((d) => [d.scale, d.value] as [number, number]);
-      if (pts.length >= 2) out.push({ entry: e.id, alpha: slopeFit(pts) });
+    const ids = ENTRIES.map((entry) => entry.id).filter((id) => selected.has(id));
+    const commonScales = [...new Set(data.map((point) => point.scale))]
+      .filter((scale) => ids.every((id) => data.some((point) => point.entry === id && point.scale === scale)));
+    for (const id of ids) {
+      const pts = data.filter((d) => d.entry === id && commonScales.includes(d.scale))
+        .map((d) => [d.scale, d.value] as [number, number]);
+      if (pts.length >= 2) out.push({ entry: id, alpha: slopeFit(pts) });
     }
     return out;
   }, [data, selected]);

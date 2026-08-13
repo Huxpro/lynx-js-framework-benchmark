@@ -1,6 +1,18 @@
 // Result record schema (v2 of the unified-benchmark lineage). One flat record
 // per (entry × workload × scale × metric); a comparison between two records is
 // valid only when every COMPARABILITY_KEY agrees.
+//
+// Source-of-truth rule:
+// - repeated observations live in `samples`
+// - one-shot observations live in `value`
+// - DNF observations live in `dnfCount`
+// - wire endpoint observations live in `detailSamples`
+//
+// n/median/mean/std/min/max/p95/ci95 and `detail` are materialized derivatives.
+// They are emitted for convenient inspection, but every downstream consumer
+// must call deriveRecord() instead of trusting a stored snapshot.
+
+import { summarize } from './stats.mjs';
 
 export const SCHEMA_VERSION = 2;
 
@@ -24,6 +36,63 @@ export const BOUNDARIES = {
   bundle: 'static',
 };
 
+const STAT_FIELDS = ['n', 'median', 'mean', 'std', 'min', 'max', 'p95', 'ci95'];
+
+function legacyValue(record) {
+  // v2 records written before `value` existed stored one-shot observations in
+  // the statistic fields. Keep them readable without making those fields
+  // authoritative for records that have raw samples.
+  return record.samples == null
+    && record.n === 1
+    && typeof record.median === 'number'
+    && Number.isFinite(record.median)
+    ? record.median
+    : null;
+}
+
+function nearestMedianDetail(samples, detailSamples, median) {
+  if (!Array.isArray(samples) || !Array.isArray(detailSamples) || median == null) return null;
+  let best = null;
+  for (let i = 0; i < Math.min(samples.length, detailSamples.length); i++) {
+    if (!Number.isFinite(samples[i]) || detailSamples[i] == null) continue;
+    const distance = Math.abs(samples[i] - median);
+    if (best == null || distance < best.distance) best = { distance, detail: detailSamples[i] };
+  }
+  return best?.detail ?? null;
+}
+
+/** Recompute every statistical/display derivative from a record's source observations. */
+export function deriveRecord(record) {
+  const explicitValue = typeof record.value === 'number' && Number.isFinite(record.value)
+    ? record.value
+    : null;
+  const inferredLegacyValue = explicitValue == null ? legacyValue(record) : null;
+  const value = explicitValue ?? inferredLegacyValue;
+  const observations = Array.isArray(record.samples)
+    ? record.samples
+    : value == null ? [] : [value];
+  const stat = summarize(observations);
+  const derived = { ...record };
+  for (const field of STAT_FIELDS) derived[field] = stat?.[field] ?? null;
+  derived.n = stat?.n ?? 0;
+  if (inferredLegacyValue != null && !Object.hasOwn(record, 'value')) derived.value = inferredLegacyValue;
+
+  const detail = nearestMedianDetail(record.samples, record.detailSamples, stat?.median ?? null);
+  if (detail != null) {
+    derived.detail = detail;
+    derived.detailKind = 'sample-nearest-median';
+  } else if (record.detail != null) {
+    // Old source files retained only the final endpoint sample. Preserve it as
+    // explicitly labelled legacy source data; never present it as an aggregate.
+    derived.detail = record.detail;
+    derived.detailKind = record.detailKind ?? 'legacy-last-sample';
+  } else {
+    derived.detail = null;
+    derived.detailKind = null;
+  }
+  return derived;
+}
+
 export function makeRecord({
   suite,
   harness = 'web',
@@ -34,16 +103,16 @@ export function makeRecord({
   metric,
   boundary,
   unit,
-  stat = null,
   value = null,
   samples = null,
+  detailSamples = null,
   detail = null,
   dnfCount = 0,
 }) {
   if (!suite || !entry || !workload || !metric || !boundary || !unit) {
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
   }
-  return {
+  return deriveRecord({
     suite,
     harness,
     environment,
@@ -53,17 +122,12 @@ export function makeRecord({
     metric,
     boundary,
     unit,
-    n: stat?.n ?? (value != null ? 1 : 0),
-    median: stat?.median ?? value,
-    mean: stat?.mean ?? value,
-    std: stat?.std ?? null,
-    min: stat?.min ?? value,
-    p95: stat?.p95 ?? null,
-    ci95: stat?.ci95 ?? null,
+    value,
     samples,
+    detailSamples,
     detail,
     dnfCount,
-  };
+  });
 }
 
 export function comparisonKey(record) {

@@ -7,9 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Integrity + drift guards, then the site build (which imports
-  # results/latest.json and entries/*/entry.json — so a bad manifest or stale
-  # collect can never publish).
+  # Integrity + exact regeneration guards, then a site build which regenerates
+  # the derived dataset again before importing current manifests/results.
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -23,7 +22,7 @@ jobs:
       - name: Entry manifests + bundle checksums
         run: node scripts/verify-entries.mjs
       - name: Collector cohort + calibration tests
-        run: node --test packages/runner/src/*.test.mjs
+        run: pnpm test
       - name: latest.json matches collect over runs/
         run: node scripts/verify-collect.mjs
       - name: Site build

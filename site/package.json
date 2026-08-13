@@ -4,8 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node ../packages/runner/src/cli.mjs collect",
     "dev": "vite",
-    "build": "tsc -b --noCheck 2>/dev/null || true && vite build",
+    "prebuild": "node ../packages/runner/src/cli.mjs collect",
+    "build": "tsc --noEmit --incremental false --pretty false && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -4,7 +4,7 @@
 import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ENTRIES, entryColor, one, shortLabel } from '../data';
+import { ENTRIES, entryColor, one, shortLabel, workloadScales } from '../data';
 
 export function CostSpace({
   harness,
@@ -16,21 +16,27 @@ export function CostSpace({
   selected: Set<string>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const scales = [1000, 10000, 30000];
+  const scales = useMemo(
+    () => workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })
+      .filter((value) => value > 0),
+    [harness],
+  );
   const [scale, setScale] = useState(10000);
+  const activeScale = scales.includes(scale) ? scale : (scales.find((value) => value === 10000) ?? scales[0]);
 
   const data = useMemo(() => {
     const out: { entry: string; label: string; gzip: number; fcp: number }[] = [];
     for (const e of ENTRIES) {
       if (!selected.has(e.id)) continue;
       const gzip = one({ suite: 'bundle', entry: e.id, metric: 'bundleWebGzip' })?.median;
-      const fcp = one({ suite: 'startup', harness, entry: e.id, workload: 'startup', scale, metric: 'fcp' })?.median;
+      const fcp = activeScale == null ? null
+        : one({ suite: 'startup', harness, entry: e.id, workload: 'startup', scale: activeScale, metric: 'fcp' })?.median;
       if (gzip != null && fcp != null) {
         out.push({ entry: e.id, label: shortLabel(e.id), gzip, fcp });
       }
     }
     return out;
-  }, [harness, selected, scale]);
+  }, [harness, selected, activeScale]);
 
   useEffect(() => {
     const node = ref.current;
@@ -54,7 +60,7 @@ export function CostSpace({
         tickFormat: (d: number) => `${Math.round(d / 1024)}k`,
       },
       y: {
-        label: `↑ FCP @${scale / 1000}k rows (ms)`,
+        label: `↑ FCP @${(activeScale ?? 0) / 1000}k rows (ms)`,
         grid: true,
         domain: [0, Math.max(...data.map((d) => d.fcp)) * 1.15],
       },
@@ -71,7 +77,7 @@ export function CostSpace({
     });
     node.replaceChildren(plot);
     return () => plot.remove();
-  }, [data, theme, selected, scale]);
+  }, [data, theme, selected, activeScale]);
 
   return (
     <figure className="card" role="group" aria-label="Cost space">
@@ -86,7 +92,7 @@ export function CostSpace({
       <div className="controls-row">
         <div className="seg" role="group" aria-label="Rows">
           {scales.map((s) => (
-            <button key={s} aria-pressed={scale === s} onClick={() => setScale(s)}>@{s / 1000}k</button>
+            <button key={s} aria-pressed={activeScale === s} onClick={() => setScale(s)}>@{s / 1000}k</button>
           ))}
         </div>
       </div>

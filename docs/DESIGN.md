@@ -179,6 +179,10 @@ mode switch with its own data availability.
 
 ## Runs, incremental collection, calibration
 
+The authoritative source/derived contract is specified in [DATA_MODEL.md](./DATA_MODEL.md).
+In particular, raw run observations and entry artifacts are source; statistics, cohort selection,
+calibration output, `latest.json`, and every site score/visual are derived.
+
 - `bench run` writes one **run file** `results/runs/<iso>-<machineId>.json` — any subset of
   the matrix (`--entry`, `--workload`, `--scale`, `--suite`, `--quick`). Machine fingerprint +
   calibration score embedded.
@@ -226,8 +230,9 @@ Pages:
    per-endpoint breakdown, BTS vs MTS CPU split, bundle MTS/BTS section sizes.
 4. **Method** — methodology, machines, calibration table, comparability audit.
 
-Data flows from `results/latest.json` + `entries/*/entry.json` at build time (imported, so
-site and numbers cannot drift), same guarantee octane's site makes.
+Before every dev/build, the collector regenerates `results/latest.json` from run observations and
+current entry artifacts. The site then imports that materialized view plus automatically discovered
+`entries/*/entry.json` manifests, so stale collected statistics cannot publish.
 
 ## Non-goals (v1)
 
