@@ -86,7 +86,7 @@ export default function App() {
 
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
-    for (const w of ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
+    for (const w of ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
       for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
           rows.push({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
@@ -102,7 +102,7 @@ export default function App() {
   }, [harness]);
 
   const tableOps = (scales: number[]) =>
-    ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
+    ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
       workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
         .filter((s) => scales.includes(s))
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
