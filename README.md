@@ -61,6 +61,11 @@ startup FCP at 0/1k/10k/30k pre-rendered rows. See
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the measurement rules and
 [docs/DESIGN.md](docs/DESIGN.md) for the architecture.
 
+The primary interactive score is an equal-cell geometric mean over all 11 normal operation ×
+scale cells, making `clear @10k` 1/11 (9.09%). Scale-specific, storm, and startup scores remain
+separate diagnostics; there is no cross-suite global score. The reviewed cell lists live in
+`site/src/score-policy.mjs` rather than being inferred from whatever observations exist.
+
 ## Harnesses
 
 - **`web` (primary):** headless Chromium running Lynx for Web. Everything above.

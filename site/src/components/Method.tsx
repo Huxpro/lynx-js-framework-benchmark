@@ -30,19 +30,21 @@ export function MethodPage() {
             <a href="https://github.com/krausest/js-framework-benchmark" target="_blank" rel="noreferrer">
               js-framework-benchmark
             </a>, but this score does not copy its current weighting. For framework <i>f</i>,
-            operation <i>o</i>, and the selected complete cohort <i>C</i>:
+            measured cell <i>o</i> (an operation × scale pair), and the selected complete cohort{' '}
+            <i>C</i>:
           </p>
           <p><code>r(f,o) = median(f,o) / min(g ∈ C) median(g,o)</code></p>
           <p>
             <code>S(f) = exp((1 / |O|) · Σ(o ∈ O) ln r(f,o)) = (Π(o ∈ O) r(f,o))^(1 / |O|)</code>
           </p>
           <p>
-            Every included operation therefore has equal weight in log space. Row count, absolute
-            milliseconds, and assumed product frequency add no hidden weight. The 1k card uses seven
-            operations (<code>create</code>, <code>replace</code>, <code>append1k</code>,{' '}
-            <code>update10th</code>, <code>select</code>, <code>swap</code>, <code>remove</code>); the
-            10k card uses four (<code>create</code>, <code>update10th</code>, <code>select</code>,{' '}
-            <code>clear</code>). An entry missing any cell is excluded instead of receiving a different
+            Every included cell has equal weight in log space. Row count, absolute milliseconds,
+            and assumed product frequency add no hidden weight. The primary interactive score uses
+            all 11 normal table-operation cells: seven at 1k and four at 10k. Consequently{' '}
+            <code>clear @10k</code> contributes 1/11 (9.09%), close to the upstream benchmark's
+            normalized clear weight. The @1k and @10k cards are scale diagnostics over their seven-
+            and four-cell subsets; clear is 1/4 only inside the explicitly labeled @10k diagnostic.
+            An entry missing any cell in a profile is excluded instead of receiving a different
             denominator.
           </p>
           <p>
@@ -56,8 +58,10 @@ export function MethodPage() {
             </a>{' '}
             since Chrome 118, down-weighting operations whose slowdown factors have unusually wide
             spread. We keep equal weights here because its repeated/throttled web scenarios do not map
-            one-to-one onto these Lynx scales. Startup, storms, wire, CPU, memory, and bundle cost stay
-            separate rather than being folded into one opaque global score.
+            one-to-one onto these Lynx scales. Storms and startup each have their own four-cell score;
+            the heatmap repeats the interactive, storm, and startup scores separately. It never folds
+            them—or wire, CPU, memory, and bundle cost—into one opaque global score. Score profile cell
+            lists are pinned in source, so adding observations cannot silently change published weights.
           </p>
         </div>
       </div>

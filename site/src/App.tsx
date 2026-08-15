@@ -7,8 +7,9 @@ import { MethodPage } from './components/Method';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, TREND_SPECS } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
-import { ENTRIES, FEATURED_IDS, LAB_IDS, select, workloadScales } from './data';
+import { ENTRIES, FEATURED_IDS, LAB_IDS, select } from './data';
 import { useTheme } from './hooks';
+import { HEATMAP_SCORE_KEYS, SCORE_PROFILES, scoreCellKey } from './score-policy.mjs';
 
 // Sharable comparison state: ?entries=a,b,c picks an exact set (any
 // permutation, incl. lab entries); ?lab=1 reveals the lab tier. This is the
@@ -85,27 +86,43 @@ export default function App() {
   };
 
   const heatRows = useMemo(() => {
-    const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
-    for (const w of ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
-      for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
-        if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
-          rows.push({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
-        }
-      }
-    }
-    for (const s of workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })) {
-      if (select({ suite: 'startup', harness, workload: 'startup', scale: s, metric: 'fcp' }).length >= 2) {
-        rows.push({ key: `startup@${s}`, label: `startup @${scaleLabel(s)}`, suite: 'startup', workload: 'startup', scale: s, metric: 'fcp' });
+    const rows: {
+      key: string;
+      label: string;
+      suite: string;
+      workload: string;
+      scale: number;
+      metric: string;
+      scoreGroup: string;
+      scoreGroupLabel: string;
+    }[] = [];
+    for (const profileKey of HEATMAP_SCORE_KEYS) {
+      const profile = SCORE_PROFILES[profileKey];
+      for (const scoreCell of profile.cells) {
+        rows.push({
+          ...scoreCell,
+          key: scoreCellKey(scoreCell),
+          label: `${scoreCell.workload} @${scaleLabel(scoreCell.scale)}`,
+          scoreGroup: profile.key,
+          scoreGroupLabel: profile.label,
+        });
       }
     }
     return rows;
   }, [harness]);
 
-  const tableOps = (scales: number[]) =>
-    ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
-      workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
-        .filter((s) => scales.includes(s))
-        .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
+  const profileOps = (
+    profileKey: keyof typeof SCORE_PROFILES,
+    showScale: boolean,
+  ) => SCORE_PROFILES[profileKey].cells
+    .map((scoreCell) => ({
+      key: scoreCellKey(scoreCell),
+      label: scoreCell.suite === 'startup'
+        ? `@${scaleLabel(scoreCell.scale)} rows`
+        : `${scoreCell.workload}${showScale ? ` @${scaleLabel(scoreCell.scale)}` : ''}`,
+      workload: scoreCell.workload,
+      scale: scoreCell.scale,
+    }));
 
   const nativeHasData = select({ harness: 'native' }).length > 0;
 
@@ -162,6 +179,16 @@ export default function App() {
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           <RankedBars
+            title="interactive overall"
+            description="all 11 normal table-operation × scale cells in one primary score; every cell has equal log weight, so clear @10k contributes 1/11."
+            suite="table"
+            ops={profileOps('interactive', true)}
+            harness={harness}
+            theme={theme}
+            selected={selected}
+            scoreLabel="overall"
+          />
+          <RankedBars
             title="interactive @1k"
             description={(
               <>
@@ -172,42 +199,42 @@ export default function App() {
               </>
             )}
             suite="table"
-            ops={tableOps([1000])}
+            ops={profileOps('interactive1k', false)}
             harness={harness}
             theme={theme}
             selected={selected}
+            scoreLabel="@1k score"
           />
           <RankedBars
             title="interactive @10k"
-            description="the same ops at 10,000 rows — where wire cost and reconciliation strategy separate."
+            description="scale diagnostic for the four operations measured at 10,000 rows. Clear is 1/4 here, but only 1/11 in interactive overall."
             suite="table"
-            ops={tableOps([10000])}
+            ops={profileOps('interactive10k', false)}
             harness={harness}
             theme={theme}
             selected={selected}
+            scoreLabel="@10k score"
           />
           <RankedBars
             title="storms"
             description="one tap, many sequential render cycles (50 update / 30 select ticks through a MessageChannel pump). Throughput of the full state→render→wire→apply loop."
             suite="table"
-            ops={['updateStorm', 'selectStorm'].flatMap((w) =>
-              workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
-                .map((s) => ({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, workload: w, scale: s })))}
+            ops={profileOps('storms', true)}
             harness={harness}
             theme={theme}
             selected={selected}
+            scoreLabel="storm score"
           />
           <RankedBars
             title="startup (first contentful paint)"
             description="view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration."
             suite="startup"
             metric="fcp"
-            ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' }).map((s) => ({
-              key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
-            }))}
+            ops={profileOps('startup', true)}
             harness={harness}
             theme={theme}
             selected={selected}
+            scoreLabel="startup score"
           />
         </>
       ) : page === 'scale' ? (

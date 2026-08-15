@@ -15,6 +15,17 @@ test('interactive scores exclude entries with stale/incomplete matrices', () => 
   assert.ok(Math.abs(result.scores[1].value - Math.sqrt(2)) < 1e-12);
 });
 
+test('entry scores can use one complete selected baseline without dropping cells', () => {
+  const result = completeEntryScores(['a', 'b', 'partial'], [
+    { key: 'create', values: { a: 10, b: 20, partial: 5 } },
+    { key: 'select', values: { a: 4, b: 2, partial: null } },
+  ], 'a');
+  assert.deepEqual(result.missing, ['partial']);
+  assert.equal(result.cellCount, 2);
+  assert.ok(Math.abs(result.scores.find(({ id }) => id === 'a').value - 1) < 1e-12);
+  assert.ok(Math.abs(result.scores.find(({ id }) => id === 'b').value - 1) < 1e-12);
+});
+
 test('heatmap geomeans give every entry the same complete-row denominator', () => {
   const result = completeRowGeomeans(['a', 'b'], [
     { key: 'complete', values: { a: 10, b: 20 } },

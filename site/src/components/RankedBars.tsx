@@ -32,6 +32,7 @@ export function RankedBars({
   theme,
   selected,
   unitFmt = fmtMs,
+  scoreLabel = 'suite score',
 }: {
   title: string;
   description: ReactNode;
@@ -42,6 +43,7 @@ export function RankedBars({
   theme: 'light' | 'dark';
   selected: Set<string>;
   unitFmt?: (v: number | null) => string;
+  scoreLabel?: string;
 }) {
   const [op, setOp] = useState<'overall' | string>('overall');
   const { setTip, onMove, tipNode } = useTooltip();
@@ -80,7 +82,7 @@ export function RankedBars({
         missing: score.missing,
         fmt: fmtX,
         scoreOps: score.cellCount,
-        caption: `equal-weight geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
+        caption: `${scoreLabel}: equal-weight geometric mean of the complete ${score.cellCount}-cell matrix × vs the fastest entry — lower is better, 1× = fastest`,
       };
     }
     const spec = ops.find((o) => o.key === activeOp)!;
@@ -101,7 +103,7 @@ export function RankedBars({
     present.sort((a, b) => a.value - b.value);
     const missing = rows.filter((r) => r.value == null).map((r) => r.id);
     return { rows: present, missing, fmt: unitFmt, scoreOps: 1, caption: `median ${spec.label} — lower is better` };
-  }, [activeOp, byOp, selected, ops, unitFmt]);
+  }, [activeOp, byOp, selected, ops, unitFmt, scoreLabel]);
 
   const scaleMax = Math.max(1e-9, ...view.rows.map((r) => r.value as number)) * 1.08;
   const refValue = activeOp === 'overall' ? 1 : null;
@@ -113,7 +115,7 @@ export function RankedBars({
         <div className="card-desc">{description}</div>
       </figcaption>
       <div className="chips" role="group" aria-label="Operation">
-        <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>overall</button>
+        <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>{scoreLabel}</button>
         {ops.map((o) => (
           <button key={o.key} className="chip" aria-pressed={activeOp === o.key} onClick={() => setOp(o.key)}>
             {o.label}
@@ -133,7 +135,7 @@ export function RankedBars({
                 setTip({
                   head: shortLabel(r.id),
                   lines: activeOp === 'overall'
-                    ? [`${fmtX(r.value as number)} vs fastest (equal-weight geomean across ${view.scoreOps} complete ops)`]
+                    ? [`${fmtX(r.value as number)} vs fastest (${scoreLabel}, equal-weight geomean across ${view.scoreOps} complete cells)`]
                     : [
                       `${unitFmt(r.value as number)} median${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
                       `n = ${rec?.n ?? '?'}${rec?.dnfCount ? `, ${rec.dnfCount} DNF` : ''}`,

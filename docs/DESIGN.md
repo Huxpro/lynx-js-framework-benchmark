@@ -216,9 +216,10 @@ matched for shape reasons) is a run error, not a DNF.
 React 19 + Vite + TypeScript. Two chart systems:
 
 - **Ranked bars / geomean grid** (octanejs.dev-style, hand-rolled divs + CSS): suite cards
-  with framework pills, per-op chips, ×-vs-baseline ranked bars, all-suites heatmap with
+  with framework pills, per-op chips, ×-vs-baseline ranked bars, all-cases heatmap with
   `vs baseline` / `vs fastest` re-baselining, log-scaled diverging tint, collapsible exact-
-  number tables. Baseline = ReactLynx (the ecosystem incumbent), toggleable.
+  number tables. Its footer has separate interactive, storm, and startup profiles; it never
+  collapses suites into one score. Baseline = ReactLynx (the ecosystem incumbent), toggleable.
 - **Observable Plot** for the analytical pages: scale-trend lines (linear + log-log with
   fitted scaling exponents α), cost-space scatter (MTS gzip vs FCP), stacked
   BTS/MTS/uncounted time bars, wire bytes/messages charts.
@@ -237,7 +238,8 @@ current entry artifacts. The site then imports that materialized view plus autom
 ## Non-goals (v1)
 
 - No single aggregate score across suites (the unified benchmark's audit explicitly rejects
-  one; we follow).
+  one; we follow). Score profile membership is explicit and reviewable in
+  `site/src/score-policy.mjs`, rather than inferred from whichever observations exist.
 - No cross-machine absolute-ms claims without the estimated badge.
 - Native harness ships as schema + adapter interface + preserved bundles, not as an automated
   device farm.
