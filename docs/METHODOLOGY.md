@@ -81,8 +81,24 @@ had a documented weakness, the fix is noted.
   ignores stored aggregate snapshots in run files; see [DATA_MODEL.md](./DATA_MODEL.md).
 - **DNF is data**: timeouts are counted (`dnfCount`) and shown; a slow framework looks slow,
   never absent. Non-timeout errors abort the run — they are harness bugs.
-- No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
-  audit rejected a global score; we follow).
+- **Score equation**: for framework `f`, measured cell `o` (operation × scale), and the selected
+  complete cohort `C`, first compute `r(f,o) = median(f,o) / min(g in C) median(g,o)`. A score
+  profile is the equal-cell geometric mean
+  `S(f) = exp(sum(o in O, ln(r(f,o))) / |O|)`. Entries missing any cell in a profile are excluded;
+  no entry receives a smaller denominator.
+- **Interactive overall** is the primary 11-cell profile: create/update10th/select at both 1k
+  and 10k, plus replace/append1k/swap/remove at 1k and clear at 10k. Thus clear contributes 1/11
+  (9.09%). The seven-cell @1k and four-cell @10k scores remain scale diagnostics; clear is 1/4
+  only inside the explicitly labeled @10k diagnostic. This keeps the
+  [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) operation lineage
+  but does not copy its fixed weights because its repeated/throttled web scenarios do not map
+  one-to-one onto these Lynx scales.
+- **Other profiles stay separate**: storms use update/select storm at 1k and 10k (four cells),
+  while startup uses FCP at 0/1k/10k/30k rows (four cells). The heatmap reports those two scores
+  and interactive overall separately. There is no cross-suite global score, and wire, CPU,
+  memory, and bundle metrics are never mixed with latency.
+- Profile membership is pinned in `site/src/score-policy.mjs`. New observations do not silently
+  change a published denominator or weight; changing policy requires code, tests, and review.
 
 ## Machines and calibration
 

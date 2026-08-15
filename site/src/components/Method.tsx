@@ -23,12 +23,58 @@ export function MethodPage() {
       </div>
 
       <div className="card">
+        <div className="card-title">interactive score equation</div>
+        <div className="card-desc" style={{ maxWidth: '80ch' }}>
+          <p>
+            The scenarios inherit the table-operation contract from the{' '}
+            <a href="https://github.com/krausest/js-framework-benchmark" target="_blank" rel="noreferrer">
+              js-framework-benchmark
+            </a>, but this score does not copy its current weighting. For framework <i>f</i>,
+            measured cell <i>o</i> (an operation × scale pair), and the selected complete cohort{' '}
+            <i>C</i>:
+          </p>
+          <p><code>r(f,o) = median(f,o) / min(g ∈ C) median(g,o)</code></p>
+          <p>
+            <code>S(f) = exp((1 / |O|) · Σ(o ∈ O) ln r(f,o)) = (Π(o ∈ O) r(f,o))^(1 / |O|)</code>
+          </p>
+          <p>
+            Every included cell has equal weight in log space. Row count, absolute milliseconds,
+            and assumed product frequency add no hidden weight. The primary interactive score uses
+            all 11 normal table-operation cells: seven at 1k and four at 10k. Consequently{' '}
+            <code>clear @10k</code> contributes 1/11 (9.09%), close to the upstream benchmark's
+            normalized clear weight. The @1k and @10k cards are scale diagnostics over their seven-
+            and four-cell subsets; clear is 1/4 only inside the explicitly labeled @10k diagnostic.
+            An entry missing any cell in a profile is excluded instead of receiving a different
+            denominator.
+          </p>
+          <p>
+            The upstream benchmark has used a{' '}
+            <a
+              href="https://github.com/krausest/js-framework-benchmark/wiki/Computation-of-the-weighted-geometric-mean"
+              target="_blank"
+              rel="noreferrer"
+            >
+              weighted geometric mean
+            </a>{' '}
+            since Chrome 118, down-weighting operations whose slowdown factors have unusually wide
+            spread. We keep equal weights here because its repeated/throttled web scenarios do not map
+            one-to-one onto these Lynx scales. Storms and startup each have their own four-cell score;
+            the heatmap repeats the interactive, storm, and startup scores separately. It never folds
+            them—or wire, CPU, memory, and bundle cost—into one opaque global score. Score profile cell
+            lists are pinned in source, so adding observations cannot silently change published weights.
+          </p>
+        </div>
+      </div>
+
+      <div className="card">
         <div className="card-title">how the numbers are made</div>
         <div className="card-desc" style={{ maxWidth: '80ch' }}>
           <p>
-            Every entry is the same krausest-style table app, implemented idiomatically per
-            framework, driven by one byte-identical page instrument in headless Chromium running
-            Lynx for Web. Timing is <b>in-page pointerdown → the first animation frame where a
+            Every entry is the same{' '}
+            <a href="https://github.com/krausest/js-framework-benchmark" target="_blank" rel="noreferrer">
+              krausest-style table app
+            </a>, implemented idiomatically per framework, driven by one byte-identical page
+            instrument in headless Chromium running Lynx for Web. Timing is <b>in-page pointerdown → the first animation frame where a
             composed-DOM predicate holds</b> — real input, shadow-piercing verification, ≤1 frame
             quantization. Startup is <b>view-attach → first table content</b> on bundles whose
             first screen pre-renders N rows.

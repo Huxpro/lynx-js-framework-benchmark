@@ -7,13 +7,18 @@ export function geomean(values) {
 }
 
 /** Score entries over one identical, complete set of cells. */
-export function completeEntryScores(ids, cells) {
+export function completeEntryScores(ids, cells, baselineId = null) {
   const completeIds = ids.filter((id) => cells.length > 0
     && cells.every((cell) => valid(cell.values[id])));
+  if (baselineId != null && !completeIds.includes(baselineId)) {
+    return { scores: [], missing: ids, cellCount: cells.length };
+  }
   const ratios = new Map(completeIds.map((id) => [id, []]));
   for (const cell of cells) {
-    const fastest = Math.min(...completeIds.map((id) => cell.values[id]));
-    for (const id of completeIds) ratios.get(id).push(cell.values[id] / fastest);
+    const baseline = baselineId == null
+      ? Math.min(...completeIds.map((id) => cell.values[id]))
+      : cell.values[baselineId];
+    for (const id of completeIds) ratios.get(id).push(cell.values[id] / baseline);
   }
   return {
     scores: completeIds.map((id) => ({ id, value: geomean(ratios.get(id)) })),

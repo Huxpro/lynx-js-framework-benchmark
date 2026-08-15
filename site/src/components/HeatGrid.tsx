@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { BenchRecord, ENTRIES, entryColor, fmtX, select, shortLabel } from '../data';
-import { completeRowGeomeans } from '../derive.mjs';
+import { completeEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 
 function tintFor(v: number): string {
@@ -21,6 +21,8 @@ interface RowSpec {
   workload: string;
   scale: number;
   metric: string;
+  scoreGroup: string;
+  scoreGroupLabel: string;
 }
 
 export function HeatGrid({
@@ -56,11 +58,18 @@ export function HeatGrid({
     });
   }, [rows, harness, ids.join(',')]);
 
-  const geo = useMemo(() => {
-    return completeRowGeomeans(ids, grid.map((row) => ({
-      key: row.spec.key,
-      values: Object.fromEntries(ids.map((id, index) => [id, row.values[index]])),
-    })), activeMode === 'fastest' ? null : activeMode);
+  const scoreGroups = useMemo(() => {
+    const groups = [...new Map(rows.map((row) => [row.scoreGroup, row.scoreGroupLabel])).entries()];
+    return groups.map(([key, label]) => ({
+      key,
+      label,
+      score: completeEntryScores(ids, grid
+        .filter((row) => row.spec.scoreGroup === key)
+        .map((row) => ({
+          key: row.spec.key,
+          values: Object.fromEntries(ids.map((id, index) => [id, row.values[index]])),
+        })), activeMode === 'fastest' ? null : activeMode),
+    }));
   }, [grid, activeMode, ids.join(',')]);
 
   return (
@@ -130,34 +139,39 @@ export function HeatGrid({
             ))}
           </tbody>
           <tfoot>
-            <tr>
-              <th className="rowhead" style={{ borderTop: '2px solid var(--border)' }}>geomean</th>
-              {ids.map((id) => {
-                const g = geo.values.get(id);
-                const isRef = activeMode !== 'fastest' && id === activeMode;
-                return (
-                  <td
-                    key={id}
-                    className={isRef ? 'ref' : 'data'}
-                    style={{
-                      borderTop: '2px solid var(--border)',
-                      ...(isRef || g == null ? {} : { background: tintFor(g) }),
-                      fontWeight: 700,
-                    }}
-                  >
-                    {g == null ? '—' : fmtX(g)}
-                  </td>
-                );
-              })}
-            </tr>
+            {scoreGroups.map(({ key, label, score }, groupIndex) => (
+              <tr key={key}>
+                <th className="rowhead" style={groupIndex === 0 ? { borderTop: '2px solid var(--border)' } : undefined}>
+                  {label} ({score.cellCount})
+                </th>
+                {ids.map((id) => {
+                  const value = score.scores.find((entry) => entry.id === id)?.value ?? null;
+                  const isRef = activeMode !== 'fastest' && id === activeMode;
+                  return (
+                    <td
+                      key={id}
+                      className={isRef ? 'ref' : 'data'}
+                      style={{
+                        ...(groupIndex === 0 ? { borderTop: '2px solid var(--border)' } : {}),
+                        ...(isRef || value == null ? {} : { background: tintFor(value) }),
+                        fontWeight: 700,
+                      }}
+                    >
+                      {value == null ? '—' : fmtX(value)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tfoot>
         </table>
       </div>
       <div className="note" style={{ marginTop: '0.5rem' }}>
         Each cell is that entry's median relative to the {activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`},
         per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers;
-        the geomean is recomputed over {geo.rowCount} rows with complete data for every selected entry.
-        Per-case cards below carry the full data tables.
+        footer scores are recomputed independently for interactive, storms, and startup against each
+        profile's fixed complete matrix; an incomplete entry shows —. The profiles are never folded
+        into one cross-suite global score. Per-case cards below carry the full data tables.
       </div>
       {tipNode}
     </div>

@@ -4,7 +4,7 @@ export interface DerivedCell {
 }
 
 export function geomean(values: number[]): number | null;
-export function completeEntryScores(ids: string[], cells: DerivedCell[]): {
+export function completeEntryScores(ids: string[], cells: DerivedCell[], baselineId?: string | null): {
   scores: { id: string; value: number | null }[];
   missing: string[];
   cellCount: number;

@@ -54,9 +54,12 @@ Everything else is derived, including:
 3. `site dev` and `site build` run collection before Vite reads any data.
 4. CI regenerates `results/latest.json` and requires exact equality, including its deterministic
    newest-source timestamp.
-5. Site aggregate scores use one complete matrix across all scored entries; missing cells cannot
-   silently change one entry's denominator.
-6. Site entry discovery and available scales/cases come from current manifests/records rather
+5. Each site score profile uses its pinned complete matrix for every scored entry; an entry with
+   a missing cell is excluded rather than receiving a smaller denominator. Profile membership is pinned in
+   `site/src/score-policy.mjs`, so newly collected observations do not silently change weights.
+6. The heatmap reports interactive, storm, and startup profile scores separately; it does not
+   aggregate across suites or metrics.
+7. Site entry discovery and available scales/cases come from current manifests/records rather
    than duplicated lists of result data.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
