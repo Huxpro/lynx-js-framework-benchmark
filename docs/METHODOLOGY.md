@@ -81,6 +81,14 @@ had a documented weakness, the fix is noted.
   ignores stored aggregate snapshots in run files; see [DATA_MODEL.md](./DATA_MODEL.md).
 - **DNF is data**: timeouts are counted (`dnfCount`) and shown; a slow framework looks slow,
   never absent. Non-timeout errors abort the run — they are harness bugs.
+- **Interactive score**: for framework `f`, operation `o`, and the selected complete cohort `C`,
+  first compute `r(f,o) = median(f,o) / min(g in C) median(g,o)`. The card score is the
+  equal-weight geometric mean `S(f) = exp(sum(o in O, ln(r(f,o))) / |O|)`. The 1k card uses
+  create, replace, append1k, update10th, select, swap, and remove; the 10k card uses create,
+  update10th, select, and clear. Entries missing any cell are excluded from the card. This keeps
+  the [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark) operation
+  lineage but does not copy its current fixed weights: its repeated/throttled web scenarios do
+  not map one-to-one onto these Lynx scales.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
   audit rejected a global score; we follow).
 

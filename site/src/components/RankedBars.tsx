@@ -1,7 +1,7 @@
 // Per-suite card: operation chips, ranked bars (absolute for one op, geomean
 // ×-vs-fastest for "overall"), and the exact-number table (the relief channel).
 // Visual language follows octanejs.dev/benchmarks; implementation is ours.
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import {
   BenchRecord,
@@ -34,7 +34,7 @@ export function RankedBars({
   unitFmt = fmtMs,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   suite: string;
   metric?: string;
   ops: OpSpec[];
@@ -80,7 +80,7 @@ export function RankedBars({
         missing: score.missing,
         fmt: fmtX,
         scoreOps: score.cellCount,
-        caption: `geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
+        caption: `equal-weight geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
       };
     }
     const spec = ops.find((o) => o.key === activeOp)!;
@@ -133,7 +133,7 @@ export function RankedBars({
                 setTip({
                   head: shortLabel(r.id),
                   lines: activeOp === 'overall'
-                    ? [`${fmtX(r.value as number)} vs fastest (geomean across ${view.scoreOps} complete ops)`]
+                    ? [`${fmtX(r.value as number)} vs fastest (equal-weight geomean across ${view.scoreOps} complete ops)`]
                     : [
                       `${unitFmt(r.value as number)} median${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
                       `n = ${rec?.n ?? '?'}${rec?.dnfCount ? `, ${rec.dnfCount} DNF` : ''}`,

@@ -54,7 +54,8 @@ explicitly historical because the CPU probe cannot calibrate them.
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
 
-Cases: the krausest superset (`create` 1k/10k, `append1k`, `update10th`, `select`, `swap`,
+Cases: the [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark)
+(`krausest`) superset (`create` 1k/10k, `append1k`, `update10th`, `select`, `swap`,
 `remove`, `clear`) + storms (50 update / 30 select sequential ticks) at 1k–30k scales +
 startup FCP at 0/1k/10k/30k pre-rendered rows. See
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the measurement rules and

@@ -163,7 +163,14 @@ export default function App() {
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           <RankedBars
             title="interactive @1k"
-            description="krausest-style table ops on 1,000 rows: tap → all mutations visible in the composed DOM."
+            description={(
+              <>
+                <a href="https://github.com/krausest/js-framework-benchmark" target="_blank" rel="noreferrer">
+                  krausest-style
+                </a>{' '}
+                table ops on 1,000 rows: tap → all mutations visible in the composed DOM.
+              </>
+            )}
             suite="table"
             ops={tableOps([1000])}
             harness={harness}
