@@ -17,7 +17,8 @@ These are the only files/fields that require an update when their real-world inp
 - record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
-- failures: `dnfCount`;
+- failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
+  phase, timeout, trigger mode, message, and observed device state);
 - per-repetition wire endpoint observations: `detailSamples`.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an

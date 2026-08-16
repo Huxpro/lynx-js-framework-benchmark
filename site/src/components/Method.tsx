@@ -9,8 +9,8 @@ export function MethodPage() {
           <p>
             <b>Benchmark source</b> is limited to run/environment identity, record identity,
             raw repeated <code>samples</code>, one-shot <code>value</code>, <code>dnfCount</code>,
-            and per-repetition wire <code>detailSamples</code>. Entry manifests and their checked
-            bundles are build source.
+            structured per-repetition <code>failures</code>, and per-repetition wire{' '}
+            <code>detailSamples</code>. Entry manifests and their checked bundles are build source.
           </p>
           <p>
             <b>Everything else is derived:</b> median/mean/CI, endpoint display samples, cohort and
@@ -30,13 +30,15 @@ export function MethodPage() {
             framework. The Web boundary is <b>in-page pointerdown → the first animation frame
             where a composed-DOM predicate holds</b>. The Native boundary is <b>input handler →
             second native animation frame</b>, emitted by the bundle on the device clock and read
-            through the Lynx Runtime console. ReactLynx and Vue-Lynx use real touch input. Because
-            upstream Octane cannot receive its registered string-event token in the Native
-            background realm, DevTool invokes the same handler through a benchmark-only driver
-            before the timer starts. Native startup normally comes from Lynx pipeline performance
-            entries (<b>open → FCP</b>) on bundles whose first screen pre-renders N rows. Octane's
-            custom renderer publishes no such entry in this Explorer build, so its documented
-            fallback uses a clock-calibrated open request → first/second post-commit Native frame.
+            through the Lynx Runtime console. Every featured entry uses real Native touch input.
+            Octane waits for its renderer transport acknowledgement before two Native frames and
+            emits a post-ACK state snapshot, which the adapter checks against the requested
+            workload. Its DevTool driver is diagnostic-only and has a distinct recorded source.
+            Native startup normally comes from Lynx pipeline performance entries (<b>open →
+            FCP</b>) on bundles whose first screen pre-renders N rows. Octane's custom renderer
+            publishes no such entry in this Explorer build, so it reports no Native FCP; its
+            transport-ACK and post-ACK-frame startup metrics are isolated under different names
+            and boundaries.
           </p>
           <p>
             Dual-thread metrics come from two framework-neutral instruments: a{' '}
@@ -56,8 +58,8 @@ export function MethodPage() {
             The two harnesses are separate comparison domains. Web numbers are
             Lynx-for-Web-in-Chromium; Native numbers are real <code>main.lynx.bundle</code> runs in
             LynxExplorer on a leased Android Sandbox device. They are never charted against one
-            another. A timeout or an unsupported current-device path is retained as DNF rather
-            than omitted or replaced with a proxy number.
+            another. A timeout or an unreachable prestate is retained as DNF with structured
+            evidence rather than omitted or replaced with a proxy number.
           </p>
         </div>
       </div>

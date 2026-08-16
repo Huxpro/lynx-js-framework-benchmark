@@ -118,7 +118,7 @@ const vueGit = vueIds.some(wants) ? gitInfo(VUE_BUILD) : null;
 if (vueGit?.dirty) {
   const patch = execFileSync(
     'git',
-    ['diff', '--no-color', '--', 'packages', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
+    ['diff', '--no-color', '--unified=0', '--', 'packages', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
     { cwd: VUE_BUILD },
   ).toString();
   fs.writeFileSync(path.join(patchesDir, 'vue-lynx-bench.patch'), patch);
@@ -127,7 +127,7 @@ const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
 if (octaneGit?.dirty) {
   const patch = execFileSync(
     'git',
-    ['diff', '--no-color', '--', 'packages', 'benchmarks'],
+    ['diff', '--no-color', '--unified=0', '--', 'packages', 'benchmarks'],
     { cwd: OCTANE_BUILD },
   ).toString();
   fs.writeFileSync(path.join(patchesDir, 'octane-bench.patch'), patch);

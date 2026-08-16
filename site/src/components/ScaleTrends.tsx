@@ -151,7 +151,7 @@ export function ScaleTrend({
   );
 }
 
-export const TREND_SPECS: TrendSpec[] = [
+const COMMON_TREND_SPECS: TrendSpec[] = [
   {
     title: 'startup — first contentful paint vs rows',
     desc: 'view attach → first frame with table content, on bundles whose first screen pre-renders N rows. The IFR story lives here: main-thread first frame vs background hydration.',
@@ -183,3 +183,22 @@ export const TREND_SPECS: TrendSpec[] = [
     suite: 'table', workload: 'create', metric: 'wireToMtsBytes', unit: 'bytes',
   },
 ];
+
+const NATIVE_OCTANE_STARTUP_SPECS: TrendSpec[] = [
+  {
+    title: 'Octane startup — transport commit ACK vs rows',
+    desc: 'Open request → Octane transport acknowledgement after the initial root render. This isolated Native metric is not FCP and is never ranked against pipeline FCP.',
+    suite: 'startup', workload: 'startup', metric: 'octaneCommitAck', unit: 'ms',
+  },
+  {
+    title: 'Octane startup — second post-ACK frame vs rows',
+    desc: 'Open request → second Native animation frame after Octane acknowledges the initial transport commit. This remains an isolated renderer metric, not FCP.',
+    suite: 'startup', workload: 'startup', metric: 'octaneSecondFrame', unit: 'ms',
+  },
+];
+
+export function trendSpecsForHarness(harness: string): TrendSpec[] {
+  return harness === 'native'
+    ? [...COMMON_TREND_SPECS, ...NATIVE_OCTANE_STARTUP_SPECS]
+    : COMMON_TREND_SPECS;
+}

@@ -1,0 +1,3075 @@
+{
+ "schemaVersion": 2,
+ "meta": {
+  "generatedAt": "2026-08-16T12:15:03.318Z",
+  "machine": {
+   "id": "lynx-native-android-aries_10-10-devtool-direct-recycle5-964a64c2f1ab-abb2befa",
+   "platform": "android",
+   "osVersion": "10",
+   "cpuModel": "linaro",
+   "cores": 8,
+   "node": null,
+   "deviceModel": "ByteDance aries_10",
+   "app": "LynxExplorer",
+   "appVersion": "1.0",
+   "explorerPackage": {
+    "versionName": "1.0",
+    "versionCode": 1
+   },
+   "debugRouterVersion": "0.0.1",
+   "lynxSdkVersion": "0.0.1",
+   "agentLynxVersion": "0.14.4",
+   "devtoolTransport": "direct",
+   "debugRouterSettleMs": 100,
+   "explorerRecycleEveryPages": 5,
+   "maxBatteryTemperatureC": 40,
+   "thermalGateTimeoutMs": 300000,
+   "explorerReconnectTimeoutMs": 90000,
+   "harnessConfigId": "abb2befa",
+   "octaneTriggerMode": "tap",
+   "deviceLeaseId": "964a64c2f1ab",
+   "deviceLeaseIdentitySource": "explicit-env",
+   "deviceClockOffsetMs": -284.5,
+   "deviceClockCalibrationRttMs": 23,
+   "thermalStart": {
+    "capturedAt": "2026-08-16T12:15:04.813Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   },
+   "transientRecoveries": [
+    {
+     "at": "2026-08-16T12:49:35.431Z",
+     "category": "open-page-no-response",
+     "message": "Error: DevTool open-page failed: Error: No response found for clientId: [redacted]"
+    }
+   ],
+   "thermalEnd": {
+    "capturedAt": "2026-08-16T12:53:37.446Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   }
+  },
+  "calibration": null,
+  "harness": "native",
+  "adapter": "/data00/home/xuan.huang/github/lynx-js-framework-benchmark/packages/runner/adapters/lynx-sandbox-android.mjs",
+  "argv": [
+   "run",
+   "--harness",
+   "native",
+   "--adapter",
+   "packages/runner/adapters/lynx-sandbox-android.mjs",
+   "--entry",
+   "octane",
+   "--label",
+   "formal-v2-same-lease-octane-upstream",
+   "--no-collect"
+  ],
+  "checkpoint": true,
+  "entryCommits": {
+   "octane": "0fc84da02fd05403ac5e36d2aff631b31168d5ac"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    12036,
+    20935,
+    20756,
+    20873,
+    20777
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882505316,
+     "commitAckMs": 1786882517330,
+     "firstFrameMs": 1786882517336,
+     "endMs": 1786882517352,
+     "latencyMs": 12036,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "pretty red chair",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882517936,
+     "commitAckMs": 1786882538839,
+     "firstFrameMs": 1786882538855,
+     "endMs": 1786882538871,
+     "latencyMs": 20935,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "small pink desk",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882539451,
+     "commitAckMs": 1786882560184,
+     "firstFrameMs": 1786882560191,
+     "endMs": 1786882560207,
+     "latencyMs": 20756,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "unsightly blue cookie",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882560770,
+     "commitAckMs": 1786882581617,
+     "firstFrameMs": 1786882581626,
+     "endMs": 1786882581643,
+     "latencyMs": 20873,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "clean green burger",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882582202,
+     "commitAckMs": 1786882602960,
+     "firstFrameMs": 1786882602962,
+     "endMs": 1786882602979,
+     "latencyMs": 20777,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "important brown house",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786882582202,
+    "commitAckMs": 1786882602960,
+    "firstFrameMs": 1786882602962,
+    "endMs": 1786882602979,
+    "latencyMs": 20777,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "important brown house",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 20777,
+   "mean": 19075.4,
+   "std": 3935.8127877225056,
+   "min": 12036,
+   "max": 20935,
+   "p95": 20935,
+   "ci95": 4886.173590721573,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     }
+    },
+    {
+     "rep": 1,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     }
+    },
+    {
+     "rep": 2,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     }
+    },
+    {
+     "rep": 3,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     }
+    },
+    {
+     "rep": 4,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    17128,
+    17118,
+    17251,
+    17484,
+    17379
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882889086,
+     "commitAckMs": 1786882906196,
+     "firstFrameMs": 1786882906198,
+     "endMs": 1786882906214,
+     "latencyMs": 17128,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1001,
+      "secondId": 1002,
+      "thirdId": 1003,
+      "row998Id": 1999,
+      "firstLabel": "mushy blue keyboard",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882927984,
+     "commitAckMs": 1786882945085,
+     "firstFrameMs": 1786882945086,
+     "endMs": 1786882945102,
+     "latencyMs": 17118,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1001,
+      "secondId": 1002,
+      "thirdId": 1003,
+      "row998Id": 1999,
+      "firstLabel": "expensive yellow table",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786882966739,
+     "commitAckMs": 1786882983966,
+     "firstFrameMs": 1786882983974,
+     "endMs": 1786882983990,
+     "latencyMs": 17251,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1001,
+      "secondId": 1002,
+      "thirdId": 1003,
+      "row998Id": 1999,
+      "firstLabel": "important green pizza",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883005661,
+     "commitAckMs": 1786883023127,
+     "firstFrameMs": 1786883023128,
+     "endMs": 1786883023145,
+     "latencyMs": 17484,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1001,
+      "secondId": 1002,
+      "thirdId": 1003,
+      "row998Id": 1999,
+      "firstLabel": "adorable green mouse",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883037186,
+     "commitAckMs": 1786883054534,
+     "firstFrameMs": 1786883054549,
+     "endMs": 1786883054565,
+     "latencyMs": 17379,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1001,
+      "secondId": 1002,
+      "thirdId": 1003,
+      "row998Id": 1999,
+      "firstLabel": "plain black house",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786882966739,
+    "commitAckMs": 1786882983966,
+    "firstFrameMs": 1786882983974,
+    "endMs": 1786882983990,
+    "latencyMs": 17251,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1001,
+     "secondId": 1002,
+     "thirdId": 1003,
+     "row998Id": 1999,
+     "firstLabel": "important green pizza",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 17251,
+   "mean": 17272,
+   "std": 159.12730752451006,
+   "min": 17118,
+   "max": 17484,
+   "p95": 17484,
+   "ci95": 197.55097346457188,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    37183,
+    37471,
+    37566,
+    37337,
+    36728
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883076806,
+     "commitAckMs": 1786883113970,
+     "firstFrameMs": 1786883113972,
+     "endMs": 1786883113989,
+     "latencyMs": 37183,
+     "snapshot": {
+      "rowCount": 2000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "odd black desk",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "append1k",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883162845,
+     "commitAckMs": 1786883200288,
+     "firstFrameMs": 1786883200299,
+     "endMs": 1786883200316,
+     "latencyMs": 37471,
+     "snapshot": {
+      "rowCount": 2000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "long orange cookie",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "append1k",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883248526,
+     "commitAckMs": 1786883286074,
+     "firstFrameMs": 1786883286076,
+     "endMs": 1786883286092,
+     "latencyMs": 37566,
+     "snapshot": {
+      "rowCount": 2000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "cheap purple bbq",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "append1k",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883334382,
+     "commitAckMs": 1786883371698,
+     "firstFrameMs": 1786883371702,
+     "endMs": 1786883371719,
+     "latencyMs": 37337,
+     "snapshot": {
+      "rowCount": 2000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "large white sandwich",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "append1k",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883385647,
+     "commitAckMs": 1786883422344,
+     "firstFrameMs": 1786883422358,
+     "endMs": 1786883422375,
+     "latencyMs": 36728,
+     "snapshot": {
+      "rowCount": 2000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "easy brown keyboard",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786883334382,
+    "commitAckMs": 1786883371698,
+    "firstFrameMs": 1786883371702,
+    "endMs": 1786883371719,
+    "latencyMs": 37337,
+    "snapshot": {
+     "rowCount": 2000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "large white sandwich",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 37337,
+   "mean": 37257,
+   "std": 329.01139797885423,
+   "min": 36728,
+   "max": 37566,
+   "p95": 37566,
+   "ci95": 408.45611581564054,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "update10th",
+     "scale": 1000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: CDP DOM.getNodeForLocation failed: Error: timeout waiting 30000ms for DOM.getNodeForLocation",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": 0,
+      "timingEvents": [],
+      "errors": []
+     }
+    },
+    {
+     "rep": 1,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "update10th",
+     "scale": 1000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: CDP DOM.getNodeForLocation failed: Error: timeout waiting 30000ms for DOM.getNodeForLocation",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": 0,
+      "timingEvents": [],
+      "errors": []
+     }
+    },
+    {
+     "rep": 2,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "update10th",
+     "scale": 1000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: CDP DOM.getNodeForLocation failed: Error: timeout waiting 30000ms for DOM.getNodeForLocation",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": 0,
+      "timingEvents": [],
+      "errors": []
+     }
+    },
+    {
+     "rep": 3,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "update10th",
+     "scale": 1000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: CDP DOM.getNodeForLocation failed: Error: timeout waiting 30000ms for DOM.getNodeForLocation",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": 0,
+      "timingEvents": [],
+      "errors": []
+     }
+    },
+    {
+     "rep": 4,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "update10th",
+     "scale": 1000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: CDP DOM.getNodeForLocation failed: Error: timeout waiting 30000ms for DOM.getNodeForLocation",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": 0,
+      "timingEvents": [],
+      "errors": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 1,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 2,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 3,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 4,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    447,
+    466,
+    499,
+    465,
+    450
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883472901,
+     "commitAckMs": 1786883473325,
+     "firstFrameMs": 1786883473331,
+     "endMs": 1786883473348,
+     "latencyMs": 447,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "small green chair",
+      "selectedId": 2
+     }
+    },
+    {
+     "name": "select",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883495601,
+     "commitAckMs": 1786883496035,
+     "firstFrameMs": 1786883496050,
+     "endMs": 1786883496067,
+     "latencyMs": 466,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "unsightly green cookie",
+      "selectedId": 2
+     }
+    },
+    {
+     "name": "select",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883518287,
+     "commitAckMs": 1786883518754,
+     "firstFrameMs": 1786883518770,
+     "endMs": 1786883518786,
+     "latencyMs": 499,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "cheap green pony",
+      "selectedId": 2
+     }
+    },
+    {
+     "name": "select",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883533390,
+     "commitAckMs": 1786883533826,
+     "firstFrameMs": 1786883533838,
+     "endMs": 1786883533855,
+     "latencyMs": 465,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "helpful purple desk",
+      "selectedId": 2
+     }
+    },
+    {
+     "name": "select",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883556191,
+     "commitAckMs": 1786883556617,
+     "firstFrameMs": 1786883556624,
+     "endMs": 1786883556641,
+     "latencyMs": 450,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "large brown burger",
+      "selectedId": 2
+     }
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786883533390,
+    "commitAckMs": 1786883533826,
+    "firstFrameMs": 1786883533838,
+    "endMs": 1786883533855,
+    "latencyMs": 465,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "helpful purple desk",
+     "selectedId": 2
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 465,
+   "mean": 465.4,
+   "std": 20.647033685253678,
+   "min": 447,
+   "max": 499,
+   "p95": 499,
+   "ci95": 25.632568458115937,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 1,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 2,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 3,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 4,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    565,
+    583,
+    584,
+    563,
+    579
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883578478,
+     "commitAckMs": 1786883579026,
+     "firstFrameMs": 1786883579027,
+     "endMs": 1786883579043,
+     "latencyMs": 565,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 999,
+      "thirdId": 3,
+      "row998Id": 2,
+      "firstLabel": "small black cookie",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "swap",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883600513,
+     "commitAckMs": 1786883601075,
+     "firstFrameMs": 1786883601079,
+     "endMs": 1786883601096,
+     "latencyMs": 583,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 999,
+      "thirdId": 3,
+      "row998Id": 2,
+      "firstLabel": "cheap orange chair",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "swap",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883622581,
+     "commitAckMs": 1786883623132,
+     "firstFrameMs": 1786883623149,
+     "endMs": 1786883623165,
+     "latencyMs": 584,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 999,
+      "thirdId": 3,
+      "row998Id": 2,
+      "firstLabel": "adorable red desk",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "swap",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883637237,
+     "commitAckMs": 1786883637780,
+     "firstFrameMs": 1786883637784,
+     "endMs": 1786883637800,
+     "latencyMs": 563,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 999,
+      "thirdId": 3,
+      "row998Id": 2,
+      "firstLabel": "tall green sandwich",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "swap",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883659491,
+     "commitAckMs": 1786883660045,
+     "firstFrameMs": 1786883660053,
+     "endMs": 1786883660070,
+     "latencyMs": 579,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 999,
+      "thirdId": 3,
+      "row998Id": 2,
+      "firstLabel": "odd brown burger",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786883659491,
+    "commitAckMs": 1786883660045,
+    "firstFrameMs": 1786883660053,
+    "endMs": 1786883660070,
+    "latencyMs": 579,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 999,
+     "thirdId": 3,
+     "row998Id": 2,
+     "firstLabel": "odd brown burger",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 579,
+   "mean": 574.8,
+   "std": 10.059821071967434,
+   "min": 563,
+   "max": 584,
+   "p95": 584,
+   "ci95": 12.488915174665891,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    618,
+    600,
+    583,
+    604,
+    583
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883681687,
+     "commitAckMs": 1786883682272,
+     "firstFrameMs": 1786883682289,
+     "endMs": 1786883682305,
+     "latencyMs": 618,
+     "snapshot": {
+      "rowCount": 999,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 4,
+      "row998Id": 1000,
+      "firstLabel": "expensive black chair",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "remove",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883703958,
+     "commitAckMs": 1786883704538,
+     "firstFrameMs": 1786883704541,
+     "endMs": 1786883704558,
+     "latencyMs": 600,
+     "snapshot": {
+      "rowCount": 999,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 4,
+      "row998Id": 1000,
+      "firstLabel": "short white table",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "remove",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883726428,
+     "commitAckMs": 1786883726987,
+     "firstFrameMs": 1786883726994,
+     "endMs": 1786883727011,
+     "latencyMs": 583,
+     "snapshot": {
+      "rowCount": 999,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 4,
+      "row998Id": 1000,
+      "firstLabel": "expensive white sandwich",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "remove",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883741008,
+     "commitAckMs": 1786883741580,
+     "firstFrameMs": 1786883741596,
+     "endMs": 1786883741612,
+     "latencyMs": 604,
+     "snapshot": {
+      "rowCount": 999,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 4,
+      "row998Id": 1000,
+      "firstLabel": "mushy white burger",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "remove",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883763032,
+     "commitAckMs": 1786883763588,
+     "firstFrameMs": 1786883763598,
+     "endMs": 1786883763615,
+     "latencyMs": 583,
+     "snapshot": {
+      "rowCount": 999,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 4,
+      "row998Id": 1000,
+      "firstLabel": "inexpensive red pizza",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786883703958,
+    "commitAckMs": 1786883704538,
+    "firstFrameMs": 1786883704541,
+    "endMs": 1786883704558,
+    "latencyMs": 600,
+    "snapshot": {
+     "rowCount": 999,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 4,
+     "row998Id": 1000,
+     "firstLabel": "short white table",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 600,
+   "mean": 597.6,
+   "std": 14.909728367747013,
+   "min": 583,
+   "max": 618,
+   "p95": 618,
+   "ci95": 18.50990504999958,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 1,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 2,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 3,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 4,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    25868,
+    25320,
+    25636,
+    25131,
+    25036
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883785703,
+     "commitAckMs": 1786883811549,
+     "firstFrameMs": 1786883811554,
+     "endMs": 1786883811571,
+     "latencyMs": 25868,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "bench 50",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "updateStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883833123,
+     "commitAckMs": 1786883858425,
+     "firstFrameMs": 1786883858426,
+     "endMs": 1786883858443,
+     "latencyMs": 25320,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "bench 50",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "updateStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883879996,
+     "commitAckMs": 1786883905607,
+     "firstFrameMs": 1786883905615,
+     "endMs": 1786883905632,
+     "latencyMs": 25636,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "bench 50",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "updateStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883919588,
+     "commitAckMs": 1786883944693,
+     "firstFrameMs": 1786883944703,
+     "endMs": 1786883944719,
+     "latencyMs": 25131,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "bench 50",
+      "selectedId": null
+     }
+    },
+    {
+     "name": "updateStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786883966206,
+     "commitAckMs": 1786883991220,
+     "firstFrameMs": 1786883991225,
+     "endMs": 1786883991242,
+     "latencyMs": 25036,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "bench 50",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786883833123,
+    "commitAckMs": 1786883858425,
+    "firstFrameMs": 1786883858426,
+    "endMs": 1786883858443,
+    "latencyMs": 25320,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "bench 50",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 25320,
+   "mean": 25398.2,
+   "std": 348.55444338008374,
+   "min": 25036,
+   "max": 25868,
+   "p95": 25868,
+   "ci95": 432.7181215237466,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 1,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 2,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 3,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 4,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    13435,
+    13252,
+    13101,
+    13731,
+    13367
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786884012594,
+     "commitAckMs": 1786884026003,
+     "firstFrameMs": 1786884026012,
+     "endMs": 1786884026029,
+     "latencyMs": 13435,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "unsightly blue bbq",
+      "selectedId": 1
+     }
+    },
+    {
+     "name": "selectStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786884047481,
+     "commitAckMs": 1786884060714,
+     "firstFrameMs": 1786884060716,
+     "endMs": 1786884060733,
+     "latencyMs": 13252,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "small yellow car",
+      "selectedId": 1
+     }
+    },
+    {
+     "name": "selectStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786884082153,
+     "commitAckMs": 1786884095233,
+     "firstFrameMs": 1786884095237,
+     "endMs": 1786884095254,
+     "latencyMs": 13101,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "mushy red chair",
+      "selectedId": 1
+     }
+    },
+    {
+     "name": "selectStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786884109343,
+     "commitAckMs": 1786884123057,
+     "firstFrameMs": 1786884123057,
+     "endMs": 1786884123074,
+     "latencyMs": 13731,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "important brown house",
+      "selectedId": 1
+     }
+    },
+    {
+     "name": "selectStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786884144477,
+     "commitAckMs": 1786884157816,
+     "firstFrameMs": 1786884157828,
+     "endMs": 1786884157844,
+     "latencyMs": 13367,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "adorable blue bbq",
+      "selectedId": 1
+     }
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786884144477,
+    "commitAckMs": 1786884157816,
+    "firstFrameMs": 1786884157828,
+    "endMs": 1786884157844,
+    "latencyMs": 13367,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "adorable blue bbq",
+     "selectedId": 1
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 13367,
+   "mean": 13377.2,
+   "std": 234.8301513860603,
+   "min": 13101,
+   "max": 13731,
+   "p95": 13731,
+   "ci95": 291.5334000608506,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 1,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 2,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 3,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    },
+    {
+     "rep": 4,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    191.5,
+    9253.5,
+    178.5
+   ],
+   "detailSamples": [
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884157997.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884158147,
+      "commitAckMs": 1786884158189,
+      "firstFrameMs": 1786884158195,
+      "secondFrameMs": 1786884158211
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884158521.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884167734,
+      "commitAckMs": 1786884167775,
+      "firstFrameMs": 1786884167779,
+      "secondFrameMs": 1786884167796
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884168021.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884168158,
+      "commitAckMs": 1786884168200,
+      "firstFrameMs": 1786884168213,
+      "secondFrameMs": 1786884168229
+     }
+    }
+   ],
+   "detail": {
+    "kind": "octane-commit-fallback",
+    "openTime": 1786884157997.5,
+    "timingInfo": null,
+    "startup": {
+     "moduleStartMs": 1786884158147,
+     "commitAckMs": 1786884158189,
+     "firstFrameMs": 1786884158195,
+     "secondFrameMs": 1786884158211
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 3,
+   "median": 191.5,
+   "mean": 3207.8333333333335,
+   "std": 5235.70495094341,
+   "min": 178.5,
+   "max": 9253.5,
+   "p95": 9253.5,
+   "ci95": 13007.261857134401,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    213.5,
+    9274.5,
+    207.5
+   ],
+   "detailSamples": [
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884157997.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884158147,
+      "commitAckMs": 1786884158189,
+      "firstFrameMs": 1786884158195,
+      "secondFrameMs": 1786884158211
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884158521.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884167734,
+      "commitAckMs": 1786884167775,
+      "firstFrameMs": 1786884167779,
+      "secondFrameMs": 1786884167796
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884168021.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884168158,
+      "commitAckMs": 1786884168200,
+      "firstFrameMs": 1786884168213,
+      "secondFrameMs": 1786884168229
+     }
+    }
+   ],
+   "detail": {
+    "kind": "octane-commit-fallback",
+    "openTime": 1786884157997.5,
+    "timingInfo": null,
+    "startup": {
+     "moduleStartMs": 1786884158147,
+     "commitAckMs": 1786884158189,
+     "firstFrameMs": 1786884158195,
+     "secondFrameMs": 1786884158211
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 3,
+   "median": 213.5,
+   "mean": 3231.8333333333335,
+   "std": 5233.103699845182,
+   "min": 207.5,
+   "max": 9274.5,
+   "p95": 9274.5,
+   "ci95": 13000.799469641632,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    45246.5,
+    54487.5,
+    54426.5
+   ],
+   "detailSamples": [
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884169820.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884169957,
+      "commitAckMs": 1786884215067,
+      "firstFrameMs": 1786884215085,
+      "secondFrameMs": 1786884215101
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884215248.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884215402,
+      "commitAckMs": 1786884269736,
+      "firstFrameMs": 1786884269742,
+      "secondFrameMs": 1786884269758
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884269908.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884270066,
+      "commitAckMs": 1786884324335,
+      "firstFrameMs": 1786884324347,
+      "secondFrameMs": 1786884324364
+     }
+    }
+   ],
+   "detail": {
+    "kind": "octane-commit-fallback",
+    "openTime": 1786884269908.5,
+    "timingInfo": null,
+    "startup": {
+     "moduleStartMs": 1786884270066,
+     "commitAckMs": 1786884324335,
+     "firstFrameMs": 1786884324347,
+     "secondFrameMs": 1786884324364
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 3,
+   "median": 54426.5,
+   "mean": 51386.833333333336,
+   "std": 5317.7721212302185,
+   "min": 45246.5,
+   "max": 54487.5,
+   "p95": 54487.5,
+   "ci95": 13211.144463926865,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    45280.5,
+    54509.5,
+    54455.5
+   ],
+   "detailSamples": [
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884169820.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884169957,
+      "commitAckMs": 1786884215067,
+      "firstFrameMs": 1786884215085,
+      "secondFrameMs": 1786884215101
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884215248.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884215402,
+      "commitAckMs": 1786884269736,
+      "firstFrameMs": 1786884269742,
+      "secondFrameMs": 1786884269758
+     }
+    },
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786884269908.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786884270066,
+      "commitAckMs": 1786884324335,
+      "firstFrameMs": 1786884324347,
+      "secondFrameMs": 1786884324364
+     }
+    }
+   ],
+   "detail": {
+    "kind": "octane-commit-fallback",
+    "openTime": 1786884269908.5,
+    "timingInfo": null,
+    "startup": {
+     "moduleStartMs": 1786884270066,
+     "commitAckMs": 1786884324335,
+     "firstFrameMs": 1786884324347,
+     "secondFrameMs": 1786884324364
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 3,
+   "median": 54455.5,
+   "mean": 51415.166666666664,
+   "std": 5312.845784825053,
+   "min": 45280.5,
+   "max": 54509.5,
+   "p95": 54509.5,
+   "ci95": 13198.90577816846,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 3,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:49:25.210Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 1,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:49:25.210Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 2,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:49:25.210Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 3,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:49:25.210Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 1,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:49:25.210Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 2,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:49:25.210Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 3,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:53:37.262Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 1,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:53:37.262Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 2,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:53:37.262Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 3,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:53:37.262Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 1,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:53:37.262Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    },
+    {
+     "rep": 2,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 240000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T12:53:37.262Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  }
+ ]
+}

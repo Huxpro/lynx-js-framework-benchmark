@@ -57,6 +57,12 @@ const normalizeRun = (rawRun, file) => {
       && (!Array.isArray(record.detailSamples) || record.detailSamples.length !== record.samples?.length)) {
       throw new Error(`${file}: record ${index} detailSamples must align with samples`);
     }
+    if (record.failures != null && !Array.isArray(record.failures)) {
+      throw new Error(`${file}: record ${index} failures must be an array`);
+    }
+    if (Array.isArray(record.failures) && record.failures.length > (record.dnfCount ?? 0)) {
+      throw new Error(`${file}: record ${index} failures cannot exceed dnfCount`);
+    }
     return normalizeRecord(rawRun, record);
   });
   const seen = new Set();
@@ -107,11 +113,21 @@ const commitMatchesManifest = (run, record, entryById) => {
   return Boolean(runCommit && manifestCommit && runCommit === manifestCommit);
 };
 
+const isPublishableRecord = (run, record) => !(
+  record.harness === 'native'
+  && record.entry === 'octane'
+  && (
+    run.meta.machine?.octaneTriggerMode === 'driver'
+    || record.boundary === 'native-devtool-driver-handler-to-second-native-frame'
+  )
+);
+
 const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
     && record.harness === harness
+    && isPublishableRecord(run, record)
     && commitMatchesManifest(run, record, entryById)),
 });
 

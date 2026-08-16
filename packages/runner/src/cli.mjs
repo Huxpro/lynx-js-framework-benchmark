@@ -21,6 +21,7 @@ import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
 import { runPreflight } from './preflight.mjs';
 import { launchBrowser } from './browser.mjs';
+import { stringifyResult } from './result-json.mjs';
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -57,35 +58,46 @@ async function cmdRun(args) {
     const reps = args.reps ? Number(args.reps) : 5;
     const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : 3;
     const scales = numList(args.scale) ?? [1000, 10000];
+    const startupScales = numList(args['startup-scale']) ?? [0, 1000, 10000, 30000];
     console.log(`[run:native] entries: ${entries.map((e) => e.id).join(', ')}`);
-    const native = await runNativeHarness({
-      adapterPath: args.adapter,
-      entries, cases, suites, scales, reps, startupReps,
-      log: (line) => console.log(line),
-    });
-    const records = native.records;
-    const machine = native.machine ?? machineFingerprint();
     const now = new Date();
     const label = args.label ? `-${args.label}` : '';
-    const run = {
-      schemaVersion: SCHEMA_VERSION,
-      meta: {
-        generatedAt: now.toISOString(),
-        machine,
-        calibration: null,
-        harness: 'native',
-        adapter: path.resolve(args.adapter),
-        argv: process.argv.slice(2),
-        entryCommits: Object.fromEntries(
-          entries.map((e) => [e.id, e.provenance?.commit ?? null]),
-        ),
-      },
-      records,
+    let outPath = null;
+    const persist = ({ records, machine: adapterMachine }) => {
+      const machine = adapterMachine ?? machineFingerprint();
+      if (outPath === null) {
+        const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        outPath = path.join(repoRoot(), 'results/runs', `${stamp}-${machine.id}-native${label}.json`);
+      }
+      const run = {
+        schemaVersion: SCHEMA_VERSION,
+        meta: {
+          generatedAt: now.toISOString(),
+          machine,
+          calibration: null,
+          harness: 'native',
+          adapter: path.resolve(args.adapter),
+          argv: process.argv.slice(2),
+          checkpoint: true,
+          entryCommits: Object.fromEntries(
+            entries.map((e) => [e.id, e.provenance?.commit ?? null]),
+          ),
+        },
+        records,
+      };
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      const temporary = `${outPath}.tmp`;
+      fs.writeFileSync(temporary, stringifyResult(run));
+      fs.renameSync(temporary, outPath);
     };
-    const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const outPath = path.join(repoRoot(), 'results/runs', `${stamp}-${machine.id}-native${label}.json`);
-    fs.mkdirSync(path.dirname(outPath), { recursive: true });
-    fs.writeFileSync(outPath, JSON.stringify(run, null, 1));
+    const native = await runNativeHarness({
+      adapterPath: args.adapter,
+      entries, cases, suites, scales, startupScales, reps, startupReps,
+      log: (line) => console.log(line),
+      onProgress: persist,
+    });
+    const records = native.records;
+    persist({ records, machine: native.machine });
     console.log(`[run:native] ${records.length} records → ${path.relative(repoRoot(), outPath)}`);
     if (!args['no-collect']) collectRuns();
     return;

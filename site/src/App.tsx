@@ -5,7 +5,7 @@ import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { MethodPage } from './components/Method';
 import { RankedBars } from './components/RankedBars';
-import { ScaleTrend, TREND_SPECS } from './components/ScaleTrends';
+import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
 import { ENTRIES, FEATURED_IDS, LAB_IDS, select, workloadScales } from './data';
 import { useTheme } from './hooks';
@@ -187,7 +187,9 @@ export default function App() {
           />
           <RankedBars
             title="storms"
-            description="one tap, many sequential render cycles (50 update / 30 select ticks through a MessageChannel pump). Throughput of the full state→render→wire→apply loop."
+            description={harness === 'web'
+              ? 'one tap, many sequential render cycles (50 update / 30 select ticks through a MessageChannel pump). Throughput of the full state→render→wire→apply loop.'
+              : 'one tap, many sequential Native task/transport commits (50 update / 30 select ticks), each acknowledged before the next tick.'}
             suite="table"
             ops={['updateStorm', 'selectStorm'].flatMap((w) =>
               workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
@@ -198,7 +200,9 @@ export default function App() {
           />
           <RankedBars
             title="startup (first contentful paint)"
-            description="view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration."
+            description={harness === 'web'
+              ? 'view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration.'
+              : 'native pipeline open → first contentful paint. Entries without a pipeline performance entry are absent rather than replaced by another boundary.'}
             suite="startup"
             metric="fcp"
             ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' }).map((s) => ({
@@ -208,6 +212,28 @@ export default function App() {
             theme={theme}
             selected={selected}
           />
+          {harness === 'native' && ['octaneCommitAck', 'octaneSecondFrame'].map((metric) => {
+            const metricRecords = select({ suite: 'startup', harness, workload: 'startup', metric });
+            if (metricRecords.length === 0) return null;
+            const isAck = metric === 'octaneCommitAck';
+            return (
+              <RankedBars
+                key={metric}
+                title={isAck ? 'Octane startup (transport commit ACK)' : 'Octane startup (second post-ACK frame)'}
+                description={isAck
+                  ? 'Open request → acknowledgement of Octane’s initial root transport commit. Isolated Native metric; not FCP.'
+                  : 'Open request → second Native frame after Octane’s initial transport acknowledgement. Isolated Native metric; not FCP.'}
+                suite="startup"
+                metric={metric}
+                ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric }).map((s) => ({
+                  key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
+                }))}
+                harness={harness}
+                theme={theme}
+                selected={selected}
+              />
+            );
+          })}
         </>
       ) : page === 'scale' ? (
         <>
@@ -218,8 +244,8 @@ export default function App() {
             0 ≈ scale-independent).
           </p>
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
-          <CostSpace harness={harness} theme={theme} selected={selected} />
-          {TREND_SPECS.map((spec) => (
+          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={selected} />}
+          {trendSpecsForHarness(harness).map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={selected} />
           ))}
         </>

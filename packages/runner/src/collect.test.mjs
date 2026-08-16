@@ -186,6 +186,19 @@ test('collector combines split Native suites cell-by-cell on the same device', (
       ...nativeRecord('octane', 'startup'),
       suite: 'startup', metric: 'settled', scale: 0, boundary: 'native-open-to-pipeline-end',
     }]);
+    fs.writeFileSync(path.join(root, 'results/runs/native-driver-diagnostic.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-04T00:00:00Z',
+        machine: { ...machine('device-a'), octaneTriggerMode: 'driver' },
+        calibration: null,
+        entryCommits: { octane: 'current' },
+      },
+      records: [{
+        ...nativeRecord('octane', 'swap'),
+        boundary: 'native-devtool-driver-handler-to-second-native-frame',
+      }],
+    }));
 
     const entries = [{
       id: 'octane', distDir: path.join(root, 'missing-octane'), provenance: { commit: 'current' },
@@ -203,6 +216,7 @@ test('collector combines split Native suites cell-by-cell on the same device', (
       'native-startup.json', 'native-table.json',
     ]);
     assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
+    assert.equal(native.some((candidate) => candidate.runFile === 'native-driver-diagnostic.json'), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -372,6 +386,49 @@ test('collector rejects ambiguous duplicate source cells', () => {
     assert.throws(
       () => collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) }),
       /duplicate source record/,
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector preserves structured DNF evidence and rejects impossible failure counts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const dnf = {
+      ...record('react'),
+      samples: [],
+      n: 0,
+      median: null,
+      dnfCount: 1,
+      failures: [{ rep: 0, category: 'timeout', timeoutMs: 240000 }],
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/dnf.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [dnf],
+    }));
+    const out = collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) });
+    assert.deepEqual(out.comparisonRecords[0].failures, dnf.failures);
+
+    dnf.failures.push({ rep: 1, category: 'timeout' });
+    fs.writeFileSync(path.join(root, 'results/runs/dnf.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [dnf],
+    }));
+    assert.throws(
+      () => collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) }),
+      /failures cannot exceed dnfCount/,
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

@@ -173,19 +173,27 @@ now runs real Native Engine bundles:
 - `packages/runner/adapters/lynx-sandbox-android.mjs` serves bundles over ADB reverse, opens a
   fresh LynxExplorer page/session, dispatches Native touch input, reads device-clock timing
   markers from the Runtime console, and reads startup pipeline entries from the Performance
-  domain. Upstream Octane uses a benchmark-only background driver because the public Native
-  surface can register its string event tokens but cannot receive them in the background realm;
-  DevTool invokes the handler before (and therefore outside) the measured interval;
+  domain. Because Explorer DebugRouter accepts one USB connector, the adapter uses the official
+  direct Android transport and multiplexes Runtime events, DOM requests, and input through one
+  persistent CDP channel per page. It waits for device-side channel teardown and recycles Explorer
+  on a fixed five-page cadence; both settings are recorded and included in cohort identity.
+  Upstream Octane also uses real touch input. Its background handler waits for the
+  renderer's correlated `flushTransport()` acknowledgement, waits two Native frames, and emits a
+  semantic post-ACK state snapshot. The adapter validates that snapshot. A DevTool handler driver
+  is available only as a separately labelled diagnostic mode;
 - `packages/runner/src/harness-native.mjs` owns the framework-neutral adapter contract,
   workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
 mode switch. Long Native runs are split per entry, then collected only inside one anonymized
-Sandbox lease/device cohort. Native Octane is upstream-only; Lab variants are not scheduled.
+Sandbox lease/device cohort. The cohort hash includes an explicit unique acquisition identity;
+the reusable ADB serial alone is not a lease identity. Native Octane is upstream-only; Lab variants
+are not scheduled.
 Octane's custom renderer does not expose Performance pipeline entries in the tested Explorer
-build. Its startup fallback converts the host `openPage` request timestamp to device time using
-the lowest-RTT sample from seven ADB clock probes, then uses the first and second Native frames
-after its isolated commit probe as FCP and settled. Run metadata retains the chosen offset and RTT.
+build. Therefore it publishes no Native FCP. Its isolated startup observations convert the host
+`openPage` request timestamp to device time using the lowest-RTT sample from seven ADB clock
+probes, then record initial transport ACK and the second Native frame after that ACK under distinct
+metric names/boundaries. Run metadata retains the chosen offset and RTT.
 
 ## Runs, incremental collection, calibration
 
@@ -195,7 +203,8 @@ calibration output, `latest.json`, and every site score/visual are derived.
 
 - `bench run` writes one **run file** `results/runs/<iso>-<machineId>.json` — any subset of
   the matrix (`--entry`, `--workload`, `--scale`, `--suite`, `--quick`). Machine fingerprint +
-  calibration score embedded.
+  calibration score embedded. Native files are atomically rewritten after every completed cell;
+  the `meta.checkpoint` marker identifies this crash-recoverable source format.
 - `bench preflight` (also auto-run before `run`) executes a fixed, versioned CPU probe in the
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.

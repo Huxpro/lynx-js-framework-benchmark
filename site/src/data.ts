@@ -26,6 +26,15 @@ export interface BenchRecord {
   detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
+  failures?: {
+    rep: number;
+    category?: string;
+    phase?: string;
+    timeoutMs?: number;
+    triggerMode?: string;
+    message?: string;
+    evidence?: Record<string, unknown>;
+  }[];
   machineId: string | null;
   runFile: string | null;
   runGeneratedAt: string | null;
