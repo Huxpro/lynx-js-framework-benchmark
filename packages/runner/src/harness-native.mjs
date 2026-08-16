@@ -103,6 +103,7 @@ export async function runNativeMatrix({
   log = () => {},
 }) {
   const records = [];
+  const uniqueStartupRows = [...new Set(startupRows)];
   for (const entry of entries) {
     log(`[native:${adapter.environment}] ${entry.id}`);
     if (suites.includes('table')) {
@@ -174,7 +175,7 @@ export async function runNativeMatrix({
       }
     }
     if (suites.includes('startup')) {
-      for (const rows of startupRows) {
+      for (const rows of uniqueStartupRows) {
         const bundle = bundleFor(entry, { rows, flavor: 'lynx' });
         if (!bundle) continue;
         const samples = { fcp: [], settled: [] };
