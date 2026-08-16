@@ -40,7 +40,7 @@ export interface BenchRecord {
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'same-machine' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
   sourceEntry?: string;
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
@@ -93,6 +93,16 @@ export interface ComparisonRun {
   }[];
 }
 
+export interface NativeObservation {
+  entryId: string;
+  harness: 'native';
+  environment: string;
+  generatedAt: string;
+  machineId: string;
+  sourceRunFile: string;
+  sourceRecordCount: number;
+}
+
 export interface EntryMeta {
   id: string;
   label: string;
@@ -113,8 +123,12 @@ export interface EntryMeta {
 const collected = latest as {
   comparisonRecords: BenchRecord[];
   labComparisonRecords: BenchRecord[];
+  nativeObservations: NativeObservation[];
+  nativeObservationRecords: BenchRecord[];
 };
 export const RECORDS = [...collected.comparisonRecords, ...collected.labComparisonRecords];
+export const NATIVE_OBSERVATIONS = collected.nativeObservations;
+export const NATIVE_OBSERVATION_RECORDS = collected.nativeObservationRecords;
 export const MACHINES = (latest as { machines: Record<string, Machine> }).machines;
 export const COMPARISON = (latest as { comparison: ComparisonRun }).comparison;
 export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
@@ -166,7 +180,15 @@ export interface RecordFilter {
 }
 
 export function select(filter: RecordFilter): BenchRecord[] {
-  return RECORDS.filter((r) =>
+  return filterRecords(RECORDS, filter);
+}
+
+export function selectNativeObservations(filter: RecordFilter): BenchRecord[] {
+  return filterRecords(NATIVE_OBSERVATION_RECORDS, filter);
+}
+
+function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
+  return records.filter((r) =>
     (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)
     && (filter.entry == null || r.entry === filter.entry)

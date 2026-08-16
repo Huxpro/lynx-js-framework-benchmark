@@ -4,6 +4,7 @@ import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { MethodPage } from './components/Method';
+import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
@@ -163,6 +164,7 @@ export default function App() {
           </p>
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
+          {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
             title="interactive @1k"
             description={harness === 'web'
@@ -212,28 +214,6 @@ export default function App() {
             theme={theme}
             selected={selected}
           />
-          {harness === 'native' && ['octaneCommitAck', 'octaneSecondFrame'].map((metric) => {
-            const metricRecords = select({ suite: 'startup', harness, workload: 'startup', metric });
-            if (metricRecords.length === 0) return null;
-            const isAck = metric === 'octaneCommitAck';
-            return (
-              <RankedBars
-                key={metric}
-                title={isAck ? 'Octane startup (transport commit ACK)' : 'Octane startup (second post-ACK frame)'}
-                description={isAck
-                  ? 'Open request → acknowledgement of Octane’s initial root transport commit. Isolated Native metric; not FCP.'
-                  : 'Open request → second Native frame after Octane’s initial transport acknowledgement. Isolated Native metric; not FCP.'}
-                suite="startup"
-                metric={metric}
-                ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric }).map((s) => ({
-                  key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
-                }))}
-                harness={harness}
-                theme={theme}
-                selected={selected}
-              />
-            );
-          })}
         </>
       ) : page === 'scale' ? (
         <>

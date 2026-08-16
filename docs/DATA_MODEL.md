@@ -43,6 +43,9 @@ Everything else is derived, including:
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
+- separately selected Native observations for current featured entries measured outside the
+  published cohort; each observation comes from one source run and is never merged across leases
+  or included in cross-entry rankings;
 - `results/latest.json` in its entirety (a checked-in materialized cache);
 - entry lists, available scales/cases, rankings, baselines, ratios, interactive scores, geomeans,
   trend exponents, plot domains, bar widths, totals, sorting, and every table shown by the site.

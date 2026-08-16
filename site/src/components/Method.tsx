@@ -1,4 +1,10 @@
-import { COMPARISON, ENTRIES, GENERATED_AT, MACHINES } from '../data';
+import {
+  COMPARISON,
+  ENTRIES,
+  GENERATED_AT,
+  MACHINES,
+  NATIVE_OBSERVATIONS,
+} from '../data';
 
 export function MethodPage() {
   return (
@@ -72,7 +78,10 @@ export function MethodPage() {
           {COMPARISON.calibration.probeVersion}). Native featured charts combine one complete run
           per entry only when every run has the same device and environment identity. The collector
           keeps partial, stale-commit, and cross-machine records for provenance, but never merges
-          them into the default ranking. Opt-in Lab
+          them into the default ranking. A current featured entry measured under another Native
+          lease may appear in a separate absolute-observation panel with its machine and source run
+          visible; those records never enter rankings, heatmaps, geomeans, or cross-framework
+          ratios. Opt-in Lab
           variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
           millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
           and count fields cannot be CPU-calibrated and remain explicitly historical values.
@@ -96,6 +105,27 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
+        {NATIVE_OBSERVATIONS.length > 0 && (
+          <details className="data-table" open>
+            <summary>Separate Native observations</summary>
+            <table>
+              <thead>
+                <tr><th>entry</th><th>environment</th><th>machine</th><th>source run</th><th>records</th></tr>
+              </thead>
+              <tbody>
+                {NATIVE_OBSERVATIONS.map((observation) => (
+                  <tr key={`${observation.entryId}:${observation.machineId}`}>
+                    <td>{observation.entryId}</td>
+                    <td style={{ textAlign: 'left' }}>{observation.environment}</td>
+                    <td>{observation.machineId}</td>
+                    <td style={{ textAlign: 'left' }}>{observation.sourceRunFile}</td>
+                    <td>{observation.sourceRecordCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
         <details className="data-table" open>
           <summary>Machines in this dataset</summary>
           <table>

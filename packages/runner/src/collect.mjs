@@ -206,6 +206,58 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
   return selected;
 };
 
+const selectNativeObservations = (runs, featuredIds, entryById, nativeCohort) => {
+  const cohortEntries = new Set(nativeCohort?.entries.keys() ?? []);
+  const observations = [];
+  const records = [];
+  for (const entryId of featuredIds) {
+    if (cohortEntries.has(entryId)) continue;
+    let selected = null;
+    for (const candidate of runs) {
+      const candidateRecords = comparisonView(
+        candidate.run,
+        featuredIds,
+        entryById,
+        'native',
+      ).records.filter((record) => record.entry === entryId);
+      for (const environment of new Set(candidateRecords.map((record) => record.environment))) {
+        const environmentRecords = candidateRecords.filter((record) =>
+          record.environment === environment);
+        if (environmentRecords.length === 0) continue;
+        const candidateTime = candidate.run.meta.generatedAt ?? candidate.file;
+        if (
+          !selected
+          || environmentRecords.length > selected.records.length
+          || (environmentRecords.length === selected.records.length
+            && (candidateTime > selected.time
+              || (candidateTime === selected.time && candidate.file > selected.file)))
+        ) {
+          selected = {
+            ...candidate,
+            environment,
+            records: environmentRecords,
+            time: candidateTime,
+          };
+        }
+      }
+    }
+    if (!selected) continue;
+    const annotated = selected.records.map((record) =>
+      annotate(selected.run, selected.file, record, 'isolated-observation'));
+    observations.push({
+      entryId,
+      harness: 'native',
+      environment: selected.environment,
+      generatedAt: selected.run.meta.generatedAt,
+      machineId: selected.run.meta.machine.id,
+      sourceRunFile: selected.file,
+      sourceRecordCount: annotated.length,
+    });
+    records.push(...annotated);
+  }
+  return { observations, records };
+};
+
 const annotate = (run, file, record, comparisonKind = 'archive') => ({
   ...record,
   machineId: run.meta.machine.id,
@@ -370,6 +422,12 @@ export function collectRuns({
       annotate(source.run, source.file, source.record, 'same-machine')))
     : [];
   comparisonRecords.push(...nativeSourceRecords);
+  const nativeObservations = selectNativeObservations(
+    runs,
+    featuredIds,
+    entryById,
+    nativeCohort,
+  );
   const nativeComparison = nativeCohort ? {
     harness: 'native',
     environment: nativeCohort.environment,
@@ -460,9 +518,11 @@ export function collectRuns({
     comparison,
     comparisonRecords,
     labComparisonRecords,
+    nativeObservations: nativeObservations.observations,
+    nativeObservationRecords: nativeObservations.records,
   };
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(out, null, 1));
-  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${labEstimates.length} calibrated Lab entries → ${path.relative(root, outPath)}`);
+  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${nativeObservations.observations.length} isolated Native observations + ${labEstimates.length} calibrated Lab entries → ${path.relative(root, outPath)}`);
   return out;
 }

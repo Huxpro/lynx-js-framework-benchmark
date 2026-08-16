@@ -214,11 +214,13 @@ calibration output, `latest.json`, and every site score/visual are derived.
   one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured
   matrix coverage, then newest). Native comparison records select one complete current-commit
   run per featured entry inside one device/environment cohort. Partial reruns and
-  historical Lab variants therefore cannot replace the public ranking. For opt-in Lab mode, the
-  collector chooses one complete source run per entry and emits `labComparisonRecords`: `ms`
-  fields are scaled by source-score / comparison-score and marked `calibrated-estimate`; heap,
-  wire, bundle, and count fields remain `historical`. Calibration cannot correct memory hierarchy
-  or core-count differences.
+  historical Lab variants therefore cannot replace the public ranking. A current featured Native
+  entry absent from that cohort may be exposed separately from one unmerged source run as an
+  absolute observation; it never enters rankings, ratios, heatmaps, or geomeans. For opt-in Lab
+  mode, the collector chooses one complete source run per entry and emits `labComparisonRecords`:
+  `ms` fields are scaled by source-score / comparison-score and marked `calibrated-estimate`;
+  heap, wire, bundle, and count fields remain `historical`. Calibration cannot correct memory
+  hierarchy or core-count differences.
 - Hypothesis mode: `bench run --entry vue-vapor --workload select --scale 10000 --reps 20`
   gives a focused, high-N answer; `collect` folds it in without touching other cells.
 

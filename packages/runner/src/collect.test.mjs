@@ -157,6 +157,80 @@ test('collector combines current per-entry Native runs only on one device and ig
   }
 });
 
+test('collector publishes a missing Native entry as one isolated run without merging leases', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['react', 'vue', 'octane'],
+      entryCommits: { react: 'react-new', vue: 'vue-new', octane: 'octane-new' },
+    });
+    const writeNative = (file, machineId, generatedAt, entry, commit, records) => {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: {
+          generatedAt,
+          machine: machine(machineId),
+          calibration: null,
+          entryCommits: { [entry]: commit },
+        },
+        records,
+      }));
+    };
+    writeNative('native-react.json', 'device-a', '2026-01-01T00:00:00Z', 'react', 'react-new', [
+      nativeRecord('react'),
+    ]);
+    writeNative('native-vue.json', 'device-a', '2026-01-01T00:01:00Z', 'vue', 'vue-new', [
+      nativeRecord('vue'),
+    ]);
+    writeNative('native-octane-old-lease.json', 'device-b', '2026-01-02T00:00:00Z', 'octane', 'octane-new', [
+      nativeRecord('octane'),
+      nativeRecord('octane', 'select'),
+    ]);
+    writeNative('native-octane-new-lease.json', 'device-c', '2026-01-03T00:00:00Z', 'octane', 'octane-new', [
+      { ...nativeRecord('octane'), samples: [3], median: 3 },
+      { ...nativeRecord('octane', 'select'), samples: [4], median: 4 },
+    ]);
+
+    const entries = [
+      { id: 'react', distDir: path.join(root, 'missing-react'), provenance: { commit: 'react-new' } },
+      { id: 'vue', distDir: path.join(root, 'missing-vue'), provenance: { commit: 'vue-new' } },
+      { id: 'octane', distDir: path.join(root, 'missing-octane'), provenance: { commit: 'octane-new' } },
+    ];
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue', 'octane']),
+      entries,
+    });
+
+    assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
+    assert.equal(out.comparisonRecords.some((record) =>
+      record.harness === 'native' && record.entry === 'octane'), false);
+    assert.deepEqual(out.nativeObservations, [{
+      entryId: 'octane',
+      harness: 'native',
+      environment: 'native-test',
+      generatedAt: '2026-01-03T00:00:00Z',
+      machineId: 'device-c',
+      sourceRunFile: 'native-octane-new-lease.json',
+      sourceRecordCount: 2,
+    }]);
+    assert.deepEqual(
+      out.nativeObservationRecords.map((record) => [
+        record.runFile, record.machineId, record.median, record.comparisonKind,
+      ]),
+      [
+        ['native-octane-new-lease.json', 'device-c', 3, 'isolated-observation'],
+        ['native-octane-new-lease.json', 'device-c', 4, 'isolated-observation'],
+      ],
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector combines split Native suites cell-by-cell on the same device', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });

@@ -4,7 +4,7 @@
 import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ENTRIES, entryColor, select, shortLabel } from '../data';
+import { ENTRIES, entryColor, select, selectNativeObservations, shortLabel } from '../data';
 import { slopeFit } from '../derive.mjs';
 
 interface TrendSpec {
@@ -32,9 +32,18 @@ export function ScaleTrend({
 
   const data = useMemo(() => {
     const out: { entry: string; label: string; scale: number; value: number }[] = [];
+    const recordSource = spec.metric.startsWith('octane')
+      ? selectNativeObservations
+      : select;
     for (const e of ENTRIES) {
       if (!selected.has(e.id)) continue;
-      for (const r of select({ suite: spec.suite, harness, workload: spec.workload, metric: spec.metric, entry: e.id })) {
+      for (const r of recordSource({
+        suite: spec.suite,
+        harness,
+        workload: spec.workload,
+        metric: spec.metric,
+        entry: e.id,
+      })) {
         if (r.median != null && r.scale > 0) {
           out.push({ entry: e.id, label: shortLabel(e.id), scale: r.scale, value: r.median });
         }
@@ -45,7 +54,7 @@ export function ScaleTrend({
 
   const alphas = useMemo(() => {
     const out: { entry: string; alpha: number | null }[] = [];
-    const ids = ENTRIES.map((entry) => entry.id).filter((id) => selected.has(id));
+    const ids = [...new Set(data.map((point) => point.entry))];
     const commonScales = [...new Set(data.map((point) => point.scale))]
       .filter((scale) => ids.every((id) => data.some((point) => point.entry === id && point.scale === scale)));
     for (const id of ids) {
