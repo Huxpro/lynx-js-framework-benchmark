@@ -160,19 +160,28 @@ const selectNativeCohort = (runs, featuredIds, entryById, artifactById) => {
       'native',
     ).records;
     for (const environment of new Set(records.map((record) => record.environment))) {
-      const groupKey = `${candidate.run.meta.machine.id}|${environment}`;
+      const cohortFingerprint = candidate.run.meta.nativeCohort?.fingerprint;
+      if (typeof cohortFingerprint !== 'string' || cohortFingerprint.length === 0) {
+        continue;
+      }
+      const cohortRecords = records.filter((record) =>
+        record.environment === environment
+        && record.nativeCohort === cohortFingerprint);
+      if (cohortRecords.length === 0) continue;
+      const groupKey =
+        `${candidate.run.meta.machine.id}|${environment}|${cohortFingerprint}`;
       const group = groups.get(groupKey) ?? {
         machineId: candidate.run.meta.machine.id,
         environment,
+        cohortFingerprint,
         entries: new Map(),
       };
-      for (const entry of new Set(records
-        .filter((record) => record.environment === environment)
+      for (const entry of new Set(cohortRecords
         .map((record) => record.entry))) {
         const entryCohort = group.entries.get(entry) ?? { cells: new Map(), latest: null };
         const candidateTime = candidate.run.meta.generatedAt ?? candidate.file;
-        for (const record of records.filter((record) => record.environment === environment
-          && record.entry === entry)) {
+        for (const record of cohortRecords.filter((record) =>
+          record.entry === entry)) {
           const key = cellKey(record);
           const current = entryCohort.cells.get(key);
           const currentTime = current?.run.meta.generatedAt ?? current?.file;
@@ -407,7 +416,11 @@ export function collectRuns({
           throw new Error(`${file}: Lab record ${r.entry} has a mismatched benchmark worktree`);
         }
       }
-      const key = recordKey(m.id, r, labMode ? artifact.fingerprint : null);
+      const cohortKey = [
+        ...(labMode ? [artifact.fingerprint] : []),
+        ...(r.harness === 'native' ? [r.nativeCohort ?? 'missing-native-cohort'] : []),
+      ].join('|') || null;
+      const key = recordKey(m.id, r, cohortKey);
       const current = merged.get(key);
       const currentTime = current?.runGeneratedAt ?? current?.runFile;
       if (!current || runTime > currentTime || (runTime === currentTime && file > current.runFile)) {
@@ -458,6 +471,7 @@ export function collectRuns({
   const nativeComparison = nativeCohort ? {
     harness: 'native',
     environment: nativeCohort.environment,
+    cohortFingerprint: nativeCohort.cohortFingerprint,
     generatedAt: nativeCohort.latest,
     machineId: nativeCohort.machineId,
     calibration: null,

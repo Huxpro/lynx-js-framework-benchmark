@@ -48,6 +48,8 @@ import {
   alignedMetricAttempts,
   dnfAttempt,
 } from './attempt-series.mjs';
+import { nativeBundleSnapshotFor } from './native-inputs.mjs';
+import { validateNativeMachine } from './native-cohort.mjs';
 
 export const NATIVE_BOUNDARIES = {
   latency: 'native-input-handler-to-second-native-frame',
@@ -67,26 +69,41 @@ async function withTransientRetry(adapter, action, attempts = 3) {
   }
 }
 
-export async function loadNativeAdapter(adapterPath, context = {}) {
+export async function loadNativeAdapter(adapterPath, context = {}, pinnedFactory = null) {
   const resolved = path.resolve(adapterPath);
-  const module = await import(pathToFileURL(resolved).href);
-  const factory = module.default;
+  const factory = pinnedFactory ?? (await import(pathToFileURL(resolved).href)).default;
   if (typeof factory !== 'function') {
     throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
   }
   const adapter = await factory(context);
-  for (const method of ['loadBundle', 'driveCase', 'collect', 'collectStartup', 'dispose']) {
-    if (typeof adapter?.[method] !== 'function') {
-      throw new Error(`native adapter ${adapterPath} is missing ${method}().`);
+  try {
+    for (const method of ['loadBundle', 'driveCase', 'collect', 'collectStartup', 'dispose']) {
+      if (typeof adapter?.[method] !== 'function') {
+        throw new Error(`native adapter ${adapterPath} is missing ${method}().`);
+      }
     }
+    if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
+      throw new Error(`native adapter ${adapterPath} must declare a device-class environment string.`);
+    }
+    if (adapter.environment === 'lynx-for-web') {
+      throw new Error('native adapter environment must not be "lynx-for-web"; native and web records are never comparable.');
+    }
+    adapter.machine = validateNativeMachine(adapter.machine);
+    return adapter;
+  } catch (error) {
+    if (typeof adapter?.dispose === 'function') {
+      try {
+        await adapter.dispose();
+      } catch (cleanupError) {
+        throw new AggregateError(
+          [error, cleanupError],
+          'Native adapter validation failed and cleanup also failed',
+          { cause: error },
+        );
+      }
+    }
+    throw error;
   }
-  if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
-    throw new Error(`native adapter ${adapterPath} must declare a device-class environment string.`);
-  }
-  if (adapter.environment === 'lynx-for-web') {
-    throw new Error('native adapter environment must not be "lynx-for-web"; native and web records are never comparable.');
-  }
-  return adapter;
 }
 
 /**
@@ -102,6 +119,7 @@ export async function runNativeMatrix({
   suites = ['table', 'startup'],
   scales = [1000, 10000],
   startupScales = STARTUP_ROWS,
+  bundleSnapshots,
   reps = 5,
   startupReps = 3,
   log = () => {},
@@ -112,11 +130,7 @@ export async function runNativeMatrix({
     if (suites.includes('table')) {
       for (const kase of cases) {
         for (const scale of kase.scales.filter((s) => scales.includes(s))) {
-          const bundle = bundleFor(entry, { rows: 0, flavor: 'lynx' });
-          if (!bundle) {
-            log(`  [skip] ${entry.id}: no rows-0 lynx bundle`);
-            continue;
-          }
+          const bundle = nativeBundleSnapshotFor(bundleSnapshots, entry.id, 0);
           const observations = [];
           const extraNames = new Map();
           for (let rep = 0; rep < reps; rep++) {
@@ -125,7 +139,12 @@ export async function runNativeMatrix({
               continue;
             }
             const observed = await withTransientRetry(adapter, async () => {
-              await adapter.loadBundle(entry, { rows: 0, bundlePath: bundle.abs });
+              await adapter.loadBundle(entry, {
+                rows: 0,
+                bundlePath: bundle.bundlePath,
+                bundleBytes: Buffer.from(bundle.bundleBytes),
+                bundleSha256: bundle.sha256,
+              });
               await adapter.driveCase(kase, scale);
               return adapter.collect();
             });
@@ -186,8 +205,7 @@ export async function runNativeMatrix({
     }
     if (suites.includes('startup')) {
       for (const rows of startupScales) {
-        const bundle = bundleFor(entry, { rows, flavor: 'lynx' });
-        if (!bundle) continue;
+        const bundle = nativeBundleSnapshotFor(bundleSnapshots, entry.id, rows);
         const observations = [];
         for (let rep = 0; rep < startupReps; rep++) {
           if (adapter.isStartupUnsupported?.(entry, rows)) {
@@ -195,7 +213,12 @@ export async function runNativeMatrix({
             continue;
           }
           const observed = await withTransientRetry(adapter, async () => {
-            await adapter.loadBundle(entry, { rows, bundlePath: bundle.abs });
+            await adapter.loadBundle(entry, {
+              rows,
+              bundlePath: bundle.bundlePath,
+              bundleBytes: Buffer.from(bundle.bundleBytes),
+              bundleSha256: bundle.sha256,
+            });
             return adapter.collectStartup();
           });
           if (observed?.dnf) {
@@ -243,12 +266,16 @@ export async function runNativeHarness(options = undefined) {
       + 'entries keep main.lynx.bundle and the schema reserves harness:"native".',
     );
   }
-  const adapter = await loadNativeAdapter(options.adapterPath, { log: options.log });
+  const adapter = await loadNativeAdapter(
+    options.adapterPath,
+    { log: options.log },
+    options.adapterFactory,
+  );
   try {
     return {
       records: await runNativeMatrix({ ...options, adapter }),
       environment: adapter.environment,
-      machine: adapter.machine ?? null,
+      machine: validateNativeMachine(adapter.machine),
     };
   } finally {
     await adapter.dispose();
