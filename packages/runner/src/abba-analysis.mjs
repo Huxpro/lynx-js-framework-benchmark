@@ -61,11 +61,22 @@ function exactObject(value, label) {
 }
 
 function formalCohort(meta) {
-  const { loadAverage: _loadAverage, ...stableMachine } = meta.machine ?? {};
+  const {
+    loadAverage: _loadAverage,
+    deviceClockOffsetMs: _deviceClockOffsetMs,
+    deviceClockCalibrationRttMs: _deviceClockCalibrationRttMs,
+    ...stableMachine
+  } = meta.machine ?? {};
+  const nativeCohort = meta.nativeCohort == null ? null : {
+    schemaVersion: meta.nativeCohort.schemaVersion,
+    environment: meta.nativeCohort.environment,
+    adapterFingerprint: meta.nativeCohort.adapterFingerprint,
+    benchmarkFingerprint: meta.nativeCohort.benchmarkFingerprint,
+  };
   return {
     machine: stableMachine,
     browser: meta.browser ?? null,
-    nativeCohort: meta.nativeCohort ?? null,
+    nativeCohort,
     benchmarkWorktree: meta.benchmarkWorktree,
   };
 }

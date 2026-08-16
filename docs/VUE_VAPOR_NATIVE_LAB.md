@@ -20,6 +20,28 @@ identifiers. It validates the exact `vue-lynx-native-bench-v1` producer payload,
 finite ordered timestamps, and duration tolerance. Initialization and measurement cleanup attempt
 every resource; primary errors remain primary when cleanup also fails.
 
+Before any formal Native campaign, run the mandatory count-only 30k smoke on the intended device
+cohort:
+
+```bash
+node scripts/lab/smoke-vue-vapor-native-30k.mjs \
+  --lab-root .tmp/vue-vapor-lab \
+  --entry <receipted-entry> \
+  --adapter packages/runner/adapters/lynx-sandbox-android.mjs
+```
+
+The smoke loads the immutable receipted rows-30000 bundle, allows the large render to settle, then
+requires one `DOM.performSearch('col-id')` count-only observation to report exactly 30,000 rows
+without fetching all node IDs. It is intentionally independent of startup timing capability. A
+runtime crash, transport failure, malformed response, discard failure, or count mismatch
+invalidates the smoke. There is no fallback to framework model state.
+
+The default pre-observation render grace is 15 seconds. On a cohort where a verified 30k render
+requires longer, set `LYNX_SANDBOX_RENDER_GRACE_30K_MS` to the measured grace and keep
+`LYNX_SANDBOX_TIMEOUT_MS` greater than or equal to it. The adapter waits before issuing the single
+count-only query, so a long render cannot strand an already-dispatched CDP request. The override
+does not affect rows below 30k or any recorded benchmark timing.
+
 ## Run
 
 ```bash

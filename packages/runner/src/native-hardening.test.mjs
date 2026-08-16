@@ -97,6 +97,22 @@ test('adapter graph fingerprints relative helpers and rejects unsupported dynami
     first.dispose();
     second.dispose();
 
+    fs.mkdirSync(path.join(root, 'adapters'));
+    fs.mkdirSync(path.join(root, 'src'));
+    fs.writeFileSync(
+      path.join(root, 'adapters', 'nested.mjs'),
+      "import { value } from '../src/helper.mjs'; export default async () => value;\n",
+    );
+    fs.writeFileSync(path.join(root, 'src', 'helper.mjs'), 'export const value = 3;\n');
+    const nested = pinNativeAdapterGraph(path.join(root, 'adapters', 'nested.mjs'));
+    assert.equal(
+      nested.manifest.modules.some(({ path: modulePath }) =>
+        modulePath === path.join(root, 'src', 'helper.mjs')),
+      true,
+    );
+    assert.match(nested.pinnedPath, /adapters[/\\]nested\.mjs$/);
+    nested.dispose();
+
     fs.writeFileSync(
       path.join(root, 'dynamic.mjs'),
       "const name = './helper.mjs'; export default () => import(name);\n",
@@ -123,6 +139,7 @@ test('machine and cohort require device/runtime identity and split on SDK or ada
     sdkVersion: '3.0',
     debugRouterVersion: '1',
     agentLynxVersion: '0.14.4',
+    appApkSha256: 'a'.repeat(64),
     physicalDeviceId: 'did-hash',
     leaseId: 'lease-hash',
   };
@@ -259,6 +276,7 @@ test('Native finalization attempts every disposer and preserves the primary erro
                   sdkVersion: '1',
                   debugRouterVersion: '1',
                   agentLynxVersion: '0.14.4',
+                  appApkSha256: 'a'.repeat(64),
                   physicalDeviceId: 'device',
                   leaseId: 'lease',
                 },

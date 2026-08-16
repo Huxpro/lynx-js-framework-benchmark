@@ -152,7 +152,7 @@ export function pinNativeAdapterGraph(adapterPath) {
   };
   visit(entry);
 
-  const entryRoot = path.dirname(entry);
+  const entryRoot = packageRoot(entry);
   for (const source of modules.keys()) {
     const relative = path.relative(entryRoot, source);
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
@@ -181,7 +181,7 @@ export function pinNativeAdapterGraph(adapterPath) {
     packages: [...packages.values()].sort((a, b) => a.name.localeCompare(b.name)),
   };
   const fingerprint = sha256(Buffer.from(JSON.stringify(manifest)));
-  const pinnedPath = path.join(workspace, path.basename(entry));
+  const pinnedPath = path.join(workspace, path.relative(entryRoot, entry));
   return {
     originalPath: entry,
     pinnedPath,
