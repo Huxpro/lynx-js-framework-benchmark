@@ -133,8 +133,8 @@ With `--lab-root`, entry discovery, raw run output, collection, and `latest.json
 under `.tmp/vue-vapor-lab`. Before launching Chromium, the runner re-verifies each selected
 entry's receipt, patches, manifest, bundle hashes, producer cell, and exact bundle marker bytes,
 and proves that the live benchmark runner worktree matches the benchmark HEAD and patch captured
-by every receipt. Requested rows must be present in the receipt before browser launch. The runner
-repeats the artifact and worktree checks after measurement and before
+by every receipt. Requested rows must be present in the receipt before browser launch or Native
+adapter import. The runner repeats the artifact and worktree checks after measurement and before
 writing a run, so artifacts or runner code changed in flight cannot produce a mixed receipt.
 Every raw run records `entryCommits`, the live benchmark-worktree identity, and a receipt cohort
 fingerprint covering the receipt SHA, source/benchmark patch SHAs, and complete bundle SHA set.
@@ -148,14 +148,22 @@ filenames include milliseconds and use exclusive creation. Existing symlinks in 
 path, including `results/runs` and `results/latest.json`, are rejected.
 
 Startup scale selection is intentionally exact in lab mode: `--scale 10000` runs only startup
-at 10k. Interactive table workloads always use the `rows-0` bundle, so include row 0 when running
-the table suite.
+at 10k. Without an explicit scale, formal runs cover 0/1k/10k/30k. Interactive table workloads
+always use the `rows-0` bundle, so include row 0 when running
+the table suite. Both harnesses reject non-positive/non-integral repetition counts, invalid or
+duplicate scales, startup scales outside 0/1k/10k/30k, blank/duplicate suite or case tokens,
+and any table case whose requested scales have no intersection before browser, adapter, or
+run-output work. Every Web startup rep freezes timing and CPU first, then requires the runtime
+row count to equal the requested scale exactly, including zero, before accepting any sample or
+writing a run. Native startup remains forbidden for formal campaigns until the adapter supplies
+equivalent exact rendered-row evidence.
 
 ## Boundaries
 
 - Lab output roots must be inside this benchmark worktree's `.tmp/`; symlinked output roots and
   formal entry IDs are rejected.
-- The workflow above uses the Web harness.
+- The core workflow above uses the Web harness. The optional fourth unit adds receipted Native
+  execution through the existing adapter contract; see `docs/VUE_VAPOR_NATIVE_LAB.md`.
 - The normal `scripts/vendor-entries.mjs`, formal manifests, published run files, and
   `results/latest.json` are never inputs or outputs of this workflow.
 - Receipts make build inputs and artifacts auditable; they do not certify benchmark methodology
