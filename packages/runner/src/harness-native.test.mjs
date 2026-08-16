@@ -111,7 +111,7 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   }
 });
 
-test('an explicit startup row filter only loads and records requested bundles', async () => {
+test('an explicit startup row filter loads each requested bundle once', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-filter-'));
   const entry = fakeEntry(dir);
   const script = {
@@ -125,7 +125,7 @@ test('an explicit startup row filter only loads and records requested bundles', 
     entries: [entry],
     cases: [],
     suites: ['startup'],
-    startupRows: [1000],
+    startupRows: [1000, 1000],
     startupReps: 1,
   });
 
