@@ -1,0 +1,38 @@
+{
+  "id": "a-vue-vdom-lazy-class-candidate",
+  "label": "Vue-Lynx VDOM lazy class state",
+  "framework": "vue-lynx",
+  "frameworkVersion": "vue 3.6.0-beta.17 / vue-lynx 0.5.1",
+  "config": "vdom, IFR off, ET off, shared empty scope/transition class state",
+  "tags": [
+    "lab",
+    "grind-candidate",
+    "lazy-class-state"
+  ],
+  "tier": "lab",
+  "color": "#42b883",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "perf/vapor-lazy-state",
+    "commit": "710e649bb6b3d175c83048ab7ac835da62b01110",
+    "patched": true,
+    "patchFile": "entries/_patches/vue-vdom-grind-autorows.patch",
+    "buildCommand": "BENCH_AUTOROWS=<rows> BENCH_CELL=off npx rspeedy build",
+    "builtAt": "2026-08-16T08:40:33Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "93d54745dd164f2760abc0f3e22aa628bc19f14bb80dd507cdb8dfda2470f5d6",
+      "rows-0/main.lynx.bundle": "fc2a364128dcef67c05279d37f22ee3d4194bb846670133b0fc309472076b015",
+      "rows-1000/main.web.bundle": "def02bf3a6b13232e2844454e9d3334e503be027968b3b24c4863b81b5a1f392",
+      "rows-1000/main.lynx.bundle": "322ff30804533904227aac8621c0e8c8efefa1991c4ef71af679f04f1dcd08d8",
+      "rows-10000/main.web.bundle": "15f16c745f5679440a8f931b62c97d12c5707303ae45bd9c1b19904e8f945f5f",
+      "rows-10000/main.lynx.bundle": "b4acbb782c013cf6f71dc48336f734c8463f4a22032fd1876ed8f443677529ba",
+      "rows-30000/main.web.bundle": "4bc787400c6cd28767e375d52f9c34e05ed02c4811c72fc29032f75bd45dc136",
+      "rows-30000/main.lynx.bundle": "b205b366b3551bb8e3b612d8460d4958c3f17e0e540f89f9b34a0966dbb6bf9e"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

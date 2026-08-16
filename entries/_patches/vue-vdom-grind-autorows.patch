@@ -1,0 +1,23 @@
+diff --git a/packages/benchmark/apps/ui-vdom/lynx.config.ts b/packages/benchmark/apps/ui-vdom/lynx.config.ts
+--- a/packages/benchmark/apps/ui-vdom/lynx.config.ts
++++ b/packages/benchmark/apps/ui-vdom/lynx.config.ts
+@@
+ const enableElementTemplates = cell === 'ifr-et' || cell === 'et';
++const autoRows = Number(process.env.BENCH_AUTOROWS ?? 0);
+@@
+     define: {
+       __BENCH_MODE__: JSON.stringify(modeLabel),
++      __BENCH_AUTOROWS__: JSON.stringify(autoRows),
+     },
+diff --git a/packages/benchmark/apps/ui-vdom/src/App.vue b/packages/benchmark/apps/ui-vdom/src/App.vue
+--- a/packages/benchmark/apps/ui-vdom/src/App.vue
++++ b/packages/benchmark/apps/ui-vdom/src/App.vue
+@@
+ const MODE = __BENCH_MODE__
++declare const __BENCH_AUTOROWS__: number
+ 
+ const selected = shallowRef<number | undefined>(undefined)
+-const rows = shallowRef<RowData[]>([])
++const rows = shallowRef<RowData[]>(
++  __BENCH_AUTOROWS__ > 0 ? buildData(__BENCH_AUTOROWS__) : [],
++)

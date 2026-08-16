@@ -1,0 +1,39 @@
+{
+  "id": "z-vue-vdom-event-prop-teardown-reviewed",
+  "label": "Vue-Lynx VDOM deferred subtree teardown (order control)",
+  "framework": "vue-lynx",
+  "frameworkVersion": "vue 3.6.0-beta.17 / vue-lynx 0.5.1",
+  "config": "vdom, IFR off, ET off, subtree registries released at ops-batch boundary",
+  "tags": [
+    "lab",
+    "grind-candidate",
+    "event-prop-teardown",
+    "order-control"
+  ],
+  "tier": "lab",
+  "color": "#42b883",
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "perf/vapor-event-prop-teardown",
+    "commit": "67577d72fd54a209333093ea78ebddf671563ea1",
+    "patched": true,
+    "patchFile": "entries/_patches/vue-vdom-grind-autorows.patch",
+    "buildCommand": "BENCH_AUTOROWS=<rows> BENCH_CELL=off npx rspeedy build",
+    "builtAt": "2026-08-16T10:32:46Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "870d55c784d5925b12d0b79285a7daf91dcbb56de294edaad0c07824110e6c35",
+      "rows-0/main.lynx.bundle": "fd560b9af42c711413416ba55c84dac96a5a20e893c58cef0e88fb1e2aa1e127",
+      "rows-1000/main.web.bundle": "21c1370b3574ed427f4a0dc1ede568dc840da3112311ab8a23e7dbbc362909fa",
+      "rows-1000/main.lynx.bundle": "3c4ac87bc3308cd604031fe5ef50b26f920f2cc95e72ab3f83b2cc2d48b8ad6c",
+      "rows-10000/main.web.bundle": "f138ccbb4969c01dfe493a1a7dd45565298ae536741bba43ca3f97ef4c608530",
+      "rows-10000/main.lynx.bundle": "34a0bde2f6af658a8244145c6d64416336e0923efc7af372c608a651ab076b98",
+      "rows-30000/main.web.bundle": "ce46be1ff5327a7f547456ec44520b943db5461450792c79c4a5b6a696bae91f",
+      "rows-30000/main.lynx.bundle": "aecee4b11bcb9e4d778a5ad9689a9a4902f182bf807b3999c58a4dac65b4b38c"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
