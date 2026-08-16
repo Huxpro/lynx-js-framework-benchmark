@@ -21,8 +21,10 @@ recorded as DNF rather than inferred from Web.
 
 - Vue benchmark startup bundles validate `BENCH_AUTOROWS`, use identical
   deterministic seeded rows in Vue and React, and emit Native interactive
-  timing markers after the second Lynx frame (`b81e26a`, `478868d`). Web keeps
-  its existing MessageChannel path and black-box measurement behavior.
+  timing markers after the second Lynx frame (`b81e26a`, `478868d`). The
+  runnable 11-case harness and versioned payload contract are in `77353de`.
+  Web keeps its existing MessageChannel path and black-box measurement
+  behavior.
 - The runner records post-clear heap in both realms and applies an explicit
   Native `--scale` filter to startup as well as table workloads (`78af9cc`).
 
