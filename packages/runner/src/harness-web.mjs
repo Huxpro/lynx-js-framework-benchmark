@@ -499,11 +499,17 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
   return records;
 }
 
+export function startupScalesForRun(scales, startupScales = null) {
+  return startupScales
+    ?? [0, ...scales, 30000].filter((value, index, values) => values.indexOf(value) === index);
+}
+
 export async function runWebHarness({
   entries,
   cases,
   suites,
   scales,
+  startupScales = null,
   reps = 7,
   stormReps = 3,
   startupReps = 5,
@@ -527,7 +533,7 @@ export async function runWebHarness({
       if (suites.includes('startup')) {
         records.push(...await runStartupSuite({
           entry,
-          scales: [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
+          scales: startupScalesForRun(scales, startupScales),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
         }));
