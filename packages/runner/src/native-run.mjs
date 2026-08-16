@@ -60,6 +60,9 @@ export async function executeNativeRun({
   verifiedLabBenchmark = null,
   noCollect = false,
   argv = [],
+  campaign = null,
+  startedAt = null,
+  resolvedMatrix = null,
   now = () => new Date(),
   runHarness = runNativeHarness,
   collect = collectRuns,
@@ -133,6 +136,13 @@ export async function executeNativeRun({
     schemaVersion: SCHEMA_VERSION,
     meta: {
       generatedAt,
+      ...(campaign ? {
+        runLabel: label,
+        startedAt,
+        finishedAt: generatedAt,
+        campaign,
+        resolvedMatrix,
+      } : {}),
       machine,
       calibration: null,
       harness: 'native',

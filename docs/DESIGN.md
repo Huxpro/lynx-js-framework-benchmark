@@ -182,6 +182,12 @@ now runs real Native Engine bundles:
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
 mode switch. Long Native runs are split per entry, then collected only inside one anonymized
 Sandbox lease/device cohort. Native Octane is upstream-only; Lab variants are not scheduled.
+
+Formal Vue Vapor runs are single-entry, receipted campaign legs. Campaign arguments are
+all-or-none and validated before browser or adapter work. A1/B1/B2/A2 map exactly to sequence
+indices 0/1/2/3. Table, startup, and heap are separate phases with canonical executed matrices.
+Web cohort identity includes the executable realpath, reported browser version, binary SHA256,
+host load average, and CPU governors in addition to the existing machine and receipt identities.
 Octane's custom renderer does not expose Performance pipeline entries in the tested Explorer
 build. Its startup fallback converts the host `openPage` request timestamp to device time using
 the lowest-RTT sample from seven ADB clock probes, then uses the first and second Native frames

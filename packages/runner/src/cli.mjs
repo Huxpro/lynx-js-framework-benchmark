@@ -20,7 +20,7 @@ import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
 import { assertNativeLabBundles, executeNativeRun } from './native-run.mjs';
 import { runPreflight } from './preflight.mjs';
-import { launchBrowser } from './browser.mjs';
+import { browserFingerprint, launchBrowser } from './browser.mjs';
 import {
   assertVueVaporLabSelectedRows,
   verifyPinnedVueVaporLabEntry,
@@ -34,6 +34,10 @@ import {
 } from './path-safety.mjs';
 import { resolveRunMatrix } from './run-matrix.mjs';
 import { writeRunFile } from './run-files.mjs';
+import {
+  resolveCampaign,
+  resolvedCampaignMatrix,
+} from './campaign.mjs';
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -59,6 +63,7 @@ const LAB_ARGS = {
   run: new Set([
     'lab-root', 'entry', 'case', 'scale', 'suite', 'reps', 'quick', 'label',
     'harness', 'adapter', 'storm-reps', 'startup-reps', 'no-collect',
+    'campaign-id', 'comparison-id', 'phase', 'leg', 'sequence-index',
   ]),
   collect: new Set(['lab-root']),
   list: new Set(['lab-root']),
@@ -83,6 +88,7 @@ function validateLabArgs(args, cmd) {
     for (const key of [
       'case', 'scale', 'suite', 'reps', 'label', 'harness', 'adapter',
       'storm-reps', 'startup-reps',
+      'campaign-id', 'comparison-id', 'phase', 'leg', 'sequence-index',
     ]) {
       if (Object.hasOwn(args, key)
         && (typeof args[key] !== 'string' || args[key].length === 0)) {
@@ -156,6 +162,24 @@ async function cmdRun(args) {
       entries.map((entry) => verifiedLabEntries.get(entry.id)),
     )
     : null;
+  const campaign = resolveCampaign({
+    args,
+    labRoot: isolatedRoot,
+    entries,
+    verifiedLabEntries,
+    harness,
+    matrix: {
+      cases,
+      suites,
+      scales,
+      startupScales,
+      reps,
+      startupReps,
+      stormReps,
+    },
+    runLabel: args.label ?? null,
+  });
+  const startedAt = new Date().toISOString();
 
   if (harness === 'native') {
     if (verifiedLabEntries) {
@@ -181,6 +205,19 @@ async function cmdRun(args) {
       verifiedLabBenchmark,
       noCollect: Boolean(args['no-collect']),
       argv: process.argv.slice(2),
+      campaign,
+      startedAt,
+      resolvedMatrix: campaign
+        ? resolvedCampaignMatrix({
+          cases,
+          suites,
+          scales,
+          startupScales,
+          reps,
+          startupReps,
+          stormReps,
+        }, harness, campaign.phase)
+        : null,
       log: (line) => console.log(line),
     });
     return;
@@ -200,10 +237,13 @@ async function cmdRun(args) {
   console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
 
   // Preflight in the same browser configuration that will measure.
-  const probe = await (async () => {
-    const { browser } = await launchBrowser();
+  const { probe, browserCohort } = await (async () => {
+    const { browser, executablePath } = await launchBrowser();
     try {
-      return await runPreflight(browser);
+      return {
+        probe: await runPreflight(browser),
+        browserCohort: browserFingerprint(executablePath),
+      };
     } finally {
       await browser.close();
     }
@@ -214,6 +254,7 @@ async function cmdRun(args) {
     entries, cases, suites, scales,
     startupScales,
     reps, stormReps, startupReps,
+    phase: campaign?.phase ?? null,
   });
   for (const entry of entries) records.push(...bundleRecords(entry));
   if (verifiedLabEntries) {
@@ -229,14 +270,34 @@ async function cmdRun(args) {
   }
 
   const machine = machineFingerprint();
+  if (executablePath !== browserCohort.executableRealpath) {
+    throw new Error('browser executable changed between preflight and measurement');
+  }
   const now = new Date();
+  const finishedAt = now.toISOString();
   const run = {
     schemaVersion: SCHEMA_VERSION,
     meta: {
-      generatedAt: now.toISOString(),
+      generatedAt: finishedAt,
+      ...(campaign ? {
+        runLabel: args.label,
+        startedAt,
+        finishedAt,
+        campaign,
+        resolvedMatrix: resolvedCampaignMatrix({
+          cases,
+          suites,
+          scales,
+          startupScales,
+          reps,
+          startupReps,
+          stormReps,
+        }, harness, campaign.phase),
+      } : {}),
       machine,
       calibration: probe,
       chromium: executablePath,
+      browser: browserCohort,
       argv: process.argv.slice(2),
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),

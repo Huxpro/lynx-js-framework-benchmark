@@ -17,6 +17,11 @@ import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
+import {
+  alignedMetricAttempts,
+  attemptFromError,
+  dnfAttempt,
+} from './attempt-series.mjs';
 
 const SETTLE_MS = 30;
 
@@ -187,6 +192,20 @@ async function measureOnce({ page, profiler, kase, spec, timeoutMs }) {
   return { ms, cpu, wire };
 }
 
+function tableObservation(sample) {
+  return {
+    values: {
+      latency: sample.ms,
+      btsCpu: sample.cpu.bts,
+      mtsCpu: sample.cpu.mts,
+      wireToBtsBytes: sample.wire.toBts.bytes,
+      wireToBtsMsgs: sample.wire.toBts.messages,
+      wireToMtsBytes: sample.wire.toMts.bytes,
+      wireToMtsMsgs: sample.wire.toMts.messages,
+    },
+  };
+}
+
 export async function runTableSuite({
   entry,
   cases,
@@ -197,6 +216,7 @@ export async function runTableSuite({
   origin,
   cdp,
   log,
+  phase = null,
 }) {
   const records = [];
   const bundle = bundleFor(entry, { rows: 0 });
@@ -220,12 +240,11 @@ export async function runTableSuite({
   }
   await settle(page);
 
-  for (const kase of cases) {
+  for (const kase of phase === 'heap' ? [] : cases) {
     if (kase.freshPage) continue; // storms handled below
     for (const scale of kase.scales.filter((s) => scales.includes(s))) {
       kase._scale = scale;
-      const samples = { latency: [], btsCpu: [], mtsCpu: [], wire: [] };
-      let dnfCount = 0;
+      const observations = [];
       for (let rep = 0; rep < reps; rep++) {
         if (rep === 0 || RESET_EACH_SAMPLE.has(kase.name)) {
           if (RESET_EACH_SAMPLE.has(kase.name) && kase.pre !== 'empty') {
@@ -250,13 +269,10 @@ export async function runTableSuite({
             spec,
             timeoutMs: kase.timeoutMs ?? 120000,
           });
-          samples.latency.push(s.ms);
-          if (s.cpu.bts != null) samples.btsCpu.push(s.cpu.bts);
-          if (s.cpu.mts != null) samples.mtsCpu.push(s.cpu.mts);
-          samples.wire.push(s.wire);
+          observations.push(tableObservation(s));
         } catch (e) {
           if (String(e).includes('timeout')) {
-            dnfCount += 1;
+            observations.push(attemptFromError(rep, e));
             log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}: ${String(e).slice(0, 120)}`);
           } else {
             throw e;
@@ -264,8 +280,8 @@ export async function runTableSuite({
         }
         await settle(page);
       }
-      records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount }));
-      log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
+      records.push(...emitOpRecords({ entry, kase, scale, observations }));
+      log(`  ${entry.id} ${kase.name}@${scale}: ${fmtObservations(observations)}`);
     }
   }
 
@@ -274,7 +290,7 @@ export async function runTableSuite({
   // scenario and collect garbage in each CDP realm before reading its heap.
   await page.close();
   let memoryPage = null;
-  try {
+  if (phase !== 'table') try {
     const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
     memoryPage = fresh.page;
     await waitReady(memoryPage);
@@ -309,12 +325,11 @@ export async function runTableSuite({
   }
 
   // Storm cases: fresh page per rep.
-  for (const kase of cases) {
+  for (const kase of phase === 'heap' ? [] : cases) {
     if (!kase.freshPage) continue;
     for (const scale of kase.scales.filter((s) => scales.includes(s))) {
       kase._scale = scale;
-      const samples = { latency: [], btsCpu: [], mtsCpu: [], wire: [] };
-      let dnfCount = 0;
+      const observations = [];
       for (let rep = 0; rep < stormReps; rep++) {
         const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
         try {
@@ -330,13 +345,10 @@ export async function runTableSuite({
             spec,
             timeoutMs: kase.timeoutMs ?? 240000,
           });
-          samples.latency.push(s.ms);
-          if (s.cpu.bts != null) samples.btsCpu.push(s.cpu.bts);
-          if (s.cpu.mts != null) samples.mtsCpu.push(s.cpu.mts);
-          samples.wire.push(s.wire);
+          observations.push(tableObservation(s));
         } catch (e) {
           if (String(e).includes('timeout')) {
-            dnfCount += 1;
+            observations.push(attemptFromError(rep, e));
             log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}`);
           } else {
             throw e;
@@ -345,68 +357,44 @@ export async function runTableSuite({
           await fresh.page.close();
         }
       }
-      records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount }));
-      log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
+      records.push(...emitOpRecords({ entry, kase, scale, observations }));
+      log(`  ${entry.id} ${kase.name}@${scale}: ${fmtObservations(observations)}`);
     }
   }
 
   return records;
 }
 
-function fmtSummary(samples) {
-  const s = summarize(samples.latency);
-  return s ? `${s.median.toFixed(1)}ms ±${(s.ci95 ?? 0).toFixed(1)} (n=${s.n})` : 'no samples';
+function fmtObservations(observations, authority = 'latency') {
+  const attempts = alignedMetricAttempts(observations, authority, { authority });
+  const values = attempts.filter(({ dnf }) => !dnf).map(({ value }) => value);
+  const dnfCount = attempts.length - values.length;
+  const summary = summarize(values);
+  return summary
+    ? `${summary.median.toFixed(1)}ms ±${(summary.ci95 ?? 0).toFixed(1)} `
+      + `(n=${summary.n}${dnfCount ? `, dnf=${dnfCount}` : ''})`
+    : `no samples${dnfCount ? ` dnf=${dnfCount}` : ''}`;
 }
 
-function emitOpRecords({ entry, kase, scale, samples, dnfCount }) {
+function emitOpRecords({ entry, kase, scale, observations }) {
   const records = [];
   const base = { suite: 'table', entry: entry.id, workload: kase.name, scale };
-  records.push(makeRecord({
-    ...base,
-    metric: 'latency',
-    boundary: BOUNDARIES.latency,
-    unit: 'ms',
-    samples: samples.latency,
-    dnfCount,
-  }));
-  for (const [key, metric, boundary] of [
-    ['btsCpu', 'btsCpu', BOUNDARIES.btsCpu],
-    ['mtsCpu', 'mtsCpu', BOUNDARIES.mtsCpu],
+  for (const [metric, boundary, unit] of [
+    ['latency', BOUNDARIES.latency, 'ms'],
+    ['btsCpu', BOUNDARIES.btsCpu, 'ms'],
+    ['mtsCpu', BOUNDARIES.mtsCpu, 'ms'],
+    ['wireToBtsBytes', BOUNDARIES.wire, 'bytes'],
+    ['wireToBtsMsgs', BOUNDARIES.wire, 'count'],
+    ['wireToMtsBytes', BOUNDARIES.wire, 'bytes'],
+    ['wireToMtsMsgs', BOUNDARIES.wire, 'count'],
   ]) {
-    if (samples[key].length) {
-      records.push(makeRecord({
-        ...base,
-        metric,
-        boundary,
-        unit: 'ms',
-        samples: samples[key],
-      }));
-    }
-  }
-  if (samples.wire.length) {
-    for (const [metric, pickSide, pickField] of [
-      ['wireToBtsBytes', 'toBts', 'bytes'],
-      ['wireToBtsMsgs', 'toBts', 'messages'],
-      ['wireToMtsBytes', 'toMts', 'bytes'],
-      ['wireToMtsMsgs', 'toMts', 'messages'],
-    ]) {
-      const vals = samples.wire.map((w) => w[pickSide][pickField]);
-      records.push(makeRecord({
-        ...base,
-        metric,
-        boundary: BOUNDARIES.wire,
-        unit: metric.endsWith('Bytes') ? 'bytes' : 'count',
-        samples: vals,
-        // Keep every endpoint observation as source. makeRecord derives the
-        // display detail from the sample nearest the total median, so changing
-        // or adding a sample cannot leave an old "last sample" visualization.
-        detailSamples: metric === 'wireToMtsBytes'
-          ? samples.wire.map((wire) => ({ byName: wire.toMts.byName }))
-          : metric === 'wireToBtsBytes'
-            ? samples.wire.map((wire) => ({ byName: wire.toBts.byName }))
-            : null,
-      }));
-    }
+    records.push(makeRecord({
+      ...base,
+      metric,
+      boundary,
+      unit,
+      attempts: alignedMetricAttempts(observations, metric),
+    }));
   }
   return records;
 }
@@ -421,8 +409,7 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       continue;
     }
     const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
-    const samples = { fcp: [], settled: [], btsCpu: [], mtsCpu: [], wireToMts: [], wireToBts: [] };
-    let dnfCount = 0;
+    const observations = [];
     for (let rep = 0; rep < reps; rep++) {
       const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
       try {
@@ -451,61 +438,40 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         const actualRows = await evalX(page, 'x.rowCount()');
         assertStartupRowCount(entry.id, scale, rep, actualRows);
         if (result.dnf || result.fcp == null) {
-          dnfCount += 1;
+          observations.push(dnfAttempt(rep, 'timeout'));
           log(`  [dnf] ${entry.id} startup@${scale} rep${rep} (count=${result.finalCount})`);
         } else {
-          samples.fcp.push(result.fcp);
-          if (result.settled != null) samples.settled.push(result.settled);
-          if (cpu.mts != null) samples.mtsCpu.push(cpu.mts);
-          samples.wireToMts.push(wire.toMts.bytes);
-          samples.wireToBts.push(wire.toBts.bytes);
+          observations.push({
+            values: {
+              fcp: result.fcp,
+              settled: result.settled,
+              mtsCpu: cpu.mts,
+              wireToMtsBytes: wire.toMts.bytes,
+              wireToBtsBytes: wire.toBts.bytes,
+            },
+          });
         }
       } finally {
         await page.close();
       }
     }
     const base = { suite: 'startup', entry: entry.id, workload: 'startup', scale };
-    records.push(makeRecord({
-      ...base,
-      metric: 'fcp',
-      boundary: BOUNDARIES.fcp,
-      unit: 'ms',
-      samples: samples.fcp,
-      dnfCount,
-    }));
-    records.push(makeRecord({
-      ...base,
-      metric: 'settled',
-      boundary: BOUNDARIES.settled,
-      unit: 'ms',
-      samples: samples.settled,
-      dnfCount,
-    }));
-    if (samples.mtsCpu.length) {
+    for (const [metric, boundary, unit] of [
+      ['fcp', BOUNDARIES.fcp, 'ms'],
+      ['settled', BOUNDARIES.settled, 'ms'],
+      ['mtsCpu', BOUNDARIES.mtsCpu, 'ms'],
+      ['wireToMtsBytes', BOUNDARIES.wire, 'bytes'],
+      ['wireToBtsBytes', BOUNDARIES.wire, 'bytes'],
+    ]) {
       records.push(makeRecord({
         ...base,
-        metric: 'mtsCpu',
-        boundary: BOUNDARIES.mtsCpu,
-        unit: 'ms',
-        samples: samples.mtsCpu,
+        metric,
+        boundary,
+        unit,
+        attempts: alignedMetricAttempts(observations, metric, { authority: 'fcp' }),
       }));
     }
-    for (const [metric, key] of [
-      ['wireToMtsBytes', 'wireToMts'],
-      ['wireToBtsBytes', 'wireToBts'],
-    ]) {
-      if (samples[key].length) {
-        records.push(makeRecord({
-          ...base,
-          metric,
-          boundary: BOUNDARIES.wire,
-          unit: 'bytes',
-          samples: samples[key],
-        }));
-      }
-    }
-    const fs = summarize(samples.fcp);
-    log(`  ${entry.id} startup@${scale}: fcp ${fs ? fs.median.toFixed(1) + 'ms' : 'DNF'} (n=${fs?.n ?? 0}${dnfCount ? `, dnf=${dnfCount}` : ''})`);
+    log(`  ${entry.id} startup@${scale}: ${fmtObservations(observations, 'fcp')}`);
   }
   return records;
 }
@@ -524,6 +490,7 @@ export async function runWebHarness({
   reps = 7,
   stormReps = 3,
   startupReps = 5,
+  phase = null,
   log = console.log,
 }) {
   const bundleRoots = {};
@@ -538,7 +505,7 @@ export async function runWebHarness({
       if (suites.includes('table')) {
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
-          browser, origin: server.origin, cdp, log,
+          browser, origin: server.origin, cdp, log, phase,
         }));
       }
       if (suites.includes('startup')) {
