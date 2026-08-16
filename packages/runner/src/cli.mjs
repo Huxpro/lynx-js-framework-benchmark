@@ -56,11 +56,14 @@ async function cmdRun(args) {
   if (harness === 'native') {
     const reps = args.reps ? Number(args.reps) : 5;
     const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : 3;
-    const scales = numList(args.scale) ?? [1000, 10000];
+    const requestedScales = numList(args.scale);
+    const scales = requestedScales ?? [1000, 10000];
     console.log(`[run:native] entries: ${entries.map((e) => e.id).join(', ')}`);
     const native = await runNativeHarness({
       adapterPath: args.adapter,
-      entries, cases, suites, scales, reps, startupReps,
+      entries, cases, suites, scales,
+      startupRows: requestedScales ?? undefined,
+      reps, startupReps,
       log: (line) => console.log(line),
     });
     const records = native.records;
