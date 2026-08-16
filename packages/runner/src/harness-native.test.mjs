@@ -151,3 +151,15 @@ test('without an adapter the harness still explains itself instead of proxying',
   await assert.rejects(() => runNativeHarness(), /no device adapter is wired/);
   await assert.rejects(() => runNativeHarness({}), /no device adapter is wired/);
 });
+
+test('sandbox adapter imports without the device-only connector installed', async () => {
+  const priorSerial = process.env.LYNX_SANDBOX_SERIAL;
+  delete process.env.LYNX_SANDBOX_SERIAL;
+  try {
+    const { default: createAdapter } = await import('../adapters/lynx-sandbox-android.mjs');
+    await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_SERIAL/);
+  } finally {
+    if (priorSerial === undefined) delete process.env.LYNX_SANDBOX_SERIAL;
+    else process.env.LYNX_SANDBOX_SERIAL = priorSerial;
+  }
+});

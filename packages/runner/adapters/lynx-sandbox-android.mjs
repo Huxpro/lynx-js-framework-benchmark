@@ -4,8 +4,6 @@ import fs from 'node:fs';
 import http from 'node:http';
 import { ReadableStream } from 'node:stream/web';
 
-import { createDefaultConnector } from '@byted/agent-lynx/connector';
-
 import { CREATE_BUTTON } from '@lynx-bench/shared/workloads';
 
 const DEFAULT_PORT = 8765;
@@ -13,6 +11,21 @@ const DEFAULT_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_TIMEOUT_MS ?? 30_000)
 const OCTANE_STARTUP_MODE = process.env.LYNX_SANDBOX_OCTANE_STARTUP === '1';
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function loadConnectorFactory() {
+  try {
+    const connector = await import('@byted/agent-lynx/connector');
+    if (typeof connector.createDefaultConnector !== 'function') {
+      throw new TypeError('module does not export createDefaultConnector().');
+    }
+    return connector.createDefaultConnector;
+  } catch (error) {
+    throw new Error(
+      'lynx sandbox adapter requires device-only @byted/agent-lynx@0.14.4; make it resolvable from packages/runner using the ByteDance registry before running --harness native.',
+      { cause: error },
+    );
+  }
+}
 
 function adb(serial, ...args) {
   return execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8' }).trim();
@@ -113,6 +126,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
   const buttonPoints = new Map();
   const cellGeometry = new Map();
   let disposed = false;
+  const createDefaultConnector = await loadConnectorFactory();
   const connector = createDefaultConnector();
   const server = await startBundleServer(port, () => bundlePath);
 

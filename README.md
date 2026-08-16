@@ -27,6 +27,8 @@ Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
 For a leased Lynx Sandbox Android device:
 
 ```bash
+# Make the device-only @byted/agent-lynx@0.14.4 package resolvable from packages/runner using the ByteDance
+# registry in the Native runner environment first.
 LYNX_SANDBOX_SERIAL='<leased-adb-serial>' pnpm bench run \
   --harness native \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
@@ -39,6 +41,12 @@ background driver because its registered string-event tokens have no public Nati
 receiver; the driver call happens before the measured handler-to-frame window. Release the
 Sandbox lease after the command completes. `LYNX_SANDBOX_TIMEOUT_MS` can override the 30-second
 per-sample timeout.
+
+`@byted/agent-lynx` is intentionally not part of the public workspace lockfile because one of its
+connector dependencies is unavailable from the public npm registry used by GitHub Actions and the
+results-site deployment. Install it only in the Native runner environment. Web benchmarking,
+tests, and site builds need no private registry credentials; the Native adapter validates the
+device-only dependency when selected.
 
 ### Incremental / hypothesis runs
 

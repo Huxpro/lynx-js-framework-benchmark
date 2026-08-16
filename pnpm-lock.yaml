@@ -10,9 +10,6 @@ importers:
 
   packages/runner:
     dependencies:
-      '@byted/agent-lynx':
-        specifier: 0.14.4
-        version: 0.14.4
       '@lynx-bench/shared':
         specifier: workspace:*
         version: link:../shared
@@ -140,39 +137,6 @@ packages:
   '@babel/types@7.29.8':
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
-
-  '@byted-lynx/bdc-client@0.4.3':
-    resolution: {integrity: sha512-hNstxUFGCOnOWMahGrQOpbMsjsNCX35iFW1Y3UAh674Xp4xivpdCv9ssTyTFAr2Wx2mdrbLaWQI1T1yeCzw9PA==}
-    engines: {node: '>=18.19'}
-    peerDependencies:
-      kerberos: ^2.0.0
-    peerDependenciesMeta:
-      kerberos:
-        optional: true
-
-  '@byted-lynx/devtool-connector@0.15.0':
-    resolution: {integrity: sha512-biXqKZ55RQmYi8ySgj58wFNoIFjkrvR7ro13Ng+v3qSBnp1/VV+uRA5NipkL34HRGGi1Tc7Yx5NF0K+rCSQV8w==}
-    engines: {node: '>=18.19'}
-    hasBin: true
-    peerDependencies:
-      kerberos: ^2.0.0
-    peerDependenciesMeta:
-      kerberos:
-        optional: true
-
-  '@byted-lynx/skill-lynx-devtool@0.14.4':
-    resolution: {integrity: sha512-OUBNpXG+BIFt7DCEQ9hAzJ/PPHpz6Q/zdWXklLtDvJOUYsu2jDpUwcEaZo5hXmAszpFtQ30974VotTNeppU/7w==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  '@byted-lynx/skill-lynx-sandbox@0.1.5':
-    resolution: {integrity: sha512-0OnBLRaF7CuJHfeq2/+p7ecbh/yfsZOSi6pprpnJsi1YQqolwPepoHtFufPvZbdJlX+IxFaX6HpKlhISmFwRMQ==}
-    engines: {node: '>=18'}
-
-  '@byted/agent-lynx@0.14.4':
-    resolution: {integrity: sha512-YGgSzSSlXgeM1W0Qxo6t6LCuI9Db+3UDaUE2RwG4Mhh31CcKgNFz2pkxp145dgzS8GWRE0sUMJlFoUHcsPKRGA==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -345,10 +309,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@lynx-js/trace-processor@0.0.1':
-    resolution: {integrity: sha512-Zyl74cKi+BDggeXroLQG4frbBuiQ0DB0yH0C3pMkUHWv17abWTdJ2mw/H9Cd1QiIr+aQHn1U2SRtsrbkmWMtJw==}
-    engines: {node: '>=18'}
 
   '@lynx-js/web-core@0.22.1':
     resolution: {integrity: sha512-B5XLDjPTU+aO6fq6ylHt7mf3rYxcQAuKHSD86ifoWweO3WI2io6xUSPjnY+MThp8xCihu+NocpmGTi/puRDHxw==}
@@ -776,9 +736,6 @@ packages:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
 
-  immer@10.2.0:
-    resolution: {integrity: sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw==}
-
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
@@ -1066,25 +1023,6 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@byted-lynx/bdc-client@0.4.3': {}
-
-  '@byted-lynx/devtool-connector@0.15.0':
-    dependencies:
-      '@byted-lynx/bdc-client': 0.4.3
-
-  '@byted-lynx/skill-lynx-devtool@0.14.4': {}
-
-  '@byted-lynx/skill-lynx-sandbox@0.1.5': {}
-
-  '@byted/agent-lynx@0.14.4':
-    dependencies:
-      '@byted-lynx/devtool-connector': 0.15.0
-      '@byted-lynx/skill-lynx-devtool': 0.14.4
-      '@byted-lynx/skill-lynx-sandbox': 0.1.5
-      '@lynx-js/trace-processor': 0.0.1
-    transitivePeerDependencies:
-      - kerberos
-
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
 
@@ -1181,10 +1119,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@lynx-js/trace-processor@0.0.1':
-    dependencies:
-      immer: 10.2.0
 
   '@lynx-js/web-core@0.22.1(tslib@2.8.1)':
     dependencies:
@@ -1577,8 +1511,6 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
-
-  immer@10.2.0: {}
 
   internmap@2.0.3: {}
 
