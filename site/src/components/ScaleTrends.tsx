@@ -4,7 +4,8 @@
 import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ENTRIES, entryColor, select, selectNativeObservations, shortLabel } from '../data';
+import { useBenchmarkData } from '../data-context';
+import { ENTRIES, entryColor, shortLabel } from '../data';
 import { slopeFit } from '../derive.mjs';
 
 interface TrendSpec {
@@ -27,6 +28,7 @@ export function ScaleTrend({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { select, selectNativeObservations } = useBenchmarkData();
   const [scaleMode, setScaleMode] = useState<'linear' | 'log'>('linear');
   const ref = useRef<HTMLDivElement>(null);
 

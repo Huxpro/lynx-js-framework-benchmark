@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { collectRuns } from './collect.mjs';
+import { repoRoot } from './entries.mjs';
 
 const machine = (id) => ({
   id, hostname: id, platform: 'test', arch: 'x64', cpuModel: id, cores: 1, memGB: 1, node: 'test',
@@ -507,4 +508,35 @@ test('collector preserves structured DNF evidence and rejects impossible failure
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('checked timeline snapshots keep Octane on the stable main identity', () => {
+  const root = repoRoot();
+  const out = collectRuns({ root, log: () => {} });
+  assert.deepEqual(
+    out.timelineSnapshots.map((snapshot) => snapshot.id),
+    ['2026-08-11-main', '2026-08-12-main', '2026-08-15-main', 'current-main'],
+  );
+  for (const snapshot of out.timelineSnapshots) {
+    const octaneIds = new Set(snapshot.records
+      .filter((record) => record.harness === 'web' && record.entry.startsWith('octane'))
+      .map((record) => record.entry));
+    assert.deepEqual([...octaneIds], ['octane']);
+    assert.equal(
+      new Set(snapshot.records
+        .filter((record) => record.harness === 'web' && record.suite !== 'bundle')
+        .map((record) => record.entry)).size,
+      6,
+    );
+  }
+  const fast = out.timelineSnapshots.find((snapshot) => snapshot.id === '2026-08-12-main');
+  const current = out.timelineSnapshots.find((snapshot) => snapshot.id === 'current-main');
+  const selectStorm = (snapshot) => snapshot.records.find((record) =>
+    record.harness === 'web'
+    && record.entry === 'octane'
+    && record.workload === 'selectStorm'
+    && record.scale === 1000
+    && record.metric === 'latency');
+  assert.equal(selectStorm(fast).median, 34.44500017166138);
+  assert.equal(selectStorm(current).median, 590.6499996185303);
 });

@@ -2,10 +2,9 @@ import {
   BenchRecord,
   entryColor,
   fmtMs,
-  NATIVE_OBSERVATIONS,
-  selectNativeObservations,
   shortLabel,
 } from '../data';
+import { useBenchmarkData } from '../data-context';
 
 const TABLE_GROUPS = [
   {
@@ -56,7 +55,8 @@ function RecordList({
 }
 
 export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
-  if (NATIVE_OBSERVATIONS.length === 0) return null;
+  const { snapshot, selectNativeObservations } = useBenchmarkData();
+  if (snapshot.nativeObservations.length === 0) return null;
 
   return (
     <section className="native-observations" aria-labelledby="native-observations-title">
@@ -67,7 +67,7 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
         the five-entry comparison cohort above. They are shown as absolute observations and never
         enter heatmaps, geomeans, “fastest” rankings, or cross-framework ratios.
       </p>
-      {NATIVE_OBSERVATIONS.map((observation) => {
+      {snapshot.nativeObservations.map((observation) => {
         const records = selectNativeObservations({
           harness: 'native',
           entry: observation.entryId,

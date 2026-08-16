@@ -130,6 +130,14 @@ had a documented weakness, the fix is noted.
   from rows 0; no scale is silently skipped or charged another identical capability timeout.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
   audit rejected a global score; we follow).
+- The site time slider selects four exact, representative source snapshots rather than a moving
+  archive cutoff. Octane always means the upstream-main source recorded by that snapshot, even
+  though its commit SHA changes. Historical storm values need special care: the Aug 11/12 and
+  Aug 15 Octane runs recorded only 6–8 BTS→MTS and 14–17 MTS→BTS messages for a nominal
+  30-tick select storm, while the current run records 60 and 92. The benchmark app's
+  MessageChannel storm implementation is unchanged across those commits, so the old fast values
+  reflect runtime/transport batching or collapsed intermediate commits, not 30 equivalent
+  end-to-end commits. The slider labels this comparability break.
 
 ## Machines and calibration
 

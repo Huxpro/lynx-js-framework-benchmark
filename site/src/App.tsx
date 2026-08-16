@@ -8,36 +8,29 @@ import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
-import { ENTRIES, FEATURED_IDS, LAB_IDS, select, workloadScales } from './data';
+import { TimelineSlider } from './components/TimelineSlider';
+import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
+import { ENTRIES, FEATURED_IDS, TIMELINE_SNAPSHOTS } from './data';
 import { useTheme } from './hooks';
 
-// Sharable comparison state: ?entries=a,b,c picks an exact set (any
-// permutation, incl. lab entries); ?lab=1 reveals the lab tier. This is the
-// author-development mechanism — the default URL always shows the featured
-// public view.
-function initialSelection(): { selected: Set<string>; labMode: boolean } {
+// Sharable comparison state: ?entries=a,b,c picks an exact featured set.
+function initialSelection(): Set<string> {
   const params = new URLSearchParams(location.search);
   const ids = params.get('entries')?.split(',').map((s) => s.trim())
-    .filter((id) => ENTRIES.some((e) => e.id === id));
-  const selected = new Set(ids?.length ? ids : FEATURED_IDS);
-  const labMode = params.get('lab') === '1'
-    || [...selected].some((id) => LAB_IDS.includes(id));
-  return { selected, labMode };
+    .filter((id) => FEATURED_IDS.includes(id));
+  return new Set(ids?.length ? ids : FEATURED_IDS);
 }
 
-function syncUrl(selected: Set<string>, labMode: boolean) {
+function syncUrl(selected: Set<string>) {
   const params = new URLSearchParams(location.search);
-  const isDefault = !labMode
-    && selected.size === FEATURED_IDS.length
+  const isDefault = selected.size === FEATURED_IDS.length
     && FEATURED_IDS.every((id) => selected.has(id));
   if (isDefault) {
     params.delete('entries');
-    params.delete('lab');
   } else {
     params.set('entries', ENTRIES.filter((e) => selected.has(e.id)).map((e) => e.id).join(','));
-    if (labMode) params.set('lab', '1');
-    else params.delete('lab');
   }
+  params.delete('lab');
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
@@ -53,37 +46,33 @@ const PAGES: { key: Page; label: string }[] = [
 
 const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 
-export default function App() {
+function initialSnapshotIndex(): number {
+  const id = new URLSearchParams(location.search).get('snapshot');
+  const index = TIMELINE_SNAPSHOTS.findIndex((snapshot) => snapshot.id === id);
+  return index >= 0 ? index : TIMELINE_SNAPSHOTS.length - 1;
+}
+
+function AppContent({
+  snapshotIndex,
+  onSnapshotChange,
+}: {
+  snapshotIndex: number;
+  onSnapshotChange: (index: number) => void;
+}) {
   const [theme, toggleTheme] = useTheme();
+  const { select, workloadScales } = useBenchmarkData();
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>('web');
-  const [init] = useState(initialSelection);
-  const [selected, setSelected] = useState<Set<string>>(init.selected);
-  const [labMode, setLabMode] = useState<boolean>(init.labMode);
+  const [selected, setSelected] = useState<Set<string>>(initialSelection);
 
   const toggleEntry = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      syncUrl(next, labMode);
+      syncUrl(next);
       return next;
     });
-
-  const toggleLab = () => {
-    const nextLab = !labMode;
-    setLabMode(nextLab);
-    if (!nextLab) {
-      // leaving lab mode hides + deselects lab entries
-      setSelected((prev) => {
-        const next = new Set([...prev].filter((id) => !LAB_IDS.includes(id)));
-        syncUrl(next, nextLab);
-        return next;
-      });
-    } else {
-      syncUrl(selected, nextLab);
-    }
-  };
 
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
@@ -126,21 +115,15 @@ export default function App() {
             </button>
           ))}
         </div>
-        {LAB_IDS.length > 0 && (
-          <button
-            className="theme-toggle"
-            aria-pressed={labMode}
-            onClick={toggleLab}
-            title="Lab: framework-author variants (versions, PRs, flag permutations). Selections are sharable via the URL."
-            style={labMode ? { background: 'var(--surface-2)', color: 'var(--text-primary)' } : undefined}
-          >
-            ⚗ Lab
-          </button>
-        )}
         <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'dark' ? '☀' : '☾'}
         </button>
       </header>
+      <TimelineSlider
+        snapshots={TIMELINE_SNAPSHOTS}
+        index={snapshotIndex}
+        onChange={onSnapshotChange}
+      />
 
       {harness === 'native' && !nativeHasData ? (
         <div className="empty-state">
@@ -160,9 +143,9 @@ export default function App() {
               ? 'Headless Chromium running Lynx for Web; input is measured to the composed-DOM result.'
               : 'Lynx Native Engine on an Android 10 Sandbox device; input-handler time is measured to the second native frame.'}{' '}
             Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
-            any card's data table for exact numbers.{labMode && ' Lab entries are historical calibration-only estimates marked ≈ calibrated; non-time fields remain historical. Your selection is sharable via the URL.'}
+            any card's data table for exact numbers.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
@@ -245,7 +228,7 @@ export default function App() {
             log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing;
             0 ≈ scale-independent).
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
           {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={selected} />}
           {trendSpecsForHarness(harness).map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={selected} />
@@ -260,7 +243,7 @@ export default function App() {
             here it's split apart: per-realm CPU, bytes and messages in each direction, and which
             rpc endpoints carried them.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
           <ThreadsPage harness={harness} theme={theme} selected={selected} />
         </>
       ) : (
@@ -282,5 +265,24 @@ export default function App() {
         <code>results/latest.json</code> materialized cache, regenerated from source before every build.
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  const [snapshotIndex, setSnapshotIndex] = useState(initialSnapshotIndex);
+  const snapshot = TIMELINE_SNAPSHOTS[snapshotIndex];
+  const changeSnapshot = (index: number) => {
+    setSnapshotIndex(index);
+    const params = new URLSearchParams(location.search);
+    const candidate = TIMELINE_SNAPSHOTS[index];
+    if (candidate.id === 'current-main') params.delete('snapshot');
+    else params.set('snapshot', candidate.id);
+    const query = params.toString();
+    history.replaceState(null, '', query ? `?${query}` : location.pathname);
+  };
+  return (
+    <BenchmarkDataProvider snapshot={snapshot}>
+      <AppContent snapshotIndex={snapshotIndex} onSnapshotChange={changeSnapshot} />
+    </BenchmarkDataProvider>
   );
 }

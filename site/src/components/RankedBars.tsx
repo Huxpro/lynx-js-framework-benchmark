@@ -3,13 +3,13 @@
 // Visual language follows octanejs.dev/benchmarks; implementation is ours.
 import { useEffect, useMemo, useState } from 'react';
 
+import { useBenchmarkData } from '../data-context';
 import {
   BenchRecord,
   ENTRIES,
   entryColor,
   fmtMs,
   fmtX,
-  select,
   shortLabel,
 } from '../data';
 import { completeEntryScores } from '../derive.mjs';
@@ -52,6 +52,7 @@ export function RankedBars({
   selected: Set<string>;
   unitFmt?: (v: number | null) => string;
 }) {
+  const { select } = useBenchmarkData();
   const firstOp = ops[0]?.key ?? 'overall';
   const [op, setOp] = useState<'overall' | string>(
     harness === 'native' ? firstOp : 'overall',

@@ -3,7 +3,8 @@
 // diverging tint saturating at 4× either way; the numeral stays legible.
 import { useEffect, useMemo, useState } from 'react';
 
-import { BenchRecord, ENTRIES, entryColor, fmtX, select, shortLabel } from '../data';
+import { useBenchmarkData } from '../data-context';
+import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
 import { completeRowGeomeans } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 
@@ -34,6 +35,7 @@ export function HeatGrid({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { select } = useBenchmarkData();
   const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
   const [mode, setMode] = useState<'fastest' | string>('fastest');
   const activeMode = mode === 'fastest' || selected.has(mode) ? mode : 'fastest';

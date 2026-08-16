@@ -1,12 +1,9 @@
-import {
-  COMPARISON,
-  ENTRIES,
-  GENERATED_AT,
-  MACHINES,
-  NATIVE_OBSERVATIONS,
-} from '../data';
+import { useBenchmarkData } from '../data-context';
+import { ENTRIES } from '../data';
 
 export function MethodPage() {
+  const { snapshot } = useBenchmarkData();
+  const comparison = snapshot.comparison;
   return (
     <>
       <div className="card">
@@ -73,9 +70,9 @@ export function MethodPage() {
       <div className="card">
         <div className="card-title">machines &amp; calibration</div>
         <div className="card-desc">
-          Web featured charts are sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
-          <code>{COMPARISON.machineId}</code>, preflight score {COMPARISON.calibration.score} (v
-          {COMPARISON.calibration.probeVersion}). Native featured charts combine one complete run
+          Web featured charts are sourced from one coherent run: <code>{comparison.runFile}</code> on machine{' '}
+          <code>{comparison.machineId}</code>, preflight score {comparison.calibration.score} (v
+          {comparison.calibration.probeVersion}). Native featured charts combine one complete run
           per entry only when every run has the same device and environment identity. The collector
           keeps partial, stale-commit, and cross-machine records for provenance, but never merges
           them into the default ranking. A current featured entry measured under another Native
@@ -93,7 +90,7 @@ export function MethodPage() {
               <tr><th>harness</th><th>environment</th><th>machine</th><th>entries</th><th>source runs</th></tr>
             </thead>
             <tbody>
-              {COMPARISON.harnesses.map((cohort) => (
+              {comparison.harnesses.map((cohort) => (
                 <tr key={cohort.harness}>
                   <td>{cohort.harness}</td>
                   <td style={{ textAlign: 'left' }}>{cohort.environment ?? '—'}</td>
@@ -105,7 +102,7 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
-        {NATIVE_OBSERVATIONS.length > 0 && (
+        {snapshot.nativeObservations.length > 0 && (
           <details className="data-table" open>
             <summary>Separate Native observations</summary>
             <table>
@@ -113,7 +110,7 @@ export function MethodPage() {
                 <tr><th>entry</th><th>environment</th><th>machine</th><th>source run</th><th>records</th></tr>
               </thead>
               <tbody>
-                {NATIVE_OBSERVATIONS.map((observation) => (
+                {snapshot.nativeObservations.map((observation) => (
                   <tr key={`${observation.entryId}:${observation.machineId}`}>
                     <td>{observation.entryId}</td>
                     <td style={{ textAlign: 'left' }}>{observation.environment}</td>
@@ -133,7 +130,7 @@ export function MethodPage() {
               <tr><th>machine</th><th>cpu</th><th>cores</th><th>node</th><th>latest preflight</th></tr>
             </thead>
             <tbody>
-              {Object.values(MACHINES).map((m) => (
+              {Object.values(snapshot.machines).map((m) => (
                 <tr key={m.id}>
                   <td>{m.id}</td>
                   <td style={{ textAlign: 'left' }}>{m.cpuModel} ({m.platform}/{m.arch})</td>
@@ -145,7 +142,7 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
-        {COMPARISON.labEstimates.length > 0 && (
+        {comparison.labEstimates.length > 0 && (
           <details className="data-table">
             <summary>Calibration-only Lab sources</summary>
             <table>
@@ -153,7 +150,7 @@ export function MethodPage() {
                 <tr><th>entry</th><th>source run</th><th>source score</th><th>target score</th><th>ratio</th></tr>
               </thead>
               <tbody>
-                {COMPARISON.labEstimates.map((estimate) => (
+                {comparison.labEstimates.map((estimate) => (
                   <tr key={estimate.entryId}>
                     <td>{estimate.entryId}</td>
                     <td style={{ textAlign: 'left' }}>{estimate.sourceRunFile}</td>
@@ -166,7 +163,7 @@ export function MethodPage() {
             </table>
           </details>
         )}
-        <div className="note">newest source run {new Date(GENERATED_AT).toLocaleString()}</div>
+        <div className="note">snapshot source {new Date(snapshot.generatedAt).toLocaleString()}</div>
       </div>
 
       <div className="card">
