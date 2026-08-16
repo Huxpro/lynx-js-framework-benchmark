@@ -111,6 +111,34 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   }
 });
 
+test('an explicit startup row filter loads each requested bundle once', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-filter-'));
+  const entry = fakeEntry(dir);
+  const script = {
+    calls: [],
+    collect: [],
+    startup: [{ fcpMs: 75, settledMs: 90 }],
+  };
+
+  const records = await runNativeMatrix({
+    adapter: mockAdapter(script),
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupRows: [1000, 1000],
+    startupReps: 1,
+  });
+
+  assert.deepEqual(
+    script.calls.filter(([name]) => name === 'loadBundle'),
+    [['loadBundle', 'fake', 1000, true]],
+  );
+  assert.deepEqual(
+    [...new Set(records.map((record) => record.scale))],
+    [1000],
+  );
+});
+
 test('adapter modules are validated against the documented contract', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-adapter-'));
   const good = path.join(dir, 'good.mjs');
