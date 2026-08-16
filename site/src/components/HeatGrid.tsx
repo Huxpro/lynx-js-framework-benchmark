@@ -56,7 +56,7 @@ export function HeatGrid({
       const fastestId = fastest != null ? ids[values.indexOf(fastest)] : null;
       return { spec, values, fastest, fastestId, recs };
     });
-  }, [rows, harness, ids.join(',')]);
+  }, [rows, harness, ids.join(','), select]);
 
   const geo = useMemo(() => {
     return completeRowGeomeans(ids, grid.map((row) => ({

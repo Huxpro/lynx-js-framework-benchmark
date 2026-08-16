@@ -137,7 +137,10 @@ had a documented weakness, the fix is noted.
   30-tick select storm, while the current run records 60 and 92. The benchmark app's
   MessageChannel storm implementation is unchanged across those commits, so the old fast values
   reflect runtime/transport batching or collapsed intermediate commits, not 30 equivalent
-  end-to-end commits. The slider labels this comparability break.
+  end-to-end commits. The slider labels this comparability break. New Web storm samples fail
+  closed as `incomplete-storm-transport` unless both transport directions observe at least one
+  rpc message per requested tick (50 update / 30 select); reaching only the final DOM predicate is
+  no longer sufficient.
 
 ## Machines and calibration
 

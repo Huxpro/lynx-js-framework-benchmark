@@ -56,7 +56,7 @@ export function ScaleTrend({
       }
     }
     return out.sort((a, b) => a.scale - b.scale);
-  }, [spec, harness, selected]);
+  }, [spec, harness, selected, select, selectNativeObservations]);
 
   const alphas = useMemo(() => {
     const out: { entry: string; alpha: number | null }[] = [];

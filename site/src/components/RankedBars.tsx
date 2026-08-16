@@ -76,7 +76,7 @@ export function RankedBars({
       m.set(spec.key, inner);
     }
     return m;
-  }, [suite, harness, metric, ops]);
+  }, [suite, harness, metric, ops, select]);
 
   const view = useMemo(() => {
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));

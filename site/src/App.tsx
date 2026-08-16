@@ -89,7 +89,7 @@ function AppContent({
       }
     }
     return rows;
-  }, [harness]);
+  }, [harness, select, workloadScales]);
 
   const tableOps = (scales: number[]) =>
     ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>

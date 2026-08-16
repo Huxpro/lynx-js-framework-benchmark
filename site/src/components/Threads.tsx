@@ -220,7 +220,7 @@ export function ThreadsPage({
       scale,
       label: `${workload} @${scaleLabel(scale)}`,
     }))),
-    [harness],
+    [harness, select],
   );
   const [caseKey, setCaseKey] = useState<string | null>(null);
   const active = available.find((c) => c.key === caseKey) ?? available[0];
