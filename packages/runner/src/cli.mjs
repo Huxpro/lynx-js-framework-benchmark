@@ -58,12 +58,13 @@ async function cmdRun(args) {
     const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : 3;
     const scales = numList(args.scale) ?? [1000, 10000];
     console.log(`[run:native] entries: ${entries.map((e) => e.id).join(', ')}`);
-    const records = await runNativeHarness({
+    const native = await runNativeHarness({
       adapterPath: args.adapter,
       entries, cases, suites, scales, reps, startupReps,
       log: (line) => console.log(line),
     });
-    const machine = machineFingerprint();
+    const records = native.records;
+    const machine = native.machine ?? machineFingerprint();
     const now = new Date();
     const label = args.label ? `-${args.label}` : '';
     const run = {
@@ -86,6 +87,7 @@ async function cmdRun(args) {
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(run, null, 1));
     console.log(`[run:native] ${records.length} records → ${path.relative(repoRoot(), outPath)}`);
+    if (!args['no-collect']) collectRuns();
     return;
   }
   const quick = Boolean(args.quick);

@@ -88,7 +88,7 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   );
   assert.equal(create1k.harness, 'native');
   assert.equal(create1k.environment, 'lynx-native-mock-sim');
-  assert.equal(create1k.boundary, 'tap-to-timing-pipeline');
+  assert.equal(create1k.boundary, 'native-input-handler-to-second-native-frame');
   assert.equal(create1k.n, 2);
   assert.equal(create1k.dnfCount, 1);
   for (const key of COMPARABILITY_KEYS) assert.ok(key in create1k, key);
@@ -100,7 +100,7 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
 
   const startupFcp = records.find((r) => r.workload === 'startup' && r.scale === 0);
   assert.equal(startupFcp.metric, 'fcp');
-  assert.equal(startupFcp.boundary, 'load-to-first-timing-pipeline');
+  assert.equal(startupFcp.boundary, 'native-open-to-fcp');
   const settled = records.find((r) => r.metric === 'settled' && r.scale === 0);
   assert.equal(settled.median, 120);
 
@@ -150,4 +150,16 @@ test('adapter modules are validated against the documented contract', async () =
 test('without an adapter the harness still explains itself instead of proxying', async () => {
   await assert.rejects(() => runNativeHarness(), /no device adapter is wired/);
   await assert.rejects(() => runNativeHarness({}), /no device adapter is wired/);
+});
+
+test('sandbox adapter imports without the device-only connector installed', async () => {
+  const priorSerial = process.env.LYNX_SANDBOX_SERIAL;
+  delete process.env.LYNX_SANDBOX_SERIAL;
+  try {
+    const { default: createAdapter } = await import('../adapters/lynx-sandbox-android.mjs');
+    await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_SERIAL/);
+  } finally {
+    if (priorSerial === undefined) delete process.env.LYNX_SANDBOX_SERIAL;
+    else process.env.LYNX_SANDBOX_SERIAL = priorSerial;
+  }
 });

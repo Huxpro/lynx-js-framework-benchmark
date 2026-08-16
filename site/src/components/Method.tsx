@@ -27,11 +27,16 @@ export function MethodPage() {
         <div className="card-desc" style={{ maxWidth: '80ch' }}>
           <p>
             Every entry is the same krausest-style table app, implemented idiomatically per
-            framework, driven by one byte-identical page instrument in headless Chromium running
-            Lynx for Web. Timing is <b>in-page pointerdown → the first animation frame where a
-            composed-DOM predicate holds</b> — real input, shadow-piercing verification, ≤1 frame
-            quantization. Startup is <b>view-attach → first table content</b> on bundles whose
-            first screen pre-renders N rows.
+            framework. The Web boundary is <b>in-page pointerdown → the first animation frame
+            where a composed-DOM predicate holds</b>. The Native boundary is <b>input handler →
+            second native animation frame</b>, emitted by the bundle on the device clock and read
+            through the Lynx Runtime console. ReactLynx and Vue-Lynx use real touch input. Because
+            upstream Octane cannot receive its registered string-event token in the Native
+            background realm, DevTool invokes the same handler through a benchmark-only driver
+            before the timer starts. Native startup normally comes from Lynx pipeline performance
+            entries (<b>open → FCP</b>) on bundles whose first screen pre-renders N rows. Octane's
+            custom renderer publishes no such entry in this Explorer build, so its documented
+            fallback uses a clock-calibrated open request → first/second post-commit Native frame.
           </p>
           <p>
             Dual-thread metrics come from two framework-neutral instruments: a{' '}
@@ -48,11 +53,11 @@ export function MethodPage() {
             silently dropped.
           </p>
           <p>
-            The <b>web harness is not a native device</b>. Numbers here are Lynx-for-Web-in-Chromium;
-            they expose architectural behavior (wire cost, thread split, scaling shape), not native
-            absolute performance. The schema, the runner, and every entry's{' '}
-            <code>main.lynx.bundle</code> reserve a separate <code>native</code> harness whose numbers,
-            when wired to a device adapter, will never be charted against web numbers.
+            The two harnesses are separate comparison domains. Web numbers are
+            Lynx-for-Web-in-Chromium; Native numbers are real <code>main.lynx.bundle</code> runs in
+            LynxExplorer on a leased Android Sandbox device. They are never charted against one
+            another. A timeout or an unsupported current-device path is retained as DNF rather
+            than omitted or replaced with a proxy number.
           </p>
         </div>
       </div>
@@ -60,14 +65,35 @@ export function MethodPage() {
       <div className="card">
         <div className="card-title">machines &amp; calibration</div>
         <div className="card-desc">
-          Every featured chart is sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
+          Web featured charts are sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
           <code>{COMPARISON.machineId}</code>, preflight score {COMPARISON.calibration.score} (v
-          {COMPARISON.calibration.probeVersion}). The collector keeps partial and cross-machine
-          records for provenance, but never merges them into the default ranking. Opt-in Lab
+          {COMPARISON.calibration.probeVersion}). Native featured charts combine one complete run
+          per entry only when every run has the same device and environment identity. The collector
+          keeps partial, stale-commit, and cross-machine records for provenance, but never merges
+          them into the default ranking. Opt-in Lab
           variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
           millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
           and count fields cannot be CPU-calibrated and remain explicitly historical values.
         </div>
+        <details className="data-table" open>
+          <summary>Published harness cohorts</summary>
+          <table>
+            <thead>
+              <tr><th>harness</th><th>environment</th><th>machine</th><th>entries</th><th>source runs</th></tr>
+            </thead>
+            <tbody>
+              {COMPARISON.harnesses.map((cohort) => (
+                <tr key={cohort.harness}>
+                  <td>{cohort.harness}</td>
+                  <td style={{ textAlign: 'left' }}>{cohort.environment ?? '—'}</td>
+                  <td>{cohort.machineId}</td>
+                  <td>{cohort.entryIds.length}</td>
+                  <td>{cohort.sourceRunFiles.length}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
         <details className="data-table" open>
           <summary>Machines in this dataset</summary>
           <table>

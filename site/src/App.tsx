@@ -155,15 +155,19 @@ export default function App() {
         <>
           <h1>How fast is each framework on Lynx?</h1>
           <p className="subtitle">
-            The same table app, one instrument. Headless Chromium running Lynx for Web; medians,
-            lower is better. Pick entries, hover anything, open any card's data table for exact
-            numbers.{labMode && ' Lab entries are historical calibration-only estimates marked ≈ calibrated; non-time fields remain historical. Your selection is sharable via the URL.'}
+            The same table app, one instrument. {harness === 'web'
+              ? 'Headless Chromium running Lynx for Web; input is measured to the composed-DOM result.'
+              : 'Lynx Native Engine on an Android 10 Sandbox device; input-handler time is measured to the second native frame.'}{' '}
+            Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
+            any card's data table for exact numbers.{labMode && ' Lab entries are historical calibration-only estimates marked ≈ calibrated; non-time fields remain historical. Your selection is sharable via the URL.'}
           </p>
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} labMode={labMode} />
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           <RankedBars
             title="interactive @1k"
-            description="krausest-style table ops on 1,000 rows: tap → all mutations visible in the composed DOM."
+            description={harness === 'web'
+              ? 'krausest-style table ops on 1,000 rows: tap → all mutations visible in the composed DOM.'
+              : 'krausest-style table ops on 1,000 rows: native input handler → second native animation frame.'}
             suite="table"
             ops={tableOps([1000])}
             harness={harness}
@@ -172,7 +176,9 @@ export default function App() {
           />
           <RankedBars
             title="interactive @10k"
-            description="the same ops at 10,000 rows — where wire cost and reconciliation strategy separate."
+            description={harness === 'web'
+              ? 'the same ops at 10,000 rows — where wire cost and reconciliation strategy separate.'
+              : 'the same native operations at 10,000 rows; input/session timeouts remain visible as DNF.'}
             suite="table"
             ops={tableOps([10000])}
             harness={harness}

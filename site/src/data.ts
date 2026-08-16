@@ -31,7 +31,7 @@ export interface BenchRecord {
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
   sourceEntry?: string;
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
@@ -40,13 +40,14 @@ export interface BenchRecord {
 
 export interface Machine {
   id: string;
-  hostname: string;
+  hostname?: string;
   platform: string;
-  arch: string;
+  arch?: string;
   cpuModel: string;
   cores: number;
-  node: string;
-  latestCalibration: { probeVersion: number; score: number };
+  memGB?: number;
+  node: string | null;
+  latestCalibration: { probeVersion: number; score: number } | null;
   latestRunFile: string;
   latestRunGeneratedAt: string;
 }
@@ -59,6 +60,17 @@ export interface ComparisonRun {
   entryIds: string[];
   sourceRecordCount: number;
   recordCount: number;
+  harnesses: {
+    harness: string;
+    environment: string | null;
+    generatedAt: string;
+    machineId: string;
+    calibration: { probeVersion: number; score: number } | null;
+    sourceRunFiles: string[];
+    entryIds: string[];
+    sourceRecordCount: number;
+    recordCount: number;
+  }[];
   labEstimates: {
     entryId: string;
     sourceRunFile: string;
