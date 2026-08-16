@@ -32,18 +32,22 @@ export function ScaleTrend({
 
   const data = useMemo(() => {
     const out: { entry: string; label: string; scale: number; value: number }[] = [];
-    const recordSource = spec.metric.startsWith('octane')
-      ? selectNativeObservations
-      : select;
     for (const e of ENTRIES) {
       if (!selected.has(e.id)) continue;
-      for (const r of recordSource({
+      const filter = {
         suite: spec.suite,
         harness,
         workload: spec.workload,
         metric: spec.metric,
         entry: e.id,
-      })) {
+      };
+      const comparisonRecords = select(filter);
+      const records = comparisonRecords.length > 0
+        ? comparisonRecords
+        : spec.metric.startsWith('octane')
+          ? selectNativeObservations(filter)
+          : [];
+      for (const r of records) {
         if (r.median != null && r.scale > 0) {
           out.push({ entry: e.id, label: shortLabel(e.id), scale: r.scale, value: r.median });
         }

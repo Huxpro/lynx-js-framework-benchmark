@@ -96,29 +96,31 @@ had a documented weakness, the fix is noted.
   sample (page-load variance is inside the sample, stated on the site). Native opens a fresh
   page/session per repetition without dropping any raw sample. Formal Android runs use direct
   transport, one persistent CDP channel per page, a 100 ms unmeasured DebugRouter teardown
-  interval, and a clean Explorer process every five pages. The first post-recycle sample remains
-  in the raw set; there is no outlier filtering. Transport and recycle cadence are encoded in the
-  Native environment key, and the full matrix order is fixed so every entry sees the same cycle.
+  interval, and a configured clean-Explorer recycle cadence (five pages by default). The first
+  post-recycle sample remains in the raw set; there is no outlier filtering. Transport, recycle,
+  timeout, and retry settings are encoded in the Native machine identity, and the full matrix
+  order is fixed so every entry sees the same cycle.
 - Reported per sample set: median (headline), mean, sample std, min, p95, and a
   t-distribution 95% CI (octane's `stats` discipline); raw samples retained in run files.
 - Raw `samples`/one-shot `value` are authoritative. Collection recalculates every statistic and
   ignores stored aggregate snapshots in run files; see [DATA_MODEL.md](./DATA_MODEL.md).
 - **DNF is data**: timeouts are counted (`dnfCount`), retained with per-repetition structured
   `failures` evidence, and shown; a slow framework looks slow, never absent. Long Native
-  workload/startup cells use a 240-second ceiling. If a failed create makes a later cell's
+  workload/startup cells use a configurable ceiling (240 seconds by default). If a failed create makes a later cell's
   prestate unreachable, that later DNF records the inherited cause rather than spending another
   timeout or silently skipping the cell. Non-timeout harness errors still abort the run.
-  DevTool `No response found`/inactive-hook failures are retried at most three times; exhaustion
-  becomes a `transport-retries-exhausted` DNF with the recovery log. Native source files are
+  DevTool `No response found`/inactive-hook failures use a configurable bounded attempt count
+  (three by default); exhaustion becomes a `transport-retries-exhausted` DNF with the recovery
+  log. Native source files are
   atomically checkpointed after each cell, so a later transport failure cannot erase prior cells.
   The original `No response found` chain was traced to Explorer DebugRouter's single USB-client
   rule: a persistent Runtime console stream and a second DOM/Input connection replaced each other,
   after which the device logged `ReadAndCheckMessageHeader` protocol failure. Formal runs use one
   persistent direct CDP channel; retries remain only as bounded evidence for genuinely interrupted
   device sessions, not as the normal control path.
-  Octane uses the 240-second long ceiling required by its renderer cliff. Other Native operations
-  use the 30-second control ceiling; Web case timeouts are not imported into the Native domain and
-  a global Octane timeout is not imposed on every framework.
+  Octane uses the configured long ceiling required by its renderer cliff. Other Native operations
+  use the configured 30-second control ceiling; Web case timeouts are not imported into the Native
+  domain and a global Octane timeout is not imposed on every framework.
 - Startup polling applies the cell deadline to each individual CDP request as the remaining total
   time, so a final unresponsive Performance request cannot overrun the declared timeout. If a
   non-Octane entry's rows-0 probe reaches that deadline with zero pipeline entries, the adapter

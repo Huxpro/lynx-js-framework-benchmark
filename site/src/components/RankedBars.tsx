@@ -52,9 +52,15 @@ export function RankedBars({
   selected: Set<string>;
   unitFmt?: (v: number | null) => string;
 }) {
-  const [op, setOp] = useState<'overall' | string>('overall');
+  const firstOp = ops[0]?.key ?? 'overall';
+  const [op, setOp] = useState<'overall' | string>(
+    harness === 'native' ? firstOp : 'overall',
+  );
   const { setTip, onMove, tipNode } = useTooltip();
   const activeOp = op === 'overall' || ops.some((spec) => spec.key === op) ? op : 'overall';
+  useEffect(() => {
+    setOp(harness === 'native' ? firstOp : 'overall');
+  }, [firstOp, harness]);
   useEffect(() => {
     if (op !== 'overall' && !ops.some((spec) => spec.key === op)) setOp('overall');
   }, [op, ops]);

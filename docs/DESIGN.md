@@ -176,7 +176,9 @@ now runs real Native Engine bundles:
   domain. Because Explorer DebugRouter accepts one USB connector, the adapter uses the official
   direct Android transport and multiplexes Runtime events, DOM requests, and input through one
   persistent CDP channel per page. It waits for device-side channel teardown and recycles Explorer
-  on a fixed five-page cadence; both settings are recorded and included in cohort identity.
+  on a configured cadence (five pages by default); transport, lifecycle, timeout, and retry
+  settings are recorded and included in cohort identity. Explorer client discovery is repeated
+  after every restart because DebugRouter may reassign the client port/ID.
   Upstream Octane also uses real touch input. Its background handler waits for the
   renderer's correlated `flushTransport()` acknowledgement, waits two Native frames, and emits a
   semantic post-ACK state snapshot. The adapter validates that snapshot. A DevTool handler driver

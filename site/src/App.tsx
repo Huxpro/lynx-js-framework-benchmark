@@ -214,6 +214,28 @@ export default function App() {
             theme={theme}
             selected={selected}
           />
+          {harness === 'native' && ['octaneCommitAck', 'octaneSecondFrame'].map((metric) => {
+            const metricRecords = select({ suite: 'startup', harness, workload: 'startup', metric });
+            if (metricRecords.length === 0) return null;
+            const isAck = metric === 'octaneCommitAck';
+            return (
+              <RankedBars
+                key={metric}
+                title={isAck ? 'Octane startup (transport commit ACK)' : 'Octane startup (second post-ACK frame)'}
+                description={isAck
+                  ? 'Open request → acknowledgement of Octane’s initial root transport commit. Octane-only Native metric; not FCP.'
+                  : 'Open request → second Native frame after Octane’s initial transport acknowledgement. Octane-only Native metric; not FCP.'}
+                suite="startup"
+                metric={metric}
+                ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric }).map((s) => ({
+                  key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
+                }))}
+                harness={harness}
+                theme={theme}
+                selected={selected}
+              />
+            );
+          })}
         </>
       ) : page === 'scale' ? (
         <>

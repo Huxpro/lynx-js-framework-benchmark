@@ -184,6 +184,12 @@ function timingName(kase) {
   return kase.name === 'replace' ? 'create' : kase.name;
 }
 
+export function findExplorerClient(clients, encodedSerial) {
+  return clients.find((candidate) =>
+    candidate.id.startsWith(`${encodedSerial}:`)
+    && candidate.info?.AppProcessName === 'com.lynx.explorer');
+}
+
 export default async function createAdapter({ log = () => {} } = {}) {
   const serial = process.env.LYNX_SANDBOX_SERIAL;
   if (!serial) {
@@ -268,9 +274,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
   const clientDeadline = Date.now() + EXPLORER_RECONNECT_TIMEOUT_MS;
   while (!client && Date.now() < clientDeadline) {
     const clients = await connectorCall('initial-client-discovery', () => connector.listClients());
-    client = clients.find((candidate) =>
-      candidate.id.startsWith(`${encodedSerial}:`)
-      && candidate.info?.AppProcessName === 'com.lynx.explorer');
+    client = findExplorerClient(clients, encodedSerial);
     if (!client) await delay(250);
   }
   if (!client) {
@@ -301,6 +305,8 @@ export default async function createAdapter({ log = () => {} } = {}) {
       explorerRecycleEveryPages: EXPLORER_RECYCLE_EVERY_PAGES,
       maxBatteryTemperatureC: MAX_BATTERY_TEMPERATURE_C,
       octaneTriggerMode: OCTANE_TRIGGER_MODE,
+      longWorkloadTimeoutMs: LONG_WORKLOAD_TIMEOUT_MS,
+      transientAttempts: Number(process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS ?? 3),
     }))
     .digest('hex')
     .slice(0, 8);
@@ -322,6 +328,8 @@ export default async function createAdapter({ log = () => {} } = {}) {
     debugRouterSettleMs: ROUTER_SETTLE_MS,
     explorerRecycleEveryPages: EXPLORER_RECYCLE_EVERY_PAGES,
     maxBatteryTemperatureC: MAX_BATTERY_TEMPERATURE_C,
+    longWorkloadTimeoutMs: LONG_WORKLOAD_TIMEOUT_MS,
+    transientAttempts: Number(process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS ?? 3),
     thermalGateTimeoutMs: THERMAL_GATE_TIMEOUT_MS,
     explorerReconnectTimeoutMs: EXPLORER_RECONNECT_TIMEOUT_MS,
     harnessConfigId,
@@ -686,8 +694,9 @@ export default async function createAdapter({ log = () => {} } = {}) {
     let ready = false;
     while (Date.now() < deadline) {
       const clients = await connectorCall('restart-client-after', () => connector.listClients());
-      const candidate = clients.find((next) => next.id === client.id);
+      const candidate = findExplorerClient(clients, encodedSerial);
       if (candidate && (!previousRouterId || candidate.info?.debugRouterId !== previousRouterId)) {
+        client = candidate;
         ready = true;
         break;
       }
@@ -764,7 +773,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
   }
 
   const timeoutForTable = (kase) => currentEntryId === 'octane'
-    ? Math.max(kase.timeoutMs ?? 0, LONG_WORKLOAD_TIMEOUT_MS)
+    ? LONG_WORKLOAD_TIMEOUT_MS
     : DEFAULT_TIMEOUT_MS;
 
   const timeoutForStartup = () => currentEntryId === 'octane'

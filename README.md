@@ -43,7 +43,7 @@ and input over one persistent CDP channel. Explorer's DebugRouter accepts one US
 a long-lived console stream plus separate command connections makes the device replace its own
 client and surfaces as `No response found`. The adapter starts a clean Explorer, serializes that
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
-every five pages. Transport mode and recycle cadence are part of the environment identity, so runs
+the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
 Every featured entry, including upstream Octane, uses real Native touch input. Octane samples
 begin in the background handler, wait for the renderer's correlated transport acknowledgement,
@@ -52,13 +52,15 @@ predicate. A DevTool driver exists only as an explicitly labelled diagnostic mod
 default benchmark path. Release the Sandbox lease after the command completes.
 `LYNX_SANDBOX_TIMEOUT_MS` overrides the 30-second control timeout and
 `LYNX_SANDBOX_LONG_TIMEOUT_MS` overrides the 240-second workload/startup timeout.
+`LYNX_SANDBOX_TRANSIENT_ATTEMPTS` controls the bounded number of transport attempts (three by
+default; one records the first transport failure as DNF without a recovery retry).
 `LYNX_SANDBOX_DEVTOOL_TRANSPORT` can opt back into `daemon` for diagnostics; formal runs use
 `direct`. `LYNX_SANDBOX_RECYCLE_EVERY_PAGES` and `LYNX_SANDBOX_ROUTER_SETTLE_MS` are explicit
 lifecycle controls whose chosen values are retained in run metadata. Formal runs also wait for
 Android thermal status 0 and battery temperature at or below 40 °C before sampling
-(`LYNX_SANDBOX_MAX_BATTERY_TEMP_C` overrides the ceiling). A hash of these lifecycle/thermal/input
-settings is part of the machine identity, preventing differently configured runs from joining one
-Native cohort.
+(`LYNX_SANDBOX_MAX_BATTERY_TEMP_C` overrides the ceiling). A hash of these
+lifecycle/thermal/input/timeout/retry settings is part of the machine identity, preventing
+differently configured runs from joining one Native cohort.
 `LYNX_SANDBOX_LEASE_ID` is mandatory and must uniquely identify the acquisition (for example the
 traceable X-Issue-Id plus `expiredAt` returned by the lease API). The machine fingerprint hashes it
 with the serial so a device reassigned in a later lease cannot be silently merged into the cohort.

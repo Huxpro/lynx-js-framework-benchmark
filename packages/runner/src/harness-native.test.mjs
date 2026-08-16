@@ -247,7 +247,21 @@ test('sandbox adapter imports without the device-only connector installed', asyn
   delete process.env.LYNX_SANDBOX_SERIAL;
   delete process.env.LYNX_SANDBOX_LEASE_ID;
   try {
-    const { default: createAdapter } = await import('../adapters/lynx-sandbox-android.mjs');
+    const {
+      default: createAdapter,
+      findExplorerClient,
+    } = await import('../adapters/lynx-sandbox-android.mjs');
+    const encodedSerial = encodeURIComponent('sandbox.example:1234');
+    assert.equal(findExplorerClient([
+      {
+        id: `${encodedSerial}:8901`,
+        info: { AppProcessName: 'com.ss.android.cardi' },
+      },
+      {
+        id: `${encodedSerial}:8903`,
+        info: { AppProcessName: 'com.lynx.explorer', debugRouterId: 'new-router' },
+      },
+    ], encodedSerial)?.id, `${encodedSerial}:8903`);
     await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_SERIAL/);
     process.env.LYNX_SANDBOX_SERIAL = 'reused-device:1234';
     await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_LEASE_ID/);

@@ -55,8 +55,14 @@ export const NATIVE_BOUNDARIES = {
 };
 
 const STARTUP_ROWS = [0, 1000, 10000, 30000];
+const TRANSIENT_ATTEMPTS = Number(process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS ?? 3);
+if (!Number.isInteger(TRANSIENT_ATTEMPTS) || TRANSIENT_ATTEMPTS <= 0) {
+  throw new Error(
+    `invalid LYNX_SANDBOX_TRANSIENT_ATTEMPTS=${process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS}.`,
+  );
+}
 
-async function withTransientRetry(adapter, action, attempts = 3) {
+async function withTransientRetry(adapter, action, attempts = TRANSIENT_ATTEMPTS) {
   for (let attempt = 1; ; attempt++) {
     try {
       return await action();
