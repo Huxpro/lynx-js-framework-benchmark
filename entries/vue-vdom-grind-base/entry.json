@@ -1,0 +1,42 @@
+{
+  "id": "vue-vdom-grind-base",
+  "label": "Vue-Lynx VDOM grind base",
+  "framework": "vue-lynx",
+  "frameworkVersion": "vue 3.6.0-beta.17 / vue-lynx 0.5.1",
+  "config": "vdom, IFR off, ET off, grind baseline",
+  "tags": [
+    "lab",
+    "grind-base"
+  ],
+  "tier": "lab",
+  "color": "#42b883",
+  "presentation": {
+    "order": 108,
+    "colorLight": "#1baf7a",
+    "colorDark": "#199e70"
+  },
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "vapor",
+    "commit": "7fe932bde577d5137bc3522b3070e92ed3bc7ada",
+    "patched": true,
+    "patchFile": "entries/_patches/vue-vdom-grind-autorows.patch",
+    "buildCommand": "BENCH_AUTOROWS=<rows> BENCH_CELL=off npx rspeedy build",
+    "builtAt": "2026-08-16T07:59:19Z",
+    "sha256": {
+      "rows-0/main.web.bundle": "82ebbf5afe8e1a198f72022505e421ba18a4212a74d937402500fa0503653d0c",
+      "rows-0/main.lynx.bundle": "c4548924b4f48712efa9f628d3f914c57b17087f3ee8928b554958ffe46eff61",
+      "rows-1000/main.web.bundle": "ad52beab42cf03441d9cd5b845f072074a37ad4b04ac44cb911242d84984c044",
+      "rows-1000/main.lynx.bundle": "cb8855b6c88fbe74cd262874a8cfd5728f690239feb0cf0990df365b9b802f53",
+      "rows-10000/main.web.bundle": "3f81e963966bcd6dd5ff05b29d5bf9b8104026c721802199ba39a619b50f4bd9",
+      "rows-10000/main.lynx.bundle": "ba502ed55b51c382438fa3515fccc645c2228597a17b9960fa97ac79eb38a47e",
+      "rows-30000/main.web.bundle": "8b188089b1216d2f390505a3a5e64fcba3b23577df19b422b271a51967b44220",
+      "rows-30000/main.lynx.bundle": "9d05c06d94636b6ef5f60a6753248a6b6a4605107eb203eb32f09679ccea218e"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
