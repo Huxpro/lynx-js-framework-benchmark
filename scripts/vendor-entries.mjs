@@ -13,7 +13,7 @@
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-dom OCTANE_DOM_BUILD=<checkout> node scripts/vendor-entries.mjs
 import crypto from 'node:crypto';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -52,8 +52,12 @@ const sha256 = (file) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
 const gitInfo = (dir) => ({
-  commit: execSync('git rev-parse HEAD', { cwd: dir }).toString().trim(),
-  dirty: execSync('git status --porcelain -- packages benchmarks 2>/dev/null || true', { cwd: dir })
+  commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir }).toString().trim(),
+  dirty: execFileSync(
+    'git',
+    ['status', '--porcelain', '--', 'packages', 'benchmarks', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
+    { cwd: dir },
+  )
     .toString().trim().length > 0,
 });
 
@@ -112,12 +116,20 @@ fs.mkdirSync(patchesDir, { recursive: true });
 const vueIds = ['react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr'];
 const vueGit = vueIds.some(wants) ? gitInfo(VUE_BUILD) : null;
 if (vueGit?.dirty) {
-  const patch = execSync('git diff -- packages', { cwd: VUE_BUILD }).toString();
+  const patch = execFileSync(
+    'git',
+    ['diff', '--no-color', '--', 'packages', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
+    { cwd: VUE_BUILD },
+  ).toString();
   fs.writeFileSync(path.join(patchesDir, 'vue-lynx-bench.patch'), patch);
 }
 const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
 if (octaneGit?.dirty) {
-  const patch = execSync('git diff -- packages benchmarks', { cwd: OCTANE_BUILD }).toString();
+  const patch = execFileSync(
+    'git',
+    ['diff', '--no-color', '--', 'packages', 'benchmarks'],
+    { cwd: OCTANE_BUILD },
+  ).toString();
   fs.writeFileSync(path.join(patchesDir, 'octane-bench.patch'), patch);
 }
 
@@ -143,15 +155,15 @@ const vueCells = (entryId) =>
 vendor({
   id: 'react',
   tier: 'featured',
-  label: 'ReactLynx 0.122',
+  label: 'ReactLynx 0.124',
   framework: 'reactlynx',
-  frameworkVersion: '0.122.1',
+  frameworkVersion: '0.124.0',
   config: 'idiomatic keyed hooks (memo + useCallback)',
   tags: ['baseline'],
   color: '#1e93b0',
   source: vueSource,
   ref: 'huxcx/unify-benchmark-system',
-  buildCommand: 'node bench-build-matrix.mjs --only react',
+  buildCommand: 'node scripts/build-vue-featured.mjs <vue-lynx-checkout>',
   cells: vueCells('react'),
 });
 vendor({
@@ -165,7 +177,7 @@ vendor({
   color: '#42b883',
   source: vueSource,
   ref: 'huxcx/unify-benchmark-system',
-  buildCommand: 'node bench-build-matrix.mjs --only vue-vdom',
+  buildCommand: 'node scripts/build-vue-featured.mjs <vue-lynx-checkout>',
   cells: vueCells('vue-vdom'),
 });
 vendor({
@@ -179,7 +191,7 @@ vendor({
   color: '#2f855a',
   source: vueSource,
   ref: 'huxcx/unify-benchmark-system',
-  buildCommand: 'node bench-build-matrix.mjs --only vue-vdom-ifr-et',
+  buildCommand: 'node scripts/build-vue-featured.mjs <vue-lynx-checkout>',
   cells: vueCells('vue-vdom-ifr-et'),
 });
 vendor({
@@ -193,7 +205,7 @@ vendor({
   color: '#e06ec4',
   source: vueSource,
   ref: 'huxcx/unify-benchmark-system',
-  buildCommand: 'node bench-build-matrix.mjs --only vue-vapor',
+  buildCommand: 'node scripts/build-vue-featured.mjs <vue-lynx-checkout>',
   cells: vueCells('vue-vapor'),
 });
 vendor({
@@ -207,7 +219,7 @@ vendor({
   color: '#9d4b8f',
   source: vueSource,
   ref: 'huxcx/unify-benchmark-system',
-  buildCommand: 'node bench-build-matrix.mjs --only vue-vapor-ifr',
+  buildCommand: 'node scripts/build-vue-featured.mjs <vue-lynx-checkout>',
   cells: vueCells('vue-vapor-ifr'),
 });
 const octaneVersion = wants('octane')
@@ -226,7 +238,7 @@ vendor({
   color: '#ff415a',
   source: octaneSource,
   ref: 'main',
-  buildCommand: 'BENCH_AUTOROWS=<n> node benchmarks/lynx-table/scripts/build-app.mjs',
+  buildCommand: 'node scripts/build-octane-upstream.mjs <octane-checkout>',
   cells: AUTOROWS.map((rows) => ({
     rows,
     from: path.join(
@@ -246,7 +258,7 @@ if (
   if (hux1Git.dirty) {
     fs.writeFileSync(
       path.join(patchesDir, 'octane-hux1-bench.patch'),
-      execSync('git diff -- packages benchmarks', { cwd: OCTANE_HUX1_BUILD }),
+      execFileSync('git', ['diff', '--no-color', '--', 'packages', 'benchmarks'], { cwd: OCTANE_HUX1_BUILD }),
     );
   }
   const hux1Version = JSON.parse(
@@ -291,7 +303,7 @@ if (
   if (hux2Git.dirty) {
     fs.writeFileSync(
       path.join(patchesDir, 'octane-hux2-bench.patch'),
-      execSync('git diff -- packages benchmarks', { cwd: OCTANE_HUX2_BUILD }),
+      execFileSync('git', ['diff', '--no-color', '--', 'packages', 'benchmarks'], { cwd: OCTANE_HUX2_BUILD }),
     );
   }
   const hux2Version = JSON.parse(
@@ -336,7 +348,7 @@ if (
   if (domGit.dirty) {
     fs.writeFileSync(
       path.join(patchesDir, 'octane-dom-bench.patch'),
-      execSync('git diff -- packages benchmarks', { cwd: OCTANE_DOM_BUILD }),
+      execFileSync('git', ['diff', '--no-color', '--', 'packages', 'benchmarks'], { cwd: OCTANE_DOM_BUILD }),
     );
   }
   const domVersion = JSON.parse(
@@ -381,10 +393,10 @@ if (
   const priorGit = gitInfo(OCTANE_PRIOR_BUILD);
   // The app sources sit on top of main as untracked files; capture them (app +
   // scripts only, not the vendored reference bundles) as the provenance patch.
-  execSync('git add -N benchmarks/lynx-table/app benchmarks/lynx-table/scripts', { cwd: OCTANE_PRIOR_BUILD });
+  execFileSync('git', ['add', '-N', 'benchmarks/lynx-table/app', 'benchmarks/lynx-table/scripts'], { cwd: OCTANE_PRIOR_BUILD });
   fs.writeFileSync(
     path.join(patchesDir, 'octane-prior-bench.patch'),
-    execSync('git diff -- benchmarks/lynx-table/app benchmarks/lynx-table/scripts', {
+    execFileSync('git', ['diff', '--no-color', '--', 'benchmarks/lynx-table/app', 'benchmarks/lynx-table/scripts'], {
       cwd: OCTANE_PRIOR_BUILD,
       maxBuffer: 64 * 1024 * 1024,
     }),

@@ -4,9 +4,9 @@
 // Every entry ships `main.lynx.bundle` alongside its web bundle, and the
 // result schema carries `harness: "native"` end to end. This module owns the
 // executable side of that capability: entry discovery, workload sequencing,
-// DNF accounting, and schema-shaped record emission are implemented here, and
-// the only missing piece on any given machine is a device adapter passed via
-// `--adapter <module.mjs>`.
+// DNF accounting, and schema-shaped record emission are implemented here. A
+// device adapter is passed via `--adapter <module.mjs>`; this repository ships
+// an Android Lynx Sandbox adapter and keeps the interface open for other farms.
 //
 // An adapter module default-exports `createAdapter(context)` returning:
 //
@@ -24,8 +24,7 @@
 //                               in-app) — e.g. via lynx-devtool CDP (Input
 //                               domain) or agent-device. Resolves when the
 //                               operation's predicate holds on-device.
-//   async collect()             per-op observations from the Lynx timing API
-//                               (markTiming pipelines) for the last drive:
+//   async collect()             per-op observations for the last drive:
 //                               `{ latencyMs, dnf?, metrics? }` where metrics
 //                               is an optional `{ name: { value, unit,
 //                               boundary } }` map (native wire stats, engine
@@ -47,12 +46,22 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 import { bundleFor } from './entries.mjs';
 
 export const NATIVE_BOUNDARIES = {
-  latency: 'tap-to-timing-pipeline',
-  fcp: 'load-to-first-timing-pipeline',
-  settled: 'load-to-quiesce-timing-pipeline',
+  latency: 'native-input-handler-to-second-native-frame',
+  fcp: 'native-open-to-fcp',
+  settled: 'native-open-to-pipeline-end',
 };
 
 const STARTUP_ROWS = [0, 1000, 10000, 30000];
+
+async function withTransientRetry(adapter, action, attempts = 3) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await action();
+    } catch (error) {
+      if (attempt >= attempts || !(await adapter.recoverTransient?.(error))) throw error;
+    }
+  }
+}
 
 export async function loadNativeAdapter(adapterPath, context = {}) {
   const resolved = path.resolve(adapterPath);
@@ -107,9 +116,15 @@ export async function runNativeMatrix({
           const extras = new Map();
           let dnfCount = 0;
           for (let rep = 0; rep < reps; rep++) {
-            await adapter.loadBundle(entry, { rows: 0, bundlePath: bundle.abs });
-            await adapter.driveCase(kase, scale);
-            const observed = await adapter.collect();
+            if (adapter.isTableUnsupported?.(entry, kase, scale)) {
+              dnfCount++;
+              continue;
+            }
+            const observed = await withTransientRetry(adapter, async () => {
+              await adapter.loadBundle(entry, { rows: 0, bundlePath: bundle.abs });
+              await adapter.driveCase(kase, scale);
+              return adapter.collect();
+            });
             if (observed?.dnf) {
               dnfCount++;
               continue;
@@ -164,8 +179,14 @@ export async function runNativeMatrix({
         const samples = { fcp: [], settled: [] };
         let dnfCount = 0;
         for (let rep = 0; rep < startupReps; rep++) {
-          await adapter.loadBundle(entry, { rows, bundlePath: bundle.abs });
-          const observed = await adapter.collectStartup();
+          if (adapter.isStartupUnsupported?.(entry, rows)) {
+            dnfCount++;
+            continue;
+          }
+          const observed = await withTransientRetry(adapter, async () => {
+            await adapter.loadBundle(entry, { rows, bundlePath: bundle.abs });
+            return adapter.collectStartup();
+          });
           if (observed?.dnf) {
             dnfCount++;
             continue;
@@ -181,7 +202,7 @@ export async function runNativeMatrix({
           ['settled', 'settled', NATIVE_BOUNDARIES.settled],
         ]) {
           const stat = summarize(samples[key]);
-          if (!stat) continue;
+          if (!stat && metric !== 'fcp') continue;
           records.push(makeRecord({
             suite: 'startup',
             harness: 'native',
@@ -213,7 +234,11 @@ export async function runNativeHarness(options = undefined) {
   }
   const adapter = await loadNativeAdapter(options.adapterPath, { log: options.log });
   try {
-    return await runNativeMatrix({ ...options, adapter });
+    return {
+      records: await runNativeMatrix({ ...options, adapter }),
+      environment: adapter.environment,
+      machine: adapter.machine ?? null,
+    };
   } finally {
     await adapter.dispose();
   }

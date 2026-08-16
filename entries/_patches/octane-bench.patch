@@ -1,0 +1,474 @@
+diff --git a/benchmarks/lynx-table/app/src/App.lynx.tsrx b/benchmarks/lynx-table/app/src/App.lynx.tsrx
+index 51971542..28333d74 100644
+--- a/benchmarks/lynx-table/app/src/App.lynx.tsrx
++++ b/benchmarks/lynx-table/app/src/App.lynx.tsrx
+@@ -27,30 +27,59 @@ function countRowRender(): void {
+ }
+ 
+ // -- storms: N sequential state→render→DOM ticks from one click --------------
+-// Each tick runs in its own macrotask (MessageChannel avoids the nested
+-// setTimeout 4ms clamp) so every mutation goes through a full render cycle
+-// instead of batching. Mirrors the Vue and React apps.
++// Each tick runs in its own task so every mutation goes through a full render
++// cycle instead of batching. Lynx for Web provides MessageChannel; the Native
++// Engine does not, so Native falls back to its timer task queue. Mirrors the
++// Vue and React apps.
+ const STORM_UPDATE_TICKS = 50;
+ const STORM_SELECT_TICKS = 30;
+ 
+-const _stormChannel = new MessageChannel();
++function startNativeMeasure(name: string): () => void {
++	const startMs = Date.now();
++	let finished = false;
++	return () => {
++		if (finished) return;
++		finished = true;
++		lynx.requestAnimationFrame(() => {
++			lynx.requestAnimationFrame(() => {
++				const endMs = Date.now();
++				console.log('__NATIVE_BENCH_RESULT__', JSON.stringify({ name, startMs, endMs, latencyMs: endMs - startMs }));
++			});
++		});
++	};
++}
++
++function measureNative(name: string, action: () => void): void {
++	const finish = startNativeMeasure(name);
++	action();
++	finish();
++}
++
++const _stormChannel = typeof MessageChannel === 'function' ? new MessageChannel() : null;
+ let _stormPending: (() => void) | null = null;
+-_stormChannel.port1.onmessage = () => {
+-	const cb = _stormPending;
+-	_stormPending = null;
+-	if (cb) cb();
+-};
++if (_stormChannel) {
++	_stormChannel.port1.onmessage = () => {
++		const cb = _stormPending;
++		_stormPending = null;
++		if (cb) cb();
++	};
++}
+ function nextMacrotask(cb: () => void) {
++	if (!_stormChannel) {
++		setTimeout(cb, 0);
++		return;
++	}
+ 	_stormPending = cb;
+ 	_stormChannel.port2.postMessage(0);
+ }
+ 
+-function runStorm(ticks: number, step: (t: number) => void) {
++function runStorm(ticks: number, step: (t: number) => void, onDone: () => void) {
+ 	let t = 0;
+ 	const tick = () => {
+ 		t += 1;
+ 		step(t);
+ 		if (t < ticks) nextMacrotask(tick);
++		else onDone();
+ 	};
+ 	nextMacrotask(tick);
+ }
+@@ -62,6 +91,34 @@ interface RowProps {
+ 	onRemove: (id: number) => void;
+ }
+ 
++type CaptureStartup = () => void;
++type BenchmarkGlobal = typeof globalThis & {
++	__LYNX_BENCH_CAPTURE_STARTUP__?: CaptureStartup;
++	__LYNX_BENCH_STARTUP__?: { startMs: number; firstFrameMs?: number; secondFrameMs?: number };
++};
++
++function StartupFrameProbe() @{
++	const [tick, setTick] = useState(0);
++	(globalThis as BenchmarkGlobal).__LYNX_BENCH_CAPTURE_STARTUP__ = () => {
++		const startup = { startMs: Date.now() } as {
++			startMs: number;
++			firstFrameMs?: number;
++			secondFrameMs?: number;
++		};
++		(globalThis as BenchmarkGlobal).__LYNX_BENCH_STARTUP__ = startup;
++		setTick((current) => current + 1);
++		lynx.requestAnimationFrame(() => {
++			startup.firstFrameMs = Date.now();
++			console.log('__NATIVE_BENCH_STARTUP__', JSON.stringify(startup));
++			lynx.requestAnimationFrame(() => {
++				startup.secondFrameMs = Date.now();
++				console.log('__NATIVE_BENCH_STARTUP__', JSON.stringify(startup));
++			});
++		});
++	};
++	<text class="startup-frame-probe">{String(tick)}</text>
++}
++
+ function Row(props: RowProps) @{
+ 	countRowRender();
+ 	<view class={['row', props.isSelected && 'danger']}>
+@@ -141,52 +198,119 @@ export function App() @{
+ 	idsRef.current = rows.map((r) => r.id);
+ 
+ 	const stormUpdate = useCallback(() => {
++		const finish = startNativeMeasure('updateStorm');
+ 		runStorm(
+ 			STORM_UPDATE_TICKS,
+ 			(t) => setRows(
+ 				(prev) => prev.map((r, i) => (i % 10 === 0 ? { id: r.id, label: 'bench ' + t } : r)),
+ 			),
++			finish,
+ 		);
+ 	}, []);
+ 
+ 	const stormSelect = useCallback(() => {
++		const finish = startNativeMeasure('selectStorm');
+ 		runStorm(STORM_SELECT_TICKS, (t) => {
+ 			const ids = idsRef.current;
+ 			setSelected(t < STORM_SELECT_TICKS ? ids[(t * 97) % ids.length]! : ids[0]!);
+-		});
++		}, finish);
+ 	}, []);
+ 
++	// The upstream renderer can register native event tokens through __AddEvent,
++	// but Lynx does not currently expose the background string-event receiver
++	// that Octane needs to consume those tokens on a real device. Keep the
++	// benchmark measurable through DevTool by publishing the same background
++	// handlers behind a data-only driver. The harness invokes this function
++	// outside the measured window; every operation still starts its timer at the
++	// handler boundary and ends it after two native animation frames, exactly as
++	// the bindtap path above would.
++	(globalThis as typeof globalThis & {
++		__LYNX_BENCH_DRIVER__?: { drive(name: string, argument?: number): unknown };
++	}).__LYNX_BENCH_DRIVER__ = {
++		drive(name, argument) {
++			switch (name) {
++				case 'probe': setRows((current) => current); return;
++				case 'rowCount': return rows.length;
++				case 'captureStartup': {
++					const capture = (globalThis as BenchmarkGlobal).__LYNX_BENCH_CAPTURE_STARTUP__;
++					if (capture === undefined) throw new Error('Startup frame probe is not mounted.');
++					capture();
++					return;
++				}
++				case 'create': {
++					const action = argument === 1000 ? run
++						: argument === 3000 ? run3k
++						: argument === 5000 ? run5k
++						: argument === 10000 ? runLots
++						: argument === 20000 ? run20k
++						: argument === 30000 ? run30k
++						: null;
++					if (action === null) throw new Error(`Unsupported create scale ${argument}.`);
++					measureNative('create', action);
++					return;
++				}
++				case 'append1k': measureNative('append1k', add); return;
++				case 'update10th': measureNative('update10th', update); return;
++				case 'select': {
++					const id = rows[argument ?? -1]?.id;
++					if (id === undefined) throw new Error(`Missing select row ${argument}.`);
++					measureNative('select', () => select(id));
++					return;
++				}
++				case 'swap': measureNative('swap', swapRows); return;
++				case 'remove': {
++					const id = rows[argument ?? -1]?.id;
++					if (id === undefined) throw new Error(`Missing remove row ${argument}.`);
++					measureNative('remove', () => remove(id));
++					return;
++				}
++				case 'clear': measureNative('clear', clear); return;
++				case 'updateStorm': stormUpdate(); return;
++				case 'selectStorm': {
++					const ids = rows.map((row) => row.id);
++					const finish = startNativeMeasure('selectStorm');
++					runStorm(STORM_SELECT_TICKS, (t) => {
++						setSelected(t < STORM_SELECT_TICKS ? ids[(t * 97) % ids.length]! : ids[0]!);
++					}, finish);
++					return;
++				}
++				default: throw new Error(`Unsupported benchmark operation ${name}.`);
++			}
++		},
++	};
++
+ 	<view class="page">
++		<StartupFrameProbe />
+ 		<text class="title">{'Octane UI Benchmark on Lynx · ready'}</text>
+ 		<view class="toolbar">
+-			<view class="btn" bindtap={run}>
++			<view class="btn" bindtap={() => measureNative('create', run)}>
+ 				<text class="btn-text">{'Create 1,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={run3k}>
++			<view class="btn" bindtap={() => measureNative('create', run3k)}>
+ 				<text class="btn-text">{'Create 3,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={run5k}>
++			<view class="btn" bindtap={() => measureNative('create', run5k)}>
+ 				<text class="btn-text">{'Create 5,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={runLots}>
++			<view class="btn" bindtap={() => measureNative('create', runLots)}>
+ 				<text class="btn-text">{'Create 10,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={run20k}>
++			<view class="btn" bindtap={() => measureNative('create', run20k)}>
+ 				<text class="btn-text">{'Create 20,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={run30k}>
++			<view class="btn" bindtap={() => measureNative('create', run30k)}>
+ 				<text class="btn-text">{'Create 30,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={add}>
++			<view class="btn" bindtap={() => measureNative('append1k', add)}>
+ 				<text class="btn-text">{'Append 1,000 rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={update}>
++			<view class="btn" bindtap={() => measureNative('update10th', update)}>
+ 				<text class="btn-text">{'Update every 10th row'}</text>
+ 			</view>
+-			<view class="btn" bindtap={swapRows}>
++			<view class="btn" bindtap={() => measureNative('swap', swapRows)}>
+ 				<text class="btn-text">{'Swap Rows'}</text>
+ 			</view>
+-			<view class="btn" bindtap={clear}>
++			<view class="btn" bindtap={() => measureNative('clear', clear)}>
+ 				<text class="btn-text">{'Clear'}</text>
+ 			</view>
+ 			<view class="btn" bindtap={stormUpdate}>
+@@ -198,7 +322,12 @@ export function App() @{
+ 		</view>
+ 		<view class="rows">
+ 			@for (const row of rows; key row.id) {
+-				<Row row={row} isSelected={selected === row.id} onSelect={select} onRemove={remove} />
++				<Row
++					row={row}
++					isSelected={selected === row.id}
++					onSelect={(id) => measureNative('select', () => select(id))}
++					onRemove={(id) => measureNative('remove', () => remove(id))}
++				/>
+ 			}
+ 		</view>
+ 	</view>
+diff --git a/benchmarks/lynx-table/app/src/app.css b/benchmarks/lynx-table/app/src/app.css
+index ebda3de6..0027a39e 100644
+--- a/benchmarks/lynx-table/app/src/app.css
++++ b/benchmarks/lynx-table/app/src/app.css
+@@ -4,6 +4,13 @@
+ 	flex-direction: column;
+ 	background-color: #fff;
+ }
++.startup-frame-probe {
++	position: absolute;
++	width: 1px;
++	height: 1px;
++	left: -10px;
++	font-size: 1px;
++}
+ .title {
+ 	font-size: 14px;
+ 	font-weight: bold;
+diff --git a/benchmarks/lynx-table/app/src/index.ts b/benchmarks/lynx-table/app/src/index.ts
+index cc48ff77..29bd787b 100644
+--- a/benchmarks/lynx-table/app/src/index.ts
++++ b/benchmarks/lynx-table/app/src/index.ts
+@@ -3,4 +3,21 @@ import { root } from '@octanejs/lynx';
+ import { App } from './App.lynx.tsrx';
+ import './app.css';
+ 
+-void root.render(App);
++const renderResult = root.render(App);
++if (renderResult !== null && typeof renderResult === 'object' && 'then' in renderResult) {
++	const benchmarkGlobal = globalThis as typeof globalThis & {
++		__LYNX_BENCH_COMMITTED__?: boolean;
++		__LYNX_BENCH_ERROR__?: string;
++	};
++	benchmarkGlobal.__LYNX_BENCH_COMMITTED__ = false;
++	void renderResult.then(
++		() => {
++			benchmarkGlobal.__LYNX_BENCH_COMMITTED__ = true;
++		},
++		(error: unknown) => {
++			benchmarkGlobal.__LYNX_BENCH_ERROR__ = error instanceof Error
++				? error.stack ?? error.message
++				: String(error);
++		},
++	);
++}
+diff --git a/packages/lynx/src/core/transport.ts b/packages/lynx/src/core/transport.ts
+index 6e5f943a..fb529c83 100644
+--- a/packages/lynx/src/core/transport.ts
++++ b/packages/lynx/src/core/transport.ts
+@@ -53,6 +53,7 @@ import {
+ 	type LynxTransportAcknowledgement,
+ } from './protocol.js';
+ import type { LynxBackgroundNativeEventDelivery } from './native-event-receiver.js';
++import { LYNX_DEVELOPMENT } from './environment.js';
+ import {
+ 	isLynxMainThreadWorkletDescriptor,
+ 	isolateLynxWorkletValue,
+@@ -331,14 +332,22 @@ export function createLynxBackgroundTransport(
+ 			const startedSelfCheck = performance.now();
+ 			const validated = selfCheckLynxBackgroundOutboundMessage(message);
+ 			const startedDispatch = performance.now();
+-			context.dispatchEvent({ type: LYNX_BACKGROUND_TO_MAIN_EVENT, data: validated });
++			// Production Native ContextProxy transports strings across the JS/Core
++			// boundary. Development test hosts preserve the structured-clone contract.
++			context.dispatchEvent({
++				type: LYNX_BACKGROUND_TO_MAIN_EVENT,
++				data: LYNX_DEVELOPMENT ? validated : JSON.stringify(validated),
++			});
+ 			profile.dispatchMs += performance.now() - startedDispatch;
+ 			profile.selfcheckMs += startedDispatch - startedSelfCheck;
+ 			profileOutboundMessage(profile, message);
+ 			return;
+ 		}
+ 		const validated = selfCheckLynxBackgroundOutboundMessage(message);
+-		context.dispatchEvent({ type: LYNX_BACKGROUND_TO_MAIN_EVENT, data: validated });
++		context.dispatchEvent({
++			type: LYNX_BACKGROUND_TO_MAIN_EVENT,
++			data: LYNX_DEVELOPMENT ? validated : JSON.stringify(validated),
++		});
+ 	};
+ 
+ 	const wireError = (value: unknown, fallback: string) => {
+@@ -665,7 +674,10 @@ export function createLynxBackgroundTransport(
+ 				...identity,
+ 				type: 'terminal-dispose',
+ 			});
+-			context.dispatchEvent({ type: LYNX_BACKGROUND_TO_MAIN_EVENT, data: message });
++			context.dispatchEvent({
++				type: LYNX_BACKGROUND_TO_MAIN_EVENT,
++				data: LYNX_DEVELOPMENT ? message : JSON.stringify(message),
++			});
+ 		} catch (disposeError) {
+ 			queueTerminalDisposeRetry(
+ 				report(
+@@ -1321,14 +1333,22 @@ export function createLynxBackgroundTransport(
+ 	};
+ 
+ 	function receive(event: LynxContextProxyEvent): void {
+-		if (isRootIndependentDataMessage(event.data)) return;
++		let data: unknown = event.data;
++		if (typeof data === 'string') {
++			try {
++				data = JSON.parse(data);
++			} catch {
++				// The validator below reports a consistently shaped protocol error.
++			}
++		}
++		if (isRootIndependentDataMessage(data)) return;
+ 		if (closedError !== null && terminalDisposeIdentity === null) return;
+ 		let message: LynxBackgroundInboundMessage;
+ 		try {
+-			message = validateLynxBackgroundInboundMessage(event.data);
++			message = validateLynxBackgroundInboundMessage(data);
+ 		} catch (error) {
+ 			const normalized = report(error, 'Octane Lynx received a malformed inbound message.');
+-			rejectExpectedMalformed(event.data, normalized);
++			rejectExpectedMalformed(data, normalized);
+ 			return;
+ 		}
+ 		if (message.type === 'page-destroy') {
+@@ -1414,6 +1434,31 @@ export function createLynxBackgroundTransport(
+ 			closeInternal(report(error, 'Octane Lynx failed to request main readiness.'), false);
+ 		}
+ 	}
++	// The native main and background scripts initialize independently. Both the
++	// first request and main's unsolicited announcement can legally be emitted
++	// before the peer listener exists, so keep the correlated request alive until
++	// one side confirms readiness. Duplicate request IDs are idempotent on main.
++	let readinessRetryTimer: ReturnType<typeof setTimeout> | null = null;
++	const clearReadinessRetry = (): void => {
++		if (readinessRetryTimer === null) return;
++		clearTimeout(readinessRetryTimer);
++		readinessRetryTimer = null;
++	};
++	const retryReadiness = (): void => {
++		readinessRetryTimer = null;
++		if (readyDeferred.settled || closedError !== null) return;
++		try {
++			dispatch(readinessRequest);
++		} catch (error) {
++			closeInternal(report(error, 'Octane Lynx failed to retry main readiness.'), false);
++			return;
++		}
++		readinessRetryTimer = setTimeout(retryReadiness, 16);
++	};
++	if (!readyDeferred.settled && closedError === null) {
++		readinessRetryTimer = setTimeout(retryReadiness, 16);
++		void readyDeferred.promise.then(clearReadinessRetry, clearReadinessRetry);
++	}
+ 
+ 	const transport: LynxBackgroundTransport = {
+ 		mode: 'async',
+diff --git a/packages/lynx/src/main-thread.ts b/packages/lynx/src/main-thread.ts
+index 70e8c28d..3b0ad4d4 100644
+--- a/packages/lynx/src/main-thread.ts
++++ b/packages/lynx/src/main-thread.ts
+@@ -92,6 +92,7 @@ import {
+ import type { LynxMainThreadWorkletRegistry, LynxWorkletValue } from './core/worklets.js';
+ import { installLynxFirstScreenHost } from './core/first-screen-host.js';
+ import { renderLynxFirstScreen, type LynxFirstScreenRenderResult } from './main-renderer.js';
++import { LYNX_DEVELOPMENT } from './core/environment.js';
+ 
+ interface LynxMainThreadGlobals {
+ 	readonly lynx?: {
+@@ -655,7 +656,12 @@ export function installLynxMainThread<Node extends LynxElementRef = LynxElementR
+ 
+ 	const dispatch = (message: LynxBackgroundInboundMessage): void => {
+ 		const validated = selfCheckLynxBackgroundInboundMessage(message);
+-		context.dispatchEvent({ type: LYNX_MAIN_TO_BACKGROUND_EVENT, data: validated });
++		// Production Native ContextProxy transports strings across the JS/Core
++		// boundary. Development test hosts preserve the structured-clone contract.
++		context.dispatchEvent({
++			type: LYNX_MAIN_TO_BACKGROUND_EVENT,
++			data: LYNX_DEVELOPMENT ? validated : JSON.stringify(validated),
++		});
+ 	};
+ 
+ 	const dispatchLifecycleMessage = (message: LynxLifecycleMessage): void => {
+@@ -2263,7 +2269,10 @@ export function installLynxMainThread<Node extends LynxElementRef = LynxElementR
+ 						...(prepared.firstTreeAction === 'none'
+ 							? null
+ 							: {
+-									adoption: prepared.firstTreeAction === 'adopt' ? 'adopted' : 'repaired',
++									adoption:
++										prepared.firstTreeAction === 'adopt'
++											? ('adopted' as const)
++											: ('repaired' as const),
+ 								}),
+ 					}
+ 				: {
+@@ -2470,17 +2479,25 @@ export function installLynxMainThread<Node extends LynxElementRef = LynxElementR
+ 
+ 	function receive(event: LynxContextProxyEvent): void {
+ 		if (closed) return;
++		let data: unknown = event.data;
++		if (typeof data === 'string') {
++			try {
++				data = JSON.parse(data);
++			} catch {
++				// The validator below reports a consistently shaped protocol error.
++			}
++		}
+ 		let message: ReturnType<typeof validateLynxBackgroundOutboundMessage>;
+ 		const startedValidate = LYNX_PROFILE ? performance.now() : 0;
+ 		try {
+-			message = validateLynxBackgroundOutboundMessage(event.data);
++			message = validateLynxBackgroundOutboundMessage(data);
+ 			if (LYNX_PROFILE) lynxWireProfile().validateMs += performance.now() - startedValidate;
+ 		} catch (error) {
+ 			const normalized = report(error, 'Octane Lynx received a malformed outbound message.');
+-			const identity = recoverIdentity(event.data);
++			const identity = recoverIdentity(data);
+ 			const raw =
+-				event.data !== null && typeof event.data === 'object'
+-					? (event.data as Record<string, unknown>)
++				data !== null && typeof data === 'object'
++					? (data as Record<string, unknown>)
+ 					: null;
+ 			if (
+ 				identity !== null &&

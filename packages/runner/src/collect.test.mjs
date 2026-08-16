@@ -16,12 +16,22 @@ const record = (entry, workload = 'create') => ({
   std: null, min: 1, p95: null, ci95: null, samples: [1], detail: null, dnfCount: 0,
 });
 
+const nativeRecord = (entry, workload = 'create', environment = 'native-test') => ({
+  ...record(entry, workload), harness: 'native', environment,
+  boundary: 'native-input-handler-to-second-native-frame',
+});
+
 const writeRun = (root, file, {
-  machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z',
+  machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z', entryCommits = null,
 }) => {
   fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
     schemaVersion: 2,
-    meta: { generatedAt, machine: machine(machineId), calibration: { probeVersion: 1, score } },
+    meta: {
+      generatedAt,
+      machine: machine(machineId),
+      calibration: { probeVersion: 1, score },
+      ...(entryCommits ? { entryCommits } : {}),
+    },
     records: entries.map((entry) => record(entry)),
   }));
 };
@@ -84,6 +94,115 @@ test('comparison tie-breaks by matrix coverage, then newest run', () => {
     });
     assert.equal(out.comparison.runFile, '2026-01-03-c.json');
     assert.equal(out.comparison.recordCount, 3);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector combines current per-entry Native runs only on one device and ignores stale commits', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['react', 'vue'],
+      entryCommits: { react: 'react-new', vue: 'vue-new' },
+    });
+    const writeNative = (file, machineId, generatedAt, entry, commit, records) => {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: {
+          generatedAt,
+          machine: machine(machineId),
+          calibration: null,
+          entryCommits: { [entry]: commit },
+        },
+        records,
+      }));
+    };
+    writeNative('native-react-stale.json', 'device-a', '2026-01-04T00:00:00Z', 'react', 'old', [
+      nativeRecord('react'), nativeRecord('react', 'select'), nativeRecord('react', 'swap'),
+    ]);
+    writeNative('native-react-current.json', 'device-a', '2026-01-02T00:00:00Z', 'react', 'react-new', [
+      nativeRecord('react'), nativeRecord('react', 'select'),
+    ]);
+    writeNative('native-vue-current.json', 'device-a', '2026-01-03T00:00:00Z', 'vue', 'vue-new', [
+      nativeRecord('vue'), nativeRecord('vue', 'select'),
+    ]);
+    writeNative('native-other-device.json', 'device-b', '2026-01-05T00:00:00Z', 'react', 'react-new', [
+      nativeRecord('react', 'swap'),
+    ]);
+
+    const entries = [
+      { id: 'react', distDir: path.join(root, 'missing-react'), provenance: { commit: 'react-new' } },
+      { id: 'vue', distDir: path.join(root, 'missing-vue'), provenance: { commit: 'vue-new' } },
+    ];
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue']),
+      entries,
+    });
+    const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
+    assert.equal(native.length, 4);
+    assert.deepEqual([...new Set(native.map((candidate) => candidate.machineId))], ['device-a']);
+    assert.deepEqual([...new Set(native.map((candidate) => candidate.comparisonKind))], ['same-machine']);
+    assert.equal(native.some((candidate) => candidate.runFile === 'native-react-stale.json'), false);
+    assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
+    assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, [
+      'native-react-current.json', 'native-vue-current.json',
+    ]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector combines split Native suites cell-by-cell on the same device', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['octane'], entryCommits: { octane: 'current' },
+    });
+    const writeNative = (file, generatedAt, records) => {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: {
+          generatedAt,
+          machine: machine('device-a'),
+          calibration: null,
+          entryCommits: { octane: 'current' },
+        },
+        records,
+      }));
+    };
+    writeNative('native-table.json', '2026-01-02T00:00:00Z', [
+      nativeRecord('octane'), nativeRecord('octane', 'select'),
+    ]);
+    writeNative('native-startup.json', '2026-01-03T00:00:00Z', [{
+      ...nativeRecord('octane', 'startup'),
+      suite: 'startup', metric: 'fcp', scale: 0, boundary: 'native-open-to-fcp',
+    }, {
+      ...nativeRecord('octane', 'startup'),
+      suite: 'startup', metric: 'settled', scale: 0, boundary: 'native-open-to-pipeline-end',
+    }]);
+
+    const entries = [{
+      id: 'octane', distDir: path.join(root, 'missing-octane'), provenance: { commit: 'current' },
+    }];
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['octane']),
+      entries,
+    });
+    const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
+    assert.equal(native.length, 4);
+    assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, [
+      'native-startup.json', 'native-table.json',
+    ]);
+    assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

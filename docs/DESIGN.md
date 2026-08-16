@@ -161,21 +161,31 @@ Headless Chromium via `playwright-core` (Chromium resolved from the Playwright c
    `Profiler.start/stop` on both the page and the `lynx-bg` worker for `btsCpu`/`mtsCpu`.
 5. Fresh page per rep; warmup reps discarded per methodology.
 
-### `native` (preserved, explicitly separated)
+### `native` (Android Sandbox, explicitly separated)
 
 The unified benchmark had no automated native harness (its "native" evidence was node
-`--jitless` proxies, a jsdom PAPI oracle, and manual LynxExplorer observations). We preserve
-the *capability* honestly:
+`--jitless` proxies, a jsdom PAPI oracle, and manual LynxExplorer observations). This repository
+now runs real Native Engine bundles:
 
 - every entry keeps its `main.lynx.bundle`;
 - the schema carries `harness: "native"` end-to-end (runner flag `--harness native`, site
   selector, API);
-- `packages/runner/src/harness-native.mjs` defines the adapter interface (`loadBundle`,
-  `driveCase`, `collect`) with a documented path to a DevTools/agent-device-driven
-  implementation, and refuses to emit records marked `web`.
+- `packages/runner/adapters/lynx-sandbox-android.mjs` serves bundles over ADB reverse, opens a
+  fresh LynxExplorer page/session, dispatches Native touch input, reads device-clock timing
+  markers from the Runtime console, and reads startup pipeline entries from the Performance
+  domain. Upstream Octane uses a benchmark-only background driver because the public Native
+  surface can register its string event tokens but cannot receive them in the background realm;
+  DevTool invokes the handler before (and therefore outside) the measured interval;
+- `packages/runner/src/harness-native.mjs` owns the framework-neutral adapter contract,
+  workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
-mode switch with its own data availability.
+mode switch. Long Native runs are split per entry, then collected only inside one anonymized
+Sandbox lease/device cohort. Native Octane is upstream-only; Lab variants are not scheduled.
+Octane's custom renderer does not expose Performance pipeline entries in the tested Explorer
+build. Its startup fallback converts the host `openPage` request timestamp to device time using
+the lowest-RTT sample from seven ADB clock probes, then uses the first and second Native frames
+after its isolated commit probe as FCP and settled. Run metadata retains the chosen offset and RTT.
 
 ## Runs, incremental collection, calibration
 
@@ -192,8 +202,9 @@ calibration output, `latest.json`, and every site score/visual are derived.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
   (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
-  one coherent physical run for `comparisonRecords` (featured-entry coverage, then featured
-  matrix coverage, then newest); every default chart reads only that cohort. Partial reruns and
+  one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured
+  matrix coverage, then newest). Native comparison records select one complete current-commit
+  run per featured entry inside one device/environment cohort. Partial reruns and
   historical Lab variants therefore cannot replace the public ranking. For opt-in Lab mode, the
   collector chooses one complete source run per entry and emits `labComparisonRecords`: `ms`
   fields are scaled by source-score / comparison-score and marked `calibrated-estimate`; heap,
@@ -239,5 +250,5 @@ current entry artifacts. The site then imports that materialized view plus autom
 - No single aggregate score across suites (the unified benchmark's audit explicitly rejects
   one; we follow).
 - No cross-machine absolute-ms claims without the estimated badge.
-- Native harness ships as schema + adapter interface + preserved bundles, not as an automated
-  device farm.
+- Native device coverage currently represents one Android 10 Lynx Sandbox/LynxExplorer cohort;
+  it is not a claim about every Android or iOS device class.

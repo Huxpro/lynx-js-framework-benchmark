@@ -6,12 +6,20 @@ had a documented weakness, the fix is noted.
 
 ## Timing
 
-- **Interactive latency** = in-page capture-phase `pointerdown` (excludes CDP input latency)
+- **Web interactive latency** = in-page capture-phase `pointerdown` (excludes CDP input latency)
   → the first `requestAnimationFrame` at which a composed-DOM predicate holds
   (shadow-piercing walk; ≤1 frame quantization). Ops are driven by real Chromium input
   (`page.mouse.click`) on geometry the in-page driver reports — never synthetic framework
   events.
-- **Startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
+- **Native interactive latency** = the entry's Native input handler → its second
+  `lynx.requestAnimationFrame`. The entry emits a `__NATIVE_BENCH_RESULT__` payload through the
+  Runtime console, so both endpoints and the duration use the device clock; host ADB/CDP latency
+  is outside the sample. The Sandbox adapter subscribes before dispatching Native touch input.
+  ReactLynx and Vue-Lynx are triggered by real touches. Upstream Octane currently cannot receive
+  its registered string-event token in the Native background realm, so DevTool invokes the same
+  background handler through a benchmark-only data driver; the invocation itself remains outside
+  the timer, which begins inside that handler.
+- **Web startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
   IFR-capable configs exercise their real first-frame path.
@@ -29,6 +37,14 @@ had a documented weakness, the fix is noted.
   comparability dimension, never a change to these numbers. What the loopback model cannot
   capture is native's binary-template decode vs web's JSON decode — that difference belongs
   to `harness: "native"`, which the schema already isolates.
+- **Native startup** = Lynx pipeline `openTime` → `totalFcp.duration` from
+  `Performance.getAllPerformanceEntries`, after enabling the Explorer
+  `enable_perf_metrics` switch. `pipelineEnd - openTime` is retained as settled when available.
+  Octane's custom renderer publishes no pipeline entries in this Explorer build, so its explicit
+  fallback is host `openPage` request → first/second post-commit Native frame. The request time is
+  converted to the device epoch using seven ADB clock samples (lowest RTT wins); offset and RTT
+  are retained in the machine metadata. This fallback can include a small DevTool scheduling
+  overestimate and is identified in the stored pipeline detail.
 - Storm predicates await the final tick's state (`bench 50` label / final selection), so a
   storm number is end-to-end throughput of N sequential render cycles.
 
@@ -64,7 +80,9 @@ had a documented weakness, the fix is noted.
   artifact absent on native that penalizes per-snapshot profilers (ReactLynx)
   superlinearly. The patch no-ops `lynx.profile:`-prefixed entries only, in both realms,
   for every entry identically (inherited from the unified benchmark, documented here).
-- **Same host runtime** for every entry: one pinned `@lynx-js/web-core`, served identically;
+- **Same runtime within each harness**: Web uses one pinned `@lynx-js/web-core`; Native uses the
+  same LynxExplorer/Sandbox lease for every featured entry. Bundles are served locally through
+  ADB reverse with cache-busting URLs;
   bundles are vendored with commit + build command + sha256 (fixing the lynx-table PR's
   unverifiable references).
 - The driver contract (buttons, classes, predicates) is shared, versioned in this repo, and
@@ -89,10 +107,12 @@ had a documented weakness, the fix is noted.
 - Every run embeds a machine fingerprint (CPU model, cores, OS, node) and a **preflight
   calibration score**: a fixed, versioned, seeded CPU probe (~1s of JSON/array/string churn
   approximating render work) run in the same headless browser. Higher = faster machine.
-- Default comparisons use records from one physical run. The incremental archive retains
-  source-run calibration on every record, but the site never composes a ranking from separate
-  runs, even on the same machine. Run selection ranks featured-entry coverage and featured
-  matrix coverage; Lab variants cannot keep an older cohort public. Opt-in historical Lab time
+- Web default comparisons use records from one physical run. Native runs are split per entry to
+  keep long device sessions recoverable; the collector combines them only when they share the
+  same anonymized Sandbox lease ID, device class, and environment, and chooses one complete run
+  per current entry. The incremental archive retains source identity on every record. Run
+  selection ranks featured-entry coverage and featured matrix coverage; stale entry commits and
+  Lab variants cannot keep an older cohort public. Opt-in historical Lab time
   fields are multiplied by source-score / comparison-score and marked as calibrated estimates.
   Heap, wire, bundle, and count fields are not scaled. The probe corrects scalar CPU speed,
   never memory hierarchy or core count; probe version bumps invalidate cross-version estimates.
@@ -101,7 +121,11 @@ had a documented weakness, the fix is noted.
 
 - `harness: "web"` — Lynx for Web in headless Chromium. Measures architectural behavior
   (wire cost, thread split, scaling shape), not native absolute performance.
-- `harness: "native"` — reserved end-to-end (schema, CLI, site). The prior systems' "native"
-  evidence was proxies (node `--jitless`, jsdom PAPI) and manual device observation; we keep
-  every entry's `main.lynx.bundle` and define the adapter contract in
-  `packages/runner/src/harness-native.mjs` instead of shipping proxy numbers as native.
+- `harness: "native"` — real Native Engine execution on an Android 10 ByteDance aries_10
+  Lynx Sandbox device through LynxExplorer and `@byted/agent-lynx`. The boundary is
+  `native-input-handler-to-second-native-frame`; startup normally uses Native pipeline
+  performance entries, with the documented Octane clock-calibrated frame fallback. Unsupported
+  input/session paths and timeouts are explicit DNF. No Web, node
+  `--jitless`, jsdom, or extrapolated value is published as Native.
+- The published Native Octane entry is upstream `main` only. Historical/experimental Octane Lab
+  variants remain opt-in Web history and are not run in the Native cohort.

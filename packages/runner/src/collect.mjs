@@ -2,8 +2,10 @@
 // (machine × entry × suite × every comparability dimension, including
 // boundary and unit);
 // records from different machines coexist, each tagged with its source run and
-// calibration. Featured comparisonRecords always come from one coherent run;
-// opt-in Lab records are separate, explicitly calibrated historical estimates.
+// calibration. Web featured comparisonRecords come from one coherent run;
+// Native featured records may come from one complete run per entry, but only
+// when every run belongs to the same physical device/environment. Opt-in Lab
+// records are separate, explicitly calibrated historical estimates.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -96,6 +98,23 @@ const comparisonRank = (run, featuredIds) => {
   return [entries.size, sharedCells, minimumCoverage, uniqueRecords];
 };
 
+const commitMatchesManifest = (run, record, entryById) => {
+  const entry = entryById.get(record.entry);
+  if (!entry) return true;
+  const sourceId = record.sourceEntry ?? record.entry;
+  const runCommit = run.meta.entryCommits?.[sourceId];
+  const manifestCommit = entry.provenance?.commit;
+  return Boolean(runCommit && manifestCommit && runCommit === manifestCommit);
+};
+
+const comparisonView = (run, featuredIds, entryById, harness) => ({
+  ...run,
+  records: run.records.filter((record) => featuredIds.has(record.entry)
+    && isBenchmarkRecord(record)
+    && record.harness === harness
+    && commitMatchesManifest(run, record, entryById)),
+});
+
 const isBetterComparisonRun = (candidate, current, featuredIds) => {
   if (!current) return true;
   const a = comparisonRank(candidate.run, featuredIds);
@@ -107,6 +126,68 @@ const isBetterComparisonRun = (candidate, current, featuredIds) => {
   }
   return candidateTime > currentTime
     || (candidateTime === currentTime && candidate.file > current.file);
+};
+
+const selectNativeCohort = (runs, featuredIds, entryById) => {
+  const groups = new Map();
+  for (const candidate of runs) {
+    const records = comparisonView(candidate.run, featuredIds, entryById, 'native').records;
+    for (const environment of new Set(records.map((record) => record.environment))) {
+      const groupKey = `${candidate.run.meta.machine.id}|${environment}`;
+      const group = groups.get(groupKey) ?? {
+        machineId: candidate.run.meta.machine.id,
+        environment,
+        entries: new Map(),
+      };
+      for (const entry of new Set(records
+        .filter((record) => record.environment === environment)
+        .map((record) => record.entry))) {
+        const entryCohort = group.entries.get(entry) ?? { cells: new Map(), latest: null };
+        const candidateTime = candidate.run.meta.generatedAt ?? candidate.file;
+        for (const record of records.filter((record) => record.environment === environment
+          && record.entry === entry)) {
+          const key = cellKey(record);
+          const current = entryCohort.cells.get(key);
+          const currentTime = current?.run.meta.generatedAt ?? current?.file;
+          if (!current || candidateTime > currentTime
+            || (candidateTime === currentTime && candidate.file > current.file)) {
+            entryCohort.cells.set(key, { ...candidate, record });
+          }
+        }
+        entryCohort.latest = entryCohort.latest == null || candidateTime > entryCohort.latest
+          ? candidateTime
+          : entryCohort.latest;
+        group.entries.set(entry, entryCohort);
+      }
+      groups.set(groupKey, group);
+    }
+  }
+
+  let selected = null;
+  let selectedRank = null;
+  for (const group of groups.values()) {
+    const entries = [...group.entries.values()];
+    const cellsByEntry = entries.map((entry) => new Set(entry.cells.keys()));
+    const sharedCells = cellsByEntry.length
+      ? [...cellsByEntry[0]].filter((key) => cellsByEntry.every((cells) => cells.has(key))).length
+      : 0;
+    const minimumCoverage = cellsByEntry.length
+      ? Math.min(...cellsByEntry.map((cells) => cells.size))
+      : 0;
+    const recordCount = entries.reduce((sum, entry) => sum + entry.cells.size, 0);
+    const latest = entries.reduce((value, entry) =>
+      value == null || entry.latest > value ? entry.latest : value, null);
+    const rank = [entries.length, sharedCells, minimumCoverage, recordCount];
+    const better = !selectedRank || rank.some((value, index) => value !== selectedRank[index]
+      && rank.slice(0, index).every((prefix, prefixIndex) => prefix === selectedRank[prefixIndex])
+      && value > selectedRank[index]);
+    if (better || (rank.every((value, index) => value === selectedRank?.[index])
+      && latest > selected.latest)) {
+      selected = { ...group, latest };
+      selectedRank = rank;
+    }
+  }
+  return selected;
 };
 
 const annotate = (run, file, record, comparisonKind = 'archive') => ({
@@ -244,8 +325,10 @@ export function collectRuns({
         merged.set(key, annotate(run, file, r));
       }
     }
-    const candidate = { file, run };
-    if (isBetterComparisonRun(candidate, comparisonRun, featuredIds)) comparisonRun = candidate;
+    const view = comparisonView(run, featuredIds, entryById, 'web');
+    const candidate = { file, run: view };
+    if (view.records.length > 0
+      && isBetterComparisonRun(candidate, comparisonRun, featuredIds)) comparisonRun = candidate;
   }
 
   if (!comparisonRun) throw new Error(`no schema v${SCHEMA_VERSION} runs at ${runsDir}`);
@@ -265,6 +348,24 @@ export function collectRuns({
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
     ...comparisonStaticRecords,
   ];
+  const nativeCohort = selectNativeCohort(runs, featuredIds, entryById);
+  const nativeSourceRecords = nativeCohort
+    ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
+      annotate(source.run, source.file, source.record, 'same-machine')))
+    : [];
+  comparisonRecords.push(...nativeSourceRecords);
+  const nativeComparison = nativeCohort ? {
+    harness: 'native',
+    environment: nativeCohort.environment,
+    generatedAt: nativeCohort.latest,
+    machineId: nativeCohort.machineId,
+    calibration: null,
+    sourceRunFiles: [...new Set([...nativeCohort.entries.values()].flatMap((entry) =>
+      [...entry.cells.values()].map((source) => source.file)))].sort(),
+    entryIds: [...nativeCohort.entries.keys()].sort(),
+    sourceRecordCount: nativeSourceRecords.length,
+    recordCount: nativeSourceRecords.length,
+  } : null;
   const comparison = {
     runFile: comparisonRun.file,
     generatedAt: comparisonRun.run.meta.generatedAt,
@@ -273,6 +374,20 @@ export function collectRuns({
     entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
     sourceRecordCount: comparisonSourceRecords.length,
     recordCount: comparisonRecords.length,
+    harnesses: [
+      {
+        harness: 'web',
+        environment: comparisonSourceRecords[0]?.environment ?? null,
+        generatedAt: comparisonRun.run.meta.generatedAt,
+        machineId: comparisonRun.run.meta.machine.id,
+        calibration: comparisonRun.run.meta.calibration,
+        sourceRunFiles: [comparisonRun.file],
+        entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
+        sourceRecordCount: comparisonSourceRecords.length,
+        recordCount: comparisonSourceRecords.length + comparisonStaticRecords.length,
+      },
+      ...(nativeComparison ? [nativeComparison] : []),
+    ],
   };
   const labEstimates = [];
   const labComparisonRecords = [];
@@ -332,6 +447,6 @@ export function collectRuns({
   };
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(out, null, 1));
-  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} entries, ${comparison.recordCount} records) + ${labEstimates.length} calibrated Lab entries → ${path.relative(root, outPath)}`);
+  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${labEstimates.length} calibrated Lab entries → ${path.relative(root, outPath)}`);
   return out;
 }

@@ -24,6 +24,22 @@ pnpm site:dev             # regenerates the cache, then starts the results site
 Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
 `npx playwright install chromium`, or `PLAYWRIGHT_CHROMIUM_PATH`).
 
+For a leased Lynx Sandbox Android device:
+
+```bash
+LYNX_SANDBOX_SERIAL='<leased-adb-serial>' pnpm bench run \
+  --harness native \
+  --adapter packages/runner/adapters/lynx-sandbox-android.mjs
+```
+
+The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
+LynxExplorer, drives the Native benchmark through Lynx DevTool, and records device-clock timings.
+ReactLynx and Vue-Lynx use real touch input. Upstream Octane currently uses a benchmark-only
+background driver because its registered string-event tokens have no public Native background
+receiver; the driver call happens before the measured handler-to-frame window. Release the
+Sandbox lease after the command completes. `LYNX_SANDBOX_TIMEOUT_MS` can override the 30-second
+per-sample timeout.
+
 ### Incremental / hypothesis runs
 
 ```bash
@@ -63,13 +79,12 @@ startup FCP at 0/1k/10k/30k pre-rendered rows. See
 ## Harnesses
 
 - **`web` (primary):** headless Chromium running Lynx for Web. Everything above.
-- **`native` (preserved):** every entry ships `main.lynx.bundle`; the schema, runner flag
-  (`--harness native --adapter <module.mjs>`), and site carry the dimension end to end. The
-  runner side is executable — entry discovery, workload sequencing, DNF accounting, and
-  native-record emission live in `packages/runner/src/harness-native.mjs` behind a validated
-  adapter contract — and a device adapter (lynx-devtool CDP, agent-device, …) plugs in as a
-  module; no proxy adapter ships in this repo. Native and web numbers are never mixed in one
-  chart.
+- **`native`:** real `main.lynx.bundle` execution in LynxExplorer. The checked-in Sandbox
+  adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
+  entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
+  harness. Native and Web numbers are never mixed in one chart. The published featured cohort
+  uses ReactLynx, four Vue-Lynx configs, and upstream Octane only; Octane Lab variants are not
+  run on Native.
 
 ## Adding an entry
 
