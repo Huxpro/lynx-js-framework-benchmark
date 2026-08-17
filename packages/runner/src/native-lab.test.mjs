@@ -105,7 +105,10 @@ function fakeEntry(root, id, rows = [0, 1000]) {
   for (const row of rows) {
     const dist = path.join(dir, 'dist', `rows-${row}`);
     fs.mkdirSync(dist, { recursive: true });
-    fs.writeFileSync(path.join(dist, 'main.lynx.bundle'), `lynx:${id}:${row}`);
+    fs.writeFileSync(
+      path.join(dist, 'main.lynx.bundle'),
+      `lynx:${id}:${row}:__NATIVE_BENCH_RESULT__:vue-lynx-native-bench-v1`,
+    );
     fs.writeFileSync(path.join(dist, 'main.web.bundle'), `web:${id}:${row}`);
   }
   return {
@@ -237,6 +240,61 @@ const record = (entry, workload = 'create', scale = 1000) => ({
   dnfCount: 0,
 });
 
+const nativeMachine = {
+  id: 'device-one',
+  platform: 'android',
+  osVersion: '10',
+  deviceModel: 'mock',
+  cpuModel: 'mock',
+  cores: 8,
+  app: 'LynxExplorer',
+  appVersion: '1',
+  sdkVersion: '1',
+  debugRouterVersion: '1',
+  agentLynxVersion: '0.14.4',
+  physicalDeviceId: 'device-one',
+  leaseId: 'lease-one',
+};
+
+function nativeExecutionFakes() {
+  return {
+    captureBenchmarkFingerprint: () => ({
+      schemaVersion: 1,
+      files: 1,
+      sha256: 'benchmark-fingerprint',
+      exclusions: ['results/', '.tmp/'],
+    }),
+    materializeBundles: ({ entries, suites, startupScales }) => {
+      const snapshots = new Map();
+      const rows = new Set([
+        ...(suites.includes('table') ? [0] : []),
+        ...(suites.includes('startup') ? startupScales : []),
+      ]);
+      for (const entry of entries) {
+        for (const row of rows) {
+          snapshots.set(`${entry.id}\0${row}`, {
+            bundlePath: path.join(entry.distDir, `rows-${row}/main.lynx.bundle`),
+            bundleBytes: Buffer.from('snapshot'),
+            sha256: `snapshot-${entry.id}-${row}`,
+          });
+        }
+      }
+      return {
+        snapshots,
+        fingerprint: 'artifact-fingerprint',
+        dispose() {},
+      };
+    },
+    pinAdapter: (adapterPath) => ({
+      originalPath: adapterPath,
+      pinnedPath: adapterPath,
+      fingerprint: 'adapter-fingerprint',
+      factory: async () => {},
+      dispose() {},
+    }),
+  };
+}
+
 test('native lab matrix uses exact requested table and startup scales', async () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'native-lab-matrix-'));
   try {
@@ -244,6 +302,7 @@ test('native lab matrix uses exact requested table and startup scales', async ()
     const calls = [];
     const adapter = {
       environment: 'native-test',
+      machine: nativeMachine,
       async loadBundle(_entry, { rows }) {
         calls.push(['load', rows]);
       },
@@ -266,6 +325,11 @@ test('native lab matrix uses exact requested table and startup scales', async ()
       startupScales: [1000],
       reps: 1,
       startupReps: 1,
+      bundleSnapshots: nativeExecutionFakes().materializeBundles({
+        entries: [entry],
+        suites: ['table', 'startup'],
+        startupScales: [1000],
+      }).snapshots,
     });
     assert.deepEqual(
       calls.filter(([kind]) => kind === 'case'),
@@ -326,10 +390,12 @@ test('native lab run records receipt metadata, pins twice, and honors no-collect
       noCollect: true,
       argv: ['run', '--harness', 'native'],
       now: () => new Date('2026-08-16T00:00:00.123Z'),
+      ...nativeExecutionFakes(),
       runHarness: async (options) => {
         calls.push(['harness', options.scales, options.startupScales]);
         return {
-          machine: { id: 'device-one' },
+          machine: nativeMachine,
+          environment: 'native-test',
           records: [record(entry.id), record(entry.id, 'startup', 1000)],
         };
       },
@@ -466,7 +532,12 @@ test('native lab collection is rooted at lab-root with lab receipt semantics', a
       benchmarkRoot: root,
       verifiedLabEntries: new Map([[entry.id, verified]]),
       verifiedLabBenchmark: { head: 'benchmark-head', patchSha256: EMPTY_SHA256 },
-      runHarness: async () => ({ machine: { id: 'device' }, records: [] }),
+      ...nativeExecutionFakes(),
+      runHarness: async () => ({
+        machine: nativeMachine,
+        environment: 'native-test',
+        records: [],
+      }),
       verifyPinnedEntry: () => verified,
       verifyBenchmarkState: (_root, _entries, state) =>
         state ?? { head: 'benchmark-head', patchSha256: EMPTY_SHA256 },
@@ -501,7 +572,12 @@ test('native lab run rechecks after device work before writing', async () => {
         verifiedLabEntries: new Map([[entry.id, verified]]),
         verifiedLabBenchmark: { head: 'benchmark-head', patchSha256: EMPTY_SHA256 },
         noCollect: true,
-        runHarness: async () => ({ machine: { id: 'device' }, records: [] }),
+        ...nativeExecutionFakes(),
+        runHarness: async () => ({
+          machine: nativeMachine,
+          environment: 'native-test',
+          records: [],
+        }),
         verifyPinnedEntry: () => {
           checks++;
           if (checks === 2) throw new Error('entry changed after device work');
@@ -607,6 +683,10 @@ test('lab collector keeps Native receipt cohorts on one device', () => {
           machine: { id: machineId },
           calibration: null,
           harness: 'native',
+          nativeCohort: {
+            schemaVersion: 1,
+            fingerprint: 'native-cohort',
+          },
           entryCommits: { [entry]: `commit-${entry.at(-1)}` },
           entryArtifacts: {
             [entry]: { fingerprint: verified.fingerprint, ...verified.cohort },
@@ -616,7 +696,7 @@ test('lab collector keeps Native receipt cohorts on one device', () => {
             patchSha256: EMPTY_SHA256,
           },
         },
-        records: [record(entry)],
+        records: [{ ...record(entry), nativeCohort: 'native-cohort' }],
       }));
     };
     write('a-device-one.json', 'device-one', '2026-08-16T00:00:00.000Z', a.entry.id, a.verified);

@@ -3,6 +3,23 @@
 This optional fourth unit extends the receipted Vue Vapor lab to the existing Native adapter
 contract. It does not add a new device adapter or change the formal Native workflow.
 
+Native execution pins immutable inputs before device work. Every selected Lynx bundle is copied
+to an isolated snapshot and the adapter receives snapshot bytes; later source mutation cannot
+change measured bytes. Table bundles must contain both the v1 result marker and protocol literal.
+Startup-only rows do not require table markers.
+
+The adapter is pinned as a closed module/dependency graph. Relative modules and installed package
+trees are hashed; unsupported dynamic imports, `require`, `createRequire`, unresolved imports,
+symlinked package contents, and graph escapes fail closed. Adapter, artifact, benchmark code/config,
+device, SDK/runtime, app, OS/model/CPU, debug-router, and agent identities form a versioned Native
+cohort. Result output is excluded from benchmark identity. Collection archives different cohorts
+without overwriting them and never merges them into one comparison.
+
+The built-in Android adapter hashes DID and serial-derived lease identity and never persists raw
+identifiers. It validates the exact `vue-lynx-native-bench-v1` producer payload, workload name,
+finite ordered timestamps, and duration tolerance. Initialization and measurement cleanup attempt
+every resource; primary errors remain primary when cleanup also fails.
+
 ## Run
 
 ```bash

@@ -1,6 +1,5 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import fs from 'node:fs';
 import http from 'node:http';
 import { ReadableStream } from 'node:stream/web';
 
@@ -9,6 +8,9 @@ import { CREATE_BUTTON } from '@lynx-bench/shared/workloads';
 const DEFAULT_PORT = 8765;
 const DEFAULT_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_TIMEOUT_MS ?? 30_000);
 const OCTANE_STARTUP_MODE = process.env.LYNX_SANDBOX_OCTANE_STARTUP === '1';
+export const NATIVE_TABLE_RESULT_MARKER = '__NATIVE_BENCH_RESULT__';
+export const NATIVE_TABLE_PROTOCOL = 'vue-lynx-native-bench-v1';
+const TIMING_TOLERANCE_MS = 0.001;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -48,24 +50,24 @@ function calibrateDeviceClock(serial) {
   return best;
 }
 
-function startBundleServer(port, getBundlePath) {
+function startBundleServer(port, getBundleBytes) {
   const server = http.createServer((request, response) => {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`);
     if (url.pathname !== '/main.lynx.bundle') {
       response.writeHead(404).end('not found');
       return;
     }
-    const bundlePath = getBundlePath();
-    if (!bundlePath || !fs.existsSync(bundlePath)) {
+    const bundleBytes = getBundleBytes();
+    if (!Buffer.isBuffer(bundleBytes)) {
       response.writeHead(503).end('bundle not ready');
       return;
     }
     response.writeHead(200, {
       'Cache-Control': 'no-store',
       'Content-Type': 'application/octet-stream',
-      'Content-Length': fs.statSync(bundlePath).size,
+      'Content-Length': bundleBytes.length,
     });
-    fs.createReadStream(bundlePath).pipe(response);
+    response.end(bundleBytes);
   });
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -97,17 +99,80 @@ function timingName(kase) {
   return kase.name === 'replace' ? 'create' : kase.name;
 }
 
-export default async function createAdapter({ log = () => {} } = {}) {
-  const serial = process.env.LYNX_SANDBOX_SERIAL;
+export function validateNativeTimingPayload(payload, {
+  currentEntryId,
+  expectedName,
+}) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Native timing payload must be an object.');
+  }
+  const legacyOctane = currentEntryId === 'octane'
+    && !Object.hasOwn(payload, 'protocol');
+  if (payload.protocol !== NATIVE_TABLE_PROTOCOL && !legacyOctane) {
+    throw new Error(
+      `Native timing payload must declare protocol ${NATIVE_TABLE_PROTOCOL}.`,
+    );
+  }
+  if (payload.name !== expectedName) {
+    throw new Error(
+      `Native timing payload name ${JSON.stringify(payload.name)} `
+      + `does not match expected ${JSON.stringify(expectedName)}.`,
+    );
+  }
+  for (const field of ['startMs', 'endMs', 'latencyMs']) {
+    if (!Number.isFinite(payload[field])) {
+      throw new Error(`Native timing payload has invalid ${field}.`);
+    }
+  }
+  if (payload.startMs < 0 || payload.endMs < payload.startMs || payload.latencyMs < 0) {
+    throw new Error('Native timing payload has invalid timestamp ordering.');
+  }
+  if (Math.abs((payload.endMs - payload.startMs) - payload.latencyMs)
+    > TIMING_TOLERANCE_MS) {
+    throw new Error('Native timing payload has inconsistent timestamps.');
+  }
+  return payload;
+}
+
+export function parseNativeTimingConsoleArgs(args, context) {
+  if (args[0]?.value !== NATIVE_TABLE_RESULT_MARKER) return null;
+  const encoded = args[1]?.value;
+  if (typeof encoded !== 'string') {
+    throw new Error('Native timing console marker is missing its JSON payload.');
+  }
+  let payload;
+  try {
+    payload = JSON.parse(encoded);
+  } catch (error) {
+    throw new Error('Native timing console marker has malformed JSON.', { cause: error });
+  }
+  return validateNativeTimingPayload(payload, context);
+}
+
+export async function createLynxSandboxAndroidAdapter(
+  { log = () => {} } = {},
+  {
+    env = process.env,
+    loadConnector = loadConnectorFactory,
+    runAdb = adb,
+    calibrateClock = calibrateDeviceClock,
+    startServer = startBundleServer,
+    wait = delay,
+    now = Date.now,
+  } = {},
+) {
+  const serial = env.LYNX_SANDBOX_SERIAL;
   if (!serial) {
     throw new Error('lynx sandbox adapter requires LYNX_SANDBOX_SERIAL=<leased adb serial>.');
   }
-  const port = Number(process.env.LYNX_SANDBOX_PORT ?? DEFAULT_PORT);
+  const port = Number(env.LYNX_SANDBOX_PORT ?? DEFAULT_PORT);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-    throw new Error(`invalid LYNX_SANDBOX_PORT: ${process.env.LYNX_SANDBOX_PORT}`);
+    throw new Error(`invalid LYNX_SANDBOX_PORT: ${env.LYNX_SANDBOX_PORT}`);
   }
 
-  let bundlePath = null;
+  let bundleBytes = null;
+  let server = null;
+  let reverseInstalled = false;
   let session = null;
   let pageCount = 0;
   let currentEntryId = null;
@@ -118,6 +183,9 @@ export default async function createAdapter({ log = () => {} } = {}) {
   let consoleReader = null;
   let consoleGeneration = 0;
   let timingEvents = [];
+  let timingError = null;
+  let pendingTimingName = null;
+  let pageGeneration = 0;
   let startupEvents = [];
   const timingWaiters = new Set();
   const unsupportedTableEntries = new Set();
@@ -126,51 +194,118 @@ export default async function createAdapter({ log = () => {} } = {}) {
   const buttonPoints = new Map();
   const cellGeometry = new Map();
   let disposed = false;
-  const createDefaultConnector = await loadConnectorFactory();
-  const connector = createDefaultConnector();
-  const server = await startBundleServer(port, () => bundlePath);
-
-  adb(serial, 'reverse', `tcp:${port}`, `tcp:${port}`);
-  adb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
-
-  const encodedSerial = encodeURIComponent(serial);
-  let client = null;
-  const clientDeadline = Date.now() + 30_000;
-  while (!client && Date.now() < clientDeadline) {
-    const clients = await connector.listClients();
-    client = clients.find((candidate) =>
-      candidate.id.startsWith(`${encodedSerial}:`)
-      && candidate.info?.AppProcessName === 'com.lynx.explorer');
-    if (!client) await delay(250);
+  let cleanupPromise = null;
+  function cleanup() {
+    if (cleanupPromise) return cleanupPromise;
+    disposed = true;
+    cleanupPromise = (async () => {
+      const errors = [];
+      consoleGeneration++;
+      if (consoleReader) {
+        try {
+          await consoleReader.cancel().catch(() => {});
+          consoleReader.releaseLock();
+        } catch (error) {
+          errors.push(error);
+        } finally {
+          consoleReader = null;
+        }
+      }
+      for (const resolve of timingWaiters) resolve();
+      timingWaiters.clear();
+      if (server) {
+        const activeServer = server;
+        server = null;
+        try {
+          await new Promise((resolve, reject) => {
+            activeServer.close((error) => error ? reject(error) : resolve());
+          });
+        } catch (error) {
+          errors.push(error);
+        }
+      }
+      if (reverseInstalled) {
+        reverseInstalled = false;
+        try {
+          runAdb(serial, 'reverse', '--remove', `tcp:${port}`);
+        } catch {
+          // Best effort: the lease may already be gone.
+        }
+      }
+      if (errors.length > 0) throw new AggregateError(errors, 'lynx sandbox cleanup failed');
+    })();
+    return cleanupPromise;
   }
-  if (!client) {
-    server.close();
-    throw new Error(`Lynx Explorer client not found for sandbox ${serial}.`);
-  }
-  await connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true);
 
-  const device = client.info;
-  const deviceClock = calibrateDeviceClock(serial);
-  const model = String(device.model ?? device.deviceModel ?? 'android').replace(/\s+/g, '-').toLowerCase();
-  const osVersion = String(device.osVersion ?? adb(serial, 'shell', 'getprop', 'ro.build.version.release'));
-  const environment = `lynx-native-android-${model}-${osVersion}`;
-  const deviceLeaseId = createHash('sha256').update(serial).digest('hex').slice(0, 12);
-  const machine = {
-    id: `${environment}-${deviceLeaseId}`,
-    platform: 'android',
-    osVersion,
-    cpuModel: adb(serial, 'shell', 'getprop', 'ro.product.board') || model,
-    cores: Number(adb(serial, 'shell', 'nproc')) || null,
-    node: null,
-    deviceModel: device.deviceModel ?? device.model ?? model,
-    app: device.App,
-    appVersion: device.AppVersion,
-    debugRouterVersion: device.debugRouterVersion,
-    agentLynxVersion: '0.14.4',
-    deviceLeaseId,
-    deviceClockOffsetMs: deviceClock.offsetMs,
-    deviceClockCalibrationRttMs: deviceClock.rttMs,
-  };
+  let connector;
+  let client;
+  let deviceClock;
+  let environment;
+  let machine;
+  try {
+    const createDefaultConnector = await loadConnector();
+    connector = createDefaultConnector();
+    server = await startServer(port, () => bundleBytes);
+
+    reverseInstalled = true;
+    runAdb(serial, 'reverse', `tcp:${port}`, `tcp:${port}`);
+    runAdb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
+
+    const encodedSerial = encodeURIComponent(serial);
+    const clientDeadline = now() + 30_000;
+    while (!client && now() < clientDeadline) {
+      const clients = await connector.listClients();
+      client = clients.find((candidate) =>
+        candidate.id.startsWith(`${encodedSerial}:`)
+        && candidate.info?.AppProcessName === 'com.lynx.explorer');
+      if (!client) await wait(250);
+    }
+    if (!client) {
+      throw new Error('Lynx Explorer client was not found for the leased device.');
+    }
+    await connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true);
+
+    const device = client.info;
+    deviceClock = calibrateClock(serial);
+    const model = String(device.model ?? device.deviceModel ?? 'android').replace(/\s+/g, '-').toLowerCase();
+    const osVersion = String(device.osVersion ?? runAdb(serial, 'shell', 'getprop', 'ro.build.version.release'));
+    environment = `lynx-native-android-${model}-${osVersion}`;
+    const leaseId = createHash('sha256').update(serial).digest('hex');
+    if (typeof device.did !== 'string' || device.did.length === 0) {
+      throw new Error('Lynx Explorer client is missing physical device did.');
+    }
+    const physicalDeviceId = createHash('sha256')
+      .update(device.did)
+      .digest('hex');
+    machine = {
+      id: physicalDeviceId,
+      platform: 'android',
+      osVersion,
+      cpuModel: runAdb(serial, 'shell', 'getprop', 'ro.product.board') || model,
+      cores: Number(runAdb(serial, 'shell', 'nproc')) || null,
+      node: null,
+      deviceModel: device.deviceModel ?? device.model ?? model,
+      app: device.App,
+      appVersion: device.AppVersion,
+      sdkVersion: device.sdkVersion,
+      debugRouterVersion: device.debugRouterVersion,
+      agentLynxVersion: '0.14.4',
+      physicalDeviceId,
+      leaseId,
+      deviceClockOffsetMs: deviceClock.offsetMs,
+      deviceClockCalibrationRttMs: deviceClock.rttMs,
+    };
+  } catch (error) {
+    try {
+      await cleanup();
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        'lynx sandbox adapter initialization and cleanup failed',
+      );
+    }
+    throw error;
+  }
 
   async function cdp(method, params = {}) {
     if (!session) throw new Error(`cannot call ${method} before a page is loaded.`);
@@ -350,8 +485,13 @@ export default async function createAdapter({ log = () => {} } = {}) {
   async function waitForTiming(expectedName, timeoutMs = DEFAULT_TIMEOUT_MS) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
+      if (timingError) {
+        const error = timingError;
+        timingError = null;
+        throw error;
+      }
       const index = timingEvents.findIndex((value) =>
-        value?.name === expectedName && Number.isFinite(value.latencyMs));
+        value.name === expectedName && value.adapterGeneration === pageGeneration);
       if (index !== -1) return timingEvents.splice(index, 1)[0];
       await new Promise((resolve) => {
         timingWaiters.add(resolve);
@@ -360,6 +500,11 @@ export default async function createAdapter({ log = () => {} } = {}) {
           resolve();
         }, Math.min(250, Math.max(0, deadline - Date.now())));
       });
+    }
+    if (timingError) {
+      const error = timingError;
+      timingError = null;
+      throw error;
     }
     throw new Error(`timeout waiting for Native timing ${expectedName}.`);
   }
@@ -373,6 +518,8 @@ export default async function createAdapter({ log = () => {} } = {}) {
       consoleReader = null;
     }
     timingEvents = [];
+    timingError = null;
+    pendingTimingName = null;
     startupEvents = [];
     const stream = await connector.sendCDPStream(
       client.id,
@@ -391,7 +538,6 @@ export default async function createAdapter({ log = () => {} } = {}) {
           if (process.env.LYNX_SANDBOX_DEBUG_CONSOLE === '1') {
             log(`  [sandbox:console] ${JSON.stringify(value.params)}`);
           }
-          const marker = args.findIndex((arg) => arg.value === '__NATIVE_BENCH_RESULT__');
           const startupMarker = args.findIndex((arg) => arg.value === '__NATIVE_BENCH_STARTUP__');
           if (startupMarker !== -1 && typeof args[startupMarker + 1]?.value === 'string') {
             try {
@@ -401,12 +547,22 @@ export default async function createAdapter({ log = () => {} } = {}) {
               // Ignore malformed startup markers.
             }
           }
-          if (marker === -1 || typeof args[marker + 1]?.value !== 'string') continue;
+          if (pendingTimingName == null) continue;
           try {
-            timingEvents.push(JSON.parse(args[marker + 1].value));
+            const timing = parseNativeTimingConsoleArgs(args, {
+              currentEntryId,
+              expectedName: pendingTimingName,
+            });
+            if (timing) {
+              timingEvents.push({
+                ...timing,
+                adapterGeneration: pageGeneration,
+              });
+              notifyTimingWaiters();
+            }
+          } catch (error) {
+            timingError = error;
             notifyTimingWaiters();
-          } catch {
-            // Ignore unrelated or malformed console output.
           }
         }
       } catch (error) {
@@ -429,8 +585,8 @@ export default async function createAdapter({ log = () => {} } = {}) {
     await stopConsoleStream();
     const before = (await connector.listClients()).find((candidate) => candidate.id === client.id);
     const previousRouterId = before?.info?.debugRouterId;
-    adb(serial, 'shell', 'am', 'force-stop', 'com.lynx.explorer');
-    adb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
+    runAdb(serial, 'shell', 'am', 'force-stop', 'com.lynx.explorer');
+    runAdb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
     const deadline = Date.now() + 30_000;
     let ready = false;
     while (Date.now() < deadline) {
@@ -442,7 +598,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
       }
       await delay(250);
     }
-    if (!ready) throw new Error(`Lynx Explorer did not reconnect on sandbox ${serial}.`);
+    if (!ready) throw new Error('Lynx Explorer did not reconnect on the leased device.');
     await connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true);
     session = null;
     await delay(500);
@@ -450,8 +606,14 @@ export default async function createAdapter({ log = () => {} } = {}) {
 
   async function measuredTap(expectedName, trigger, timeoutMs) {
     timingEvents = [];
-    await trigger();
-    return waitForTiming(expectedName, timeoutMs);
+    timingError = null;
+    pendingTimingName = expectedName;
+    try {
+      await trigger();
+      return await waitForTiming(expectedName, timeoutMs);
+    } finally {
+      if (pendingTimingName === expectedName) pendingTimingName = null;
+    }
   }
 
   async function createRows(scale) {
@@ -570,16 +732,20 @@ export default async function createAdapter({ log = () => {} } = {}) {
       return true;
     },
 
-    async loadBundle(entry, { rows, bundlePath: nextBundlePath }) {
+    async loadBundle(entry, { rows, bundleBytes: nextBundleBytes }) {
       if (pageCount > 0 && pageCount % 5 === 0) await restartExplorer();
       else if (session) await stopConsoleStream();
-      bundlePath = nextBundlePath;
+      if (!Buffer.isBuffer(nextBundleBytes)) {
+        throw new Error('Sandbox adapter requires immutable bundleBytes.');
+      }
+      bundleBytes = Buffer.from(nextBundleBytes);
       if (currentEntryId !== entry.id) {
         buttonPoints.clear();
         cellGeometry.clear();
       }
       currentEntryId = entry.id;
       currentRows = rows;
+      pageGeneration++;
       startupPayloadLogged = false;
       lastObserved = null;
       const nonce = `${entry.id}-${rows}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -688,16 +854,9 @@ export default async function createAdapter({ log = () => {} } = {}) {
     },
 
     async dispose() {
-      if (disposed) return;
-      disposed = true;
-      await stopConsoleStream();
-      notifyTimingWaiters();
-      await new Promise((resolve) => server.close(resolve));
-      try {
-        adb(serial, 'reverse', '--remove', `tcp:${port}`);
-      } catch {
-        // The lease may have expired; server cleanup is still complete.
-      }
+      await cleanup();
     },
   };
 }
+
+export default createLynxSandboxAndroidAdapter;

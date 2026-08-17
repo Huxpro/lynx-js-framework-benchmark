@@ -114,9 +114,13 @@ test('collector combines current per-entry Native runs only on one device and ig
           generatedAt,
           machine: machine(machineId),
           calibration: null,
+          nativeCohort: { schemaVersion: 1, fingerprint: 'cohort-a' },
           entryCommits: { [entry]: commit },
         },
-        records,
+        records: records.map((recordValue) => ({
+          ...recordValue,
+          nativeCohort: 'cohort-a',
+        })),
       }));
     };
     writeNative('native-react-stale.json', 'device-a', '2026-01-04T00:00:00Z', 'react', 'old', [
@@ -171,9 +175,13 @@ test('collector combines split Native suites cell-by-cell on the same device', (
           generatedAt,
           machine: machine('device-a'),
           calibration: null,
+          nativeCohort: { schemaVersion: 1, fingerprint: 'cohort-a' },
           entryCommits: { octane: 'current' },
         },
-        records,
+        records: records.map((recordValue) => ({
+          ...recordValue,
+          nativeCohort: 'cohort-a',
+        })),
       }));
     };
     writeNative('native-table.json', '2026-01-02T00:00:00Z', [
@@ -373,6 +381,53 @@ test('collector rejects ambiguous duplicate source cells', () => {
       () => collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) }),
       /duplicate source record/,
     );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector archives distinct Native cohorts without merging or overwriting them', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-native-cohorts-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web',
+      score: 100,
+      entries: ['react'],
+    });
+    for (const [file, cohort, generatedAt] of [
+      ['native-a.json', 'cohort-a', '2026-01-01T00:00:00Z'],
+      ['native-b.json', 'cohort-b', '2026-01-02T00:00:00Z'],
+    ]) {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: {
+          generatedAt,
+          machine: machine('device'),
+          calibration: null,
+          nativeCohort: { schemaVersion: 1, fingerprint: cohort },
+        },
+        records: [{
+          ...nativeRecord('react'),
+          nativeCohort: cohort,
+        }],
+      }));
+    }
+    const out = collectRuns({
+      root,
+      log: () => {},
+      entryTiers: entryTiers(['react']),
+    });
+    assert.deepEqual(
+      out.records
+        .filter(({ harness }) => harness === 'native')
+        .map(({ nativeCohort: cohort }) => cohort)
+        .sort(),
+      ['cohort-a', 'cohort-b'],
+    );
+    const selected = out.comparison.harnesses.find(({ harness }) => harness === 'native');
+    assert.equal(selected.entryIds.length, 1);
+    assert.ok(['cohort-a', 'cohort-b'].includes(selected.cohortFingerprint));
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
