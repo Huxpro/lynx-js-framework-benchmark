@@ -7,6 +7,11 @@ Native execution pins immutable inputs before device work. Every selected Lynx b
 to an isolated snapshot and the adapter receives snapshot bytes; later source mutation cannot
 change measured bytes. Table bundles must contain both the v1 result marker and protocol literal.
 Startup-only rows do not require table markers.
+When the Explorer performance cache does not expose a `loadBundle` pipeline, Vue entries must
+publish the versioned `vue-lynx-native-startup-v1` payload. The producer records module start,
+mount completion, and two consecutive Native frame timestamps. The adapter freezes and validates
+those timestamps before checking the rendered row count (and the ready marker for rows 0); model
+state and DOM-observation time are never used as startup timing substitutes.
 
 The adapter is pinned as a closed module/dependency graph. Relative modules and installed package
 trees are hashed; unsupported dynamic imports, `require`, `createRequire`, unresolved imports,

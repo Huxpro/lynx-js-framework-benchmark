@@ -12,11 +12,13 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 
 import {
+  NATIVE_STARTUP_PROTOCOL,
   NATIVE_TABLE_PROTOCOL,
   NATIVE_TABLE_RESULT_MARKER,
   installedPackageSha256,
   parseNativeTimingConsoleArgs,
   physicalDeviceFingerprint,
+  validateNativeStartupPayload,
   validateNativeTimingPayload,
 } from '../adapters/lynx-sandbox-android.mjs';
 import { loadNativeAdapter, runNativeHarness, runNativeMatrix } from './harness-native.mjs';
@@ -32,6 +34,33 @@ const RAW_DID = 'did-one';
 const PHYSICAL_DEVICE_ID = sha256(RAW_DID);
 const LEASE_ID = sha256('serial');
 const APP_APK_SHA256 = sha256('lynx-explorer-apk');
+
+test('Native startup payload requires the exact protocol and ordered real frame timestamps', () => {
+  const payload = {
+    protocol: NATIVE_STARTUP_PROTOCOL,
+    moduleStartMs: 110,
+    mountEndMs: 120,
+    firstFrameMs: 135,
+    secondFrameMs: 150,
+  };
+  assert.equal(validateNativeStartupPayload(payload, 100), payload);
+  assert.throws(
+    () => validateNativeStartupPayload({ ...payload, protocol: 'wrong' }, 100),
+    /must declare protocol/,
+  );
+  assert.throws(
+    () => validateNativeStartupPayload({ ...payload, firstFrameMs: 119 }, 100),
+    /timestamp ordering/,
+  );
+  assert.throws(
+    () => validateNativeStartupPayload({ ...payload, moduleStartMs: 99 }, 100),
+    /timestamp ordering/,
+  );
+  assert.throws(
+    () => validateNativeStartupPayload({ ...payload, secondFrameMs: null }, 100),
+    /invalid secondFrameMs/,
+  );
+});
 
 test('physical device identity hashes DID or stable Android serial without persisting raw IDs', () => {
   assert.equal(

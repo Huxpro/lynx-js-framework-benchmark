@@ -17,6 +17,7 @@ const OCTANE_STARTUP_MODE = process.env.LYNX_SANDBOX_OCTANE_STARTUP === '1';
 const ROUTER_SETTLE_MS = Number(process.env.LYNX_SANDBOX_ROUTER_SETTLE_MS ?? 100);
 export const NATIVE_TABLE_RESULT_MARKER = '__NATIVE_BENCH_RESULT__';
 export const NATIVE_TABLE_PROTOCOL = 'vue-lynx-native-bench-v1';
+export const NATIVE_STARTUP_PROTOCOL = 'vue-lynx-native-startup-v1';
 const TIMING_TOLERANCE_MS = 0.001;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -187,6 +188,30 @@ export function parseNativeTimingConsoleArgs(args, context) {
     throw new Error('Native timing console marker has malformed JSON.', { cause: error });
   }
   return validateNativeTimingPayload(payload, context);
+}
+
+export function validateNativeStartupPayload(payload, openTime) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Native startup payload must be an object.');
+  }
+  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) {
+    throw new Error(
+      `Native startup payload must declare protocol ${NATIVE_STARTUP_PROTOCOL}.`,
+    );
+  }
+  for (const field of ['moduleStartMs', 'mountEndMs', 'firstFrameMs', 'secondFrameMs']) {
+    if (!Number.isFinite(payload[field])) {
+      throw new Error(`Native startup payload has invalid ${field}.`);
+    }
+  }
+  if (!Number.isFinite(openTime)
+    || payload.moduleStartMs < openTime
+    || payload.mountEndMs < payload.moduleStartMs
+    || payload.firstFrameMs < payload.mountEndMs
+    || payload.secondFrameMs < payload.firstFrameMs) {
+    throw new Error('Native startup payload has invalid timestamp ordering.');
+  }
+  return payload;
 }
 
 export function physicalDeviceFingerprint(device, serial, runAdb = adb) {
@@ -866,10 +891,9 @@ export async function createLynxSandboxAndroidAdapter(
         timingInfoLogged = true;
         log(`  [sandbox:startup-timing-info] ${JSON.stringify(timingInfo)}`);
       }
-      let startup = currentEntryId === 'octane'
-        ? startupEvents.findLast((candidate) => Number.isFinite(candidate?.secondFrameMs)) ?? null
-        : null;
-      if (currentEntryId === 'octane' && startup === null && Date.now() >= nextStartupPollAt) {
+      let startup = startupEvents
+        .findLast((candidate) => Number.isFinite(candidate?.secondFrameMs)) ?? null;
+      if (startup === null && Date.now() >= nextStartupPollAt) {
         nextStartupPollAt = Date.now() + 250;
         const startupResult = await cdp('Runtime.evaluate', {
           expression: `JSON.stringify(globalThis.__LYNX_BENCH_STARTUP__ ?? null)`,
@@ -892,24 +916,24 @@ export async function createLynxSandboxAndroidAdapter(
       }
       if (
         Number.isFinite(openTime)
-        && Number.isFinite(startup?.firstFrameMs)
         && Number.isFinite(startup?.secondFrameMs)
-        && startup.firstFrameMs >= openTime
-        && startup.secondFrameMs >= startup.firstFrameMs
       ) {
+        const validated = currentEntryId === 'octane'
+          ? startup
+          : validateNativeStartupPayload(startup, openTime);
         if (process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1') {
-          log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup })}`);
+          log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup: validated })}`);
         }
         return {
           entryType: 'pipeline',
           name: 'loadBundle',
           openTime,
-          pipelineEnd: startup.secondFrameMs,
-          lynxFcp: { duration: startup.firstFrameMs - openTime },
-          totalFcp: { duration: startup.firstFrameMs - openTime },
+          pipelineEnd: validated.secondFrameMs,
+          lynxFcp: { duration: validated.firstFrameMs - openTime },
+          totalFcp: { duration: validated.firstFrameMs - openTime },
           benchmarkFrameFallback: true,
           timingInfo,
-          startup,
+          startup: validated,
         };
       }
       await delay(16);
