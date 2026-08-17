@@ -165,6 +165,7 @@ function writeSequence(root, {
       path: path.basename(file),
       sha256: sha256(bytes),
       runLabel,
+      campaignId: id,
     };
   }
   return { id, variant, harness, phase, legs };

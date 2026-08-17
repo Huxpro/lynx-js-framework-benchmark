@@ -240,7 +240,7 @@ function analyzeSequence(sequence, root, comparisonId) {
     const { value } = pinned;
     legs[leg] = validateRawRun(value, {
       comparisonId,
-      id: sequence.id,
+      id: descriptor.campaignId,
       phase: sequence.phase,
       leg,
       sequenceIndex: LEGS.indexOf(leg),
