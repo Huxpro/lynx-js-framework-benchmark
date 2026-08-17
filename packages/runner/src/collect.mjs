@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workloads';
 
 import { bundleRecords } from './bundles.mjs';
 import { discoverEntries, repoRoot } from './entries.mjs';
@@ -19,6 +20,127 @@ const recordKey = (machineId, r) =>
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
 const isBenchmarkRecord = (r) => r.suite !== 'bundle';
+const isRankingEligible = (record) => record.rankingEligible !== false;
+const isComparisonVisible = (record) => isRankingEligible(record)
+  || (record.comparabilityStatus === 'incomplete-work'
+    && observationValues(record).length === 0
+    && (record.dnfCount ?? 0) > 0);
+
+const STORM_TICKS = new Map([
+  ['updateStorm', STORM_UPDATE_TICKS],
+  ['selectStorm', STORM_SELECT_TICKS],
+]);
+
+const observationValues = (record) => {
+  if (Array.isArray(record?.samples)) return record.samples.filter(Number.isFinite);
+  if (Number.isFinite(record?.value)) return [record.value];
+  if (record?.samples == null && record?.n === 1 && Number.isFinite(record?.median)) {
+    return [record.median];
+  }
+  return [];
+};
+
+const operationCellKey = (record) => [
+  record.suite,
+  record.harness,
+  record.environment,
+  record.entry,
+  record.workload,
+  record.scale,
+].join('|');
+
+function stormWorkClassification(records, record) {
+  const expected = STORM_TICKS.get(record.workload);
+  if (expected == null || record.suite !== 'table' || record.harness !== 'web') return null;
+  const siblings = records.filter((candidate) => operationCellKey(candidate) === operationCellKey(record));
+  const failure = siblings.flatMap((candidate) => candidate.failures ?? [])
+    .find((candidate) => candidate.category === 'incomplete-storm-transport');
+  if (failure) {
+    return {
+      status: 'incomplete',
+      expectedSequentialCommits: expected,
+      observed: failure.evidence ?? null,
+    };
+  }
+  const toMts = observationValues(siblings.find((candidate) => candidate.metric === 'wireToMtsMsgs'));
+  const toBts = observationValues(siblings.find((candidate) => candidate.metric === 'wireToBtsMsgs'));
+  const observed = {
+    toMtsMessages: toMts.length ? { min: Math.min(...toMts), max: Math.max(...toMts) } : null,
+    toBtsMessages: toBts.length ? { min: Math.min(...toBts), max: Math.max(...toBts) } : null,
+  };
+  if (toMts.some((value) => value < expected) || toBts.some((value) => value < expected)) {
+    return { status: 'incomplete', expectedSequentialCommits: expected, observed };
+  }
+  if (toMts.length > 0 && toBts.length > 0) {
+    return { status: 'complete', expectedSequentialCommits: expected, observed };
+  }
+  return { status: 'unverified', expectedSequentialCommits: expected, observed };
+}
+
+function samplingProblems(run, record) {
+  if (!run.meta.receipt || !isBenchmarkRecord(record) || record.workload === 'memory') return [];
+  const problems = [];
+  const sourceCount = Array.isArray(record.samples)
+    ? record.samples.length
+    : Number.isFinite(record.value) ? 1 : 0;
+  if (!Number.isInteger(record.acceptedCount) || record.acceptedCount !== sourceCount) {
+    problems.push('accepted-count-mismatch');
+  }
+  if (!Number.isInteger(record.attemptedCount) || record.attemptedCount < sourceCount) {
+    problems.push('attempted-count-invalid');
+  }
+  if (record.metric === 'latency' || record.metric === 'fcp' || record.metric === 'settled') {
+    if (Number.isInteger(record.attemptedCount)) {
+      const accounted = sourceCount + (record.dnfCount ?? 0);
+      if (accounted < record.attemptedCount) problems.push('attempt-accounting-underflow');
+      if (accounted > record.attemptedCount) problems.push('attempt-accounting-overflow');
+    }
+  }
+  return problems;
+}
+
+function classifyComparability(run, records) {
+  const cohort = run.meta.receipt?.comparabilityCohort ?? null;
+  return records.map((record) => {
+    const work = stormWorkClassification(records, record);
+    const problems = samplingProblems(run, record);
+    let comparabilityStatus = null;
+    const comparabilityReasons = [];
+    if (problems.length) {
+      comparabilityStatus = 'incompatible-sampling';
+      comparabilityReasons.push(...problems);
+    }
+    if (problems.length) {
+      // Sampling accounting is a prospective source-integrity contract and
+      // takes precedence over any derived work classification.
+    } else if (work?.status === 'incomplete') {
+      comparabilityStatus = 'incomplete-work';
+      comparabilityReasons.push('storm-transport-below-sequential-tick-contract');
+    } else if (work?.status === 'unverified') {
+      comparabilityStatus = 'unverified-work';
+      comparabilityReasons.push('storm-transport-counts-unavailable');
+    } else if (work?.status === 'complete') {
+      comparabilityStatus = cohort ? 'comparable' : 'legacy-complete-work';
+      if (!cohort) comparabilityReasons.push('run-has-no-prospective-receipt');
+    } else if (cohort) {
+      comparabilityStatus = 'comparable';
+    }
+    const rankingEligible = comparabilityStatus !== 'incomplete-work'
+      && comparabilityStatus !== 'unverified-work'
+      && comparabilityStatus !== 'incompatible-sampling';
+    if (comparabilityStatus === null && cohort === null) {
+      return { ...record, comparabilityStatus: 'legacy-unverified' };
+    }
+    return {
+      ...record,
+      comparabilityStatus: comparabilityStatus ?? 'legacy-unverified',
+      ...(comparabilityReasons.length ? { comparabilityReasons } : {}),
+      ...(cohort ? { comparabilityCohort: cohort } : {}),
+      rankingEligible,
+      ...(work ? { workClassification: work } : {}),
+    };
+  });
+}
 
 const HUX1_COMMITS = new Set([
   '99cae97204ff9ef2b0cb00765ee648078d7872e7',
@@ -79,7 +201,7 @@ const normalizeRun = (rawRun, file) => {
     throw new Error(`${file}: invalid meta.generatedAt`);
   }
   if (!Array.isArray(rawRun.records)) throw new Error(`${file}: records must be an array`);
-  const records = rawRun.records.map((record, index) => {
+  const normalizedRecords = rawRun.records.map((record, index) => {
     const hasRepeatedSource = Array.isArray(record.samples);
     const hasScalarSource = typeof record.value === 'number' && Number.isFinite(record.value);
     const hasLegacyScalar = record.samples == null && record.n === 1
@@ -99,6 +221,7 @@ const normalizeRun = (rawRun, file) => {
     }
     return normalizeRecord(rawRun, record);
   });
+  const records = classifyComparability(rawRun, normalizedRecords);
   const seen = new Set();
   for (const record of records) {
     const key = [record.entry, cellKey(record)].join('|');
@@ -121,7 +244,10 @@ const readEntryTiers = (root) => {
 };
 
 const comparisonRank = (run, featuredIds) => {
-  const featuredRecords = run.records.filter((r) => featuredIds.has(r.entry) && isBenchmarkRecord(r));
+  // Fail-closed DNF records remain visible in an exact snapshot, but cannot
+  // make a run look broader or more complete during cohort selection.
+  const featuredRecords = run.records.filter((r) =>
+    featuredIds.has(r.entry) && isBenchmarkRecord(r) && isRankingEligible(r));
   const entries = new Set(featuredRecords.map((r) => r.entry));
   const cellsByEntry = [...entries].map((entry) => new Set(
     featuredRecords.filter((r) => r.entry === entry).map(cellKey),
@@ -161,6 +287,7 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
     && record.harness === harness
+    && isComparisonVisible(record)
     && isPublishableRecord(run, record)
     && commitMatchesManifest(run, record, entryById)),
 });
@@ -183,10 +310,12 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
   for (const candidate of runs) {
     const records = comparisonView(candidate.run, featuredIds, entryById, 'native').records;
     for (const environment of new Set(records.map((record) => record.environment))) {
-      const groupKey = `${candidate.run.meta.machine.id}|${environment}`;
+      const cohort = candidate.run.meta.receipt?.comparabilityCohort ?? 'legacy-unverified';
+      const groupKey = `${candidate.run.meta.machine.id}|${environment}|${cohort}`;
       const group = groups.get(groupKey) ?? {
         machineId: candidate.run.meta.machine.id,
         environment,
+        comparabilityCohort: cohort,
         entries: new Map(),
       };
       for (const entry of new Set(records
@@ -334,13 +463,15 @@ const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
   for (const spec of TIMELINE_SPECS) {
     const web = byFile.get(spec.webRunFile);
     if (!web) continue;
-    const webRecords = web.run.records
-      .filter((record) => featuredIds.has(record.entry) && isPublishableRecord(web.run, record))
+    const webAuditSourceRecords = web.run.records
+      .filter((record) => featuredIds.has(record.entry) && isPublishableRecord(web.run, record));
+    const webRecords = webAuditSourceRecords
       .map((record) => timelineRecord(web.run, web.file, record, 'same-run'));
     const nativeSources = (spec.nativeRunFiles ?? []).map((file) => byFile.get(file)).filter(Boolean);
     const nativeRecords = nativeSources.flatMap((source) => source.run.records
       .filter((record) => featuredIds.has(record.entry)
         && isBenchmarkRecord(record)
+        && isComparisonVisible(record)
         && isPublishableRecord(source.run, record))
       .map((record) => timelineRecord(source.run, source.file, record, 'same-machine')));
     const observationSources = (spec.nativeObservationFiles ?? [])
@@ -349,6 +480,7 @@ const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
     const nativeObservationRecords = observationSources.flatMap((source) => source.run.records
       .filter((record) => record.entry === 'octane'
         && isBenchmarkRecord(record)
+        && isComparisonVisible(record)
         && isPublishableRecord(source.run, record))
       .map((record) => timelineRecord(source.run, source.file, record, 'isolated-observation')));
     const nativeObservationMachineIds = [...new Set(
@@ -489,10 +621,10 @@ const calibrateLabRecord = (run, file, record, targetCalibration) => {
 const isBetterLabRun = (candidate, current, entryId) => {
   if (!current) return true;
   const count = new Set(candidate.run.records
-    .filter((r) => r.entry === entryId && isBenchmarkRecord(r))
+    .filter((r) => r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))
     .map(cellKey)).size;
   const currentCount = new Set(current.run.records
-    .filter((r) => r.entry === entryId && isBenchmarkRecord(r))
+    .filter((r) => r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))
     .map(cellKey)).size;
   const time = candidate.run.meta.generatedAt ?? candidate.file;
   const currentTime = current.run.meta.generatedAt ?? current.file;
@@ -630,14 +762,19 @@ export function collectRuns({
   };
   const labEstimates = [];
   const labComparisonRecords = [];
+  const comparisonCohort = comparisonRun.run.meta.receipt?.comparabilityCohort ?? null;
   for (const entryId of labIds) {
     let source = null;
     for (const candidate of runs) {
-      if (!candidate.run.records.some((r) => r.entry === entryId && isBenchmarkRecord(r))) continue;
+      const candidateCohort = candidate.run.meta.receipt?.comparabilityCohort ?? null;
+      if (candidateCohort !== comparisonCohort) continue;
+      if (!candidate.run.records.some((r) =>
+        r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))) continue;
       if (isBetterLabRun(candidate, source, entryId)) source = candidate;
     }
     if (!source) continue;
-    const records = source.run.records.filter((r) => r.entry === entryId && isBenchmarkRecord(r));
+    const records = source.run.records.filter((r) =>
+      r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r));
     assertCurrentEntryCommit(source.run, entryId, entryById.get(entryId), 'Lab comparison');
     const sourceCalibration = source.run.meta.calibration;
     const targetCalibration = comparisonRun.run.meta.calibration;

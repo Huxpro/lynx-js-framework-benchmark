@@ -213,6 +213,7 @@ export async function runTableSuite({
   origin,
   cdp,
   log,
+  includeMemory = true,
 }) {
   const records = [];
   const bundle = bundleFor(entry, { rows: 0 });
@@ -280,7 +281,9 @@ export async function runTableSuite({
         }
         await settle(page);
       }
-      records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount }));
+      records.push(...emitOpRecords({
+        entry, kase, scale, samples, dnfCount, attemptedCount: reps,
+      }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
   }
@@ -291,6 +294,9 @@ export async function runTableSuite({
   await page.close();
   let memoryPage = null;
   try {
+    if (!includeMemory) return await runStormCases({
+      entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+    });
     const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
     memoryPage = fresh.page;
     await waitReady(memoryPage);
@@ -324,6 +330,14 @@ export async function runTableSuite({
     await memoryPage?.close();
   }
 
+  return runStormCases({
+    entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+  });
+}
+
+async function runStormCases({
+  entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+}) {
   // Storm cases: fresh page per rep.
   for (const kase of cases) {
     if (!kase.freshPage) continue;
@@ -350,7 +364,17 @@ export async function runTableSuite({
           const incomplete = stormCommitGuard(kase, s.wire);
           if (incomplete) {
             dnfCount += 1;
-            failures.push({ rep, ...incomplete });
+            failures.push({
+              rep,
+              ...incomplete,
+              evidence: {
+                ...incomplete.evidence,
+                latencyMs: s.ms,
+                btsCpuMs: s.cpu.bts ?? null,
+                mtsCpuMs: s.cpu.mts ?? null,
+                wire: s.wire,
+              },
+            });
             log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}: ${incomplete.message}`);
             continue;
           }
@@ -369,7 +393,9 @@ export async function runTableSuite({
           await fresh.page.close();
         }
       }
-      records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount, failures }));
+      records.push(...emitOpRecords({
+        entry, kase, scale, samples, dnfCount, failures, attemptedCount: stormReps,
+      }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
   }
@@ -382,7 +408,9 @@ function fmtSummary(samples) {
   return s ? `${s.median.toFixed(1)}ms ±${(s.ci95 ?? 0).toFixed(1)} (n=${s.n})` : 'no samples';
 }
 
-function emitOpRecords({ entry, kase, scale, samples, dnfCount, failures = [] }) {
+function emitOpRecords({
+  entry, kase, scale, samples, dnfCount, failures = [], attemptedCount,
+}) {
   const records = [];
   const base = { suite: 'table', entry: entry.id, workload: kase.name, scale };
   records.push(makeRecord({
@@ -393,6 +421,8 @@ function emitOpRecords({ entry, kase, scale, samples, dnfCount, failures = [] })
     samples: samples.latency,
     dnfCount,
     failures,
+    attemptedCount,
+    acceptedCount: samples.latency.length,
   }));
   for (const [key, metric, boundary] of [
     ['btsCpu', 'btsCpu', BOUNDARIES.btsCpu],
@@ -405,6 +435,8 @@ function emitOpRecords({ entry, kase, scale, samples, dnfCount, failures = [] })
         boundary,
         unit: 'ms',
         samples: samples[key],
+        attemptedCount,
+        acceptedCount: samples[key].length,
       }));
     }
   }
@@ -422,6 +454,8 @@ function emitOpRecords({ entry, kase, scale, samples, dnfCount, failures = [] })
         boundary: BOUNDARIES.wire,
         unit: metric.endsWith('Bytes') ? 'bytes' : 'count',
         samples: vals,
+        attemptedCount,
+        acceptedCount: vals.length,
         // Keep every endpoint observation as source. makeRecord derives the
         // display detail from the sample nearest the total median, so changing
         // or adding a sample cannot leave an old "last sample" visualization.
@@ -495,6 +529,8 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       unit: 'ms',
       samples: samples.fcp,
       dnfCount,
+      attemptedCount: reps,
+      acceptedCount: samples.fcp.length,
     }));
     records.push(makeRecord({
       ...base,
@@ -503,6 +539,8 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       unit: 'ms',
       samples: samples.settled,
       dnfCount,
+      attemptedCount: reps,
+      acceptedCount: samples.settled.length,
     }));
     if (samples.mtsCpu.length) {
       records.push(makeRecord({
@@ -511,6 +549,8 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         boundary: BOUNDARIES.mtsCpu,
         unit: 'ms',
         samples: samples.mtsCpu,
+        attemptedCount: reps,
+        acceptedCount: samples.mtsCpu.length,
       }));
     }
     for (const [metric, key] of [
@@ -524,6 +564,8 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
           boundary: BOUNDARIES.wire,
           unit: 'bytes',
           samples: samples[key],
+          attemptedCount: reps,
+          acceptedCount: samples[key].length,
         }));
       }
     }
@@ -542,11 +584,12 @@ export async function runWebHarness({
   stormReps = 3,
   startupReps = 5,
   log = console.log,
+  includeMemory = true,
 }) {
   const bundleRoots = {};
   for (const e of entries) bundleRoots[e.id] = e.distDir;
   const server = await startServer({ bundleRoots });
-  const { browser, cdpPort, executablePath } = await launchBrowser();
+  const { browser, cdpPort, executablePath, browserVersion } = await launchBrowser();
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
   try {
@@ -555,7 +598,7 @@ export async function runWebHarness({
       if (suites.includes('table')) {
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
-          browser, origin: server.origin, cdp, log,
+          browser, origin: server.origin, cdp, log, includeMemory,
         }));
       }
       if (suites.includes('startup')) {
@@ -572,5 +615,5 @@ export async function runWebHarness({
     await browser.close();
     await server.close();
   }
-  return { records, executablePath };
+  return { records, executablePath, browserVersion };
 }

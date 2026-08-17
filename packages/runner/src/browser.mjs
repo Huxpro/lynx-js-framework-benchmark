@@ -74,5 +74,5 @@ export async function launchBrowser({ headless = true } = {}) {
       '--disable-backgrounding-occluded-windows',
     ],
   });
-  return { browser, cdpPort, executablePath };
+  return { browser, cdpPort, executablePath, browserVersion: browser.version() };
 }
