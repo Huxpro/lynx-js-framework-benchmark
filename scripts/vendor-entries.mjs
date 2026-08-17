@@ -51,6 +51,10 @@ const PRESENTATION = {
 const sha256 = (file) =>
   crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 
+const sourceDate = (dir) => execFileSync(
+  'git', ['show', '-s', '--format=%cI', 'HEAD'], { cwd: dir },
+).toString().trim();
+
 const gitInfo = (dir) => ({
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir }).toString().trim(),
   dirty: execFileSync(
@@ -100,7 +104,7 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
       patched: source.dirty,
       patchFile: source.dirty ? `entries/_patches/${source.patchName}` : null,
       buildCommand,
-      builtAt: new Date().toISOString(),
+      builtAt: source.builtAt,
       sha256: checks,
     },
     bundles: { web: 'dist/rows-0/main.web.bundle', lynx: 'dist/rows-0/main.lynx.bundle' },
@@ -138,12 +142,14 @@ const vueSource = vueGit === null ? null : {
   commit: vueGit.commit,
   dirty: vueGit.dirty,
   patchName: 'vue-lynx-bench.patch',
+  builtAt: sourceDate(VUE_BUILD),
 };
 const octaneSource = octaneGit === null ? null : {
   url: 'https://github.com/octanejs/octane',
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
   patchName: 'octane-bench.patch',
+  builtAt: sourceDate(OCTANE_BUILD),
 };
 
 const vueCells = (entryId) =>

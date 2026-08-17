@@ -90,6 +90,9 @@ export interface ComparisonRun {
     entryIds: string[];
     sourceRecordCount: number;
     recordCount: number;
+    cohortIdentity?: string;
+    campaign?: NativeCampaign;
+    coverage?: Record<NativeCoverageStatus, number>;
   }[];
   labEstimates: {
     entryId: string;
@@ -102,6 +105,64 @@ export interface ComparisonRun {
     sourceRecordCount: number;
     recordCount: number;
   }[];
+}
+
+export type NativeCoverageStatus =
+  | 'measured'
+  | 'measured-with-dnf'
+  | 'dnf'
+  | 'unsupported'
+  | 'unscheduled'
+  | 'invalid-incomparable'
+  | 'display-derivation-bug';
+
+export interface NativeCampaign {
+  version: string;
+  id: string;
+  label: string | null;
+  matrixContractSha256: string;
+  inputReceiptSha256: string;
+  resolvedMatrix: {
+    suites: string[];
+    cases: string[];
+    scales: number[];
+    startupScales: number[];
+    reps: number;
+    startupReps: number;
+  };
+  runtimePolicy: Record<string, string | number>;
+}
+
+export interface NativeCoverageCell {
+  entry: string;
+  suite: string;
+  workload: string;
+  scale: number;
+  metric: string;
+  unit: string;
+  boundary: string;
+  key: string;
+  status: NativeCoverageStatus;
+  reason: string | null;
+  record: {
+    n: number;
+    dnfCount: number;
+    median: number | null;
+    boundary: string;
+    unit: string;
+    runFile: string | null;
+    machineId: string | null;
+    failureCategories: string[];
+  } | null;
+}
+
+export interface NativeCoverage {
+  version: string;
+  contractSha256: string;
+  expectedCellCount: number;
+  entryIds: string[];
+  summary: Partial<Record<NativeCoverageStatus, number>>;
+  cells: NativeCoverageCell[];
 }
 
 export interface NativeObservation {
@@ -125,6 +186,7 @@ export interface TimelineSnapshot {
   machines: Record<string, Machine>;
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
+  nativeCoverage: NativeCoverage;
 }
 
 export interface EntryMeta {
@@ -149,6 +211,7 @@ const collected = latest as {
   labComparisonRecords: BenchRecord[];
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
+  nativeCoverage: NativeCoverage;
   timelineSnapshots: TimelineSnapshot[];
 };
 export const TIMELINE_SNAPSHOTS = collected.timelineSnapshots;
