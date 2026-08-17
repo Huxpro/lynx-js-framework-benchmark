@@ -55,3 +55,31 @@ export function slopeFit(points) {
   if (Math.abs(denominator) < 1e-12) return null;
   return (n * sxy - sx * sy) / denominator;
 }
+
+/** Rank one exact cell. Cohort eligibility is checkpoint-level; record
+ * eligibility captures cell-level comparability (for example storm transport). */
+export function rankHistoryCell(entryIds, records, cohortEligible = true) {
+  const byEntry = new Map(records.map((record) => [record.entry, record]));
+  const eligible = cohortEligible ? entryIds.map((entry) => byEntry.get(entry))
+    .filter((record) => record?.rankEligible !== false && valid(record?.median)) : [];
+  eligible.sort((a, b) => a.median - b.median || a.entry.localeCompare(b.entry));
+  const ranks = new Map();
+  let priorValue = null;
+  let priorRank = 0;
+  eligible.forEach((record, index) => {
+    const rank = priorValue === record.median ? priorRank : index + 1;
+    ranks.set(record.entry, rank);
+    priorValue = record.median;
+    priorRank = rank;
+  });
+  return entryIds.map((entry) => {
+    const record = byEntry.get(entry) ?? null;
+    let status = 'ranked';
+    if (!record) status = 'missing';
+    else if (!cohortEligible || eligible.length < 2) status = 'observation';
+    else if (record.dnfCount > 0 && !valid(record.median)) status = 'dnf';
+    else if (record.rankEligible === false) status = 'incomparable';
+    else if (!valid(record.median)) status = 'missing';
+    return { entry, record, rank: status === 'ranked' ? ranks.get(entry) ?? null : null, status };
+  });
+}

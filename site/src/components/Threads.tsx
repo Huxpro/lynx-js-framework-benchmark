@@ -80,7 +80,10 @@ function GroupedTimeBars({
                         style={{ width: `${(v / max) * 100}%`, background: entryColor(r.id, theme), opacity: alpha }}
                       />
                     )}
-                    <span className="bar-value" style={{ left: `${((v ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}>
+                    <span
+                      className={`bar-value${(v ?? 0) / max > 0.72 ? ' inside' : ''}`}
+                      style={{ left: `${((v ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}
+                    >
                       {v != null ? fmtMs(v) : '—'}
                     </span>
                   </div>
@@ -177,7 +180,10 @@ function WireBars({
                         }}
                       />
                     )}
-                    <span className="bar-value" style={{ left: `${((v ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}>
+                    <span
+                      className={`bar-value${(v ?? 0) / max > 0.72 ? ' inside' : ''}`}
+                      style={{ left: `${((v ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}
+                    >
                       {fmt(v)}
                     </span>
                   </div>
@@ -328,7 +334,10 @@ function MemoryCard({
                       style={{ width: `${((r[k] as number) / max) * 100}%`, background: entryColor(r.id, theme), opacity: k === 'bts' ? 1 : 0.45 }}
                     />
                   )}
-                  <span className="bar-value" style={{ left: `${((r[k] ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}>
+                  <span
+                    className={`bar-value${(r[k] ?? 0) / max > 0.72 ? ' inside' : ''}`}
+                    style={{ left: `${((r[k] ?? 0) / max) * 100}%`, fontSize: '0.68rem' }}
+                  >
                     {fmtBytes(r[k])}
                   </span>
                 </div>
@@ -467,7 +476,10 @@ function BundleSections({ theme, selected }: { theme: 'light' | 'dark'; selected
                   }}
                 />
               )}
-              <span className="bar-value" style={{ left: `${((r.whole ?? 0) / max) * 100}%` }}>
+              <span
+                className={`bar-value${(r.whole ?? 0) / max > 0.72 ? ' inside' : ''}`}
+                style={{ left: `${((r.whole ?? 0) / max) * 100}%` }}
+              >
                 {fmtBytes(r.whole)}
               </span>
             </div>
