@@ -284,6 +284,9 @@ const calibrateLabRecord = (run, file, record, targetCalibration) => {
     ...annotated,
     value: scaleNumber(record.value, ratio),
     samples: record.samples?.map((value) => scaleNumber(value, ratio)) ?? record.samples,
+    attempts: record.attempts?.map((attempt) => attempt.dnf
+      ? attempt
+      : { ...attempt, value: scaleNumber(attempt.value, ratio) }) ?? record.attempts,
   });
   return {
     ...scaled,
