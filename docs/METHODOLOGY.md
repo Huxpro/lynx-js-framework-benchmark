@@ -130,9 +130,13 @@ had a documented weakness, the fix is noted.
   from rows 0; no scale is silently skipped or charged another identical capability timeout.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
   audit rejected a global score; we follow).
-- The site time slider selects four exact, representative source snapshots rather than a moving
-  archive cutoff. Octane always means the upstream-main source recorded by that snapshot, even
-  though its commit SHA changes. Historical storm values need special care: the Aug 11/12 and
+- The site time slider is generated from every defensible exact-source checkpoint rather than four
+  handpicked dates or a moving archive cutoff. Web positions are one physical run; Native positions
+  combine incremental source runs only inside one unchanged machine/lease/environment/method
+  identity. Octane always means the upstream-main source recorded by that checkpoint, even when
+  older files called it `octane-main`; the original source ID, file, commit, and missing cells stay
+  visible. Rank-over-time never carries a value forward or ranks an isolated observation.
+  Historical storm values need special care: the Aug 11/12 and
   Aug 15 Octane runs recorded only 6–8 BTS→MTS and 14–17 MTS→BTS messages for a nominal
   30-tick select storm, while the current run records 60 and 92. The benchmark app's
   MessageChannel storm implementation is unchanged across those commits, so the old fast values
@@ -140,7 +144,8 @@ had a documented weakness, the fix is noted.
   end-to-end commits. The slider labels this comparability break. New Web storm samples fail
   closed as `incomplete-storm-transport` unless both transport directions observe at least one
   rpc message per requested tick (50 update / 30 select); reaching only the final DOM predicate is
-  no longer sufficient.
+  no longer sufficient. Those old medians remain visible as provenance-bearing incomparable points,
+  but are excluded from rank lines.
 
 ## Machines and calibration
 

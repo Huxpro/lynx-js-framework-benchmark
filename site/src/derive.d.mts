@@ -14,3 +14,13 @@ export function completeRowGeomeans(ids: string[], cells: DerivedCell[], baselin
   rowCount: number;
 };
 export function slopeFit(points: [number, number][]): number | null;
+export function rankHistoryCell(
+  entryIds: string[],
+  records: Array<{ entry: string; median: number | null; rankEligible?: boolean; dnfCount: number }>,
+  cohortEligible?: boolean,
+): Array<{
+  entry: string;
+  record: { entry: string; median: number | null; rankEligible?: boolean; dnfCount: number } | null;
+  rank: number | null;
+  status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
+}>;

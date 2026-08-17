@@ -46,10 +46,14 @@ Everything else is derived, including:
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged across leases
   or included in cross-entry rankings;
-- the four checked timeline snapshots. Each historical position names exact source run files and
-  remaps that run's upstream-main Octane source to the stable public `octane` identity; dragging
-  the site slider swaps the complete record/comparison/machine context rather than filtering the
-  newest-per-cell archive;
+- the automatic exact-source history index. Every valid run has a source audit row; Web checkpoints
+  are one physical run and Native checkpoints accumulate only within an identical machine, lease,
+  environment, and method identity. Upstream-main `octane-main` observations map to the stable
+  public `octane` identity without losing their source ID or commit. Records are materialized once
+  and checkpoints reference them by index, so finer history does not duplicate full snapshots;
+- rank-over-time points. A point exists only inside its exact eligible cohort. Missing cells, DNF,
+  isolated observations, incompatible cohorts, and historical storms without enough transport
+  evidence remain explicit gaps and are never carried forward, interpolated, or cross-ranked;
 - `results/latest.json` in its entirety (a checked-in materialized cache);
 - entry lists, available scales/cases, rankings, baselines, ratios, interactive scores, geomeans,
   trend exponents, plot domains, bar widths, totals, sorting, and every table shown by the site.
@@ -66,6 +70,8 @@ Everything else is derived, including:
    silently change one entry's denominator.
 6. Site entry discovery and available scales/cases come from current manifests/records rather
    than duplicated lists of result data.
+7. History source coverage equals the full valid run-file list, and each checkpoint references
+   exact source records rather than a date cutoff or newest-per-cell archive.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

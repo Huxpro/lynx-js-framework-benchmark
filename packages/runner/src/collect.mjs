@@ -6,6 +6,7 @@
 // Native featured records may come from one complete run per entry, but only
 // when every run belongs to the same physical device/environment. Opt-in Lab
 // records are separate, explicitly calibrated historical estimates.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -24,40 +25,6 @@ const HUX1_COMMITS = new Set([
   '99cae97204ff9ef2b0cb00765ee648078d7872e7',
   '4a53620fe811a016cb9966fab53ca181a89159c8',
 ]);
-
-const TIMELINE_SPECS = [
-  {
-    id: '2026-08-11-main',
-    label: 'Aug 11',
-    description: 'Upstream main after the first storm-focused optimization pass.',
-    webRunFile: '2026-08-11T13-03-50-65160668d8d9-upstream-main-9b147781-featured.json',
-    nativeRunFiles: [],
-  },
-  {
-    id: '2026-08-12-main',
-    label: 'Aug 12',
-    description: 'Fast-storm main checkpoint before the later transport/runtime regressions.',
-    webRunFile: '2026-08-12T18-02-55-65160668d8d9-upstream-main-6079a680-featured.json',
-    nativeRunFiles: [],
-  },
-  {
-    id: '2026-08-15-main',
-    label: 'Aug 15',
-    description: 'Runtime transition checkpoint; Web storms had already slowed, Native was five-entry.',
-    webRunFile: '2026-08-15T18-26-24-65160668d8d9-latest-featured-upstream.json',
-    nativeRunFiles: [
-      '2026-08-15T17-27-13-lynx-native-android-aries_10-10-native-sandbox-android-final3-react.json',
-      '2026-08-15T17-33-56-lynx-native-android-aries_10-10-native-sandbox-android-final-vue-vdom.json',
-      '2026-08-15T17-39-24-lynx-native-android-aries_10-10-native-sandbox-android-final-vue-vdom-ifr-et.json',
-      '2026-08-15T17-45-08-lynx-native-android-aries_10-10-native-sandbox-android-final-vue-vapor.json',
-      '2026-08-15T17-50-38-lynx-native-android-aries_10-10-native-sandbox-android-final-vue-vapor-ifr.json',
-    ],
-    nativeObservationFiles: [
-      '2026-08-15T20-37-10-lynx-native-android-aries_10-10-500bb13edb96-native-final-octane-upstream-native-table-verified.json',
-      '2026-08-15T20-40-25-lynx-native-android-aries_10-10-500bb13edb96-native-final-octane-upstream-native-startup-verified.json',
-    ],
-  },
-];
 
 const normalizedEntryId = (run, entry) => {
   if (entry === 'octane-main') return 'octane-prior';
@@ -312,135 +279,260 @@ const annotateStatic = (entry, record) => ({
   comparisonKind: 'derived-static',
 });
 
-const timelineRecord = (run, file, record, comparisonKind) => {
+const historyId = (generatedAt, sourceFiles) => {
+  const stamp = generatedAt.replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const hash = crypto.createHash('sha256').update(sourceFiles.join('\n')).digest('hex').slice(0, 8);
+  return `${stamp}-${hash}`;
+};
+
+const publicHistoryEntry = (run, record) => {
   const sourceEntry = record.sourceEntry ?? record.entry;
-  const entry = sourceEntry === 'octane-main' ? 'octane' : record.entry;
+  if (sourceEntry === 'octane-main') return 'octane';
+  if (record.entry === 'octane' && !HUX1_COMMITS.has(run.meta.entryCommits?.octane)) return 'octane';
+  return record.entry;
+};
+
+const sourceCommit = (run, record) =>
+  run.meta.entryCommits?.[record.sourceEntry ?? record.entry] ?? null;
+
+const stormTransportEvidence = (run, record) => {
+  if (record.harness !== 'web' || record.metric !== 'latency'
+    || !['updateStorm', 'selectStorm'].includes(record.workload)) return null;
+  const expectedSequentialCommits = record.workload === 'updateStorm' ? 50 : 30;
+  const findMessages = (metric) => run.records.find((candidate) =>
+    candidate.entry === record.entry
+    && candidate.suite === record.suite
+    && candidate.harness === record.harness
+    && candidate.environment === record.environment
+    && candidate.workload === record.workload
+    && candidate.scale === record.scale
+    && candidate.metric === metric)?.median ?? null;
+  const toMtsMessages = findMessages('wireToMtsMsgs');
+  const toBtsMessages = findMessages('wireToBtsMsgs');
+  if (toMtsMessages == null || toBtsMessages == null) return {
+    comparable: false,
+    issue: 'missing-storm-transport-evidence',
+    expectedSequentialCommits,
+    toMtsMessages,
+    toBtsMessages,
+  };
   return {
-    ...annotate(run, file, { ...record, entry }, comparisonKind),
-    ...(sourceEntry === entry ? {} : { sourceEntry }),
+    comparable: toMtsMessages >= expectedSequentialCommits
+      && toBtsMessages >= expectedSequentialCommits,
+    issue: toMtsMessages >= expectedSequentialCommits && toBtsMessages >= expectedSequentialCommits
+      ? null
+      : 'incomplete-storm-transport',
+    expectedSequentialCommits,
+    toMtsMessages,
+    toBtsMessages,
   };
 };
 
-const timelineMachine = (run, file) => ({
-  ...run.meta.machine,
-  latestCalibration: run.meta.calibration,
-  latestRunFile: file,
-  latestRunGeneratedAt: run.meta.generatedAt,
+const historyRecord = (run, file, record, comparisonKind, cohortId) => {
+  const sourceEntry = record.sourceEntry ?? record.entry;
+  const entry = publicHistoryEntry(run, record);
+  const transport = stormTransportEvidence(run, record);
+  return {
+    suite: record.suite,
+    harness: record.harness,
+    environment: record.environment,
+    entry,
+    ...(sourceEntry === entry ? {} : { sourceEntry }),
+    workload: record.workload,
+    scale: record.scale,
+    metric: record.metric,
+    boundary: record.boundary,
+    unit: record.unit,
+    n: record.n,
+    median: record.median,
+    ci95: record.ci95,
+    dnfCount: record.dnfCount,
+    detail: record.detail,
+    detailKind: record.detailKind,
+    ...(record.failures?.length ? { failures: record.failures } : {}),
+    machineId: run.meta.machine.id,
+    runFile: file,
+    runGeneratedAt: run.meta.generatedAt,
+    entryCommit: sourceCommit(run, record),
+    comparisonKind,
+    cohortId,
+    rankEligible: transport?.comparable ?? true,
+    ...(transport ? { transport } : {}),
+  };
+};
+
+const historySourceSummary = ({ file, run }, recordCount, entryIds, rankEligible, reason) => ({
+  runFile: file,
+  generatedAt: run.meta.generatedAt,
+  machineId: run.meta.machine.id,
+  harnesses: [...new Set(run.records.map((record) => record.harness))].sort(),
+  environments: [...new Set(run.records.map((record) => record.environment))].sort(),
+  entryIds: [...entryIds].sort(),
+  entryCommits: Object.fromEntries(Object.entries(run.meta.entryCommits ?? {}).sort()),
+  machine: run.meta.machine,
+  calibration: run.meta.calibration,
+  sourceRecordCount: run.records.length,
+  historyRecordCount: recordCount,
+  rankEligible,
+  reason,
 });
 
-const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
-  const byFile = new Map(runs.map((candidate) => [candidate.file, candidate]));
-  const snapshots = [];
-  for (const spec of TIMELINE_SPECS) {
-    const web = byFile.get(spec.webRunFile);
-    if (!web) continue;
-    const webRecords = web.run.records
-      .filter((record) => featuredIds.has(record.entry) && isPublishableRecord(web.run, record))
-      .map((record) => timelineRecord(web.run, web.file, record, 'same-run'));
-    const nativeSources = (spec.nativeRunFiles ?? []).map((file) => byFile.get(file)).filter(Boolean);
-    const nativeRecords = nativeSources.flatMap((source) => source.run.records
-      .filter((record) => featuredIds.has(record.entry)
-        && isBenchmarkRecord(record)
-        && isPublishableRecord(source.run, record))
-      .map((record) => timelineRecord(source.run, source.file, record, 'same-machine')));
-    const observationSources = (spec.nativeObservationFiles ?? [])
-      .map((file) => byFile.get(file))
-      .filter(Boolean);
-    const nativeObservationRecords = observationSources.flatMap((source) => source.run.records
-      .filter((record) => record.entry === 'octane'
-        && isBenchmarkRecord(record)
-        && isPublishableRecord(source.run, record))
-      .map((record) => timelineRecord(source.run, source.file, record, 'isolated-observation')));
-    const nativeObservationMachineIds = [...new Set(
-      nativeObservationRecords.map((record) => record.machineId),
-    )];
-    const nativeObservations = nativeObservationRecords.length === 0 ? [] : [{
-      entryId: 'octane',
-      harness: 'native',
-      environment: nativeObservationRecords[0].environment,
-      generatedAt: observationSources.reduce((latest, source) =>
-        latest == null || source.run.meta.generatedAt > latest
-          ? source.run.meta.generatedAt
-          : latest, null),
-      machineId: nativeObservationMachineIds.length === 1 ? nativeObservationMachineIds[0] : null,
-      sourceRunFile: observationSources.map((source) => source.file).join(', '),
-      sourceRecordCount: nativeObservationRecords.length,
-    }];
-    const sourceCandidates = [web, ...nativeSources, ...observationSources];
-    const snapshotMachines = Object.fromEntries(sourceCandidates.map((source) => [
-      source.run.meta.machine.id,
-      timelineMachine(source.run, source.file),
-    ]));
-    const nativeEntryIds = [...new Set(nativeRecords.map((record) => record.entry))].sort();
-    const webEntryIds = [...new Set(webRecords
-      .filter(isBenchmarkRecord)
-      .map((record) => record.entry))].sort();
-    const octaneCommit = web.run.meta.entryCommits?.octane
-      ?? web.run.meta.entryCommits?.['octane-main']
-      ?? null;
-    const generatedAt = sourceCandidates.reduce((latest, source) =>
-      latest == null || source.run.meta.generatedAt > latest
-        ? source.run.meta.generatedAt
-        : latest, null);
-    snapshots.push({
-      id: spec.id,
-      label: spec.label,
-      description: spec.description,
-      generatedAt,
-      octaneCommit,
-      records: [...webRecords, ...nativeRecords],
-      comparison: {
-        runFile: web.file,
-        generatedAt: web.run.meta.generatedAt,
-        machineId: web.run.meta.machine.id,
-        calibration: web.run.meta.calibration,
-        entryIds: webEntryIds,
-        sourceRecordCount: webRecords.filter(isBenchmarkRecord).length,
-        recordCount: webRecords.length + nativeRecords.length,
-        harnesses: [
-          {
+const buildHistory = ({ runs, featuredIds, current }) => {
+  const records = [];
+  const sources = [];
+  const checkpoints = [];
+  const nativeGroups = new Map();
+
+  for (const candidate of runs) {
+    const { file, run } = candidate;
+    const publishable = run.records.filter((record) => isPublishableRecord(run, record));
+    const benchmark = publishable.filter(isBenchmarkRecord);
+    const web = benchmark.filter((record) => record.harness === 'web');
+    const native = benchmark.filter((record) => record.harness === 'native');
+    const webPublic = publishable.filter((record) => record.harness === 'web' && (() => {
+      const entry = publicHistoryEntry(run, record);
+      return featuredIds.has(entry);
+    })());
+    const webEntries = new Set(web.map((record) => publicHistoryEntry(run, record))
+      .filter((entry) => featuredIds.has(entry)));
+    const webCohort = web.length > 0 && webEntries.size >= 2;
+    const hasUpstreamOctane = web.some((record) => publicHistoryEntry(run, record) === 'octane');
+    const sourceIndex = sources.length;
+    const sourceHistoryRecords = [];
+
+    if (hasUpstreamOctane) {
+      const cohortId = `web:${run.meta.machine.id}:${file}`;
+      sourceHistoryRecords.push(...webPublic.map((record) =>
+        historyRecord(run, file, record, webCohort ? 'same-run' : 'isolated-observation',
+          cohortId)));
+      const currentMainRecords = sourceHistoryRecords.filter((record) => record.entry === 'octane');
+      if (currentMainRecords.length) {
+        const generatedAt = run.meta.generatedAt;
+        checkpoints.push({
+          id: historyId(generatedAt, [file]),
+          generatedAt,
+          label: new Date(generatedAt).toISOString(),
+          description: webCohort
+            ? `Exact Web cohort from ${file}.`
+            : `Exact Octane observation from ${file}; no cross-framework rank is inferred.`,
+          octaneCommit: currentMainRecords[0].entryCommit,
+          activeRecordIndexes: sourceHistoryRecords.map((_, index) => records.length + index),
+          sourceIndexes: [sourceIndex],
+          harnesses: [{
             harness: 'web',
-            environment: webRecords[0]?.environment ?? null,
-            generatedAt: web.run.meta.generatedAt,
-            machineId: web.run.meta.machine.id,
-            calibration: web.run.meta.calibration,
-            sourceRunFiles: [web.file],
-            entryIds: webEntryIds,
-            sourceRecordCount: webRecords.filter(isBenchmarkRecord).length,
-            recordCount: webRecords.length,
-          },
-          ...(nativeRecords.length ? [{
-            harness: 'native',
-            environment: nativeRecords[0].environment,
-            generatedAt,
-            machineId: nativeRecords[0].machineId,
-            calibration: null,
-            sourceRunFiles: nativeSources.map((source) => source.file),
-            entryIds: nativeEntryIds,
-            sourceRecordCount: nativeRecords.length,
-            recordCount: nativeRecords.length,
-          }] : []),
-        ],
-        labEstimates: [],
-      },
-      machines: snapshotMachines,
-      nativeObservations,
-      nativeObservationRecords,
-    });
+            environment: webPublic[0].environment,
+            machineId: run.meta.machine.id,
+            sourceRunFiles: [file],
+            entryIds: [...webEntries].sort(),
+            rankEligible: webCohort,
+          }],
+        });
+      }
+    }
+
+    if (native.length) {
+      const key = `${run.meta.machine.id}|${native[0].environment}`;
+      const group = nativeGroups.get(key) ?? [];
+      group.push(candidate);
+      nativeGroups.set(key, group);
+    }
+
+    records.push(...sourceHistoryRecords);
+    const normalizedEntries = new Set(benchmark.map((record) => publicHistoryEntry(run, record)));
+    sources.push(historySourceSummary(
+      candidate,
+      sourceHistoryRecords.length + native.filter((record) =>
+        featuredIds.has(publicHistoryEntry(run, record))).length,
+      normalizedEntries,
+      webCohort,
+      webPublic.length === 0
+        ? (native.length ? 'native run; evaluated with its exact machine/environment cohort' : 'no featured benchmark observations')
+        : webCohort ? 'exact same-run Web cohort' : 'exact observation only; fewer than two eligible entries',
+    ));
   }
-  snapshots.push({
+
+  for (const candidates of nativeGroups.values()) {
+    const ordered = [...candidates].sort((a, b) =>
+      a.run.meta.generatedAt.localeCompare(b.run.meta.generatedAt) || a.file.localeCompare(b.file));
+    const cells = new Map();
+    const sourceIndexes = [];
+    const files = [];
+    const recordIndexesByCell = new Map();
+    let hasOctane = false;
+    for (const candidate of ordered) {
+      const sourceIndex = runs.indexOf(candidate);
+      sourceIndexes.push(sourceIndex);
+      files.push(candidate.file);
+      for (const record of candidate.run.records.filter((item) => isBenchmarkRecord(item)
+        && item.harness === 'native'
+        && isPublishableRecord(candidate.run, item))) {
+        const entry = publicHistoryEntry(candidate.run, record);
+        if (!featuredIds.has(entry)) continue;
+        if (entry === 'octane') hasOctane = true;
+        const key = `${entry}|${cellKey(record)}`;
+        cells.set(key, { candidate, record });
+        const history = historyRecord(
+          candidate.run, candidate.file, record,
+          'same-machine',
+          `native:${candidate.run.meta.machine.id}:${candidate.run.records[0]?.environment}`,
+        );
+        recordIndexesByCell.set(key, records.push(history) - 1);
+      }
+      if (!hasOctane) continue;
+      const groupRecords = [...cells.values()];
+      const entryIds = new Set(groupRecords.map(({ candidate: source, record }) =>
+        publicHistoryEntry(source.run, record)));
+      const rankEligible = entryIds.size >= 2;
+      const activeRecordIndexes = [...cells.keys()].map((key) => recordIndexesByCell.get(key));
+      checkpoints.push({
+        id: historyId(candidate.run.meta.generatedAt, [...files].sort()),
+        generatedAt: candidate.run.meta.generatedAt,
+        label: new Date(candidate.run.meta.generatedAt).toISOString(),
+        description: rankEligible
+          ? `Exact Native machine/environment cohort from ${files.length} source run${files.length === 1 ? '' : 's'}.`
+          : `Exact Native Octane observation; no other framework shares its machine/environment identity.`,
+        octaneCommit: activeRecordIndexes.map((index) => records[index])
+          .find((record) => record.entry === 'octane')?.entryCommit ?? null,
+        activeRecordIndexes,
+        sourceIndexes: [...sourceIndexes],
+        harnesses: [{
+          harness: 'native',
+          environment: groupRecords[0].record.environment,
+          machineId: candidate.run.meta.machine.id,
+          sourceRunFiles: [...files],
+          entryIds: [...entryIds].sort(),
+          rankEligible,
+        }],
+      });
+      for (const usedSourceIndex of new Set(sourceIndexes)) {
+        const source = sources[usedSourceIndex];
+        source.rankEligible ||= rankEligible;
+        source.reason = source.rankEligible
+          ? 'exact Native machine/environment cohort'
+          : 'exact Native observation only; no second eligible entry in this identity';
+      }
+    }
+  }
+
+  checkpoints.push({
     id: 'current-main',
-    label: 'Current',
-    description: 'Current upstream main with the fresh six-framework Web and Native cohorts.',
     generatedAt: current.generatedAt,
+    label: 'Current',
+    description: 'Current published Web and Native comparison cohorts.',
     octaneCommit: current.octaneCommit,
-    records: current.records,
-    comparison: current.comparison,
-    machines: current.machines,
-    nativeObservations: current.nativeObservations,
-    nativeObservationRecords: current.nativeObservationRecords,
+    current: true,
+    activeRecordIndexes: [],
+    sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
+      .map((record) => sources.findIndex((source) => source.runFile === record.runFile))
+      .filter((index) => index >= 0))],
+    harnesses: current.comparison.harnesses.map((cohort) => ({
+      harness: cohort.harness, environment: cohort.environment, machineId: cohort.machineId,
+      sourceRunFiles: cohort.sourceRunFiles, entryIds: cohort.entryIds, rankEligible: true,
+    })),
   });
-  return snapshots;
+
+  checkpoints.sort((a, b) => a.generatedAt.localeCompare(b.generatedAt) || a.id.localeCompare(b.id));
+  return { records, sources, checkpoints };
 };
 
 const assertCurrentEntryCommit = (run, entryId, entry, label) => {
@@ -686,7 +778,7 @@ export function collectRuns({
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
   };
-  out.timelineSnapshots = buildTimelineSnapshots({
+  out.history = buildHistory({
     runs,
     featuredIds,
     current: {
@@ -694,9 +786,6 @@ export function collectRuns({
       octaneCommit: entryById.get('octane')?.provenance?.commit ?? null,
       records: comparisonRecords,
       comparison,
-      machines,
-      nativeObservations: out.nativeObservations,
-      nativeObservationRecords: out.nativeObservationRecords,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

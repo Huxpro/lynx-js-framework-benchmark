@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
+import { HistoryRanking } from './components/HistoryRanking';
 import { MethodPage } from './components/Method';
 import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
@@ -49,7 +50,9 @@ const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 function initialSnapshotIndex(): number {
   const id = new URLSearchParams(location.search).get('snapshot');
   const index = TIMELINE_SNAPSHOTS.findIndex((snapshot) => snapshot.id === id);
-  return index >= 0 ? index : TIMELINE_SNAPSHOTS.length - 1;
+  if (index >= 0) return index;
+  const current = TIMELINE_SNAPSHOTS.findIndex((snapshot) => snapshot.id === 'current-main');
+  return current >= 0 ? current : TIMELINE_SNAPSHOTS.length - 1;
 }
 
 function AppContent({
@@ -62,8 +65,17 @@ function AppContent({
   const [theme, toggleTheme] = useTheme();
   const { select, workloadScales } = useBenchmarkData();
   const [page, setPage] = useState<Page>('overview');
-  const [harness, setHarness] = useState<string>('web');
+  const [harness, setHarness] = useState<string>(() =>
+    new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
   const [selected, setSelected] = useState<Set<string>>(initialSelection);
+  const changeHarness = (next: string) => {
+    setHarness(next);
+    const params = new URLSearchParams(location.search);
+    if (next === 'web') params.delete('harness');
+    else params.set('harness', next);
+    const query = params.toString();
+    history.replaceState(null, '', query ? `?${query}` : location.pathname);
+  };
 
   const toggleEntry = (id: string) =>
     setSelected((prev) => {
@@ -110,7 +122,7 @@ function AppContent({
         </nav>
         <div className="harness-switch" role="group" aria-label="Harness">
           {['web', 'native'].map((h) => (
-            <button key={h} aria-pressed={harness === h} onClick={() => setHarness(h)}>
+            <button key={h} aria-pressed={harness === h} onClick={() => changeHarness(h)}>
               {h === 'web' ? 'Lynx for Web' : 'Native engine'}
             </button>
           ))}
@@ -123,6 +135,13 @@ function AppContent({
         snapshots={TIMELINE_SNAPSHOTS}
         index={snapshotIndex}
         onChange={onSnapshotChange}
+      />
+      <HistoryRanking
+        harness={harness}
+        onHarnessChange={changeHarness}
+        theme={theme}
+        snapshotIndex={snapshotIndex}
+        onSnapshotChange={onSnapshotChange}
       />
 
       {harness === 'native' && !nativeHasData ? (
