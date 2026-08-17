@@ -140,7 +140,8 @@ had a documented weakness, the fix is noted.
   end-to-end commits. The slider labels this comparability break. New Web storm samples fail
   closed as `incomplete-storm-transport` unless both transport directions observe at least one
   rpc message per requested tick (50 update / 30 select); reaching only the final DOM predicate is
-  no longer sufficient.
+  no longer sufficient. The controlled immutable-bundle replay and exact root-cause split are in
+  [OCTANE_WEB_AUDIT.md](./OCTANE_WEB_AUDIT.md).
 
 ## Machines and calibration
 

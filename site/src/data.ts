@@ -26,6 +26,8 @@ export interface BenchRecord {
   detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
+  attemptedCount?: number;
+  acceptedCount?: number;
   failures?: {
     rep: number;
     category?: string;
@@ -41,6 +43,15 @@ export interface BenchRecord {
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
   comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
+  comparabilityReasons?: string[];
+  comparabilityCohort?: string | null;
+  rankingEligible?: boolean;
+  workClassification?: {
+    status: 'complete' | 'incomplete' | 'unverified';
+    expectedSequentialCommits: number;
+    observed: Record<string, unknown> | null;
+  };
   sourceEntry?: string;
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
@@ -188,7 +199,9 @@ export interface RecordFilter {
 
 export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
   return records.filter((r) =>
-    (filter.suite == null || r.suite === filter.suite)
+    (r.rankingEligible !== false
+      || (r.comparabilityStatus === 'incomplete-work' && r.n === 0 && r.dnfCount > 0))
+    && (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)
     && (filter.entry == null || r.entry === filter.entry)
     && (filter.workload == null || r.workload === filter.workload)

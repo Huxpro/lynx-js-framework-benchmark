@@ -25,6 +25,7 @@ export const COMPARABILITY_KEYS = [
   'metric',
   'boundary',
   'unit',
+  'comparabilityCohort',
 ];
 
 export const BOUNDARIES = {
@@ -110,11 +111,13 @@ export function makeRecord({
   detail = null,
   dnfCount = 0,
   failures = [],
+  attemptedCount = null,
+  acceptedCount = null,
 }) {
   if (!suite || !entry || !workload || !metric || !boundary || !unit) {
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
   }
-  return deriveRecord({
+  const record = {
     suite,
     harness,
     environment,
@@ -124,13 +127,17 @@ export function makeRecord({
     metric,
     boundary,
     unit,
+    comparabilityCohort: null,
     value,
     samples,
     detailSamples,
     detail,
     dnfCount,
     failures,
-  });
+  };
+  if (attemptedCount != null) record.attemptedCount = attemptedCount;
+  if (acceptedCount != null) record.acceptedCount = acceptedCount;
+  return deriveRecord(record);
 }
 
 export function comparisonKey(record) {
