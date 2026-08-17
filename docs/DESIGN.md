@@ -176,8 +176,9 @@ now runs real Native Engine bundles:
   domain. Because Explorer DebugRouter accepts one USB connector, the adapter uses the official
   direct Android transport and multiplexes Runtime events, DOM requests, and input through one
   persistent CDP channel per page. It waits for device-side channel teardown and recycles Explorer
-  on a configured cadence (five pages by default); transport, lifecycle, timeout, and retry
-  settings are recorded and included in cohort identity. Explorer client discovery is repeated
+  on a configured cadence (five pages by default); every bundle load passes a thermal gate. The
+  full transport, reconnect, lifecycle, render, timeout, thermal, and retry policy is versioned
+  and included in campaign and machine identity. Explorer client discovery is repeated
   after every restart because DebugRouter may reassign the client port/ID.
   Upstream Octane also uses real touch input. Its background handler waits for the
   renderer's correlated `flushTransport()` acknowledgement, waits two Native frames, and emits a
@@ -187,10 +188,27 @@ now runs real Native Engine bundles:
   workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
-mode switch. Long Native runs are split per entry, then collected only inside one anonymized
-Sandbox lease/device cohort. The cohort hash includes an explicit unique acquisition identity;
-the reusable ADB serial alone is not a lease identity. Native Octane is upstream-only; Lab variants
-are not scheduled.
+mode switch. A publishable Native campaign schedules the full six-entry 210-cell contract. Since
+the honest per-cell timeout can exceed one Sandbox lease's capacity, a campaign may continue over
+multiple official leases of the same physical device. Each acquisition supplies `serial`,
+`issueId`, and `expiredAt`; the raw serial is equality-checked and replaced in metadata by its
+SHA-256. A stable device cohort hashes that serial digest together with hardware/environment,
+campaign, matrix, input, connector toolchain, and harness method, while the ordered lease chain
+preserves every per-lease receipt. The reusable ADB serial or a lease ID alone is never sufficient
+identity. Native Octane is upstream-only; Lab variants are not scheduled.
+
+The CLI atomically checkpoints after every cell and stops before lease expiry with
+`checkpointComplete: false`. `--resume` accepts only an incomplete v2 checkpoint, validates the
+full immutable identity before adapter/device work, appends a strictly later same-serial receipt,
+rejects overlapping cells and partially written startup metric pairs, and schedules only missing
+keys. Every record key maps to the receipt that produced it. The pre-cell stop window is a derived
+worst-cell envelope covering repetitions, thermal gating, page/session and workload timeouts, all
+transport recovery/reconnect attempts, and cleanup; an environment override cannot lower it. The
+collector can join split source checkpoints only under that same stable cohort, with no overlap,
+when one ordered receipt chain is an exact prefix of the other. Same-serial forks are rejected, and
+the published cohort identity and evidence use the longer chain's digest. Incomplete checkpoints
+from older, non-resumable campaign protocols remain raw diagnostic files and are omitted from the
+derived dataset entirely.
 Octane's custom renderer does not expose Performance pipeline entries in the tested Explorer
 build. Therefore it publishes no Native FCP. Its isolated startup observations convert the host
 `openPage` request timestamp to device time using the lowest-RTT sample from seven ADB clock
@@ -203,10 +221,11 @@ The authoritative source/derived contract is specified in [DATA_MODEL.md](./DATA
 In particular, raw run observations and entry artifacts are source; statistics, cohort selection,
 calibration output, `latest.json`, and every site score/visual are derived.
 
-- `bench run` writes one **run file** `results/runs/<iso>-<machineId>.json` — any subset of
-  the matrix (`--entry`, `--workload`, `--scale`, `--suite`, `--quick`). Machine fingerprint +
-  calibration score embedded. Native files are atomically rewritten after every completed cell;
-  the `meta.checkpoint` marker identifies this crash-recoverable source format.
+- `bench run` writes one **run file** `results/runs/<iso>-<machineId>.json`. Web supports focused
+  subsets; publishable Native runs require the full matrix. Machine fingerprint + calibration
+  score are embedded. Native files are atomically rewritten after every completed cell; the
+  `meta.checkpoint` marker, `checkpointComplete`, stable device cohort, ordered lease chain,
+  per-cell lease attribution, and 210-cell coverage ledger identify this resumable format.
 - `bench preflight` (also auto-run before `run`) executes a fixed, versioned CPU probe in the
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
@@ -214,8 +233,9 @@ calibration output, `latest.json`, and every site score/visual are derived.
   (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
   one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured
-  matrix coverage, then newest). Native comparison records select one complete current-commit
-  run per featured entry inside one device/environment cohort. Partial reruns and
+  matrix coverage, then newest). Native comparison records require one complete current-commit
+  campaign with identical stable-device/method/matrix/input/connector identity and an explicit
+  valid same-serial lease chain. Partial reruns and
   historical Lab variants therefore cannot replace the public ranking. A current featured Native
   entry absent from that cohort may be exposed separately from one unmerged source run as an
   absolute observation; it never enters rankings, ratios, heatmaps, or geomeans. For opt-in Lab
@@ -223,8 +243,8 @@ calibration output, `latest.json`, and every site score/visual are derived.
   `ms` fields are scaled by source-score / comparison-score and marked `calibrated-estimate`;
   heap, wire, bundle, and count fields remain `historical`. Calibration cannot correct memory
   hierarchy or core-count differences.
-- Hypothesis mode: `bench run --entry vue-vapor --workload select --scale 10000 --reps 20`
-  gives a focused, high-N answer; `collect` folds it in without touching other cells.
+- Web hypothesis mode: `bench run --entry vue-vapor --case select --scale 10000 --reps 20`
+  gives a focused, high-N answer; Native diagnostics use a separate non-publishable tool.
 
 ## Statistics
 

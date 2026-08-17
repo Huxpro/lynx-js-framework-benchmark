@@ -4,6 +4,7 @@ import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { MethodPage } from './components/Method';
+import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
@@ -126,15 +127,17 @@ function AppContent({
       />
 
       {harness === 'native' && !nativeHasData ? (
-        <div className="empty-state">
-          <p><b>Native engine harness: capability preserved, no data yet.</b></p>
-          <p style={{ maxWidth: '58ch', margin: '0.5rem auto' }}>
-            Every entry ships <code>main.lynx.bundle</code> and the result schema carries{' '}
-            <code>harness: "native"</code> end to end. Wiring a device adapter (see{' '}
-            <code>packages/runner/src/harness-native.mjs</code>) makes this page light up — native and
-            web numbers are never mixed in one chart.
-          </p>
-        </div>
+        <>
+          <div className="empty-state">
+            <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
+            <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
+              The ledger below distinguishes work that was never scheduled from evidenced DNF,
+              proven unsupported capability, incompatible archived runs, and derivation defects.
+            </p>
+          </div>
+          <NativeCoverage />
+          <NativeObservations theme={theme} />
+        </>
       ) : page === 'overview' ? (
         <>
           <h1>How fast is each framework on Lynx?</h1>
@@ -146,6 +149,7 @@ function AppContent({
             any card's data table for exact numbers.
           </p>
           <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          {harness === 'native' && <NativeCoverage />}
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars

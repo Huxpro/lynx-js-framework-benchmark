@@ -30,11 +30,15 @@ For a leased Lynx Sandbox Android device:
 # Make the device-only @byted/agent-lynx@0.14.4 package resolvable from packages/runner using the ByteDance
 # registry in the Native runner environment first.
 LYNX_SANDBOX_SERIAL='<leased-adb-serial>' \
-LYNX_SANDBOX_LEASE_ID='<unique-issue-id-and-expiry>' \
+LYNX_SANDBOX_LEASE_RECEIPT='<json-or-path-containing-serial-issueId-expiredAt>' \
 pnpm bench run \
   --harness native \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
+
+Native has no partial publish mode: omitting entry/case/scale flags runs all six featured entries,
+27 table cells per entry, and two startup metrics at 0/1k/10k/30k (210 contract cells total; five
+table and three startup repetitions). Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
 LynxExplorer, drives the Native benchmark through Lynx DevTool, and records device-clock timings.
@@ -49,7 +53,10 @@ Every featured entry, including upstream Octane, uses real Native touch input. O
 begin in the background handler, wait for the renderer's correlated transport acknowledgement,
 then wait two Native frames; the recorded post-ACK state is checked against the semantic workload
 predicate. A DevTool driver exists only as an explicitly labelled diagnostic mode and is never the
-default benchmark path. Release the Sandbox lease after the command completes.
+default benchmark path. A strict producer payload failure is retained as an evidenced
+`producer-protocol-invalid` DNF for that cell; its evidence explicitly records validation as
+`attempted: true, passed: false`, never invents a timing value, and never aborts unrelated cells.
+Release the Sandbox lease after the command completes.
 `LYNX_SANDBOX_TIMEOUT_MS` overrides the 30-second control timeout and
 `LYNX_SANDBOX_LONG_TIMEOUT_MS` overrides the 240-second workload/startup timeout.
 `LYNX_SANDBOX_TRANSIENT_ATTEMPTS` controls the bounded number of transport attempts (three by
@@ -57,13 +64,35 @@ default; one records the first transport failure as DNF without a recovery retry
 `LYNX_SANDBOX_DEVTOOL_TRANSPORT` can opt back into `daemon` for diagnostics; formal runs use
 `direct`. `LYNX_SANDBOX_RECYCLE_EVERY_PAGES` and `LYNX_SANDBOX_ROUTER_SETTLE_MS` are explicit
 lifecycle controls whose chosen values are retained in run metadata. Formal runs also wait for
-Android thermal status 0 and battery temperature at or below 40 °C before sampling
+Android thermal status 0 and battery temperature at or below 40 °C before every bundle load
 (`LYNX_SANDBOX_MAX_BATTERY_TEMP_C` overrides the ceiling). A hash of these
-lifecycle/thermal/input/timeout/retry settings is part of the machine identity, preventing
+lifecycle/reconnect/render/thermal/input/timeout/retry settings is hashed into campaign and machine
+identities, preventing
 differently configured runs from joining one Native cohort.
-`LYNX_SANDBOX_LEASE_ID` is mandatory and must uniquely identify the acquisition (for example the
-traceable X-Issue-Id plus `expiredAt` returned by the lease API). The machine fingerprint hashes it
-with the serial so a device reassigned in a later lease cannot be silently merged into the cohort.
+`LYNX_SANDBOX_LEASE_RECEIPT` (or `--lease-receipt`) is mandatory. It accepts JSON directly or a
+JSON-file path and must contain the exact acquired `serial`, traceable `issueId`, and lease API
+`expiredAt` epoch milliseconds. The raw serial is checked against `LYNX_SANDBOX_SERIAL` and then
+discarded; only its SHA-256 is persisted. Before each cell the runner derives a worst-cell expiry
+envelope from the formal repetition count, thermal-gate timeout, page/session and long-workload
+timeouts, every configured transport attempt and reconnect window, plus a cleanup margin.
+`LYNX_SANDBOX_LEASE_STOP_SAFETY_MS` may increase that envelope but a lower value is rejected. The
+runner stops before the resulting boundary, writes `checkpointComplete: false`, and exits cleanly.
+Continue only on
+a newly acquired official lease for the same physical serial:
+
+```bash
+LYNX_SANDBOX_SERIAL='<same-leased-adb-serial>' \
+LYNX_SANDBOX_LEASE_RECEIPT='<new-json-or-path>' \
+pnpm bench run --harness native \
+  --adapter packages/runner/adapters/lynx-sandbox-android.mjs \
+  --resume results/runs/<incomplete-checkpoint>.json
+```
+
+Resume validates the exact campaign, 210-cell matrix, immutable input and connector receipts,
+hardware/environment, method policy, and stable device cohort before device work. It appends the
+new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
+startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
+serial hashes, hardware, toolchains, methods, or campaign inputs can never be merged.
 
 `@byted/agent-lynx` is intentionally not part of the public workspace lockfile because one of its
 connector dependencies is unavailable from the public npm registry used by GitHub Actions and the
@@ -91,10 +120,17 @@ public ranking. Opt-in Lab entries use one complete historical run per entry; mi
 are scaled by source-score / comparison-score and marked as estimates. Non-time fields remain
 explicitly historical because the CPU probe cannot calibrate them.
 `run` refreshes the derived cache immediately; site dev/build refresh it again before loading.
-Native runs atomically checkpoint the source file after every completed cell. If DevTool transport
-is exhausted later in a long lease, already completed cells remain reproducible instead of being
-lost with the process. Known transport exhaustion is retained as structured DNF evidence; unknown
-adapter/programming errors still abort.
+Native runs atomically checkpoint the source file after every completed cell. If a lease approaches
+expiry or DevTool transport is exhausted later in a run, already completed cells remain
+reproducible instead of being lost with the process. Each cell names the lease that produced it,
+and every receipt remains in the ordered chain. Split checkpoints combine only when one receipt
+chain is an exact prefix of the other; same-serial forks remain archive-only. Known transport exhaustion and producer-protocol
+failures are retained as structured DNF evidence; unknown adapter/programming errors still abort.
+Each checkpoint carries a `native-featured-matrix-v1` coverage ledger. It distinguishes measured,
+measured-with-DNF, DNF, capability-proven unsupported, unscheduled, incompatible cohort, and
+display/derivation defects. A completed campaign may contain measured, DNF, or proven unsupported
+cells, but never an unscheduled or invalid cell. Bundles are served from immutable byte snapshots;
+source, manifest, patch, and bundle receipts are rechecked before completion.
 
 ## What is measured
 
@@ -105,8 +141,9 @@ adapter/programming errors still abort.
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
 
-Cases: the krausest superset (`create` 1k/10k, `append1k`, `update10th`, `select`, `swap`,
-`remove`, `clear`) + storms (50 update / 30 select sequential ticks) at 1k–30k scales +
+Cases: the krausest superset (`create` 1k/3k/5k/10k/20k/30k, `replace`, `append1k`,
+`update10th`, `select`, `swap`, `remove`, `clear`) + storms (50 update / 30 select sequential
+ticks) at 1k/3k/5k/10k/20k/30k +
 startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
 post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these
 are never ranked as FCP. See

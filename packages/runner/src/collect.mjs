@@ -3,8 +3,8 @@
 // boundary and unit);
 // records from different machines coexist, each tagged with its source run and
 // calibration. Web featured comparisonRecords come from one coherent run;
-// Native featured records may come from one complete run per entry, but only
-// when every run belongs to the same physical device/environment. Opt-in Lab
+// Native featured records may come from checkpoints of one campaign, but only
+// when every record belongs to the same machine, lease, method and input receipt. Opt-in Lab
 // records are separate, explicitly calibrated historical estimates.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +12,14 @@ import path from 'node:path';
 import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 
 import { bundleRecords } from './bundles.mjs';
+import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, repoRoot } from './entries.mjs';
+import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
+import {
+  NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  assertNativeDeviceCohort,
+  assertNativeLeaseChain,
+} from './native-protocol.mjs';
 
 const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
@@ -156,6 +163,81 @@ const isPublishableRecord = (run, record) => !(
   )
 );
 
+const nativeCohortIdentity = (run, environment) => {
+  const campaign = run.meta.campaign;
+  const machine = run.meta.machine;
+  const inputConnectorPackageTrees = run.meta.inputReceipt?.connectorPackageTrees;
+  const machineConnectorPackageTrees = machine?.connectorPackageTrees;
+  if (
+    campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION
+    || !campaign?.id
+    || !campaign?.matrixContractSha256
+    || !campaign?.inputReceiptSha256
+    || !campaign?.connectorPackageTreesSha256
+    || !machine?.id
+    || !machine?.deviceLeaseId
+    || !machine?.deviceCohortId
+    || !machine?.harnessConfigId
+    || !machine?.connectorPackageTreesSha256
+    || !environment
+  ) return null;
+  let leaseChain;
+  let deviceCohort;
+  try {
+    leaseChain = assertNativeLeaseChain(run.meta.leaseChain);
+    deviceCohort = assertNativeDeviceCohort(run.meta.deviceCohort);
+    assertNativeDeviceCohort(machine.deviceCohort);
+  } catch {
+    return null;
+  }
+  if (connectorPackageTreesError(inputConnectorPackageTrees) !== null) return null;
+  if (connectorPackageTreesError(machineConnectorPackageTrees) !== null) return null;
+  if (run.meta.matrixContract?.sha256 !== campaign.matrixContractSha256) return null;
+  if (run.meta.inputReceipt?.sha256 !== campaign.inputReceiptSha256) return null;
+  if (inputConnectorPackageTrees.sha256 !== campaign.connectorPackageTreesSha256) return null;
+  if (machine.campaignId !== campaign.id) return null;
+  if (machine.matrixContractSha256 !== campaign.matrixContractSha256) return null;
+  if (machine.inputReceiptSha256 !== campaign.inputReceiptSha256) return null;
+  if (machine.connectorPackageTreesSha256 !== campaign.connectorPackageTreesSha256) return null;
+  if (JSON.stringify(machineConnectorPackageTrees) !== JSON.stringify(inputConnectorPackageTrees)) {
+    return null;
+  }
+  if (JSON.stringify(machine.deviceCohort) !== JSON.stringify(deviceCohort)) return null;
+  if (machine.deviceCohortId !== deviceCohort.id) return null;
+  if (leaseChain.serialSha256 !== deviceCohort.serialSha256) return null;
+  const leaseIds = new Set(leaseChain.receipts.map((receipt) => receipt.deviceLeaseId));
+  if (!leaseIds.has(machine.deviceLeaseId)) return null;
+  const cellLeaseIds = run.meta.cellLeaseIds;
+  if (cellLeaseIds === null || typeof cellLeaseIds !== 'object' || Array.isArray(cellLeaseIds)) {
+    return null;
+  }
+  for (const record of run.records.filter((candidate) => candidate.harness === 'native')) {
+    if (!leaseIds.has(cellLeaseIds[nativeCellKey(record)])) return null;
+  }
+  const stableIdentity = [
+    deviceCohort.id,
+    environment,
+    machine.harnessConfigId,
+    campaign.id,
+    campaign.matrixContractSha256,
+    campaign.inputReceiptSha256,
+    campaign.connectorPackageTreesSha256,
+  ].join('|');
+  return { stableIdentity, deviceCohort, leaseChain };
+};
+
+function mergeLeaseChains(left, right) {
+  const leftReceipts = assertNativeLeaseChain(left).receipts;
+  const rightReceipts = assertNativeLeaseChain(right).receipts;
+  const prefixLength = Math.min(leftReceipts.length, rightReceipts.length);
+  for (let index = 0; index < prefixLength; index++) {
+    if (JSON.stringify(leftReceipts[index]) !== JSON.stringify(rightReceipts[index])) {
+      throw new Error(`forked Native lease chains at receipt ${index}.`);
+    }
+  }
+  return leftReceipts.length >= rightReceipts.length ? left : right;
+}
+
 const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
@@ -183,12 +265,31 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
   for (const candidate of runs) {
     const records = comparisonView(candidate.run, featuredIds, entryById, 'native').records;
     for (const environment of new Set(records.map((record) => record.environment))) {
-      const groupKey = `${candidate.run.meta.machine.id}|${environment}`;
+      const campaign = candidate.run.meta.campaign;
+      const identity = nativeCohortIdentity(candidate.run, environment);
+      // Legacy runs predate explicit lease, campaign and immutable input
+      // receipts. They stay archived, but cannot supply ranked comparisons.
+      if (identity == null) continue;
+      const groupKey = identity.stableIdentity;
       const group = groups.get(groupKey) ?? {
-        machineId: candidate.run.meta.machine.id,
+        machineId: identity.deviceCohort.id,
+        deviceCohortId: identity.deviceCohort.id,
+        deviceCohort: identity.deviceCohort,
         environment,
+        stableCohortIdentity: identity.stableIdentity,
+        leaseChain: identity.leaseChain,
+        campaign,
         entries: new Map(),
+        invalidOverlap: false,
+        invalidLeaseChain: false,
+        sourceFiles: new Set(),
       };
+      group.sourceFiles.add(candidate.file);
+      try {
+        group.leaseChain = mergeLeaseChains(group.leaseChain, identity.leaseChain);
+      } catch {
+        group.invalidLeaseChain = true;
+      }
       for (const entry of new Set(records
         .filter((record) => record.environment === environment)
         .map((record) => record.entry))) {
@@ -198,9 +299,9 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
           && record.entry === entry)) {
           const key = cellKey(record);
           const current = entryCohort.cells.get(key);
-          const currentTime = current?.run.meta.generatedAt ?? current?.file;
-          if (!current || candidateTime > currentTime
-            || (candidateTime === currentTime && candidate.file > current.file)) {
+          if (current != null) {
+            group.invalidOverlap = true;
+          } else {
             entryCohort.cells.set(key, { ...candidate, record });
           }
         }
@@ -213,9 +314,24 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
     }
   }
 
+  const archiveOnlyFiles = new Set();
   let selected = null;
   let selectedRank = null;
   for (const group of groups.values()) {
+    if (group.invalidOverlap || group.invalidLeaseChain) {
+      for (const file of group.sourceFiles) archiveOnlyFiles.add(file);
+      continue;
+    }
+    const groupRecords = [...group.entries.values()].flatMap((entry) =>
+      [...entry.cells.values()].map((source) => source.record));
+    try {
+      assertNativeCoverage(classifyNativeCoverage({
+        entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+        sourceRecords: groupRecords,
+      }));
+    } catch {
+      continue;
+    }
     const entries = [...group.entries.values()];
     const cellsByEntry = entries.map((entry) => new Set(entry.cells.keys()));
     const sharedCells = cellsByEntry.length
@@ -233,14 +349,20 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
       && value > selectedRank[index]);
     if (better || (rank.every((value, index) => value === selectedRank?.[index])
       && latest > selected.latest)) {
-      selected = { ...group, latest };
+      selected = {
+        ...group,
+        latest,
+        cohortIdentity: [group.stableCohortIdentity, group.leaseChain.sha256].join('|'),
+      };
       selectedRank = rank;
     }
   }
-  return selected;
+  return { selected, archiveOnlyFiles };
 };
 
-const selectNativeObservations = (runs, featuredIds, entryById, nativeCohort) => {
+const selectNativeObservations = (
+  runs, featuredIds, entryById, nativeCohort, archiveOnlyFiles = new Set(),
+) => {
   const cohortEntries = new Set(nativeCohort?.entries.keys() ?? []);
   const observations = [];
   const records = [];
@@ -248,6 +370,7 @@ const selectNativeObservations = (runs, featuredIds, entryById, nativeCohort) =>
     if (cohortEntries.has(entryId)) continue;
     let selected = null;
     for (const candidate of runs) {
+      if (archiveOnlyFiles.has(candidate.file)) continue;
       const candidateRecords = comparisonView(
         candidate.run,
         featuredIds,
@@ -328,7 +451,7 @@ const timelineMachine = (run, file) => ({
   latestRunGeneratedAt: run.meta.generatedAt,
 });
 
-const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
+const buildTimelineSnapshots = ({ runs, featuredIds, featuredEntries, current }) => {
   const byFile = new Map(runs.map((candidate) => [candidate.file, candidate]));
   const snapshots = [];
   for (const spec of TIMELINE_SPECS) {
@@ -382,6 +505,12 @@ const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
       latest == null || source.run.meta.generatedAt > latest
         ? source.run.meta.generatedAt
         : latest, null);
+    const nativeCoverage = classifyNativeCoverage({
+      entries: featuredEntries,
+      sourceRecords: nativeRecords,
+      publishedRecords: nativeRecords,
+      archiveRecords: nativeObservationRecords,
+    });
     snapshots.push({
       id: spec.id,
       label: spec.label,
@@ -426,6 +555,7 @@ const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
       machines: snapshotMachines,
       nativeObservations,
       nativeObservationRecords,
+      nativeCoverage,
     });
   }
   snapshots.push({
@@ -439,6 +569,7 @@ const buildTimelineSnapshots = ({ runs, featuredIds, current }) => {
     machines: current.machines,
     nativeObservations: current.nativeObservations,
     nativeObservationRecords: current.nativeObservationRecords,
+    nativeCoverage: current.nativeCoverage,
   });
   return snapshots;
 };
@@ -533,6 +664,14 @@ export function collectRuns({
       log(`[collect] skip ${file}: schemaVersion ${rawRun.schemaVersion} != ${SCHEMA_VERSION}`);
       continue;
     }
+    if (
+      rawRun.meta?.checkpoint === true
+      && rawRun.meta?.checkpointComplete !== true
+      && rawRun.meta?.campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION
+    ) {
+      log(`[collect] archive-only ${file}: incomplete legacy Native checkpoint`);
+      continue;
+    }
     const run = normalizeRun(rawRun, file);
     runs.push({ file, run });
     runsSeen += 1;
@@ -581,17 +720,45 @@ export function collectRuns({
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
     ...comparisonStaticRecords,
   ];
-  const nativeCohort = selectNativeCohort(runs, featuredIds, entryById);
+  const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
+    selectNativeCohort(runs, featuredIds, entryById);
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
-      annotate(source.run, source.file, source.record, 'same-machine')))
+      ({
+        ...annotate(source.run, source.file, source.record, 'same-device-cohort'),
+        machineId: nativeCohort.deviceCohortId,
+        sourceMachineId: source.run.meta.machine.id,
+        deviceLeaseId: source.run.meta.cellLeaseIds[nativeCellKey(source.record)],
+      })))
     : [];
+  const nativeCoverage = classifyNativeCoverage({
+    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+    sourceRecords: nativeSourceRecords,
+    publishedRecords: nativeSourceRecords,
+    archiveRecords: [...merged.values()].filter((record) => record.harness === 'native'),
+  });
+  if (nativeCohort) assertNativeCoverage(nativeCoverage);
+  if (nativeCohort) {
+    const sources = [...nativeCohort.entries.values()].flatMap((entry) =>
+      [...entry.cells.values()]);
+    const latestSource = sources.sort((left, right) =>
+      String(left.run.meta.generatedAt).localeCompare(String(right.run.meta.generatedAt))).at(-1);
+    machines[nativeCohort.deviceCohortId] = {
+      ...(latestSource?.run.meta.machine ?? {}),
+      id: nativeCohort.deviceCohortId,
+      deviceCohort: nativeCohort.deviceCohort,
+      deviceCohortId: nativeCohort.deviceCohortId,
+      leaseChain: nativeCohort.leaseChain,
+      perLeaseMachineIds: [...new Set(sources.map((source) => source.run.meta.machine.id))].sort(),
+    };
+  }
   comparisonRecords.push(...nativeSourceRecords);
   const nativeObservations = selectNativeObservations(
     runs,
     featuredIds,
     entryById,
     nativeCohort,
+    nativeArchiveOnlyFiles,
   );
   const nativeComparison = nativeCohort ? {
     harness: 'native',
@@ -604,6 +771,12 @@ export function collectRuns({
     entryIds: [...nativeCohort.entries.keys()].sort(),
     sourceRecordCount: nativeSourceRecords.length,
     recordCount: nativeSourceRecords.length,
+    cohortIdentity: nativeCohort.cohortIdentity,
+    deviceCohort: nativeCohort.deviceCohort,
+    deviceCohortId: nativeCohort.deviceCohortId,
+    leaseChain: nativeCohort.leaseChain,
+    campaign: nativeCohort.campaign,
+    coverage: nativeCoverage.summary,
   } : null;
   const comparison = {
     runFile: comparisonRun.file,
@@ -685,10 +858,12 @@ export function collectRuns({
     labComparisonRecords,
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
+    nativeCoverage,
   };
   out.timelineSnapshots = buildTimelineSnapshots({
     runs,
     featuredIds,
+    featuredEntries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
     current: {
       generatedAt: out.generatedAt,
       octaneCommit: entryById.get('octane')?.provenance?.commit ?? null,
@@ -697,6 +872,7 @@ export function collectRuns({
       machines,
       nativeObservations: out.nativeObservations,
       nativeObservationRecords: out.nativeObservationRecords,
+      nativeCoverage: out.nativeCoverage,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

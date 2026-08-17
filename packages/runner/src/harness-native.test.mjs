@@ -2,6 +2,7 @@
 // the documented contract, without this repository ever registering a proxy
 // adapter of its own (docs/METHODOLOGY.md "Harness separation").
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,6 +10,14 @@ import test from 'node:test';
 
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 
+import {
+  CONNECTOR_PACKAGE_NAMES,
+  CONNECTOR_PACKAGE_TREES_PROTOCOL,
+  assertConnectorPackageTrees,
+  connectorPackageTreesSha256,
+  createPackageTreeReceipt,
+  resolveConnectorPackageTrees,
+} from './connector-receipt.mjs';
 import { loadNativeAdapter, runNativeHarness, runNativeMatrix } from './harness-native.mjs';
 
 const CASES = [
@@ -16,27 +25,43 @@ const CASES = [
   { name: 'clear', scales: [10000] },
 ];
 
-function fakeEntry(dir) {
-  for (const rows of [0, 1000]) {
+function fakeEntry(dir, { id = 'fake', framework = 'reactlynx' } = {}) {
+  const snapshots = new Map();
+  for (const rows of [0, 1000, 10000, 30000]) {
     const dist = path.join(dir, 'dist', `rows-${rows}`);
     fs.mkdirSync(dist, { recursive: true });
-    fs.writeFileSync(path.join(dist, 'main.lynx.bundle'), 'bundle');
+    const bundlePath = path.join(dist, 'main.lynx.bundle');
+    const bundleBytes = Buffer.from(`bundle:${id}:${rows}`);
+    fs.writeFileSync(bundlePath, bundleBytes);
     fs.writeFileSync(path.join(dist, 'main.web.bundle'), 'bundle');
+    snapshots.set(`${id}:${rows}`, {
+      entryId: id,
+      rows,
+      bundlePath,
+      bundleBytes,
+      sha256: crypto.createHash('sha256').update(bundleBytes).digest('hex'),
+    });
   }
-  return {
-    id: 'fake',
+  const entry = {
+    id,
+    framework,
     provenance: { commit: 'test' },
     dir,
     distDir: path.join(dir, 'dist'),
   };
+  return { entry, snapshots };
 }
 
 function mockAdapter(script) {
   return {
     environment: 'lynx-native-mock-sim',
     calls: script.calls,
-    async loadBundle(entry, { rows, bundlePath }) {
-      script.calls.push(['loadBundle', entry.id, rows, fs.existsSync(bundlePath)]);
+    async loadBundle(entry, { rows, bundlePath, bundleBytes, bundleSha256 }) {
+      script.calls.push([
+        'loadBundle', entry.id, rows, fs.existsSync(bundlePath),
+        Buffer.isBuffer(bundleBytes),
+        crypto.createHash('sha256').update(bundleBytes).digest('hex') === bundleSha256,
+      ]);
     },
     async driveCase(kase, scale) {
       script.calls.push(['driveCase', kase.name, scale]);
@@ -55,7 +80,7 @@ function mockAdapter(script) {
 
 test('native matrix emits schema-shaped native records with DNF accounting', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-harness-'));
-  const entry = fakeEntry(dir);
+  const { entry, snapshots } = fakeEntry(dir);
   const script = {
     calls: [],
     collect: [
@@ -75,8 +100,8 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
         dnf: true,
         failure: { category: 'timeout', phase: 'startup', timeoutMs: 240000 },
         metricContracts: [
-          { name: 'octaneCommitAck', unit: 'ms', boundary: 'native-open-request-to-octane-transport-ack' },
-          { name: 'octaneSecondFrame', unit: 'ms', boundary: 'native-open-request-to-second-frame-after-octane-transport-ack' },
+          { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
+          { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
         ],
       },
     ],
@@ -88,7 +113,9 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
     cases: CASES,
     scales: [1000, 10000],
     reps: 3,
+    startupScales: [0, 1000],
     startupReps: 1,
+    bundleSnapshots: snapshots,
     onProgress: async (partial) => progress.push(partial.length),
   });
 
@@ -112,10 +139,10 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   assert.equal(startupFcp.boundary, 'native-open-to-fcp');
   const settled = records.find((r) => r.metric === 'settled' && r.scale === 0);
   assert.equal(settled.median, 120);
-  const octaneAck = records.find((r) => r.metric === 'octaneCommitAck' && r.scale === 1000);
-  assert.equal(octaneAck.n, 0);
-  assert.equal(octaneAck.dnfCount, 1);
-  assert.deepEqual(octaneAck.failures, [{
+  const fcpDnf = records.find((r) => r.metric === 'fcp' && r.scale === 1000);
+  assert.equal(fcpDnf.n, 0);
+  assert.equal(fcpDnf.dnfCount, 1);
+  assert.deepEqual(fcpDnf.failures, [{
     rep: 0, category: 'timeout', phase: 'startup', timeoutMs: 240000,
   }]);
 
@@ -130,7 +157,7 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
 
 test('known exhausted transport failures become evidenced DNF instead of discarding prior cells', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-transport-dnf-'));
-  const entry = fakeEntry(dir);
+  const { entry, snapshots } = fakeEntry(dir);
   const adapter = mockAdapter({ calls: [], collect: [], startup: [] });
   adapter.driveCase = async () => {
     throw new Error('No response found for clientId: device');
@@ -151,6 +178,7 @@ test('known exhausted transport failures become evidenced DNF instead of discard
     suites: ['table'],
     scales: [1000],
     reps: 2,
+    bundleSnapshots: snapshots,
     onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
   });
   assert.equal(records.length, 1);
@@ -163,17 +191,16 @@ test('known exhausted transport failures become evidenced DNF instead of discard
   assert.equal(checkpoints[0][0].dnfCount, 2);
 });
 
-test('preclassified startup capability failures still emit every metric and scale', async () => {
+test('startup failures remain per-cell and still emit every expected metric and scale', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-capability-'));
-  const entry = fakeEntry(dir);
+  const { entry, snapshots } = fakeEntry(dir);
   const adapter = mockAdapter({ calls: [], collect: [], startup: [] });
   adapter.isStartupUnsupported = () => true;
   adapter.startupUnsupportedReason = (_entry, rows) => ({
-    category: rows === 0
-      ? 'performance-pipeline-unavailable'
-      : 'performance-pipeline-unavailable-inherited',
+    category: 'performance-pipeline-unavailable',
     scale: rows,
-    evidence: { performanceEntryCount: 0 },
+    capabilityScope: 'cell',
+    evidence: { performanceEntryCount: 0, capabilityProven: false },
   });
   adapter.startupUnsupportedContracts = () => [
     { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
@@ -186,6 +213,7 @@ test('preclassified startup capability failures still emit every metric and scal
     suites: ['startup'],
     startupScales: [0, 1000],
     startupReps: 3,
+    bundleSnapshots: snapshots,
   });
   assert.equal(records.length, 4);
   for (const rows of [0, 1000]) {
@@ -198,6 +226,60 @@ test('preclassified startup capability failures still emit every metric and scal
     }
   }
   assert.equal(adapter.calls.some(([method]) => method === 'loadBundle'), false);
+});
+
+test('a startup timeout at scale 0 does not suppress later startup scales', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-cell-scope-'));
+  const { entry, snapshots } = fakeEntry(dir);
+  const script = {
+    calls: [],
+    collect: [],
+    startup: [
+      {
+        dnf: true,
+        failure: { category: 'timeout', capabilityScope: 'cell', scale: 0 },
+        metricContracts: [
+          { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
+          { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
+        ],
+      },
+      { fcpMs: 42, settledMs: 55 },
+    ],
+  };
+  const records = await runNativeMatrix({
+    adapter: mockAdapter(script),
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0, 1000],
+    startupReps: 1,
+    bundleSnapshots: snapshots,
+  });
+  assert.equal(records.find((record) => record.scale === 0 && record.metric === 'fcp').dnfCount, 1);
+  assert.equal(records.find((record) => record.scale === 1000 && record.metric === 'fcp').median, 42);
+  assert.deepEqual(
+    script.calls.filter(([method]) => method === 'loadBundle').map(([, , rows]) => rows),
+    [0, 1000],
+  );
+});
+
+test('startup producers cannot silently change an entry metric contract', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-contract-'));
+  const { entry, snapshots } = fakeEntry(dir, { id: 'octane', framework: 'octane' });
+  const adapter = mockAdapter({
+    calls: [],
+    collect: [],
+    startup: [{ fcpMs: 1, settledMs: 2 }],
+  });
+  await assert.rejects(() => runNativeMatrix({
+    adapter,
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0],
+    startupReps: 1,
+    bundleSnapshots: snapshots,
+  }), /invalid metric set/);
 });
 
 test('adapter modules are validated against the documented contract', async () => {
@@ -242,15 +324,52 @@ test('without an adapter the harness still explains itself instead of proxying',
 });
 
 test('sandbox adapter imports without the device-only connector installed', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-connector-receipt-'));
   const priorSerial = process.env.LYNX_SANDBOX_SERIAL;
-  const priorLeaseId = process.env.LYNX_SANDBOX_LEASE_ID;
+  const priorLeaseReceipt = process.env.LYNX_SANDBOX_LEASE_RECEIPT;
   delete process.env.LYNX_SANDBOX_SERIAL;
-  delete process.env.LYNX_SANDBOX_LEASE_ID;
+  delete process.env.LYNX_SANDBOX_LEASE_RECEIPT;
   try {
     const {
+      assertRuntimeConnectorPackageTrees,
       default: createAdapter,
       findExplorerClient,
     } = await import('../adapters/lynx-sandbox-android.mjs');
+    const unavailable = resolveConnectorPackageTrees({
+      requireContext: { resolve() { throw new Error('not installed'); } },
+    });
+    assert.doesNotThrow(() => assertConnectorPackageTrees(
+      unavailable, { requireAvailable: false },
+    ));
+    assert.equal(unavailable.packages.every((receipt) => (
+      receipt.available === false
+      && receipt.version === null
+      && receipt.resolvedPath === null
+      && receipt.rootSha256 === null
+      && receipt.fileCount === null
+      && receipt.byteCount === null
+      && typeof receipt.reason === 'string'
+    )), true);
+    assert.throws(() => assertConnectorPackageTrees(unavailable), /is unavailable/);
+    const makeConnectorReceipt = (base) => {
+      const packages = CONNECTOR_PACKAGE_NAMES.map((name, index) => {
+        const packageRoot = path.join(base, String(index));
+        fs.mkdirSync(packageRoot, { recursive: true });
+        fs.writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({
+          name, version: `2.0.${index}`,
+        }));
+        fs.writeFileSync(path.join(packageRoot, 'index.js'), `module.exports = ${index};`);
+        return createPackageTreeReceipt(name, packageRoot);
+      });
+      const payload = { protocol: CONNECTOR_PACKAGE_TREES_PROTOCOL, packages };
+      return { ...payload, sha256: connectorPackageTreesSha256(payload) };
+    };
+    const expected = makeConnectorReceipt(path.join(dir, 'connector-expected'));
+    const runtime = makeConnectorReceipt(path.join(dir, 'connector-runtime'));
+    assert.throws(
+      () => assertRuntimeConnectorPackageTrees(expected, runtime),
+      /does not match campaign receipt/,
+    );
     const encodedSerial = encodeURIComponent('sandbox.example:1234');
     assert.equal(findExplorerClient([
       {
@@ -264,11 +383,12 @@ test('sandbox adapter imports without the device-only connector installed', asyn
     ], encodedSerial)?.id, `${encodedSerial}:8903`);
     await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_SERIAL/);
     process.env.LYNX_SANDBOX_SERIAL = 'reused-device:1234';
-    await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_LEASE_ID/);
+    await assert.rejects(() => createAdapter(), /Native lease receipt/);
   } finally {
     if (priorSerial === undefined) delete process.env.LYNX_SANDBOX_SERIAL;
     else process.env.LYNX_SANDBOX_SERIAL = priorSerial;
-    if (priorLeaseId === undefined) delete process.env.LYNX_SANDBOX_LEASE_ID;
-    else process.env.LYNX_SANDBOX_LEASE_ID = priorLeaseId;
+    if (priorLeaseReceipt === undefined) delete process.env.LYNX_SANDBOX_LEASE_RECEIPT;
+    else process.env.LYNX_SANDBOX_LEASE_RECEIPT = priorLeaseReceipt;
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

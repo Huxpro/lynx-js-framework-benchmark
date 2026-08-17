@@ -1,52 +1,45 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import fs from 'node:fs';
 import http from 'node:http';
 import { TransformStream } from 'node:stream/web';
 
-import { CREATE_BUTTON } from '@lynx-bench/shared/workloads';
+import {
+  CREATE_BUTTON,
+  STORM_SELECT_TICKS,
+  STORM_UPDATE_TICKS,
+} from '@lynx-bench/shared/workloads';
+import { NATIVE_STARTUP_PROTOCOL, NATIVE_TABLE_PROTOCOL } from '../src/native-inputs.mjs';
+import {
+  NATIVE_SANDBOX_POLICY,
+  assertNativeLeaseReceipt,
+  buildNativeDeviceCohort,
+  nativeSerialSha256,
+} from '../src/native-protocol.mjs';
+import {
+  assertConnectorPackageTrees,
+  assertConnectorPackageTreesMatch,
+  resolveConnectorPackageTrees,
+} from '../src/connector-receipt.mjs';
 
 const DEFAULT_PORT = 8765;
-const DEFAULT_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_TIMEOUT_MS ?? 30_000);
-const LONG_WORKLOAD_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_LONG_TIMEOUT_MS ?? 240_000);
-if (!Number.isFinite(LONG_WORKLOAD_TIMEOUT_MS) || LONG_WORKLOAD_TIMEOUT_MS <= 0) {
-  throw new Error(`invalid LYNX_SANDBOX_LONG_TIMEOUT_MS=${process.env.LYNX_SANDBOX_LONG_TIMEOUT_MS}.`);
-}
-const OCTANE_TRIGGER_MODE = process.env.LYNX_SANDBOX_OCTANE_TRIGGER ?? 'tap';
-if (!['tap', 'driver'].includes(OCTANE_TRIGGER_MODE)) {
-  throw new Error(`invalid LYNX_SANDBOX_OCTANE_TRIGGER=${JSON.stringify(OCTANE_TRIGGER_MODE)}; expected tap or driver.`);
-}
-const DEVTOOL_TRANSPORT_MODE = process.env.LYNX_SANDBOX_DEVTOOL_TRANSPORT ?? 'direct';
-if (!['direct', 'daemon'].includes(DEVTOOL_TRANSPORT_MODE)) {
-  throw new Error(
-    `invalid LYNX_SANDBOX_DEVTOOL_TRANSPORT=${JSON.stringify(DEVTOOL_TRANSPORT_MODE)}; expected direct or daemon.`,
-  );
-}
-const ROUTER_SETTLE_MS = Number(process.env.LYNX_SANDBOX_ROUTER_SETTLE_MS ?? 100);
-if (!Number.isFinite(ROUTER_SETTLE_MS) || ROUTER_SETTLE_MS < 0) {
-  throw new Error(`invalid LYNX_SANDBOX_ROUTER_SETTLE_MS=${process.env.LYNX_SANDBOX_ROUTER_SETTLE_MS}.`);
-}
-const EXPLORER_RECYCLE_EVERY_PAGES = Number(process.env.LYNX_SANDBOX_RECYCLE_EVERY_PAGES ?? 5);
-if (!Number.isInteger(EXPLORER_RECYCLE_EVERY_PAGES) || EXPLORER_RECYCLE_EVERY_PAGES <= 0) {
-  throw new Error(
-    `invalid LYNX_SANDBOX_RECYCLE_EVERY_PAGES=${process.env.LYNX_SANDBOX_RECYCLE_EVERY_PAGES}.`,
-  );
-}
-const MAX_BATTERY_TEMPERATURE_C = Number(process.env.LYNX_SANDBOX_MAX_BATTERY_TEMP_C ?? 40);
-const THERMAL_GATE_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_THERMAL_GATE_TIMEOUT_MS ?? 300_000);
-const EXPLORER_RECONNECT_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_RECONNECT_TIMEOUT_MS ?? 90_000);
-if (!Number.isFinite(MAX_BATTERY_TEMPERATURE_C)) {
-  throw new Error(`invalid LYNX_SANDBOX_MAX_BATTERY_TEMP_C=${process.env.LYNX_SANDBOX_MAX_BATTERY_TEMP_C}.`);
-}
-if (!Number.isFinite(THERMAL_GATE_TIMEOUT_MS) || THERMAL_GATE_TIMEOUT_MS <= 0) {
-  throw new Error(`invalid LYNX_SANDBOX_THERMAL_GATE_TIMEOUT_MS=${process.env.LYNX_SANDBOX_THERMAL_GATE_TIMEOUT_MS}.`);
-}
-if (!Number.isFinite(EXPLORER_RECONNECT_TIMEOUT_MS) || EXPLORER_RECONNECT_TIMEOUT_MS <= 0) {
-  throw new Error(`invalid LYNX_SANDBOX_RECONNECT_TIMEOUT_MS=${process.env.LYNX_SANDBOX_RECONNECT_TIMEOUT_MS}.`);
-}
+const {
+  defaultTimeoutMs: DEFAULT_TIMEOUT_MS,
+  longWorkloadTimeoutMs: LONG_WORKLOAD_TIMEOUT_MS,
+  renderGraceFrames: RENDER_GRACE_FRAMES,
+  thermalPollMs: THERMAL_POLL_MS,
+  tapSettleMs: TAP_SETTLE_MS,
+  explorerLaunchSettleMs: EXPLORER_LAUNCH_SETTLE_MS,
+  startupPollMs: STARTUP_POLL_MS,
+  octaneTriggerMode: OCTANE_TRIGGER_MODE,
+  devtoolTransport: DEVTOOL_TRANSPORT_MODE,
+  debugRouterSettleMs: ROUTER_SETTLE_MS,
+  explorerRecycleEveryPages: EXPLORER_RECYCLE_EVERY_PAGES,
+  maxBatteryTemperatureC: MAX_BATTERY_TEMPERATURE_C,
+  thermalGateTimeoutMs: THERMAL_GATE_TIMEOUT_MS,
+  explorerReconnectTimeoutMs: EXPLORER_RECONNECT_TIMEOUT_MS,
+} = NATIVE_SANDBOX_POLICY;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 async function loadConnectorModule() {
   try {
     const connector = await import('@byted/agent-lynx/connector');
@@ -59,7 +52,7 @@ async function loadConnectorModule() {
     return connector;
   } catch (error) {
     throw new Error(
-      'lynx sandbox adapter requires device-only @byted/agent-lynx@0.14.4; make it resolvable from packages/runner using the ByteDance registry before running --harness native.',
+      'lynx sandbox adapter requires device-only @byted/agent-lynx; make it resolvable from packages/runner using the ByteDance registry before running --harness native.',
       { cause: error },
     );
   }
@@ -71,7 +64,7 @@ function adb(serial, ...args) {
 
 function calibrateDeviceClock(serial) {
   let best = null;
-  for (let index = 0; index < 7; index++) {
+  for (let index = 0; index < NATIVE_SANDBOX_POLICY.deviceClockCalibrationSamples; index++) {
     const before = Date.now();
     const deviceNow = Number(adb(serial, 'shell', 'date', '+%s%3N'));
     const after = Date.now();
@@ -120,7 +113,7 @@ async function waitForThermalReady(serial) {
     const temperatureReady = state.batteryTemperatureC === null
       || state.batteryTemperatureC <= MAX_BATTERY_TEMPERATURE_C;
     if (statusReady && temperatureReady) return state;
-    await delay(5_000);
+    await delay(THERMAL_POLL_MS);
   } while (Date.now() < deadline);
   throw new Error(
     `Sandbox thermal gate timed out after ${THERMAL_GATE_TIMEOUT_MS}ms: ${JSON.stringify(state)}`,
@@ -135,24 +128,26 @@ function readExplorerPackageVersion(serial) {
   };
 }
 
-function startBundleServer(port, getBundlePath) {
+function startBundleServer(port, getBundle) {
   const server = http.createServer((request, response) => {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? '127.0.0.1'}`);
     if (url.pathname !== '/main.lynx.bundle') {
       response.writeHead(404).end('not found');
       return;
     }
-    const bundlePath = getBundlePath();
-    if (!bundlePath || !fs.existsSync(bundlePath)) {
+    const bundle = getBundle();
+    if (!bundle?.bytes) {
       response.writeHead(503).end('bundle not ready');
       return;
     }
     response.writeHead(200, {
       'Cache-Control': 'no-store',
       'Content-Type': 'application/octet-stream',
-      'Content-Length': fs.statSync(bundlePath).size,
+      'Content-Length': bundle.bytes.length,
+      'X-Lynx-Bench-Sha256': bundle.sha256,
     });
-    fs.createReadStream(bundlePath).pipe(response);
+    response.end(bundle.bytes);
+    bundle.served = (bundle.served ?? 0) + 1;
   });
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -184,23 +179,269 @@ function timingName(kase) {
   return kase.name === 'replace' ? 'create' : kase.name;
 }
 
+function sha256(bytes) {
+  return createHash('sha256').update(bytes).digest('hex');
+}
+
+function assertObject(value, label) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`${label} must be an object.`);
+  }
+  return value;
+}
+
+function assertFinite(value, label) {
+  if (!Number.isFinite(value)) throw new Error(`${label} must be finite.`);
+}
+
+function validateState(state, label) {
+  assertObject(state, label);
+  if (!Number.isInteger(state.rowCount) || state.rowCount < 0) {
+    throw new Error(`${label}.rowCount must be a non-negative integer.`);
+  }
+  for (const key of ['firstId', 'secondId', 'thirdId', 'row998Id', 'selectedId']) {
+    if (state[key] !== null && !Number.isInteger(state[key])) {
+      throw new Error(`${label}.${key} must be an integer or null.`);
+    }
+  }
+  if (state.firstLabel !== null && typeof state.firstLabel !== 'string') {
+    throw new Error(`${label}.firstLabel must be a string or null.`);
+  }
+  return state;
+}
+
+function expectedStormTicks(name) {
+  if (name === 'updateStorm') return STORM_UPDATE_TICKS;
+  if (name === 'selectStorm') return STORM_SELECT_TICKS;
+  return null;
+}
+
+function validateNativeTablePayloadUnchecked(payload, {
+  entryId,
+  expectedName,
+  expectedSource,
+  renderGraceFrames = RENDER_GRACE_FRAMES,
+} = {}) {
+  assertObject(payload, 'Native table payload');
+  if (payload.protocol !== NATIVE_TABLE_PROTOCOL) {
+    throw new Error(
+      `Native table payload protocol ${JSON.stringify(payload.protocol)} does not match ${NATIVE_TABLE_PROTOCOL}.`,
+    );
+  }
+  if (payload.name !== expectedName) {
+    throw new Error(`Native table payload name ${JSON.stringify(payload.name)} does not match ${expectedName}.`);
+  }
+  if (payload.source !== expectedSource) {
+    throw new Error(
+      `Native table payload source ${JSON.stringify(payload.source)} does not match ${expectedSource}.`,
+    );
+  }
+  const expectedBoundary = expectedSource === 'native-tap'
+    ? 'native-input-handler-to-second-native-frame'
+    : 'native-devtool-driver-handler-to-second-native-frame';
+  if (payload.boundary !== expectedBoundary) {
+    throw new Error(`Native table payload boundary ${JSON.stringify(payload.boundary)} is invalid.`);
+  }
+  for (const key of ['startMs', 'firstFrameMs', 'endMs', 'latencyMs']) {
+    assertFinite(payload[key], `Native table payload.${key}`);
+  }
+  if (!(payload.startMs <= payload.firstFrameMs && payload.firstFrameMs <= payload.endMs)) {
+    throw new Error('Native table payload timestamps are not monotonic.');
+  }
+  if (payload.latencyMs !== payload.endMs - payload.startMs || payload.latencyMs < 0) {
+    throw new Error('Native table payload latency does not equal endMs - startMs.');
+  }
+  const renderEvidence = assertObject(payload.renderEvidence, 'Native table payload.renderEvidence');
+  if (renderEvidence.kind !== 'native-animation-frame' || renderEvidence.frames !== renderGraceFrames) {
+    throw new Error(
+      `Native table payload render evidence must contain exactly ${renderGraceFrames} native frames.`,
+    );
+  }
+  validateState(payload.preState, 'Native table payload.preState');
+  validateState(payload.postState, 'Native table payload.postState');
+  const stormTicks = expectedStormTicks(expectedName);
+  if (stormTicks !== null) {
+    const storm = assertObject(payload.stormEvidence, 'Native table payload.stormEvidence');
+    if (storm.expectedTicks !== stormTicks || storm.completedTicks !== stormTicks) {
+      throw new Error(`Native ${expectedName} payload did not complete all ${stormTicks} ticks.`);
+    }
+    if (!Number.isInteger(storm.renderBarriers) || storm.renderBarriers < stormTicks) {
+      throw new Error(`Native ${expectedName} payload lacks one render barrier per tick.`);
+    }
+  }
+  if (entryId === 'octane') {
+    const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
+    if (transport.kind !== 'octane-root.flushTransport' || transport.acknowledged !== true) {
+      throw new Error('Octane Native table payload lacks a flushTransport acknowledgement.');
+    }
+    assertFinite(payload.commitAckMs, 'Native table payload.commitAckMs');
+    if (transport.ackMs !== payload.commitAckMs) {
+      throw new Error('Octane transport acknowledgement timestamp is inconsistent.');
+    }
+    if (!(payload.startMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
+      throw new Error('Octane transport acknowledgement is outside the measured interval.');
+    }
+    if (stormTicks !== null && transport.tickAcknowledgements !== stormTicks) {
+      throw new Error(`Octane Native ${expectedName} lacks ${stormTicks} per-tick transport acknowledgements.`);
+    }
+  } else {
+    const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
+    if (transport.kind !== 'not-exposed' || transport.acknowledged !== false) {
+      throw new Error(
+        'Non-Octane payload must honestly report that no transport acknowledgement is exposed.',
+      );
+    }
+  }
+  return payload;
+}
+
+function validateNativeStartupPayloadUnchecked(payload, {
+  entryId,
+  expectedRows,
+  renderGraceFrames = RENDER_GRACE_FRAMES,
+} = {}) {
+  assertObject(payload, 'Native startup payload');
+  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) {
+    throw new Error(
+      `Native startup payload protocol ${JSON.stringify(payload.protocol)} does not match ${NATIVE_STARTUP_PROTOCOL}.`,
+    );
+  }
+  for (const key of ['moduleStartMs', 'firstFrameMs', 'secondFrameMs']) {
+    assertFinite(payload[key], `Native startup payload.${key}`);
+  }
+  if (!(payload.moduleStartMs <= payload.firstFrameMs && payload.firstFrameMs <= payload.secondFrameMs)) {
+    throw new Error('Native startup payload timestamps are not monotonic.');
+  }
+  const renderEvidence = assertObject(payload.renderEvidence, 'Native startup payload.renderEvidence');
+  if (renderEvidence.kind !== 'native-animation-frame' || renderEvidence.frames !== renderGraceFrames) {
+    throw new Error(
+      `Native startup payload render evidence must contain exactly ${renderGraceFrames} native frames.`,
+    );
+  }
+  const postState = validateState(payload.postState, 'Native startup payload.postState');
+  if (postState.rowCount !== expectedRows) {
+    throw new Error(
+      `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
+    );
+  }
+  if (entryId === 'octane') {
+    assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
+    if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
+      throw new Error('Octane startup transport acknowledgement is outside the render interval.');
+    }
+    const transport = assertObject(payload.transportEvidence, 'Native startup payload.transportEvidence');
+    if (
+      transport.kind !== 'octane-root.render'
+      || transport.acknowledged !== true
+      || transport.ackMs !== payload.commitAckMs
+    ) {
+      throw new Error('Octane Native startup payload lacks a root-render acknowledgement.');
+    }
+  } else if (payload.transportEvidence != null) {
+    throw new Error('Non-Octane startup payload must not claim an Octane transport acknowledgement.');
+  }
+  return payload;
+}
+
+export const NATIVE_PRODUCER_PROTOCOL_ERROR = 'ERR_NATIVE_PRODUCER_PROTOCOL_INVALID';
+
+function asProducerProtocolError(error, evidence) {
+  if (error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR) return error;
+  const wrapped = new Error(error?.message ?? String(error), { cause: error });
+  wrapped.code = NATIVE_PRODUCER_PROTOCOL_ERROR;
+  wrapped.evidence = evidence;
+  return wrapped;
+}
+
+export function isNativeProducerProtocolError(error) {
+  return error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR;
+}
+
+const startupMetricContracts = (entryId) => entryId === 'octane'
+  ? [
+      {
+        name: 'octaneCommitAck',
+        unit: 'ms',
+        boundary: 'native-open-request-to-octane-transport-ack',
+      },
+      {
+        name: 'octaneSecondFrame',
+        unit: 'ms',
+        boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
+      },
+    ]
+  : [
+      { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
+      { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
+    ];
+
+export function nativeProducerProtocolDnf(error, { suite, entry, kase, scale, rows } = {}) {
+  if (!isNativeProducerProtocolError(error)) return null;
+  const entryId = entry?.id ?? entry;
+  const failure = {
+    category: 'producer-protocol-invalid',
+    entry: entryId,
+    workload: suite === 'startup' ? 'startup' : kase?.name ?? kase,
+    scale: suite === 'startup' ? rows : scale,
+    phase: suite,
+    message: error.message,
+    capabilityScope: 'cell',
+    evidence: {
+      producerProtocolValidation: { attempted: true, passed: false },
+      validation: error.evidence ?? null,
+    },
+  };
+  return {
+    dnf: true,
+    failure,
+    metricContracts: suite === 'startup' ? startupMetricContracts(entryId) : undefined,
+  };
+}
+
+export function validateNativeTablePayload(payload, expectations = {}) {
+  try {
+    return validateNativeTablePayloadUnchecked(payload, expectations);
+  } catch (error) {
+    throw asProducerProtocolError(error, {
+      suite: 'table',
+      expectations,
+      payload: payload ?? null,
+    });
+  }
+}
+
+export function validateNativeStartupPayload(payload, expectations = {}) {
+  try {
+    return validateNativeStartupPayloadUnchecked(payload, expectations);
+  } catch (error) {
+    throw asProducerProtocolError(error, {
+      suite: 'startup',
+      expectations,
+      payload: payload ?? null,
+    });
+  }
+}
+
 export function findExplorerClient(clients, encodedSerial) {
   return clients.find((candidate) =>
     candidate.id.startsWith(`${encodedSerial}:`)
     && candidate.info?.AppProcessName === 'com.lynx.explorer');
 }
 
-export default async function createAdapter({ log = () => {} } = {}) {
+export function assertRuntimeConnectorPackageTrees(expected, actual = resolveConnectorPackageTrees({
+  fromPath: import.meta.url,
+})) {
+  return assertConnectorPackageTreesMatch(expected, actual);
+}
+
+export default async function createAdapter({ log = () => {}, campaignIdentity = null } = {}) {
   const serial = process.env.LYNX_SANDBOX_SERIAL;
   if (!serial) {
     throw new Error('lynx sandbox adapter requires LYNX_SANDBOX_SERIAL=<leased adb serial>.');
   }
-  const leaseIdentity = process.env.LYNX_SANDBOX_LEASE_ID;
-  if (!leaseIdentity) {
-    throw new Error(
-      'lynx sandbox adapter requires LYNX_SANDBOX_LEASE_ID=<unique lease issue/expiry identity>; '
-      + 'a serial alone is reused across leases and cannot prove a same-lease cohort.',
-    );
+  const leaseReceipt = assertNativeLeaseReceipt(campaignIdentity?.leaseReceipt);
+  if (leaseReceipt.serialSha256 !== nativeSerialSha256(serial)) {
+    throw new Error('campaign lease receipt does not match LYNX_SANDBOX_SERIAL.');
   }
   const port = Number(process.env.LYNX_SANDBOX_PORT ?? DEFAULT_PORT);
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
@@ -210,8 +451,30 @@ export default async function createAdapter({ log = () => {} } = {}) {
   if (!Number.isInteger(adbServerPort) || adbServerPort <= 0 || adbServerPort > 65535) {
     throw new Error(`invalid ADB_SERVER_PORT: ${process.env.ADB_SERVER_PORT}`);
   }
+  if (
+    !campaignIdentity
+    || typeof campaignIdentity.campaignId !== 'string'
+    || typeof campaignIdentity.matrixContractSha256 !== 'string'
+    || typeof campaignIdentity.inputReceiptSha256 !== 'string'
+    || typeof campaignIdentity.connectorPackageTreesSha256 !== 'string'
+  ) {
+    throw new Error(
+      'lynx sandbox adapter requires campaignIdentity with campaignId, matrixContractSha256, '
+      + 'inputReceiptSha256, connectorPackageTreesSha256, and connectorPackageTrees.',
+    );
+  }
+  assertConnectorPackageTrees(campaignIdentity.connectorPackageTrees);
+  if (
+    campaignIdentity.connectorPackageTrees.sha256
+    !== campaignIdentity.connectorPackageTreesSha256
+  ) {
+    throw new Error('campaign connector package-tree digest does not match its receipt.');
+  }
+  const connectorPackageTrees = assertRuntimeConnectorPackageTrees(
+    campaignIdentity.connectorPackageTrees,
+  );
 
-  let bundlePath = null;
+  let activeBundle = null;
   let session = null;
   let pageCount = 0;
   let currentEntryId = null;
@@ -228,12 +491,9 @@ export default async function createAdapter({ log = () => {} } = {}) {
   let timingEvents = [];
   let startupEvents = [];
   let lastStartupProbe = null;
-  let octanePipelineCapability = null;
   const timingWaiters = new Set();
-  const unsupportedTableEntries = new Map();
   const unsupportedTableCells = new Map();
   const unsupportedPrestateScales = new Map();
-  const unsupportedStartupEntries = new Map();
   const unsupportedStartupCells = new Map();
   const buttonPoints = new Map();
   const cellGeometry = new Map();
@@ -260,7 +520,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
       if (settle && ROUTER_SETTLE_MS > 0) await delay(ROUTER_SETTLE_MS);
     }
   };
-  const server = await startBundleServer(port, () => bundlePath);
+  const server = await startBundleServer(port, () => activeBundle);
 
   adb(serial, 'reverse', `tcp:${port}`, `tcp:${port}`);
   // DebugRouter accepts a single USB connector. A previous interrupted run can
@@ -275,7 +535,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
   while (!client && Date.now() < clientDeadline) {
     const clients = await connectorCall('initial-client-discovery', () => connector.listClients());
     client = findExplorerClient(clients, encodedSerial);
-    if (!client) await delay(250);
+    if (!client) await delay(NATIVE_SANDBOX_POLICY.clientDiscoveryPollMs);
   }
   if (!client) {
     server.close();
@@ -294,28 +554,49 @@ export default async function createAdapter({ log = () => {} } = {}) {
   const osVersion = String(device.osVersion ?? adb(serial, 'shell', 'getprop', 'ro.build.version.release'));
   const environment = `lynx-native-android-${model}-${osVersion}`
     + `-devtool-${DEVTOOL_TRANSPORT_MODE}-recycle${EXPLORER_RECYCLE_EVERY_PAGES}`;
-  const deviceLeaseId = createHash('sha256')
-    .update(`${serial}\0${leaseIdentity}`)
+  const deviceLeaseId = leaseReceipt.deviceLeaseId;
+  const harnessConfig = {
+    ...NATIVE_SANDBOX_POLICY,
+    tableProtocol: NATIVE_TABLE_PROTOCOL,
+    startupProtocol: NATIVE_STARTUP_PROTOCOL,
+    campaignId: campaignIdentity.campaignId,
+    matrixContractSha256: campaignIdentity.matrixContractSha256,
+    inputReceiptSha256: campaignIdentity.inputReceiptSha256,
+    connectorPackageTreesSha256: campaignIdentity.connectorPackageTreesSha256,
+  };
+  const harnessConfigId = createHash('sha256')
+    .update(JSON.stringify(harnessConfig))
     .digest('hex')
     .slice(0, 12);
-  const harnessConfigId = createHash('sha256')
-    .update(JSON.stringify({
-      devtoolTransport: DEVTOOL_TRANSPORT_MODE,
-      debugRouterSettleMs: ROUTER_SETTLE_MS,
-      explorerRecycleEveryPages: EXPLORER_RECYCLE_EVERY_PAGES,
-      maxBatteryTemperatureC: MAX_BATTERY_TEMPERATURE_C,
-      octaneTriggerMode: OCTANE_TRIGGER_MODE,
-      longWorkloadTimeoutMs: LONG_WORKLOAD_TIMEOUT_MS,
-      transientAttempts: Number(process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS ?? 3),
-    }))
-    .digest('hex')
-    .slice(0, 8);
+  const cpuModel = adb(serial, 'shell', 'getprop', 'ro.product.board') || model;
+  const cores = Number(adb(serial, 'shell', 'nproc')) || null;
+  const deviceCohort = buildNativeDeviceCohort({
+    serialSha256: leaseReceipt.serialSha256,
+    environment,
+    hardware: {
+      platform: 'android',
+      osVersion,
+      cpuModel,
+      cores,
+      deviceModel: device.deviceModel ?? device.model ?? model,
+      app: device.App,
+      appVersion: device.AppVersion,
+      explorerPackage,
+      debugRouterVersion: device.debugRouterVersion,
+      lynxSdkVersion: device.sdkVersion,
+    },
+    campaignId: campaignIdentity.campaignId,
+    matrixContractSha256: campaignIdentity.matrixContractSha256,
+    inputReceiptSha256: campaignIdentity.inputReceiptSha256,
+    connectorPackageTreesSha256: campaignIdentity.connectorPackageTreesSha256,
+    harnessConfigId,
+  });
   const machine = {
     id: `${environment}-${deviceLeaseId}-${harnessConfigId}`,
     platform: 'android',
     osVersion,
-    cpuModel: adb(serial, 'shell', 'getprop', 'ro.product.board') || model,
-    cores: Number(adb(serial, 'shell', 'nproc')) || null,
+    cpuModel,
+    cores,
     node: null,
     deviceModel: device.deviceModel ?? device.model ?? model,
     app: device.App,
@@ -323,22 +604,19 @@ export default async function createAdapter({ log = () => {} } = {}) {
     explorerPackage,
     debugRouterVersion: device.debugRouterVersion,
     lynxSdkVersion: device.sdkVersion,
-    agentLynxVersion: '0.14.4',
-    devtoolTransport: DEVTOOL_TRANSPORT_MODE,
-    debugRouterSettleMs: ROUTER_SETTLE_MS,
-    explorerRecycleEveryPages: EXPLORER_RECYCLE_EVERY_PAGES,
-    maxBatteryTemperatureC: MAX_BATTERY_TEMPERATURE_C,
-    longWorkloadTimeoutMs: LONG_WORKLOAD_TIMEOUT_MS,
-    transientAttempts: Number(process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS ?? 3),
-    thermalGateTimeoutMs: THERMAL_GATE_TIMEOUT_MS,
-    explorerReconnectTimeoutMs: EXPLORER_RECONNECT_TIMEOUT_MS,
+    connectorPackageTrees,
+    ...harnessConfig,
     harnessConfigId,
-    octaneTriggerMode: OCTANE_TRIGGER_MODE,
+    serialSha256: leaseReceipt.serialSha256,
     deviceLeaseId,
-    deviceLeaseIdentitySource: 'explicit-env',
+    leaseReceipt,
+    deviceCohort,
+    deviceCohortId: deviceCohort.id,
+    deviceLeaseIdentitySource: 'structured-receipt-v1',
     deviceClockOffsetMs: deviceClock.offsetMs,
     deviceClockCalibrationRttMs: deviceClock.rttMs,
     thermalStart,
+    servedInputs: [],
     transientRecoveries: [],
   };
 
@@ -435,7 +713,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
       }
       if (status?.fatal) throw new Error(`Octane Native root failed: ${status.fatal}`);
       if (status?.ready) return;
-      await delay(16);
+      await delay(NATIVE_SANDBOX_POLICY.octaneReadyPollMs);
     }
     throw new Error('timeout waiting for the Octane Native background root.');
   }
@@ -515,7 +793,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
         clickCount: 1,
       });
     }
-    await delay(10);
+    if (TAP_SETTLE_MS > 0) await delay(TAP_SETTLE_MS);
   }
 
   async function clickableAncestor(nodeId) {
@@ -570,8 +848,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
   async function waitForTiming(expectedName, timeoutMs = DEFAULT_TIMEOUT_MS) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-      const index = timingEvents.findIndex((value) =>
-        value?.name === expectedName && Number.isFinite(value.latencyMs));
+      const index = timingEvents.findIndex((value) => value?.name === expectedName);
       if (index !== -1) return timingEvents.splice(index, 1)[0];
       await new Promise((resolve) => {
         timingWaiters.add(resolve);
@@ -627,16 +904,18 @@ export default async function createAdapter({ log = () => {} } = {}) {
             try {
               startupEvents.push(JSON.parse(args[startupMarker + 1].value));
               notifyTimingWaiters();
-            } catch {
-              // Ignore malformed startup markers.
+            } catch (error) {
+              startupEvents.push({ malformedPayload: args[startupMarker + 1].value, error: String(error) });
+              notifyTimingWaiters();
             }
           }
           if (marker === -1 || typeof args[marker + 1]?.value !== 'string') continue;
           try {
             timingEvents.push(JSON.parse(args[marker + 1].value));
             notifyTimingWaiters();
-          } catch {
-            // Ignore unrelated or malformed console output.
+          } catch (error) {
+            timingEvents.push({ malformedPayload: args[marker + 1].value, error: String(error) });
+            notifyTimingWaiters();
           }
         }
       } catch (error) {
@@ -700,7 +979,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
         ready = true;
         break;
       }
-      await delay(250);
+      await delay(NATIVE_SANDBOX_POLICY.clientDiscoveryPollMs);
     }
     if (!ready) throw new Error(`Lynx Explorer did not reconnect on sandbox ${serial}.`);
     await connectorCall(
@@ -708,19 +987,28 @@ export default async function createAdapter({ log = () => {} } = {}) {
       () => connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true),
     );
     session = null;
-    await delay(500);
+    if (EXPLORER_LAUNCH_SETTLE_MS > 0) await delay(EXPLORER_LAUNCH_SETTLE_MS);
   }
 
   async function measuredTap(expectedName, trigger, timeoutMs) {
     timingEvents = [];
     await trigger();
-    return waitForTiming(expectedName, timeoutMs);
+    const observed = await waitForTiming(expectedName, timeoutMs);
+    const expectedSource = currentEntryId === 'octane' && OCTANE_TRIGGER_MODE === 'driver'
+      ? 'devtool-driver'
+      : 'native-tap';
+    return validateNativeTablePayload(observed, {
+      entryId: currentEntryId,
+      expectedName,
+      expectedSource,
+    });
   }
 
-  function assertOctaneSnapshot(kase, scale, before, observed) {
-    const snapshot = observed?.snapshot;
+  function assertPostState(kase, scale, observed) {
+    const before = observed?.preState;
+    const snapshot = observed?.postState;
     if (!snapshot || !Number.isInteger(snapshot.rowCount)) {
-      throw new Error(`Octane Native ${kase.name}@${scale} produced no post-ACK state snapshot.`);
+      throw new Error(`Native ${kase.name}@${scale} produced no post-action state snapshot.`);
     }
     let valid = false;
     switch (kase.name) {
@@ -735,11 +1023,11 @@ export default async function createAdapter({ log = () => {} } = {}) {
       case 'clear': valid = snapshot.rowCount === 0; break;
       case 'updateStorm': valid = snapshot.rowCount === scale && snapshot.firstLabel === 'bench 50'; break;
       case 'selectStorm': valid = snapshot.rowCount === scale && snapshot.selectedId === snapshot.firstId; break;
-      default: throw new Error(`no Octane Native predicate for ${kase.name}.`);
+      default: throw new Error(`no Native post-action predicate for ${kase.name}.`);
     }
     if (!valid) {
       throw new Error(
-        `Octane Native post-ACK predicate failed for ${kase.name}@${scale}: `
+        `Native post-action predicate failed for ${kase.name}@${scale}: `
         + JSON.stringify({ before, after: snapshot }),
       );
     }
@@ -763,13 +1051,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
       ? () => evaluateOctaneDriver('create', scale)
       : () => tapText(CREATE_BUTTON[scale]);
     const observed = await measuredTap('create', trigger, timeoutMs);
-    if (currentEntryId === 'octane') {
-      const expectedSource = OCTANE_TRIGGER_MODE === 'tap' ? 'native-tap' : 'devtool-driver';
-      if (observed.source !== expectedSource) {
-        throw new Error(`Octane Native create@${scale} used ${observed.source}; expected ${expectedSource}.`);
-      }
-      assertOctaneSnapshot({ name: 'create' }, scale, null, observed);
-    }
+    assertPostState({ name: 'create' }, scale, observed);
   }
 
   const timeoutForTable = (kase) => currentEntryId === 'octane'
@@ -785,9 +1067,9 @@ export default async function createAdapter({ log = () => {} } = {}) {
     let timingInfoLogged = false;
     let nextFrameDebugAt = 0;
     let nextStartupPollAt = 0;
+    let pipelineEntry = null;
     while (Date.now() < deadline) {
-      const shouldProbePipeline = currentEntryId !== 'octane' || octanePipelineCapability !== false;
-      const result = shouldProbePipeline
+      const result = currentEntryId !== 'octane'
         ? await cdp(
           'Performance.getAllPerformanceEntries',
           {},
@@ -803,8 +1085,16 @@ export default async function createAdapter({ log = () => {} } = {}) {
         && candidate.name === 'loadBundle'
         && Number.isFinite(candidate.pipelineEnd));
       if (entry?.lynxFcp && Number.isFinite(entry.openTime)) {
-        if (currentEntryId === 'octane') octanePipelineCapability = true;
-        return { kind: 'pipeline', entry };
+        const fcpDuration = entry.totalFcp?.duration ?? entry.lynxFcp?.duration;
+        if (
+          !Number.isFinite(fcpDuration)
+          || !Number.isFinite(entry.pipelineEnd)
+          || entry.pipelineEnd < entry.openTime
+          || fcpDuration < 0
+        ) {
+          throw new Error('invalid Native loadBundle pipeline payload: ' + JSON.stringify(entry));
+        }
+        pipelineEntry = entry;
       }
       const timingInfo = currentEntryId === 'octane'
         ? null
@@ -833,11 +1123,9 @@ export default async function createAdapter({ log = () => {} } = {}) {
         timingInfoLogged = true;
         log(`  [sandbox:startup-timing-info] ${JSON.stringify(timingInfo)}`);
       }
-      let startup = currentEntryId === 'octane'
-        ? startupEvents.findLast((candidate) => Number.isFinite(candidate?.secondFrameMs)) ?? null
-        : null;
-      if (currentEntryId === 'octane' && startup === null && Date.now() >= nextStartupPollAt) {
-        nextStartupPollAt = Date.now() + 250;
+      let startup = startupEvents.findLast((candidate) => candidate?.protocol != null) ?? null;
+      if (startup === null && Date.now() >= nextStartupPollAt) {
+        nextStartupPollAt = Date.now() + NATIVE_SANDBOX_POLICY.producerProbePollMs;
         const startupResult = await cdp('Runtime.evaluate', {
           expression: `JSON.stringify(globalThis.__LYNX_BENCH_STARTUP__ ?? null)`,
           returnByValue: true,
@@ -848,7 +1136,7 @@ export default async function createAdapter({ log = () => {} } = {}) {
       }
       const openTime = currentEntryId === 'octane'
         ? currentOpenTime
-        : timingInfo?.extra_timing?.open_time;
+        : timingInfo?.extra_timing?.open_time ?? currentOpenTime;
       if (
         process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1'
         && currentEntryId === 'octane'
@@ -857,30 +1145,29 @@ export default async function createAdapter({ log = () => {} } = {}) {
         nextFrameDebugAt = Date.now() + 1000;
         log(`  [sandbox:startup-frame-state] ${JSON.stringify({ openTime, startupEvents })}`);
       }
-      if (
-        Number.isFinite(openTime)
-        && Number.isFinite(startup?.moduleStartMs)
-        && Number.isFinite(startup?.commitAckMs)
-        && Number.isFinite(startup?.firstFrameMs)
-        && Number.isFinite(startup?.secondFrameMs)
-        && startup.moduleStartMs >= openTime
-        && startup.commitAckMs >= startup.moduleStartMs
-        && startup.firstFrameMs >= openTime
-        && startup.firstFrameMs >= startup.commitAckMs
-        && startup.secondFrameMs >= startup.firstFrameMs
-      ) {
+      if (startup != null) {
+        validateNativeStartupPayload(startup, {
+          entryId: currentEntryId,
+          expectedRows: currentRows,
+        });
+        if (!Number.isFinite(openTime) || startup.moduleStartMs < openTime) {
+          throw new Error('Native startup payload predates the adapter open request.');
+        }
         if (process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1') {
           log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup })}`);
         }
-        octanePipelineCapability = false;
-        return {
-          kind: 'octane-commit-fallback',
-          openTime,
-          timingInfo,
-          startup,
-        };
+        if (currentEntryId === 'octane') {
+          return { kind: 'octane-commit-fallback', openTime, timingInfo, startup };
+        }
+        if (pipelineEntry != null) {
+          return {
+            kind: 'pipeline',
+            entry: pipelineEntry,
+            producer: { openTime, timingInfo, startup },
+          };
+        }
       }
-      await delay(16);
+      await delay(STARTUP_POLL_MS);
     }
     const error = new Error('timeout waiting for the Native loadBundle timing pipeline.');
     error.evidence = { lastStartupProbe };
@@ -892,54 +1179,26 @@ export default async function createAdapter({ log = () => {} } = {}) {
     machine,
 
     isTableUnsupported(entry, kase, scale) {
-      return unsupportedTableEntries.has(entry.id)
-        || unsupportedTableCells.has(`${entry.id}:${kase.name}:${scale}`)
+      return unsupportedTableCells.has(`${entry.id}:${kase.name}:${scale}`)
         || (kase.pre !== 'empty' && unsupportedPrestateScales.has(`${entry.id}:${scale}`));
     },
 
     tableUnsupportedReason(entry, kase, scale) {
-      return unsupportedTableEntries.get(entry.id)
-        ?? unsupportedTableCells.get(`${entry.id}:${kase.name}:${scale}`)
+      return unsupportedTableCells.get(`${entry.id}:${kase.name}:${scale}`)
         ?? (kase.pre !== 'empty' ? unsupportedPrestateScales.get(`${entry.id}:${scale}`) : null)
         ?? null;
     },
 
     isStartupUnsupported(entry, rows) {
-      return unsupportedStartupEntries.has(entry.id)
-        || unsupportedStartupCells.has(`${entry.id}:${rows}`);
+      return unsupportedStartupCells.has(`${entry.id}:${rows}`);
     },
 
     startupUnsupportedReason(entry, rows) {
-      const entryFailure = unsupportedStartupEntries.get(entry.id);
-      if (entryFailure) {
-        return rows === entryFailure.scale
-          ? entryFailure
-          : {
-              ...entryFailure,
-              category: 'performance-pipeline-unavailable-inherited',
-              inheritedFromScale: entryFailure.scale,
-              scale: rows,
-            };
-      }
       return unsupportedStartupCells.get(`${entry.id}:${rows}`) ?? null;
     },
 
     startupUnsupportedContracts(entry) {
-      return entry.id === 'octane'
-        ? [
-            {
-              name: 'octaneCommitAck', unit: 'ms',
-              boundary: 'native-open-request-to-octane-transport-ack',
-            },
-            {
-              name: 'octaneSecondFrame', unit: 'ms',
-              boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
-            },
-          ]
-        : [
-            { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
-            { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
-          ];
+      return startupMetricContracts(entry.id);
     },
 
     async recoverTransient(error) {
@@ -966,6 +1225,17 @@ export default async function createAdapter({ log = () => {} } = {}) {
     },
 
     async classifyFailure(error, context) {
+      const producerDnf = nativeProducerProtocolDnf(error, context);
+      if (producerDnf != null) {
+        if (context.suite === 'startup') {
+          unsupportedStartupCells.set(`${context.entry.id}:${context.rows}`, producerDnf.failure);
+        } else {
+          unsupportedTableCells.set(
+            `${context.entry.id}:${context.kase.name}:${context.scale}`, producerDnf.failure,
+          );
+        }
+        return producerDnf;
+      }
       const message = String(error);
       if (
         !message.includes('No response found')
@@ -994,29 +1264,34 @@ export default async function createAdapter({ log = () => {} } = {}) {
         dnf: true,
         failure,
         metricContracts: context.suite === 'startup'
-          ? context.entry.id === 'octane'
-            ? [
-                {
-                  name: 'octaneCommitAck', unit: 'ms',
-                  boundary: 'native-open-request-to-octane-transport-ack',
-                },
-                {
-                  name: 'octaneSecondFrame', unit: 'ms',
-                  boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
-                },
-              ]
-            : [
-                { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
-                { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
-              ]
+          ? startupMetricContracts(context.entry.id)
           : undefined,
       };
     },
 
-    async loadBundle(entry, { rows, bundlePath: nextBundlePath, suite }) {
+    async loadBundle(entry, { rows, bundleBytes, bundleSha256, suite }) {
+      const thermal = await waitForThermalReady(serial);
+      machine.thermalGates ??= [];
+      machine.thermalGates.push({ entry: entry.id, rows, suite, ...thermal });
       if (pageCount > 0 && pageCount % EXPLORER_RECYCLE_EVERY_PAGES === 0) await restartExplorer();
       else if (session) await stopConsoleStream();
-      bundlePath = nextBundlePath;
+      if (!Buffer.isBuffer(bundleBytes) || typeof bundleSha256 !== 'string') {
+        throw new Error(`${entry.id} rows-${rows}: adapter requires immutable bundleBytes and bundleSha256.`);
+      }
+      const actualBundleSha256 = sha256(bundleBytes);
+      if (actualBundleSha256 !== bundleSha256) {
+        throw new Error(
+          `${entry.id} rows-${rows}: in-memory bundle sha256 ${actualBundleSha256} `
+          + `does not match receipt ${bundleSha256}.`,
+        );
+      }
+      activeBundle = {
+        entryId: entry.id,
+        rows,
+        bytes: bundleBytes,
+        sha256: bundleSha256,
+        served: 0,
+      };
       if (currentEntryId !== entry.id) {
         buttonPoints.clear();
         cellGeometry.clear();
@@ -1049,9 +1324,20 @@ export default async function createAdapter({ log = () => {} } = {}) {
         );
         session = sessions.find((candidate) => candidate.url === url) ?? null;
         if (session) break;
-        await delay(50);
+        await delay(NATIVE_SANDBOX_POLICY.sessionDiscoveryPollMs);
       }
       if (!session) throw new Error(`Native session did not appear for ${entry.id} rows-${rows}.`);
+      if (activeBundle.served < 1) {
+        throw new Error(`Native session opened without fetching pinned ${entry.id} rows-${rows} bytes.`);
+      }
+      machine.servedInputs.push({
+        entry: entry.id,
+        rows,
+        suite,
+        sha256: bundleSha256,
+        bytes: bundleBytes.length,
+        served: activeBundle.served,
+      });
       pageCount++;
       await startConsoleStream();
       if (entry.id === 'octane' && suite !== 'startup') await waitForOctaneReady();
@@ -1059,10 +1345,6 @@ export default async function createAdapter({ log = () => {} } = {}) {
     },
 
     async driveCase(kase, scale) {
-      if (unsupportedTableEntries.has(currentEntryId)) {
-        lastObserved = { dnf: true, failure: unsupportedTableEntries.get(currentEntryId) };
-        return;
-      }
       let phase = 'operation';
       try {
         if ((currentEntryId !== 'octane' || OCTANE_TRIGGER_MODE === 'tap') && kase.trigger.button) {
@@ -1077,14 +1359,13 @@ export default async function createAdapter({ log = () => {} } = {}) {
             ? () => evaluateOctaneDriver('select', 5)
             : () => tapCell('col-label', 5);
           const preselected = await measuredTap('select', preselect, DEFAULT_TIMEOUT_MS);
-          if (currentEntryId === 'octane' && preselected.snapshot?.selectedId == null) {
-            throw new Error(`Octane Native preselect@${scale} did not select a row.`);
+          if (preselected.postState?.selectedId == null) {
+            throw new Error(`Native preselect@${scale} did not select a row.`);
           }
         }
 
         const expectedName = timingName(kase);
         phase = 'operation';
-        const before = currentEntryId === 'octane' ? await octaneSnapshot() : null;
         const trigger = currentEntryId === 'octane'
           ? octaneTrigger(kase, scale)
           : kase.trigger.button
@@ -1095,16 +1376,19 @@ export default async function createAdapter({ log = () => {} } = {}) {
           trigger,
           timeoutForTable(kase),
         );
-        if (currentEntryId === 'octane') {
-          const expectedSource = OCTANE_TRIGGER_MODE === 'tap' ? 'native-tap' : 'devtool-driver';
-          if (lastObserved.source !== expectedSource) {
-            throw new Error(
-              `Octane Native ${kase.name}@${scale} used ${lastObserved.source}; expected ${expectedSource}.`,
-            );
-          }
-          assertOctaneSnapshot(kase, scale, before, lastObserved);
-        }
+        assertPostState(kase, scale, lastObserved);
       } catch (error) {
+        const producerDnf = nativeProducerProtocolDnf(error, {
+          suite: 'table', entry: currentEntryId, kase, scale,
+        });
+        if (producerDnf != null) {
+          unsupportedTableCells.set(
+            `${currentEntryId}:${kase.name}:${scale}`, producerDnf.failure,
+          );
+          log(`  [sandbox] ${currentEntryId} ${kase.name}@${scale} DNF: ${error.message}`);
+          lastObserved = producerDnf;
+          return;
+        }
         if (String(error).includes('timeout')) {
           const evidence = currentEntryId === 'octane' ? await octaneTimeoutEvidence() : null;
           const timeoutMs = timeoutForTable(kase);
@@ -1119,20 +1403,15 @@ export default async function createAdapter({ log = () => {} } = {}) {
             message: String(error),
             evidence,
           };
-          if ((phase === 'prestate' || kase.name === 'create') && scale > 1000) {
+          if (phase === 'prestate' || kase.name === 'create') {
             unsupportedPrestateScales.set(`${currentEntryId}:${scale}`, {
               ...failure,
               category: 'unreachable-prestate',
               originatingWorkload: kase.name,
             });
           }
-          if (kase.name === 'create' && scale === 1000) {
-            unsupportedTableEntries.set(currentEntryId, failure);
-            log(`  [sandbox] ${currentEntryId} table interactions unsupported; remaining table cells are DNF`);
-          } else {
-            unsupportedTableCells.set(`${currentEntryId}:${kase.name}:${scale}`, failure);
-            log(`  [sandbox] ${currentEntryId} ${kase.name}@${scale} unsupported; remaining reps are DNF`);
-          }
+          unsupportedTableCells.set(`${currentEntryId}:${kase.name}:${scale}`, failure);
+          log(`  [sandbox] ${currentEntryId} ${kase.name}@${scale} DNF; remaining reps for this cell are DNF`);
           await restartExplorer();
           lastObserved = { dnf: true, failure };
           return;
@@ -1162,7 +1441,11 @@ export default async function createAdapter({ log = () => {} } = {}) {
           return {
             fcpMs: entry.totalFcp?.duration ?? entry.lynxFcp.duration,
             settledMs: entry.pipelineEnd - entry.openTime,
-            detail: { kind: observed.kind, pipeline: entry },
+            detail: {
+              kind: observed.kind,
+              pipeline: entry,
+              producer: observed.producer,
+            },
           };
         }
         const { openTime, startup } = observed;
@@ -1182,43 +1465,39 @@ export default async function createAdapter({ log = () => {} } = {}) {
           detail: observed,
         };
       } catch (error) {
+        const producerDnf = nativeProducerProtocolDnf(error, {
+          suite: 'startup', entry: currentEntryId, rows: currentRows,
+        });
+        if (producerDnf != null) {
+          unsupportedStartupCells.set(
+            `${currentEntryId}:${currentRows}`, producerDnf.failure,
+          );
+          log(`  [sandbox] ${currentEntryId} startup@${currentRows} DNF: ${error.message}`);
+          return producerDnf;
+        }
         const message = String(error);
         if (message.includes('No response found')) throw error;
         if (message.includes('timeout')) {
-          log(`  [sandbox] ${currentEntryId} startup@${currentRows} unsupported: ${message}`);
-          const entryCapabilityMissing = currentEntryId !== 'octane' && currentRows === 0;
+          log(`  [sandbox] ${currentEntryId} startup@${currentRows} DNF: ${message}`);
           const failure = {
-            category: entryCapabilityMissing ? 'performance-pipeline-unavailable' : 'timeout',
+            category: 'timeout',
             entry: currentEntryId,
             workload: 'startup',
             scale: currentRows,
             timeoutMs: timeoutForStartup(),
             message,
-            capabilityScope: entryCapabilityMissing ? 'entry' : 'cell',
-            evidence: error.evidence ?? { lastStartupProbe },
+            capabilityScope: 'cell',
+            evidence: {
+              ...(error.evidence ?? { lastStartupProbe }),
+              capabilityProven: false,
+              producerProtocolExpected: NATIVE_STARTUP_PROTOCOL,
+            },
           };
-          if (entryCapabilityMissing) unsupportedStartupEntries.set(currentEntryId, failure);
-          else unsupportedStartupCells.set(`${currentEntryId}:${currentRows}`, failure);
+          unsupportedStartupCells.set(`${currentEntryId}:${currentRows}`, failure);
           return {
             dnf: true,
             failure,
-            metricContracts: currentEntryId === 'octane'
-              ? [
-                  {
-                    name: 'octaneCommitAck',
-                    unit: 'ms',
-                    boundary: 'native-open-request-to-octane-transport-ack',
-                  },
-                  {
-                    name: 'octaneSecondFrame',
-                    unit: 'ms',
-                    boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
-                  },
-                ]
-              : [
-                  { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
-                  { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
-                ],
+            metricContracts: startupMetricContracts(currentEntryId),
           };
         }
         throw error;
