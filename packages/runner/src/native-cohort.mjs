@@ -29,9 +29,13 @@ export function validateNativeMachine(machine) {
     sdkVersion: required(machine.sdkVersion, 'sdkVersion'),
     debugRouterVersion: required(machine.debugRouterVersion, 'debugRouterVersion'),
     agentLynxVersion: required(machine.agentLynxVersion, 'agentLynxVersion'),
+    appApkSha256: required(machine.appApkSha256, 'appApkSha256'),
     physicalDeviceId: required(machine.physicalDeviceId, 'physicalDeviceId'),
     leaseId: required(machine.leaseId, 'leaseId'),
   };
+  if (!/^[0-9a-f]{64}$/.test(validated.appApkSha256)) {
+    throw new Error('Native machine.appApkSha256 must be a lowercase SHA-256');
+  }
   if (!Number.isSafeInteger(validated.cores) || validated.cores <= 0) {
     throw new Error('Native machine.cores must be a positive safe integer');
   }

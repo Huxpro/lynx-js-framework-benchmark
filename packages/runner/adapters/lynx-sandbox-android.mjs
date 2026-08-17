@@ -1,26 +1,45 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import http from 'node:http';
-import { ReadableStream } from 'node:stream/web';
+import { TransformStream } from 'node:stream/web';
 
 import { CREATE_BUTTON } from '@lynx-bench/shared/workloads';
+import {
+  assertNativePostState,
+  captureNativePreState,
+  collectValidatedNativeStartup,
+  createNativeDomOracle,
+} from '../src/native-dom-oracle.mjs';
 
 const DEFAULT_PORT = 8765;
 const DEFAULT_TIMEOUT_MS = Number(process.env.LYNX_SANDBOX_TIMEOUT_MS ?? 30_000);
 const OCTANE_STARTUP_MODE = process.env.LYNX_SANDBOX_OCTANE_STARTUP === '1';
+const ROUTER_SETTLE_MS = Number(process.env.LYNX_SANDBOX_ROUTER_SETTLE_MS ?? 100);
 export const NATIVE_TABLE_RESULT_MARKER = '__NATIVE_BENCH_RESULT__';
 export const NATIVE_TABLE_PROTOCOL = 'vue-lynx-native-bench-v1';
+export const NATIVE_STARTUP_PROTOCOL = 'vue-lynx-native-startup-v1';
 const TIMING_TOLERANCE_MS = 0.001;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export function nativeRenderGraceMs(rows, timeoutMs, env = process.env) {
+  const fallback = rows >= 30000 ? 15_000 : rows >= 10000 ? 5_000 : 500;
+  const raw = rows >= 30000 ? env.LYNX_SANDBOX_RENDER_GRACE_30K_MS : undefined;
+  const graceMs = raw === undefined ? fallback : Number(raw);
+  if (!Number.isSafeInteger(graceMs) || graceMs < 0) {
+    throw new Error(`invalid LYNX_SANDBOX_RENDER_GRACE_30K_MS: ${raw}`);
+  }
+  return Math.min(graceMs, timeoutMs);
+}
+
 async function loadConnectorFactory() {
   try {
     const connector = await import('@byted/agent-lynx/connector');
-    if (typeof connector.createDefaultConnector !== 'function') {
-      throw new TypeError('module does not export createDefaultConnector().');
+    if (typeof connector.Connector !== 'function'
+      || typeof connector.AndroidTransport !== 'function') {
+      throw new TypeError('module does not export Connector and AndroidTransport.');
     }
-    return connector.createDefaultConnector;
+    return () => new connector.Connector([new connector.AndroidTransport()]);
   } catch (error) {
     throw new Error(
       'lynx sandbox adapter requires device-only @byted/agent-lynx@0.14.4; make it resolvable from packages/runner using the ByteDance registry before running --harness native.',
@@ -31,6 +50,28 @@ async function loadConnectorFactory() {
 
 function adb(serial, ...args) {
   return execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8' }).trim();
+}
+
+export function installedPackageSha256(serial, packageName, runAdb = adb) {
+  const packagePaths = String(
+    runAdb(serial, 'shell', 'pm', 'path', packageName) ?? '',
+  ).split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => line.startsWith('package:') ? line.slice('package:'.length) : null);
+  if (packagePaths.length !== 1 || !packagePaths[0]) {
+    throw new Error(
+      `expected exactly one installed APK for ${packageName}, found ${packagePaths.length}.`,
+    );
+  }
+  const output = String(
+    runAdb(serial, 'shell', 'sha256sum', packagePaths[0]) ?? '',
+  ).trim();
+  const sha256 = output.split(/\s+/, 1)[0]?.toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(sha256)) {
+    throw new Error(`could not verify installed APK SHA-256 for ${packageName}.`);
+  }
+  return sha256;
 }
 
 function calibrateDeviceClock(serial) {
@@ -149,6 +190,44 @@ export function parseNativeTimingConsoleArgs(args, context) {
   return validateNativeTimingPayload(payload, context);
 }
 
+export function validateNativeStartupPayload(payload, openTime) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('Native startup payload must be an object.');
+  }
+  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) {
+    throw new Error(
+      `Native startup payload must declare protocol ${NATIVE_STARTUP_PROTOCOL}.`,
+    );
+  }
+  for (const field of ['moduleStartMs', 'mountEndMs', 'firstFrameMs', 'secondFrameMs']) {
+    if (!Number.isFinite(payload[field])) {
+      throw new Error(`Native startup payload has invalid ${field}.`);
+    }
+  }
+  if (!Number.isFinite(openTime)
+    || payload.moduleStartMs < openTime
+    || payload.mountEndMs < payload.moduleStartMs
+    || payload.firstFrameMs < payload.mountEndMs
+    || payload.secondFrameMs < payload.firstFrameMs) {
+    throw new Error('Native startup payload has invalid timestamp ordering.');
+  }
+  return payload;
+}
+
+export function physicalDeviceFingerprint(device, serial, runAdb = adb) {
+  const did = typeof device?.did === 'string' ? device.did.trim() : '';
+  if (did) return createHash('sha256').update(did).digest('hex');
+  for (const property of ['ro.serialno', 'ro.boot.serialno']) {
+    const value = String(runAdb(serial, 'shell', 'getprop', property) ?? '').trim();
+    if (value) {
+      return createHash('sha256')
+        .update(`android-property:${property}:${value}`)
+        .digest('hex');
+    }
+  }
+  throw new Error('Lynx Explorer client and Android device lack a stable physical identity.');
+}
+
 export async function createLynxSandboxAndroidAdapter(
   { log = () => {} } = {},
   {
@@ -177,11 +256,16 @@ export async function createLynxSandboxAndroidAdapter(
   let pageCount = 0;
   let currentEntryId = null;
   let currentRows = null;
+  let currentSuite = null;
   let currentOpenTime = null;
   let lastObserved = null;
   let startupPayloadLogged = false;
   let consoleReader = null;
+  let consoleWriter = null;
+  let consoleOutput = null;
   let consoleGeneration = 0;
+  let nextCDPId = 50_000;
+  const pendingCDP = new Map();
   let timingEvents = [];
   let timingError = null;
   let pendingTimingName = null;
@@ -194,22 +278,24 @@ export async function createLynxSandboxAndroidAdapter(
   const buttonPoints = new Map();
   const cellGeometry = new Map();
   let disposed = false;
+  let cdpEventDeliverySuppressed = false;
   let cleanupPromise = null;
   function cleanup() {
     if (cleanupPromise) return cleanupPromise;
     disposed = true;
     cleanupPromise = (async () => {
       const errors = [];
-      consoleGeneration++;
-      if (consoleReader) {
+      if (cdpEventDeliverySuppressed) {
         try {
-          await consoleReader.cancel().catch(() => {});
-          consoleReader.releaseLock();
+          await restoreCDPEventDelivery({ bestEffort: true });
         } catch (error) {
           errors.push(error);
-        } finally {
-          consoleReader = null;
         }
+      }
+      try {
+        await stopConsoleStream();
+      } catch (error) {
+        errors.push(error);
       }
       for (const resolve of timingWaiters) resolve();
       timingWaiters.clear();
@@ -238,23 +324,40 @@ export async function createLynxSandboxAndroidAdapter(
   }
 
   let connector;
+  let createConnector;
+  let connectorCall;
   let client;
   let deviceClock;
   let environment;
   let machine;
   try {
-    const createDefaultConnector = await loadConnector();
-    connector = createDefaultConnector();
+    createConnector = await loadConnector();
+    connector = createConnector();
+    connectorCall = async (action) => {
+      try {
+        return await action();
+      } finally {
+        if (ROUTER_SETTLE_MS > 0) await wait(ROUTER_SETTLE_MS);
+      }
+    };
     server = await startServer(port, () => bundleBytes);
 
     reverseInstalled = true;
     runAdb(serial, 'reverse', `tcp:${port}`, `tcp:${port}`);
-    runAdb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
+    runAdb(serial, 'shell', 'am', 'force-stop', 'com.lynx.explorer');
+    runAdb(
+      serial,
+      'shell',
+      'am',
+      'start',
+      '-n',
+      'com.lynx.explorer/.LynxViewShellActivity',
+    );
 
     const encodedSerial = encodeURIComponent(serial);
     const clientDeadline = now() + 30_000;
     while (!client && now() < clientDeadline) {
-      const clients = await connector.listClients();
+      const clients = await connectorCall(() => connector.listClients());
       client = clients.find((candidate) =>
         candidate.id.startsWith(`${encodedSerial}:`)
         && candidate.info?.AppProcessName === 'com.lynx.explorer');
@@ -263,7 +366,9 @@ export async function createLynxSandboxAndroidAdapter(
     if (!client) {
       throw new Error('Lynx Explorer client was not found for the leased device.');
     }
-    await connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true);
+    await connectorCall(
+      () => connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true),
+    );
 
     const device = client.info;
     deviceClock = calibrateClock(serial);
@@ -271,12 +376,12 @@ export async function createLynxSandboxAndroidAdapter(
     const osVersion = String(device.osVersion ?? runAdb(serial, 'shell', 'getprop', 'ro.build.version.release'));
     environment = `lynx-native-android-${model}-${osVersion}`;
     const leaseId = createHash('sha256').update(serial).digest('hex');
-    if (typeof device.did !== 'string' || device.did.length === 0) {
-      throw new Error('Lynx Explorer client is missing physical device did.');
-    }
-    const physicalDeviceId = createHash('sha256')
-      .update(device.did)
-      .digest('hex');
+    const physicalDeviceId = physicalDeviceFingerprint(device, serial, runAdb);
+    const appApkSha256 = installedPackageSha256(
+      serial,
+      'com.lynx.explorer',
+      runAdb,
+    );
     machine = {
       id: physicalDeviceId,
       platform: 'android',
@@ -290,6 +395,7 @@ export async function createLynxSandboxAndroidAdapter(
       sdkVersion: device.sdkVersion,
       debugRouterVersion: device.debugRouterVersion,
       agentLynxVersion: '0.14.4',
+      appApkSha256,
       physicalDeviceId,
       leaseId,
       deviceClockOffsetMs: deviceClock.offsetMs,
@@ -307,10 +413,86 @@ export async function createLynxSandboxAndroidAdapter(
     throw error;
   }
 
-  async function cdp(method, params = {}) {
+  async function cdp(method, params = {}, timeoutMs = DEFAULT_TIMEOUT_MS) {
     if (!session) throw new Error(`cannot call ${method} before a page is loaded.`);
-    return connector.sendCDPMessage(client.id, session.session_id, method, params);
+    if (!consoleWriter) {
+      return createConnector().sendCDPMessage(
+        client.id,
+        session.session_id,
+        method,
+        params,
+      );
+    }
+    const id = ++nextCDPId;
+    const response = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        pendingCDP.delete(id);
+        reject(new Error(`timeout waiting ${timeoutMs}ms for ${method}`));
+      }, timeoutMs);
+      pendingCDP.set(id, { resolve, reject, timer });
+    });
+    try {
+      await consoleWriter.write({ id, method, params });
+    } catch (error) {
+      clearTimeout(pendingCDP.get(id)?.timer);
+      pendingCDP.delete(id);
+      throw error;
+    }
+    return response;
   }
+
+  async function setCDPEventDelivery(enabled, targetSession = session) {
+    if (!targetSession) {
+      throw new Error('cannot configure Native CDP event delivery without a session.');
+    }
+    await createConnector().sendCDPMessage(
+      client.id,
+      targetSession.session_id,
+      'DOM.setEventDelivery',
+      { enabled },
+    );
+    cdpEventDeliverySuppressed = !enabled;
+  }
+
+  async function waitForSession(url, timeoutMs = DEFAULT_TIMEOUT_MS) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const sessions = await connectorCall(
+        () => createConnector().sendListSessionMessage(client.id),
+      );
+      const matching = sessions.find((candidate) => candidate.url === url);
+      if (matching) return matching;
+      await wait(50);
+    }
+    return null;
+  }
+
+  async function restoreCDPEventDelivery({ bestEffort = false } = {}) {
+    if (!cdpEventDeliverySuppressed) return;
+    try {
+      if (session && consoleWriter) {
+        await cdp('DOM.setEventDelivery', { enabled: true });
+        cdpEventDeliverySuppressed = false;
+        return;
+      }
+      if (session) {
+        await setCDPEventDelivery(true);
+        return;
+      }
+      const sessions = await connectorCall(
+        () => createConnector().sendListSessionMessage(client.id),
+      );
+      const targetSession = sessions.find((candidate) =>
+        candidate.type === 'lynx') ?? null;
+      await setCDPEventDelivery(true, targetSession);
+    } catch (error) {
+      if (!bestEffort) throw error;
+      cdpEventDeliverySuppressed = false;
+      log(`  [sandbox] best-effort CDP event restore skipped: ${error.message}`);
+    }
+  }
+
+  const oracle = createNativeDomOracle(cdp);
 
   async function evaluateOctaneDriver(name, argument) {
     const expression = `globalThis.__LYNX_BENCH_DRIVER__.drive(${JSON.stringify(name)}, ${JSON.stringify(argument)})`;
@@ -414,23 +596,16 @@ export async function createLynxSandboxAndroidAdapter(
 
   async function tapPoint(point) {
     const timestamp = Date.now();
-    const output = await connector.sendCDPStream(
-      client.id,
-      session.session_id,
-      ReadableStream.from(['mousePressed', 'mouseReleased'].map((type, index) => ({
-        method: 'Input.emulateTouchFromMouseEvent',
-        params: {
-          type,
-          ...point,
-          timestamp: timestamp + index,
-          button: 'left',
-          clickCount: 1,
-        },
-      }))),
-    );
-    await output.inputClosed;
+    for (const [index, type] of ['mousePressed', 'mouseReleased'].entries()) {
+      await cdp('Input.emulateTouchFromMouseEvent', {
+        type,
+        ...point,
+        timestamp: timestamp + index,
+        button: 'left',
+        clickCount: 1,
+      });
+    }
     await delay(10);
-    await output[Symbol.asyncDispose]();
   }
 
   async function clickableAncestor(nodeId) {
@@ -509,30 +684,45 @@ export async function createLynxSandboxAndroidAdapter(
     throw new Error(`timeout waiting for Native timing ${expectedName}.`);
   }
 
-  async function startConsoleStream() {
+  async function startConsoleStream({
+    streamConnector = createConnector(),
+    enableRuntime = true,
+  } = {}) {
+    await stopConsoleStream();
     consoleGeneration++;
     const generation = consoleGeneration;
-    if (consoleReader) {
-      await consoleReader.cancel().catch(() => {});
-      consoleReader.releaseLock();
-      consoleReader = null;
-    }
     timingEvents = [];
     timingError = null;
     pendingTimingName = null;
     startupEvents = [];
-    const stream = await connector.sendCDPStream(
+    const input = new TransformStream();
+    const stream = await streamConnector.sendCDPStream(
       client.id,
       session.session_id,
-      ReadableStream.from([{ method: 'Runtime.enable' }]),
+      input.readable,
     );
     const reader = stream.getReader();
+    consoleWriter = input.writable.getWriter();
+    consoleOutput = stream;
     consoleReader = reader;
     void (async () => {
       try {
         while (generation === consoleGeneration) {
           const { done, value } = await reader.read();
           if (done || generation !== consoleGeneration) break;
+          if (Number.isInteger(value.id) && pendingCDP.has(value.id)) {
+            const pending = pendingCDP.get(value.id);
+            pendingCDP.delete(value.id);
+            clearTimeout(pending.timer);
+            if (value.error) {
+              pending.reject(
+                new Error(`CDP request error: ${value.error.message ?? JSON.stringify(value.error)}`),
+              );
+            } else {
+              pending.resolve(value.result ?? {});
+            }
+            continue;
+          }
           if (value.method !== 'Runtime.consoleAPICalled') continue;
           const args = value.params?.args ?? [];
           if (process.env.LYNX_SANDBOX_DEBUG_CONSOLE === '1') {
@@ -569,37 +759,80 @@ export async function createLynxSandboxAndroidAdapter(
         if (generation === consoleGeneration && !disposed) {
           log(`  [sandbox] console stream ended: ${error.message}`);
         }
+      } finally {
+        if (generation === consoleGeneration) {
+          const error = new Error('Native CDP channel closed before pending commands completed.');
+          for (const pending of pendingCDP.values()) {
+            clearTimeout(pending.timer);
+            pending.reject(error);
+          }
+          pendingCDP.clear();
+        }
       }
     })();
+    if (enableRuntime) {
+      await cdp('Page.enable');
+      await cdp('Page.getResourceTree');
+      await cdp('Debugger.enable');
+      await cdp('Runtime.enable');
+    }
   }
 
   async function stopConsoleStream() {
     consoleGeneration++;
-    if (!consoleReader) return;
-    await consoleReader.cancel().catch(() => {});
-    consoleReader.releaseLock();
+    const error = new Error('Native CDP channel stopped.');
+    for (const pending of pendingCDP.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(error);
+    }
+    pendingCDP.clear();
+    const writer = consoleWriter;
+    consoleWriter = null;
+    await writer?.close().catch(() => {});
+    writer?.releaseLock();
+    const reader = consoleReader;
     consoleReader = null;
+    await reader?.cancel().catch(() => {});
+    reader?.releaseLock();
+    const output = consoleOutput;
+    consoleOutput = null;
+    await output?.[Symbol.asyncDispose]?.().catch(() => {});
+    if ((writer || reader || output) && ROUTER_SETTLE_MS > 0) {
+      await delay(ROUTER_SETTLE_MS);
+    }
   }
 
-  async function restartExplorer() {
+  async function restartExplorer(initialUrl = null) {
     await stopConsoleStream();
-    const before = (await connector.listClients()).find((candidate) => candidate.id === client.id);
+    const before = (await connectorCall(() => createConnector().listClients()))
+      .find((candidate) => candidate.id === client.id);
     const previousRouterId = before?.info?.debugRouterId;
     runAdb(serial, 'shell', 'am', 'force-stop', 'com.lynx.explorer');
-    runAdb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
+    const launchArgs = [
+      'shell',
+      'am',
+      'start',
+      '-n',
+      'com.lynx.explorer/.LynxViewShellActivity',
+    ];
+    if (initialUrl) launchArgs.push('--es', 'url', initialUrl);
+    runAdb(serial, ...launchArgs);
     const deadline = Date.now() + 30_000;
     let ready = false;
     while (Date.now() < deadline) {
-      const clients = await connector.listClients();
+      const clients = await connectorCall(() => createConnector().listClients());
       const candidate = clients.find((next) => next.id === client.id);
       if (candidate && (!previousRouterId || candidate.info?.debugRouterId !== previousRouterId)) {
+        client = candidate;
         ready = true;
         break;
       }
       await delay(250);
     }
     if (!ready) throw new Error('Lynx Explorer did not reconnect on the leased device.');
-    await connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true);
+    await connectorCall(
+      () => createConnector().setGlobalSwitch(client.id, 'enable_perf_metrics', true),
+    );
     session = null;
     await delay(500);
   }
@@ -622,6 +855,7 @@ export async function createLynxSandboxAndroidAdapter(
       : () => tapText(CREATE_BUTTON[scale]);
     await measuredTap('create', trigger, DEFAULT_TIMEOUT_MS);
     if (currentEntryId === 'octane') await waitForOctaneRowCount(scale);
+    else await oracle.assertRenderedRows(scale);
   }
 
   async function waitForStartup(timeoutMs = DEFAULT_TIMEOUT_MS) {
@@ -657,10 +891,9 @@ export async function createLynxSandboxAndroidAdapter(
         timingInfoLogged = true;
         log(`  [sandbox:startup-timing-info] ${JSON.stringify(timingInfo)}`);
       }
-      let startup = currentEntryId === 'octane'
-        ? startupEvents.findLast((candidate) => Number.isFinite(candidate?.secondFrameMs)) ?? null
-        : null;
-      if (currentEntryId === 'octane' && startup === null && Date.now() >= nextStartupPollAt) {
+      let startup = startupEvents
+        .findLast((candidate) => Number.isFinite(candidate?.secondFrameMs)) ?? null;
+      if (startup === null && Date.now() >= nextStartupPollAt) {
         nextStartupPollAt = Date.now() + 250;
         const startupResult = await cdp('Runtime.evaluate', {
           expression: `JSON.stringify(globalThis.__LYNX_BENCH_STARTUP__ ?? null)`,
@@ -683,24 +916,24 @@ export async function createLynxSandboxAndroidAdapter(
       }
       if (
         Number.isFinite(openTime)
-        && Number.isFinite(startup?.firstFrameMs)
         && Number.isFinite(startup?.secondFrameMs)
-        && startup.firstFrameMs >= openTime
-        && startup.secondFrameMs >= startup.firstFrameMs
       ) {
+        const validated = currentEntryId === 'octane'
+          ? startup
+          : validateNativeStartupPayload(startup, openTime);
         if (process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1') {
-          log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup })}`);
+          log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup: validated })}`);
         }
         return {
           entryType: 'pipeline',
           name: 'loadBundle',
           openTime,
-          pipelineEnd: startup.secondFrameMs,
-          lynxFcp: { duration: startup.firstFrameMs - openTime },
-          totalFcp: { duration: startup.firstFrameMs - openTime },
+          pipelineEnd: validated.secondFrameMs,
+          lynxFcp: { duration: validated.firstFrameMs - openTime },
+          totalFcp: { duration: validated.firstFrameMs - openTime },
           benchmarkFrameFallback: true,
           timingInfo,
-          startup,
+          startup: validated,
         };
       }
       await delay(16);
@@ -721,6 +954,37 @@ export async function createLynxSandboxAndroidAdapter(
       return unsupportedStartupCells.has(`${entry.id}:${rows}`);
     },
 
+    async assertRenderedRows(rows, timeoutMs = DEFAULT_TIMEOUT_MS) {
+      await wait(nativeRenderGraceMs(rows, timeoutMs, env));
+      if (!consoleWriter) {
+        await startConsoleStream({
+          streamConnector: createConnector(),
+          enableRuntime: false,
+        });
+      }
+      if (currentSuite === 'count-only') {
+        try {
+          const found = await cdp(
+            'DOM.performSearch',
+            { query: 'col-id', countOnly: true },
+            timeoutMs,
+          );
+          if (!Number.isSafeInteger(found?.resultCount) || found.resultCount < 0) {
+            throw new Error('Native count-only search returned an invalid resultCount.');
+          }
+          if (found.resultCount !== rows) {
+            throw new Error(
+              `Native rendered row count mismatch: expected ${rows}, got ${found.resultCount}`,
+            );
+          }
+          return found.resultCount;
+        } finally {
+          await restoreCDPEventDelivery({ bestEffort: true });
+        }
+      }
+      return oracle.assertRenderedRows(rows);
+    },
+
     async recoverTransient(error) {
       const message = String(error);
       if (
@@ -732,7 +996,7 @@ export async function createLynxSandboxAndroidAdapter(
       return true;
     },
 
-    async loadBundle(entry, { rows, bundleBytes: nextBundleBytes }) {
+    async loadBundle(entry, { rows, bundleBytes: nextBundleBytes, suite }) {
       if (pageCount > 0 && pageCount % 5 === 0) await restartExplorer();
       else if (session) await stopConsoleStream();
       if (!Buffer.isBuffer(nextBundleBytes)) {
@@ -745,30 +1009,30 @@ export async function createLynxSandboxAndroidAdapter(
       }
       currentEntryId = entry.id;
       currentRows = rows;
+      currentSuite = suite;
       pageGeneration++;
       startupPayloadLogged = false;
       lastObserved = null;
       const nonce = `${entry.id}-${rows}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const url = `http://127.0.0.1:${port}/main.lynx.bundle?run=${encodeURIComponent(nonce)}`;
-      try {
-        currentOpenTime = Date.now() + deviceClock.offsetMs;
-        await connector.openPage(client.id, url);
-      } catch (error) {
-        if (!String(error).includes('No response found')) throw error;
-        await restartExplorer();
-        currentOpenTime = Date.now() + deviceClock.offsetMs;
-        await connector.openPage(client.id, url);
+      currentOpenTime = Date.now() + deviceClock.offsetMs;
+      await restartExplorer(url);
+      session = await waitForSession(url);
+      if (!session) {
+        throw new Error(`Native session did not appear for ${entry.id} rows-${rows}.`);
       }
-      const deadline = Date.now() + DEFAULT_TIMEOUT_MS;
-      while (Date.now() < deadline) {
-        const sessions = await connector.sendListSessionMessage(client.id);
-        session = sessions.find((candidate) => candidate.url === url) ?? null;
-        if (session) break;
-        await delay(50);
+      if (suite === 'count-only') {
+        await setCDPEventDelivery(false);
+        pageCount++;
+        log(`  [sandbox] ${entry.id} rows-${rows} session=${session.session_id}`);
+        return;
       }
-      if (!session) throw new Error(`Native session did not appear for ${entry.id} rows-${rows}.`);
       pageCount++;
-      await startConsoleStream();
+      if (suite === 'table') {
+        await startConsoleStream();
+        await cdp('DOM.setEventDelivery', { enabled: false });
+        cdpEventDeliverySuppressed = true;
+      }
       if (entry.id === 'octane') await waitForOctaneReady();
       log(`  [sandbox] ${entry.id} rows-${rows} session=${session.session_id}`);
     },
@@ -788,8 +1052,12 @@ export async function createLynxSandboxAndroidAdapter(
             ? () => evaluateOctaneDriver('select', 5)
             : () => tapCell('col-label', 5);
           await measuredTap('select', preselect, DEFAULT_TIMEOUT_MS);
+          if (currentEntryId !== 'octane') await oracle.assertUniqueDanger(5);
         }
 
+        const preState = currentEntryId === 'octane'
+          ? null
+          : await captureNativePreState(oracle, kase, scale);
         const expectedName = timingName(kase);
         let trigger;
         if (currentEntryId === 'octane') {
@@ -808,6 +1076,9 @@ export async function createLynxSandboxAndroidAdapter(
           trigger,
           Math.min(kase.timeoutMs ?? DEFAULT_TIMEOUT_MS, DEFAULT_TIMEOUT_MS),
         );
+        if (currentEntryId !== 'octane') {
+          await assertNativePostState(oracle, kase, scale, preState);
+        }
       } catch (error) {
         if (String(error).includes('timeout')) {
           if (kase.name === 'create' && scale === 1000) {
@@ -834,13 +1105,14 @@ export async function createLynxSandboxAndroidAdapter(
     },
 
     async collectStartup() {
+      let entry;
       try {
-        const entry = await waitForStartup();
-        return {
-          fcpMs: entry.totalFcp?.duration ?? entry.lynxFcp.duration,
-          settledMs: entry.pipelineEnd - entry.openTime,
-          metrics: { pipeline: entry },
-        };
+        entry = await collectValidatedNativeStartup({
+          acquireTiming: () => waitForStartup(),
+          oracle,
+          rows: currentRows,
+          requireReady: currentEntryId !== 'octane' && currentRows === 0,
+        });
       } catch (error) {
         const message = String(error);
         if (message.includes('No response found')) throw error;
@@ -851,6 +1123,11 @@ export async function createLynxSandboxAndroidAdapter(
         }
         throw error;
       }
+      return {
+        fcpMs: entry.totalFcp?.duration ?? entry.lynxFcp.duration,
+        settledMs: entry.pipelineEnd - entry.openTime,
+        metrics: { pipeline: entry },
+      };
     },
 
     async dispose() {

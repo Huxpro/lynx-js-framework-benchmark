@@ -252,6 +252,7 @@ const nativeMachine = {
   sdkVersion: '1',
   debugRouterVersion: '1',
   agentLynxVersion: '0.14.4',
+  appApkSha256: 'a'.repeat(64),
   physicalDeviceId: 'device-one',
   leaseId: 'lease-one',
 };

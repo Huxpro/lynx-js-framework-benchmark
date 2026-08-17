@@ -432,6 +432,44 @@ test('cohort, receipt, and strict time mismatches are rejected', () => {
   }
 });
 
+test('Native cohort comparison excludes receipt and clock calibration but rejects runtime drift', () => {
+  const fixture = fullFixture();
+  try {
+    const sequenceIndex = fixture.manifest.sequences.findIndex(({ id }) =>
+      id === 'vapor-native-table');
+    for (const [index, leg] of LEGS.entries()) {
+      mutateLeg(fixture, sequenceIndex, leg, (run) => {
+        run.meta.machine.appApkSha256 = 'a'.repeat(64);
+        run.meta.machine.physicalDeviceId = 'device';
+        run.meta.machine.deviceClockOffsetMs = index;
+        run.meta.machine.deviceClockCalibrationRttMs = index + 1;
+        run.meta.nativeCohort = {
+          schemaVersion: 1,
+          environment: NATIVE_ENVIRONMENT,
+          machine: run.meta.machine,
+          adapterFingerprint: 'adapter',
+          artifactFingerprint: `artifact-${leg}`,
+          benchmarkFingerprint: 'benchmark',
+          fingerprint: `aggregate-${leg}`,
+        };
+      });
+    }
+    assert.doesNotThrow(
+      () => analyzeAbbaManifest(fixture.manifest, { root: fixture.root }),
+    );
+
+    mutateLeg(fixture, sequenceIndex, 'B1', (run) => {
+      run.meta.nativeCohort.adapterFingerprint = 'different';
+    });
+    assert.throws(
+      () => analyzeAbbaManifest(fixture.manifest, { root: fixture.root }),
+      /cohort mismatch/,
+    );
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('bundle drift and heap 4/5 boundary fail closed', () => {
   const bundle = fullFixture();
   try {

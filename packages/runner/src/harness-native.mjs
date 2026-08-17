@@ -144,6 +144,7 @@ export async function runNativeMatrix({
                 bundlePath: bundle.bundlePath,
                 bundleBytes: Buffer.from(bundle.bundleBytes),
                 bundleSha256: bundle.sha256,
+                suite: 'table',
               });
               await adapter.driveCase(kase, scale);
               return adapter.collect();
@@ -218,6 +219,7 @@ export async function runNativeMatrix({
               bundlePath: bundle.bundlePath,
               bundleBytes: Buffer.from(bundle.bundleBytes),
               bundleSha256: bundle.sha256,
+              suite: 'startup',
             });
             return adapter.collectStartup();
           });
@@ -266,7 +268,8 @@ export async function runNativeHarness(options = undefined) {
       + 'entries keep main.lynx.bundle and the schema reserves harness:"native".',
     );
   }
-  const adapter = await loadNativeAdapter(
+  const ownsAdapter = !options.adapter;
+  const adapter = options.adapter ?? await loadNativeAdapter(
     options.adapterPath,
     { log: options.log },
     options.adapterFactory,
@@ -278,6 +281,6 @@ export async function runNativeHarness(options = undefined) {
       machine: validateNativeMachine(adapter.machine),
     };
   } finally {
-    await adapter.dispose();
+    if (ownsAdapter) await adapter.dispose();
   }
 }

@@ -11,7 +11,7 @@ import {
 } from './lab-artifacts.mjs';
 import { validateRunMatrix } from './run-matrix.mjs';
 import { writeRunFile } from './run-files.mjs';
-import { runNativeHarness } from './harness-native.mjs';
+import { loadNativeAdapter, runNativeHarness } from './harness-native.mjs';
 import {
   materializeNativeBundleSnapshots,
   pinNativeAdapterGraph,
@@ -75,6 +75,69 @@ async function finishNativeResources(primaryError, disposers) {
   if (cleanupErrors.length) throw new AggregateError(cleanupErrors, 'Native cleanup failed');
 }
 
+export async function prepareNativeLease({
+  adapterPath,
+  entries,
+  suites,
+  startupScales,
+  benchmarkRoot,
+  materializeBundles = materializeNativeBundleSnapshots,
+  pinAdapter = pinNativeAdapterGraph,
+  captureBenchmarkFingerprint = captureNativeBenchmarkFingerprint,
+  log = () => {},
+}) {
+  const benchmarkFingerprint = captureBenchmarkFingerprint(benchmarkRoot);
+  const bundleMaterialization = materializeBundles({
+    entries,
+    suites,
+    startupScales,
+  });
+  let pinnedAdapter;
+  let adapter;
+  let primaryError = null;
+  try {
+    pinnedAdapter = pinAdapter(adapterPath);
+    adapter = await loadNativeAdapter(
+      pinnedAdapter.pinnedPath,
+      { log },
+      pinnedAdapter.factory,
+    );
+  } catch (error) {
+    primaryError = error;
+  }
+  if (primaryError) {
+    await finishNativeResources(primaryError, [
+      adapter?.dispose?.bind(adapter),
+      pinnedAdapter?.dispose?.bind(pinnedAdapter),
+      bundleMaterialization.dispose.bind(bundleMaterialization),
+    ]);
+  }
+  const nativeCohort = createNativeCohort({
+    machine: adapter.machine,
+    environment: adapter.environment,
+    adapterFingerprint: pinnedAdapter.fingerprint,
+    artifactFingerprint: bundleMaterialization.fingerprint,
+    benchmarkFingerprint: benchmarkFingerprint.sha256,
+  });
+  return {
+    adapter,
+    cohortFingerprint: nativeCohort.fingerprint,
+    nativeCohort,
+    preparedInputs: {
+      benchmarkFingerprint,
+      bundleMaterialization,
+      pinnedAdapter,
+    },
+    async dispose() {
+      await finishNativeResources(null, [
+        adapter.dispose.bind(adapter),
+        pinnedAdapter.dispose.bind(pinnedAdapter),
+        bundleMaterialization.dispose.bind(bundleMaterialization),
+      ]);
+    },
+  };
+}
+
 export async function executeNativeRun({
   adapterPath,
   entries,
@@ -103,6 +166,8 @@ export async function executeNativeRun({
   materializeBundles = materializeNativeBundleSnapshots,
   pinAdapter = pinNativeAdapterGraph,
   captureBenchmarkFingerprint = captureNativeBenchmarkFingerprint,
+  preparedInputs = null,
+  sharedAdapter = null,
   log = console.log,
 }) {
   const matrix = validateRunMatrix({
@@ -140,20 +205,24 @@ export async function executeNativeRun({
       verifiedLabBenchmark,
     );
   }
-  const benchmarkFingerprint = captureBenchmarkFingerprint(benchmarkRoot);
-  const bundleMaterialization = materializeBundles({
+  const benchmarkFingerprint = preparedInputs?.benchmarkFingerprint
+    ?? captureBenchmarkFingerprint(benchmarkRoot);
+  const bundleMaterialization = preparedInputs?.bundleMaterialization
+    ?? materializeBundles({
     entries,
     suites: matrix.suites,
     startupScales: effectiveStartupScales,
   });
-  let pinnedAdapter;
+  let pinnedAdapter = preparedInputs?.pinnedAdapter;
+  const ownsInputs = preparedInputs == null;
   let result;
   let primaryError = null;
   try {
-    pinnedAdapter = pinAdapter(adapterPath);
+    pinnedAdapter ??= pinAdapter(adapterPath);
     const native = await runHarness({
       adapterPath: pinnedAdapter.pinnedPath,
       adapterFactory: pinnedAdapter.factory,
+      adapter: sharedAdapter,
       bundleSnapshots: bundleMaterialization.snapshots,
       entries,
       cases: matrix.cases,
@@ -237,8 +306,10 @@ export async function executeNativeRun({
     primaryError = error;
   }
   await finishNativeResources(primaryError, [
-    pinnedAdapter?.dispose?.bind(pinnedAdapter),
-    bundleMaterialization.dispose.bind(bundleMaterialization),
+    ...(ownsInputs ? [
+      pinnedAdapter?.dispose?.bind(pinnedAdapter),
+      bundleMaterialization.dispose.bind(bundleMaterialization),
+    ] : []),
   ]);
   return result;
 }
