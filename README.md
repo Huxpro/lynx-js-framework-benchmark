@@ -114,6 +114,11 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
 
+For local Vue Vapor source A/B work, use the isolated
+[Vue Vapor lab workflow](docs/VUE_VAPOR_LAB.md). It builds explicit experiment IDs and keeps
+entries, receipts, raw runs, and the derived cache below ignored `.tmp/` paths instead of
+overwriting published artifacts.
+
 ## Repository layout
 
 ```

@@ -13,9 +13,24 @@ import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/
 
 import { bundleRecords } from './bundles.mjs';
 import { discoverEntries, repoRoot } from './entries.mjs';
+import {
+  labArtifactFingerprint,
+  verifyVueVaporLabRoot,
+} from './lab-artifacts.mjs';
+import {
+  assertContainedPath,
+  assertDirectory,
+  assertRegularFile,
+} from './path-safety.mjs';
 
-const recordKey = (machineId, r) =>
-  [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
+const sourceEntryCommit = (run, record) =>
+  run.meta.entryCommits?.[record.sourceEntry ?? record.entry] ?? null;
+
+const sourceEntryArtifact = (run, record) =>
+  run.meta.entryArtifacts?.[record.sourceEntry ?? record.entry] ?? null;
+
+const recordKey = (machineId, r, cohort = null) =>
+  [machineId, r.entry, r.suite, comparisonKey(r), ...(cohort == null ? [] : [cohort])].join('|');
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
 const isBenchmarkRecord = (r) => r.suite !== 'bundle';
@@ -98,21 +113,27 @@ const comparisonRank = (run, featuredIds) => {
   return [entries.size, sharedCells, minimumCoverage, uniqueRecords];
 };
 
-const commitMatchesManifest = (run, record, entryById) => {
+const sourceMatchesManifest = (run, record, entryById, artifactById) => {
   const entry = entryById.get(record.entry);
+  const currentArtifact = artifactById?.get(record.entry);
+  if (artifactById) {
+    if (!currentArtifact) return false;
+    if (sourceEntryArtifact(run, record)?.fingerprint !== currentArtifact.fingerprint) return false;
+  }
   if (!entry) return true;
   const sourceId = record.sourceEntry ?? record.entry;
   const runCommit = run.meta.entryCommits?.[sourceId];
   const manifestCommit = entry.provenance?.commit;
-  return Boolean(runCommit && manifestCommit && runCommit === manifestCommit);
+  if (!(runCommit && manifestCommit && runCommit === manifestCommit)) return false;
+  return true;
 };
 
-const comparisonView = (run, featuredIds, entryById, harness) => ({
+const comparisonView = (run, featuredIds, entryById, artifactById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
     && record.harness === harness
-    && commitMatchesManifest(run, record, entryById)),
+    && sourceMatchesManifest(run, record, entryById, artifactById)),
 });
 
 const isBetterComparisonRun = (candidate, current, featuredIds) => {
@@ -128,10 +149,16 @@ const isBetterComparisonRun = (candidate, current, featuredIds) => {
     || (candidateTime === currentTime && candidate.file > current.file);
 };
 
-const selectNativeCohort = (runs, featuredIds, entryById) => {
+const selectNativeCohort = (runs, featuredIds, entryById, artifactById) => {
   const groups = new Map();
   for (const candidate of runs) {
-    const records = comparisonView(candidate.run, featuredIds, entryById, 'native').records;
+    const records = comparisonView(
+      candidate.run,
+      featuredIds,
+      entryById,
+      artifactById,
+      'native',
+    ).records;
     for (const environment of new Set(records.map((record) => record.environment))) {
       const groupKey = `${candidate.run.meta.machine.id}|${environment}`;
       const group = groups.get(groupKey) ?? {
@@ -196,7 +223,8 @@ const annotate = (run, file, record, comparisonKind = 'archive') => ({
   runFile: file,
   runGeneratedAt: run.meta.generatedAt,
   calibration: run.meta.calibration,
-  entryCommit: run.meta.entryCommits?.[record.sourceEntry ?? record.entry] ?? null,
+  entryCommit: sourceEntryCommit(run, record),
+  entryArtifactFingerprint: sourceEntryArtifact(run, record)?.fingerprint ?? null,
   comparisonKind,
 });
 
@@ -220,6 +248,18 @@ const assertCurrentEntryCommit = (run, entryId, entry, label) => {
     throw new Error(
       `${label} ${entryId}: source run commit ${runCommit ?? 'missing'} does not match `
       + `current entry manifest ${manifestCommit ?? 'missing'}; rerun the benchmark`,
+    );
+  }
+};
+
+const assertCurrentEntryArtifact = (run, entryId, artifact, label) => {
+  if (!artifact) return;
+  const runArtifact = run.meta.entryArtifacts?.[entryId];
+  if (!runArtifact || runArtifact.fingerprint !== artifact.fingerprint) {
+    throw new Error(
+      `${label} ${entryId}: source run receipt cohort `
+      + `${runArtifact?.fingerprint ?? 'missing'} does not match current entry manifest `
+      + `${artifact.fingerprint}; rerun the benchmark`,
     );
   }
 };
@@ -273,10 +313,23 @@ export function collectRuns({
   generatedAt = null,
   entryTiers = null,
   entries = null,
+  labMode = false,
 } = {}) {
+  const entriesDir = path.join(root, 'entries');
   const runsDir = path.join(root, 'results/runs');
   const outPath = path.join(root, 'results/latest.json');
+  for (const [target, label] of [
+    [entriesDir, 'entries directory'],
+    [path.join(root, 'results'), 'results directory'],
+    [runsDir, 'results/runs directory'],
+    [outPath, 'results/latest.json'],
+  ]) {
+    assertContainedPath(root, target, { label });
+  }
   if (!fs.existsSync(runsDir)) throw new Error(`no runs directory at ${runsDir}`);
+  assertDirectory(runsDir, 'results/runs directory');
+  if (fs.existsSync(outPath)) assertRegularFile(outPath, 'results/latest.json');
+  if (labMode) assertDirectory(entriesDir, 'entries directory');
 
   const runFiles = fs.readdirSync(runsDir).filter((f) => f.endsWith('.json')).sort();
   const machines = {};
@@ -285,17 +338,28 @@ export function collectRuns({
   let comparisonRun = null;
   let latestSourceGeneratedAt = null;
   let runsSeen = 0;
-  const resolvedTiers = entryTiers ?? readEntryTiers(root);
-  const currentEntries = entries ?? (fs.existsSync(path.join(root, 'entries'))
+  const verifiedLabArtifacts = labMode ? verifyVueVaporLabRoot(root) : null;
+  const currentEntries = entries ?? (fs.existsSync(entriesDir)
     ? discoverEntries({ root })
     : []);
   const entryById = new Map(currentEntries.map((entry) => [entry.id, entry]));
+  const artifactById = labMode
+    ? new Map(verifiedLabArtifacts.map((artifact) => [artifact.entryId, artifact]))
+    : null;
+  const resolvedTiers = entryTiers ?? readEntryTiers(root);
   const staticByEntry = new Map(currentEntries.map((entry) => [entry.id, bundleRecords(entry)]));
   const featuredIds = new Set([...resolvedTiers].filter(([, tier]) => tier !== 'lab').map(([id]) => id));
-  const labIds = [...resolvedTiers].filter(([, tier]) => tier === 'lab').map(([id]) => id);
+  const comparisonIds = labMode && featuredIds.size === 0
+    ? new Set(resolvedTiers.keys())
+    : featuredIds;
+  const labIds = [...resolvedTiers]
+    .filter(([id, tier]) => tier === 'lab' && !comparisonIds.has(id))
+    .map(([id]) => id);
 
   for (const file of runFiles) {
-    const rawRun = JSON.parse(fs.readFileSync(path.join(runsDir, file), 'utf-8'));
+    const runPath = path.join(runsDir, file);
+    assertRegularFile(runPath, `run file ${file}`);
+    const rawRun = JSON.parse(fs.readFileSync(runPath, 'utf-8'));
     if (rawRun.schemaVersion !== SCHEMA_VERSION) {
       log(`[collect] skip ${file}: schemaVersion ${rawRun.schemaVersion} != ${SCHEMA_VERSION}`);
       continue;
@@ -318,29 +382,59 @@ export function collectRuns({
       };
     }
     for (const r of run.records.filter(isBenchmarkRecord)) {
-      const key = recordKey(m.id, r);
+      const entryCommit = sourceEntryCommit(run, r);
+      if (labMode && !entryCommit) {
+        throw new Error(`${file}: Lab record ${r.entry} is missing meta.entryCommits`);
+      }
+      const artifact = sourceEntryArtifact(run, r);
+      if (labMode) {
+        if (!artifact?.fingerprint) {
+          throw new Error(`${file}: Lab record ${r.entry} is missing meta.entryArtifacts`);
+        }
+        const expectedFingerprint = labArtifactFingerprint(artifact);
+        if (artifact.fingerprint !== expectedFingerprint) {
+          throw new Error(`${file}: Lab record ${r.entry} has an invalid receipt cohort`);
+        }
+        const benchmarkWorktree = run.meta.benchmarkWorktree;
+        if (!benchmarkWorktree?.head || !benchmarkWorktree?.patchSha256) {
+          throw new Error(`${file}: Lab record ${r.entry} is missing meta.benchmarkWorktree`);
+        }
+        if (artifact.benchmarkHead !== benchmarkWorktree.head
+          || artifact.benchmarkPatchSha256 !== benchmarkWorktree.patchSha256) {
+          throw new Error(`${file}: Lab record ${r.entry} has a mismatched benchmark worktree`);
+        }
+      }
+      const key = recordKey(m.id, r, labMode ? artifact.fingerprint : null);
       const current = merged.get(key);
       const currentTime = current?.runGeneratedAt ?? current?.runFile;
       if (!current || runTime > currentTime || (runTime === currentTime && file > current.runFile)) {
         merged.set(key, annotate(run, file, r));
       }
     }
-    const view = comparisonView(run, featuredIds, entryById, 'web');
+    const view = comparisonView(run, comparisonIds, entryById, artifactById, 'web');
     const candidate = { file, run: view };
     if (view.records.length > 0
-      && isBetterComparisonRun(candidate, comparisonRun, featuredIds)) comparisonRun = candidate;
+      && isBetterComparisonRun(candidate, comparisonRun, comparisonIds)) comparisonRun = candidate;
   }
 
   if (!comparisonRun) throw new Error(`no schema v${SCHEMA_VERSION} runs at ${runsDir}`);
-  if (comparisonRank(comparisonRun.run, featuredIds)[0] === 0) {
-    throw new Error(`no featured benchmark records in schema v${SCHEMA_VERSION} runs at ${runsDir}`);
+  if (comparisonRank(comparisonRun.run, comparisonIds)[0] === 0) {
+    throw new Error(
+      `no ${labMode ? 'Lab' : 'featured'} benchmark records in schema v${SCHEMA_VERSION} runs at ${runsDir}`,
+    );
   }
   const comparisonSourceRecords = comparisonRun.run.records.filter((r) =>
-    featuredIds.has(r.entry) && isBenchmarkRecord(r));
+    comparisonIds.has(r.entry) && isBenchmarkRecord(r));
   for (const entryId of new Set(comparisonSourceRecords.map((record) => record.entry))) {
     assertCurrentEntryCommit(comparisonRun.run, entryId, entryById.get(entryId), 'comparison');
+    assertCurrentEntryArtifact(
+      comparisonRun.run,
+      entryId,
+      artifactById?.get(entryId),
+      'comparison',
+    );
   }
-  const comparisonStaticRecords = [...featuredIds].flatMap((entryId) => {
+  const comparisonStaticRecords = [...comparisonIds].flatMap((entryId) => {
     const entry = entryById.get(entryId);
     return entry ? (staticByEntry.get(entryId) ?? []).map((record) => annotateStatic(entry, record)) : [];
   });
@@ -348,7 +442,7 @@ export function collectRuns({
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
     ...comparisonStaticRecords,
   ];
-  const nativeCohort = selectNativeCohort(runs, featuredIds, entryById);
+  const nativeCohort = selectNativeCohort(runs, comparisonIds, entryById, artifactById);
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
       annotate(source.run, source.file, source.record, 'same-machine')))
@@ -400,6 +494,12 @@ export function collectRuns({
     if (!source) continue;
     const records = source.run.records.filter((r) => r.entry === entryId && isBenchmarkRecord(r));
     assertCurrentEntryCommit(source.run, entryId, entryById.get(entryId), 'Lab comparison');
+    assertCurrentEntryArtifact(
+      source.run,
+      entryId,
+      artifactById?.get(entryId),
+      'Lab comparison',
+    );
     const sourceCalibration = source.run.meta.calibration;
     const targetCalibration = comparisonRun.run.meta.calibration;
     const compatibleCalibration = sourceCalibration?.probeVersion === targetCalibration?.probeVersion
