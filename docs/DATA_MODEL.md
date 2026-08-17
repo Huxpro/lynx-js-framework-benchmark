@@ -24,6 +24,20 @@ Older schema-v2 run files did not retain `value` or `detailSamples`. The collect
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
 legacy final endpoint sample. It never treats stored aggregate statistics as authoritative.
 
+Formal Vue Vapor campaign files retain outer `schemaVersion: 2` and add
+`meta.campaign.schemaVersion: 1`. Every repeated metric, including `reps=1`, contains a
+lossless `attempts` array with contiguous logical indices. A success has a finite value and
+`errorKind: null`; a DNF has `value: null` and a non-empty error kind. Stored `samples`,
+`dnfCount`, statistics, and details are derivatives when attempts exist and are recomputed.
+Legacy v2 files remain readable by collection, but formal analyzers reject files without
+campaign-v1 metadata and lossless attempts.
+
+Formal metadata records the run label, start/finish time, campaign/comparison IDs, receipt-derived
+variant, phase, ABBA leg/index, and exact resolved matrix. The canonical logical metric key is the
+JSON tuple:
+
+`[variant,suite,harness,environment,workload,scale,metric,boundary,unit]`.
+
 ### When an entry is built or vendored
 
 - `entries/*/entry.json`: entry identity, tier, presentation color, provenance, commit, and bundle

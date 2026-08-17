@@ -2,7 +2,8 @@
 // the Playwright cache and common system locations (same strategy as the
 // unified benchmark's harnesses), and open a remote-debugging port for the
 // CDP sidecar (per-realm profiling).
-import { execSync } from 'node:child_process';
+import crypto from 'node:crypto';
+import { execFileSync, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
@@ -60,7 +61,7 @@ async function freePort() {
 }
 
 export async function launchBrowser({ headless = true } = {}) {
-  const executablePath = resolveChromium();
+  const executablePath = fs.realpathSync(resolveChromium());
   const cdpPort = await freePort();
   const browser = await chromium.launch({
     headless,
@@ -75,4 +76,19 @@ export async function launchBrowser({ headless = true } = {}) {
     ],
   });
   return { browser, cdpPort, executablePath };
+}
+
+export function browserFingerprint(executablePath) {
+  const realpath = fs.realpathSync(executablePath);
+  const bytes = fs.readFileSync(realpath);
+  const version = execFileSync(realpath, ['--version'], {
+    encoding: 'utf8',
+    timeout: 30000,
+  }).trim();
+  if (!version) throw new Error(`browser returned no version: ${realpath}`);
+  return {
+    executableRealpath: realpath,
+    version,
+    sha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+  };
 }

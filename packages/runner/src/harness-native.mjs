@@ -44,6 +44,10 @@ import { summarize } from '@lynx-bench/shared/stats';
 import { makeRecord } from '@lynx-bench/shared/schema';
 
 import { bundleFor } from './entries.mjs';
+import {
+  alignedMetricAttempts,
+  dnfAttempt,
+} from './attempt-series.mjs';
 
 export const NATIVE_BOUNDARIES = {
   latency: 'native-input-handler-to-second-native-frame',
@@ -113,12 +117,11 @@ export async function runNativeMatrix({
             log(`  [skip] ${entry.id}: no rows-0 lynx bundle`);
             continue;
           }
-          const samples = [];
-          const extras = new Map();
-          let dnfCount = 0;
+          const observations = [];
+          const extraNames = new Map();
           for (let rep = 0; rep < reps; rep++) {
             if (adapter.isTableUnsupported?.(entry, kase, scale)) {
-              dnfCount++;
+              observations.push(dnfAttempt(rep, 'unsupported'));
               continue;
             }
             const observed = await withTransientRetry(adapter, async () => {
@@ -127,19 +130,29 @@ export async function runNativeMatrix({
               return adapter.collect();
             });
             if (observed?.dnf) {
-              dnfCount++;
+              observations.push(dnfAttempt(rep, observed.errorKind ?? 'dnf'));
               continue;
             }
             if (typeof observed?.latencyMs !== 'number') {
               throw new Error(`native adapter returned no latency for ${kase.name}@${scale}.`);
             }
-            samples.push(observed.latencyMs);
+            const values = { latency: observed.latencyMs };
             for (const [name, extra] of Object.entries(observed.metrics ?? {})) {
-              if (!extras.has(name)) extras.set(name, { unit: extra.unit, boundary: extra.boundary, values: [] });
-              extras.get(name).values.push(extra.value);
+              if (!extraNames.has(name)) {
+                extraNames.set(name, {
+                  unit: extra.unit ?? 'count',
+                  boundary: extra.boundary ?? NATIVE_BOUNDARIES.latency,
+                });
+              }
+              values[name] = extra.value;
             }
+            observations.push({ values });
           }
-          const stat = summarize(samples);
+          const latencyAttempts = alignedMetricAttempts(observations, 'latency');
+          const latencyValues = latencyAttempts
+            .filter(({ dnf }) => !dnf)
+            .map(({ value }) => value);
+          const stat = summarize(latencyValues);
           records.push(makeRecord({
             suite: 'table',
             harness: 'native',
@@ -150,11 +163,9 @@ export async function runNativeMatrix({
             metric: 'latency',
             boundary: NATIVE_BOUNDARIES.latency,
             unit: 'ms',
-            stat,
-            samples,
-            dnfCount,
+            attempts: latencyAttempts,
           }));
-          for (const [name, extra] of extras) {
+          for (const [name, extra] of extraNames) {
             records.push(makeRecord({
               suite: 'table',
               harness: 'native',
@@ -165,10 +176,10 @@ export async function runNativeMatrix({
               metric: name,
               boundary: extra.boundary ?? NATIVE_BOUNDARIES.latency,
               unit: extra.unit ?? 'count',
-              stat: summarize(extra.values),
-              samples: extra.values,
+              attempts: alignedMetricAttempts(observations, name),
             }));
           }
+          const dnfCount = latencyAttempts.length - latencyValues.length;
           log(`  ${entry.id} ${kase.name}@${scale}: ${stat ? `${stat.median.toFixed(1)}ms (n=${stat.n})` : 'no samples'}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
         }
       }
@@ -177,11 +188,10 @@ export async function runNativeMatrix({
       for (const rows of startupScales) {
         const bundle = bundleFor(entry, { rows, flavor: 'lynx' });
         if (!bundle) continue;
-        const samples = { fcp: [], settled: [] };
-        let dnfCount = 0;
+        const observations = [];
         for (let rep = 0; rep < startupReps; rep++) {
           if (adapter.isStartupUnsupported?.(entry, rows)) {
-            dnfCount++;
+            observations.push(dnfAttempt(rep, 'unsupported'));
             continue;
           }
           const observed = await withTransientRetry(adapter, async () => {
@@ -189,21 +199,23 @@ export async function runNativeMatrix({
             return adapter.collectStartup();
           });
           if (observed?.dnf) {
-            dnfCount++;
+            observations.push(dnfAttempt(rep, observed.errorKind ?? 'dnf'));
             continue;
           }
           if (typeof observed?.fcpMs !== 'number') {
             throw new Error(`native adapter returned no fcp for startup@${rows}.`);
           }
-          samples.fcp.push(observed.fcpMs);
-          if (typeof observed.settledMs === 'number') samples.settled.push(observed.settledMs);
+          observations.push({
+            values: {
+              fcp: observed.fcpMs,
+              settled: observed.settledMs,
+            },
+          });
         }
-        for (const [key, metric, boundary] of [
-          ['fcp', 'fcp', NATIVE_BOUNDARIES.fcp],
-          ['settled', 'settled', NATIVE_BOUNDARIES.settled],
+        for (const [metric, boundary] of [
+          ['fcp', NATIVE_BOUNDARIES.fcp],
+          ['settled', NATIVE_BOUNDARIES.settled],
         ]) {
-          const stat = summarize(samples[key]);
-          if (!stat && metric !== 'fcp') continue;
           records.push(makeRecord({
             suite: 'startup',
             harness: 'native',
@@ -214,9 +226,7 @@ export async function runNativeMatrix({
             metric,
             boundary,
             unit: 'ms',
-            stat,
-            samples: samples[key],
-            dnfCount: metric === 'fcp' ? dnfCount : 0,
+            attempts: alignedMetricAttempts(observations, metric, { authority: 'fcp' }),
           }));
         }
       }

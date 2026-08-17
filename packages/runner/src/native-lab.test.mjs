@@ -277,7 +277,7 @@ test('native lab matrix uses exact requested table and startup scales', async ()
     ]);
     assert.deepEqual(
       records.map(({ suite, scale }) => [suite, scale]),
-      [['table', 1000], ['startup', 1000]],
+      [['table', 1000], ['startup', 1000], ['startup', 1000]],
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
