@@ -97,6 +97,7 @@ export async function runNativeMatrix({
   cases,
   suites = ['table', 'startup'],
   scales = [1000, 10000],
+  startupScales = STARTUP_ROWS,
   reps = 5,
   startupReps = 3,
   log = () => {},
@@ -173,7 +174,7 @@ export async function runNativeMatrix({
       }
     }
     if (suites.includes('startup')) {
-      for (const rows of STARTUP_ROWS) {
+      for (const rows of startupScales) {
         const bundle = bundleFor(entry, { rows, flavor: 'lynx' });
         if (!bundle) continue;
         const samples = { fcp: [], settled: [] };

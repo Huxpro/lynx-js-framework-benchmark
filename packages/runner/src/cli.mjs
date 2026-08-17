@@ -15,13 +15,14 @@ import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 
 import { discoverEntries, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
-import { runNativeHarness } from './harness-native.mjs';
 import { bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
+import { assertNativeLabBundles, executeNativeRun } from './native-run.mjs';
 import { runPreflight } from './preflight.mjs';
 import { launchBrowser } from './browser.mjs';
 import {
+  assertVueVaporLabSelectedRows,
   verifyPinnedVueVaporLabEntry,
   verifyVueVaporLabBenchmarkState,
   verifyVueVaporLabRoot,
@@ -31,6 +32,7 @@ import {
   assertLabEntryId,
   assertRunLabel,
 } from './path-safety.mjs';
+import { resolveRunMatrix } from './run-matrix.mjs';
 import { writeRunFile } from './run-files.mjs';
 
 function parseArgs(argv) {
@@ -39,9 +41,11 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a.startsWith('--')) {
       const eq = a.indexOf('=');
-      if (eq > 0) args[a.slice(2, eq)] = a.slice(eq + 1);
-      else if (argv[i + 1] && !argv[i + 1].startsWith('--')) args[a.slice(2)] = argv[++i];
-      else args[a.slice(2)] = true;
+      const key = a.slice(2, eq > 0 ? eq : undefined);
+      if (Object.hasOwn(args, key)) throw new Error(`duplicate argument: --${key}`);
+      if (eq > 0) args[key] = a.slice(eq + 1);
+      else if (argv[i + 1] && !argv[i + 1].startsWith('--')) args[key] = argv[++i];
+      else args[key] = true;
     } else {
       args._.push(a);
     }
@@ -50,12 +54,11 @@ function parseArgs(argv) {
 }
 
 const list = (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : null);
-const numList = (v) => list(v)?.map(Number);
 
 const LAB_ARGS = {
   run: new Set([
     'lab-root', 'entry', 'case', 'scale', 'suite', 'reps', 'quick', 'label',
-    'harness', 'storm-reps', 'startup-reps', 'no-collect',
+    'harness', 'adapter', 'storm-reps', 'startup-reps', 'no-collect',
   ]),
   collect: new Set(['lab-root']),
   list: new Set(['lab-root']),
@@ -77,10 +80,26 @@ function validateLabArgs(args, cmd) {
       throw new Error('lab run requires --entry <id[,id]>');
     }
     for (const id of list(args.entry)) assertLabEntryId(id, '--entry');
-    for (const key of ['case', 'scale', 'suite', 'reps', 'label', 'harness', 'storm-reps', 'startup-reps']) {
-      if (Object.hasOwn(args, key) && typeof args[key] !== 'string') {
+    for (const key of [
+      'case', 'scale', 'suite', 'reps', 'label', 'harness', 'adapter',
+      'storm-reps', 'startup-reps',
+    ]) {
+      if (Object.hasOwn(args, key)
+        && (typeof args[key] !== 'string' || args[key].length === 0)) {
         throw new Error(`--${key} requires a value`);
       }
+    }
+    if (args.harness === 'native' && typeof args.adapter !== 'string') {
+      throw new Error('native lab run requires --adapter <module.mjs>');
+    }
+    if (args.harness !== 'native' && Object.hasOwn(args, 'adapter')) {
+      throw new Error('--adapter is only valid with --harness native');
+    }
+    if (args.harness === 'native' && args.quick) {
+      throw new Error('--quick is not supported by native lab runs');
+    }
+    if (args.harness === 'native' && Object.hasOwn(args, 'storm-reps')) {
+      throw new Error('--storm-reps is not supported by native lab runs');
     }
   }
 }
@@ -106,6 +125,21 @@ async function cmdRun(args) {
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
 
   const isolatedRoot = labRoot(args, 'run');
+  if (!isolatedRoot && harness === 'native' && args.quick) {
+    throw new Error('--quick is not supported by native runs');
+  }
+  if (!isolatedRoot && harness === 'native' && Object.hasOwn(args, 'storm-reps')) {
+    throw new Error('--storm-reps is not supported by native runs');
+  }
+  const {
+    cases,
+    suites,
+    scales,
+    startupScales,
+    reps,
+    startupReps,
+    stormReps,
+  } = resolveRunMatrix(args, harness, { exactStartupScales: Boolean(isolatedRoot) });
   const verifiedLabEntries = isolatedRoot
     ? new Map(verifyVueVaporLabRoot(isolatedRoot).map((result) => [result.entryId, result]))
     : null;
@@ -122,60 +156,46 @@ async function cmdRun(args) {
       entries.map((entry) => verifiedLabEntries.get(entry.id)),
     )
     : null;
-  const caseNames = list(args.case);
-  const cases = caseNames
-    ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
-    : TABLE_CASES;
-  const suites = list(args.suite) ?? ['table', 'startup'];
 
   if (harness === 'native') {
-    if (isolatedRoot) throw new Error('--lab-root currently supports only the web harness');
-    const reps = args.reps ? Number(args.reps) : 5;
-    const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : 3;
-    const scales = numList(args.scale) ?? [1000, 10000];
+    if (verifiedLabEntries) {
+      assertVueVaporLabSelectedRows(
+        entries,
+        verifiedLabEntries,
+        suites,
+        scales,
+        'lynx',
+        startupScales,
+      );
+      assertNativeLabBundles(entries, suites, scales, startupScales);
+    }
     console.log(`[run:native] entries: ${entries.map((e) => e.id).join(', ')}`);
-    const native = await runNativeHarness({
+    await executeNativeRun({
       adapterPath: args.adapter,
       entries, cases, suites, scales, reps, startupReps,
+      startupScales,
+      label: args.label ?? null,
+      root: isolatedRoot ?? repoRoot(),
+      benchmarkRoot: repoRoot(),
+      verifiedLabEntries,
+      verifiedLabBenchmark,
+      noCollect: Boolean(args['no-collect']),
+      argv: process.argv.slice(2),
       log: (line) => console.log(line),
     });
-    const records = native.records;
-    const machine = native.machine ?? machineFingerprint();
-    const now = new Date();
-    const run = {
-      schemaVersion: SCHEMA_VERSION,
-      meta: {
-        generatedAt: now.toISOString(),
-        machine,
-        calibration: null,
-        harness: 'native',
-        adapter: path.resolve(args.adapter),
-        argv: process.argv.slice(2),
-        entryCommits: Object.fromEntries(
-          entries.map((e) => [e.id, e.provenance?.commit ?? null]),
-        ),
-      },
-      records,
-    };
-    const root = repoRoot();
-    const outPath = writeRunFile({
-      root,
-      run,
-      machineId: machine.id,
-      label: args.label ?? null,
-      native: true,
-    });
-    console.log(`[run:native] ${records.length} records → ${path.relative(repoRoot(), outPath)}`);
-    if (!args['no-collect']) collectRuns();
     return;
   }
-  const quick = Boolean(args.quick);
-  const scales = numList(args.scale)
-    ?? (quick ? [1000] : [1000, 10000]);
-  const reps = args.reps ? Number(args.reps) : quick ? 3 : 7;
-  const stormReps = args['storm-reps'] ? Number(args['storm-reps']) : quick ? 1 : 3;
-  const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
 
+  if (verifiedLabEntries) {
+    assertVueVaporLabSelectedRows(
+      entries,
+      verifiedLabEntries,
+      suites,
+      scales,
+      'web',
+      startupScales,
+    );
+  }
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
   console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
 
@@ -192,7 +212,7 @@ async function cmdRun(args) {
 
   const { records, executablePath } = await runWebHarness({
     entries, cases, suites, scales,
-    ...(isolatedRoot ? { startupScales: scales } : {}),
+    startupScales,
     reps, stormReps, startupReps,
   });
   for (const entry of entries) records.push(...bundleRecords(entry));

@@ -8,7 +8,7 @@ import test from 'node:test';
 import zlib from 'node:zlib';
 
 import { collectRuns } from './collect.mjs';
-import { startupScalesForRun } from './harness-web.mjs';
+import { assertStartupRowCount, startupScalesForRun } from './harness-web.mjs';
 import {
   captureGitState,
   labArtifactFingerprint,
@@ -326,10 +326,20 @@ test('pinned lab entry rejects artifacts replaced during a benchmark run', () =>
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
 test('lab startup scales are exact while the formal default keeps its implicit endpoints', () => {
   assert.deepEqual(startupScalesForRun([1000]), [0, 1000, 30000]);
   assert.deepEqual(startupScalesForRun([1000], [1000]), [1000]);
   assert.deepEqual(startupScalesForRun([0, 10000], [0, 10000]), [0, 10000]);
+});
+
+test('Web startup rejects a stabilized bundle with the wrong exact row count', () => {
+  assert.doesNotThrow(() => assertStartupRowCount('vue-vapor-a', 0, 0, 0));
+  assert.doesNotThrow(() => assertStartupRowCount('vue-vapor-a', 30000, 0, 30000));
+  assert.throws(
+    () => assertStartupRowCount('vue-vapor-a', 30000, 2, 29999),
+    /startup@30000 rep2: expected exactly 30000 rendered rows, got 29999/,
+  );
 });
 
 test('lab-root path rejects symlink escape from the worktree', () => {
@@ -690,5 +700,220 @@ test('lab CLI rejects unknown/missing args and invalid artifacts before browser 
     assert.doesNotMatch(result.stderr, /executable doesn't exist|No Chromium/);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Web and Native CLI matrix rejection touches no browser, adapter, or run output', () => {
+  const cli = path.join(process.cwd(), 'packages/runner/src/cli.mjs');
+  const root = path.join(process.cwd(), '.tmp', `invalid-matrix-lab-${process.pid}`);
+  const browserMarker = path.join(os.tmpdir(), `invalid-matrix-browser-${process.pid}`);
+  const adapterMarker = path.join(os.tmpdir(), `invalid-matrix-adapter-${process.pid}`);
+  const browser = path.join(os.tmpdir(), `invalid-matrix-browser-${process.pid}.sh`);
+  const adapter = path.join(os.tmpdir(), `invalid-matrix-adapter-${process.pid}.mjs`);
+  const sentinel = path.join(root, 'results/sentinel');
+  writeEntry(
+    root,
+    'vue-vapor-sentinel',
+    'source-commit',
+    'fixture',
+    { benchmarkState: captureGitState(process.cwd()) },
+  );
+  fs.mkdirSync(path.dirname(sentinel), { recursive: true });
+  fs.writeFileSync(sentinel, 'untouched');
+  fs.writeFileSync(browser, `#!/bin/sh
+printf launched > ${JSON.stringify(browserMarker)}
+exit 99
+`);
+  fs.chmodSync(browser, 0o755);
+  fs.writeFileSync(adapter, `
+    import fs from 'node:fs';
+    fs.writeFileSync(${JSON.stringify(adapterMarker)}, 'imported');
+    export default () => { throw new Error('adapter should not be imported'); };
+  `);
+
+  const cases = [
+    ['web', ['--reps', '0'], /--reps must be a positive safe integer/],
+    ['native', ['--reps', 'NaN'], /--reps must be a positive safe integer/],
+    ['web', ['--storm-reps', '1.5'], /--storm-reps must be a positive safe integer/],
+    ['native', ['--startup-reps', 'Infinity'], /--startup-reps must be a positive safe integer/],
+    ['web', ['--scale', '1000,'], /--scale must not contain blank tokens/],
+    ['native', ['--scale', '-1'], /--scale must contain non-negative safe integers/],
+    ['web', ['--scale', '1.5'], /--scale must contain non-negative safe integers/],
+    ['native', ['--scale', '9007199254740992'], /--scale must contain non-negative safe integers/],
+    ['web', ['--scale', '1000,1e3'], /--scale must not contain duplicate scales/],
+    ['native', ['--suite', 'table,table'], /--suite must not contain duplicate tokens/],
+    ['web', ['--suite', 'startup,'], /--suite must not contain blank tokens/],
+    ['native', ['--case', 'create,create'], /--case must not contain duplicate tokens/],
+    ['web', ['--case', 'clear,'], /--case must not contain blank tokens/],
+    [
+      'web',
+      ['--suite', 'table', '--case', 'clear', '--scale', '1000'],
+      /requested table matrix drops case clear/,
+    ],
+    [
+      'native',
+      ['--suite', 'table', '--case', 'clear', '--scale', '1000'],
+      /requested table matrix drops case clear/,
+    ],
+  ];
+
+  try {
+    for (const [harness, matrixArgs, expected] of cases) {
+      fs.rmSync(browserMarker, { force: true });
+      fs.rmSync(adapterMarker, { force: true });
+      const result = spawnSync(process.execPath, [
+        cli,
+        'run',
+        '--lab-root',
+        root,
+        '--entry',
+        'vue-vapor-sentinel',
+        '--harness',
+        harness,
+        ...(harness === 'native' ? ['--adapter', adapter] : []),
+        ...matrixArgs,
+      ], {
+        cwd: process.cwd(),
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PLAYWRIGHT_CHROMIUM_PATH: browser,
+        },
+      });
+      assert.equal(result.status, 1, `${harness} ${matrixArgs.join(' ')}`);
+      assert.match(result.stderr, expected, `${harness} ${matrixArgs.join(' ')}`);
+      assert.equal(fs.existsSync(browserMarker), false);
+      assert.equal(fs.existsSync(adapterMarker), false);
+      assert.equal(fs.readFileSync(sentinel, 'utf8'), 'untouched');
+      assert.equal(fs.existsSync(path.join(root, 'results/runs')), false);
+      assert.equal(fs.existsSync(path.join(root, 'results/latest.json')), false);
+    }
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(browser, { force: true });
+    fs.rmSync(adapter, { force: true });
+    fs.rmSync(browserMarker, { force: true });
+    fs.rmSync(adapterMarker, { force: true });
+  }
+});
+
+test('lab CLI rejects unreceipted rows before browser launch or adapter import', () => {
+  const cli = path.join(process.cwd(), 'packages/runner/src/cli.mjs');
+  const root = path.join(process.cwd(), '.tmp', `missing-row-lab-${process.pid}`);
+  const browserMarker = path.join(os.tmpdir(), `missing-row-browser-${process.pid}`);
+  const adapterMarker = path.join(os.tmpdir(), `missing-row-adapter-${process.pid}`);
+  const adapter = path.join(os.tmpdir(), `missing-row-adapter-${process.pid}.mjs`);
+  try {
+    writeEntry(
+      root,
+      'vue-vapor-missing-row',
+      'source-commit',
+      'fixture',
+      { benchmarkState: captureGitState(process.cwd()) },
+    );
+    fs.writeFileSync(adapter, `
+      import fs from 'node:fs';
+      fs.writeFileSync(${JSON.stringify(adapterMarker)}, 'imported');
+      export default () => { throw new Error('adapter should not be imported'); };
+    `);
+
+    const common = [
+      'run',
+      '--lab-root',
+      root,
+      '--entry',
+      'vue-vapor-missing-row',
+      '--suite',
+      'startup',
+      '--scale',
+      '1000',
+      '--label',
+      'missing-row',
+    ];
+    const web = spawnSync(process.execPath, [cli, ...common], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PLAYWRIGHT_CHROMIUM_PATH: browserMarker,
+      },
+    });
+    assert.equal(web.status, 1);
+    assert.match(web.stderr, /selected row 1000 is not receipted/);
+    assert.doesNotMatch(web.stderr, /executable doesn't exist|No Chromium/);
+    assert.equal(fs.existsSync(browserMarker), false);
+
+    const native = spawnSync(process.execPath, [
+      cli,
+      ...common,
+      '--harness',
+      'native',
+      '--adapter',
+      adapter,
+    ], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    });
+    assert.equal(native.status, 1);
+    assert.match(native.stderr, /selected row 1000 is not receipted/);
+    assert.equal(fs.existsSync(adapterMarker), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(browserMarker, { force: true });
+    fs.rmSync(adapterMarker, { force: true });
+    fs.rmSync(adapter, { force: true });
+  }
+});
+
+test('lab CLI rejects a wrong producer cell before browser launch', () => {
+  const cli = path.join(process.cwd(), 'packages/runner/src/cli.mjs');
+  const root = path.join(process.cwd(), '.tmp', `wrong-cell-lab-${process.pid}`);
+  const browserMarker = path.join(os.tmpdir(), `wrong-cell-browser-${process.pid}`);
+  const wrongCell = {
+    ...vueVaporBuildCell('vapor', 0),
+    outputPath: 'packages/benchmark/apps/ui-vapor/dist-ifr',
+  };
+  try {
+    writeEntry(
+      root,
+      'vue-vapor-wrong-cell',
+      'source-commit',
+      'fixture',
+      {
+        benchmarkState: captureGitState(process.cwd()),
+        buildCells: [wrongCell],
+        verify: false,
+      },
+    );
+    const result = spawnSync(process.execPath, [
+      cli,
+      'run',
+      '--lab-root',
+      root,
+      '--entry',
+      'vue-vapor-wrong-cell',
+      '--suite',
+      'table',
+      '--case',
+      'create',
+      '--scale',
+      '1000',
+      '--label',
+      'wrong-cell',
+    ], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        PLAYWRIGHT_CHROMIUM_PATH: browserMarker,
+      },
+    });
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /receipt build cells/);
+    assert.doesNotMatch(result.stderr, /executable doesn't exist|No Chromium/);
+    assert.equal(fs.existsSync(browserMarker), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+    fs.rmSync(browserMarker, { force: true });
   }
 });

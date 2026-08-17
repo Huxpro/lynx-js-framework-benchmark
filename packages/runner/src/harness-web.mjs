@@ -24,6 +24,15 @@ async function evalX(page, expr) {
   return page.evaluate(`(() => { const x = globalThis.__x; return (${expr}); })()`);
 }
 
+export function assertStartupRowCount(entryId, scale, rep, actualRows) {
+  if (actualRows !== scale) {
+    throw new Error(
+      `${entryId} startup@${scale} rep${rep}: `
+      + `expected exactly ${scale} rendered rows, got ${actualRows}`,
+    );
+  }
+}
+
 async function clickAt(page, rect, label) {
   if (!rect) throw new Error(`no click geometry for ${label}`);
   await page.mouse.click(rect.x, rect.y);
@@ -439,6 +448,8 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         const result = await fcpPromise;
         const cpu = await pageProfiler.stop();
         const wire = await wireSnapshot(page);
+        const actualRows = await evalX(page, 'x.rowCount()');
+        assertStartupRowCount(entry.id, scale, rep, actualRows);
         if (result.dnf || result.fcp == null) {
           dnfCount += 1;
           log(`  [dnf] ${entry.id} startup@${scale} rep${rep} (count=${result.finalCount})`);

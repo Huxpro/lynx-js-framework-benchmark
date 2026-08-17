@@ -417,14 +417,19 @@ export function collectRuns({
       && isBetterComparisonRun(candidate, comparisonRun, comparisonIds)) comparisonRun = candidate;
   }
 
-  if (!comparisonRun) throw new Error(`no schema v${SCHEMA_VERSION} runs at ${runsDir}`);
-  if (comparisonRank(comparisonRun.run, comparisonIds)[0] === 0) {
+  const nativeCohort = selectNativeCohort(runs, comparisonIds, entryById, artifactById);
+  if (!comparisonRun && !(labMode && nativeCohort)) {
+    throw new Error(`no schema v${SCHEMA_VERSION} runs at ${runsDir}`);
+  }
+  if (comparisonRun && comparisonRank(comparisonRun.run, comparisonIds)[0] === 0) {
     throw new Error(
       `no ${labMode ? 'Lab' : 'featured'} benchmark records in schema v${SCHEMA_VERSION} runs at ${runsDir}`,
     );
   }
-  const comparisonSourceRecords = comparisonRun.run.records.filter((r) =>
-    comparisonIds.has(r.entry) && isBenchmarkRecord(r));
+  const comparisonSourceRecords = comparisonRun
+    ? comparisonRun.run.records.filter((r) =>
+      comparisonIds.has(r.entry) && isBenchmarkRecord(r))
+    : [];
   for (const entryId of new Set(comparisonSourceRecords.map((record) => record.entry))) {
     assertCurrentEntryCommit(comparisonRun.run, entryId, entryById.get(entryId), 'comparison');
     assertCurrentEntryArtifact(
@@ -442,7 +447,6 @@ export function collectRuns({
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
     ...comparisonStaticRecords,
   ];
-  const nativeCohort = selectNativeCohort(runs, comparisonIds, entryById, artifactById);
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
       annotate(source.run, source.file, source.record, 'same-machine')))
@@ -460,16 +464,25 @@ export function collectRuns({
     sourceRecordCount: nativeSourceRecords.length,
     recordCount: nativeSourceRecords.length,
   } : null;
+  const nativePrimaryRecord = [...nativeSourceRecords].sort((left, right) =>
+    left.runGeneratedAt.localeCompare(right.runGeneratedAt)
+    || left.runFile.localeCompare(right.runFile)).at(-1) ?? null;
+  const comparisonEntryIds = comparisonRun
+    ? [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort()
+    : nativeComparison?.entryIds ?? [];
+  const comparisonSourceRecordCount = comparisonRun
+    ? comparisonSourceRecords.length
+    : nativeSourceRecords.length;
   const comparison = {
-    runFile: comparisonRun.file,
-    generatedAt: comparisonRun.run.meta.generatedAt,
-    machineId: comparisonRun.run.meta.machine.id,
-    calibration: comparisonRun.run.meta.calibration,
-    entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
-    sourceRecordCount: comparisonSourceRecords.length,
+    runFile: comparisonRun?.file ?? nativePrimaryRecord?.runFile ?? null,
+    generatedAt: comparisonRun?.run.meta.generatedAt ?? nativeComparison?.generatedAt ?? null,
+    machineId: comparisonRun?.run.meta.machine.id ?? nativeComparison?.machineId ?? null,
+    calibration: comparisonRun?.run.meta.calibration ?? null,
+    entryIds: comparisonEntryIds,
+    sourceRecordCount: comparisonSourceRecordCount,
     recordCount: comparisonRecords.length,
     harnesses: [
-      {
+      ...(comparisonRun ? [{
         harness: 'web',
         environment: comparisonSourceRecords[0]?.environment ?? null,
         generatedAt: comparisonRun.run.meta.generatedAt,
@@ -479,7 +492,7 @@ export function collectRuns({
         entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
         sourceRecordCount: comparisonSourceRecords.length,
         recordCount: comparisonSourceRecords.length + comparisonStaticRecords.length,
-      },
+      }] : []),
       ...(nativeComparison ? [nativeComparison] : []),
     ],
   };
@@ -501,7 +514,7 @@ export function collectRuns({
       'Lab comparison',
     );
     const sourceCalibration = source.run.meta.calibration;
-    const targetCalibration = comparisonRun.run.meta.calibration;
+    const targetCalibration = comparisonRun?.run.meta.calibration ?? null;
     const compatibleCalibration = sourceCalibration?.probeVersion === targetCalibration?.probeVersion
       && sourceCalibration?.score > 0
       && targetCalibration?.score > 0;
@@ -514,13 +527,13 @@ export function collectRuns({
       sourceGeneratedAt: source.run.meta.generatedAt,
       sourceMachineId: source.run.meta.machine.id,
       sourceCalibration: source.run.meta.calibration,
-      targetCalibration: comparisonRun.run.meta.calibration,
+      targetCalibration,
       calibrationRatio,
       sourceRecordCount: records.length,
       recordCount: records.length + (staticByEntry.get(entryId)?.length ?? 0),
     });
     labComparisonRecords.push(...records.map((r) =>
-      calibrateLabRecord(source.run, source.file, r, comparisonRun.run.meta.calibration)));
+      calibrateLabRecord(source.run, source.file, r, targetCalibration)));
     const entry = entryById.get(entryId);
     if (entry) {
       labComparisonRecords.push(...(staticByEntry.get(entryId) ?? []).map((record) =>
