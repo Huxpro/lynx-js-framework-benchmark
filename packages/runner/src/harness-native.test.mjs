@@ -9,6 +9,10 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
+import {
+  isNativeTransientTransportFailure,
+  nativeTransportFailureDnf,
+} from '../adapters/lynx-sandbox-android.mjs';
 
 import {
   CONNECTOR_PACKAGE_NAMES,
@@ -18,7 +22,11 @@ import {
   createPackageTreeReceipt,
   resolveConnectorPackageTrees,
 } from './connector-receipt.mjs';
-import { loadNativeAdapter, runNativeHarness, runNativeMatrix } from './harness-native.mjs';
+import {
+  loadNativeAdapter,
+  runNativeHarness,
+  runNativeMatrix,
+} from './harness-native.mjs';
 
 const CASES = [
   { name: 'create', scales: [1000, 10000] },
@@ -189,6 +197,190 @@ test('known exhausted transport failures become evidenced DNF instead of discard
   ]);
   assert.equal(checkpoints.length, 1);
   assert.equal(checkpoints[0][0].dnfCount, 2);
+});
+
+test('table loadBundle transport exhaustion maps to the first pending cell and the next cell runs', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-table-load-transport-'));
+  const { entry, snapshots } = fakeEntry(dir);
+  const calls = [];
+  let loadAttempts = 0;
+  const recoveries = [];
+  const adapter = {
+    environment: 'lynx-native-mock-sim',
+    async loadBundle(_entry, { rows }) {
+      calls.push(['loadBundle', rows]);
+      loadAttempts++;
+      if (loadAttempts <= 3) {
+        throw new Error('CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable');
+      }
+    },
+    async driveCase(kase, scale) { calls.push(['driveCase', kase.name, scale]); },
+    async collect() { return { latencyMs: 9 }; },
+    async recoverTransient(error) {
+      recoveries.push(String(error));
+      return true;
+    },
+    async classifyFailure(error, context) {
+      return nativeTransportFailureDnf(error, context, {
+        transientRecoveries: recoveries.map((message) => ({ message })),
+      });
+    },
+  };
+  const records = await runNativeMatrix({
+    adapter,
+    entries: [entry],
+    cases: [{ name: 'create', scales: [1000, 3000, 5000] }],
+    suites: ['table'],
+    scales: [1000, 3000, 5000],
+    reps: 1,
+    bundleSnapshots: snapshots,
+    existingCellKeys: new Set(['fake|table|create|1000|latency']),
+  });
+
+  assert.deepEqual(records.map((record) => record.scale), [3000, 5000]);
+  const failed = records[0];
+  assert.equal(failed.entry, 'fake');
+  assert.equal(failed.workload, 'create');
+  assert.equal(failed.metric, 'latency');
+  assert.equal(failed.n, 0);
+  assert.equal(failed.dnfCount, 1);
+  assert.deepEqual(failed.samples, []);
+  assert.equal(failed.failures[0].category, 'transport-retries-exhausted');
+  assert.equal(failed.failures[0].stage, 'loadBundle');
+  assert.equal(failed.failures[0].capabilityScope, 'cell');
+  assert.equal(failed.failures[0].evidence.failureStage, 'loadBundle');
+  assert.equal(failed.failures[0].evidence.transientRecoveries.length, 2);
+  assert.equal(records[1].median, 9);
+  assert.deepEqual(
+    calls.filter(([method]) => method === 'driveCase'),
+    [['driveCase', 'create', 5000]],
+  );
+});
+
+test('startup loadBundle transport exhaustion checkpoints a DNF pair and the next scale runs', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-load-transport-'));
+  const { entry, snapshots } = fakeEntry(dir);
+  const calls = [];
+  let loadAttempts = 0;
+  const recoveries = [];
+  const checkpoints = [];
+  const adapter = {
+    environment: 'lynx-native-mock-sim',
+    async loadBundle(_entry, { rows }) {
+      calls.push(['loadBundle', rows]);
+      loadAttempts++;
+      if (loadAttempts <= 3) {
+        throw new Error('CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable');
+      }
+    },
+    async collectStartup() { return { fcpMs: 17, settledMs: 23 }; },
+    async recoverTransient(error) {
+      recoveries.push(String(error));
+      return true;
+    },
+    async classifyFailure(error, context) {
+      return nativeTransportFailureDnf(error, context, {
+        transientRecoveries: recoveries.map((message) => ({ message })),
+      });
+    },
+  };
+  const records = await runNativeMatrix({
+    adapter,
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0, 1000],
+    startupReps: 1,
+    bundleSnapshots: snapshots,
+    onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
+  });
+
+  assert.deepEqual(checkpoints.map((checkpoint) => checkpoint.length), [2, 4]);
+  const failedPair = records.filter((record) => record.scale === 0);
+  assert.deepEqual(failedPair.map((record) => record.metric), ['fcp', 'settled']);
+  for (const record of failedPair) {
+    assert.equal(record.n, 0);
+    assert.equal(record.dnfCount, 1);
+    assert.deepEqual(record.samples, []);
+    assert.equal(record.value, null);
+    assert.equal(record.median, null);
+    assert.equal(record.failures[0].category, 'transport-retries-exhausted');
+    assert.equal(record.failures[0].stage, 'loadBundle');
+    assert.equal(record.failures[0].capabilityScope, 'cell');
+  }
+  assert.deepEqual(
+    records.filter((record) => record.scale === 1000).map((record) => record.median),
+    [17, 23],
+  );
+  assert.deepEqual(
+    calls.filter(([method]) => method === 'loadBundle').map(([, rows]) => rows),
+    [0, 0, 0, 1000],
+  );
+});
+
+test('lease-expiry control flow bypasses transport recovery and classification', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-lease-stop-precedence-'));
+  const marker = path.join(dir, 'calls.txt');
+  const adapterPath = path.join(dir, 'adapter.mjs');
+  const harnessUrl = new URL('./harness-native.mjs', import.meta.url).href;
+  fs.writeFileSync(adapterPath, `
+    import fs from 'node:fs';
+    import { NativeLeaseExpiryStop } from ${JSON.stringify(harnessUrl)};
+    const mark = (value) => fs.appendFileSync(${JSON.stringify(marker)}, value + String.fromCharCode(10));
+    export default async () => ({
+      environment: 'native-test', machine: { id: 'test' },
+      loadBundle: async () => { throw new NativeLeaseExpiryStop([]); },
+      driveCase: async () => {}, collect: async () => ({ latencyMs: 1 }),
+      collectStartup: async () => ({}),
+      recoverTransient: async () => { mark('recover'); return true; },
+      classifyFailure: async () => { mark('classify'); return { dnf: true }; },
+      dispose: async () => { mark('dispose'); },
+    });
+  `);
+  const entry = { id: 'react', framework: 'reactlynx' };
+  try {
+    const stopped = await runNativeHarness({
+      adapterPath,
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000] }],
+      suites: ['table'],
+      scales: [1000],
+      reps: 1,
+      bundleSnapshots: new Map([
+        ['react:0', {
+          entryId: 'react', rows: 0, bundlePath: '/unused/0',
+          bundleBytes: Buffer.from('react:0'), bundleSha256: 'unused',
+        }],
+      ]),
+    });
+    assert.equal(stopped.stoppedForLeaseExpiry, true);
+    assert.deepEqual(stopped.records, []);
+    assert.deepEqual(fs.readFileSync(marker, 'utf8').trim().split('\n'), ['dispose']);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('transport classification is narrow and preserves producer and integrity failures', () => {
+  const runtimeFailure = new Error(
+    'CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable',
+  );
+  assert.equal(isNativeTransientTransportFailure(runtimeFailure), true);
+  assert.equal(
+    isNativeTransientTransportFailure(new Error('CDP Runtime.evaluate failed: application error')),
+    false,
+  );
+  assert.equal(
+    isNativeTransientTransportFailure(new Error('in-memory bundle sha256 mismatch')),
+    false,
+  );
+  assert.equal(
+    isNativeTransientTransportFailure(new Error('Native startup payload.firstFrameMs must be finite.')),
+    false,
+  );
+  assert.equal(nativeTransportFailureDnf(new Error('programming error'), {
+    suite: 'table', entry: { id: 'fake' }, kase: { name: 'create' }, scale: 1000,
+  }), null);
 });
 
 test('startup failures remain per-cell and still emit every expected metric and scale', async () => {

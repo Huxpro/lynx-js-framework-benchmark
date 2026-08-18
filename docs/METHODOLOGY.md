@@ -116,12 +116,19 @@ had a documented weakness, the fix is noted.
   `producer-protocol-invalid` DNF evidence for the current cell only. Evidence says validation was
   attempted and did not pass; it never claims successful validation and contains no fabricated
   timing. Unrelated cells continue. Other non-timeout harness/programming errors still abort the run.
-  DevTool `No response found`/inactive-hook failures use a configurable bounded attempt count
-  (three by default); exhaustion becomes a `transport-retries-exhausted` DNF with the recovery
-  log. Semantic timeouts are never retried and never converted to numbers. Native source files are
-  atomically checkpointed after each cell, so a later transport failure or lease boundary cannot
-  erase prior cells. Before the lease safety window the runner exits cleanly with an incomplete
-  checkpoint rather than starting a cell it may not finish. The safety window is derived from the
+  DevTool `No response found`/inactive-hook failures and page/session-start transport failures
+  (including an unresponsive `Runtime.enable`) use a configurable bounded attempt count (three by
+  default); exhaustion becomes a `transport-retries-exhausted` DNF with the recovery log. Bundle
+  integrity, thermal, producer validation, and unknown harness errors are not folded into that
+  category. Device/adapter initialization before any contract key exists remains fatal; entry-specific
+  page/session setup happens only after the first pending contract cell is selected, so its failure
+  maps deterministically to that table key or to the complete two-metric startup scale, never to
+  broad entry-wide unsupported status. Startup transport DNFs contain no fabricated
+  FCP/settled observations. Semantic timeouts are never retried and never converted to numbers.
+  Native source files are atomically checkpointed after each cell (and each complete startup pair),
+  so a later transport failure or lease boundary cannot erase prior cells. Before the lease safety
+  window the runner exits cleanly with an incomplete checkpoint rather than starting a cell it may
+  not finish. The safety window is derived from the
   largest formal repetition count and configured thermal gate, page/session and long-workload
   timeouts, every transient attempt and reconnect window, plus cleanup. An environment override
   may increase but cannot lower that minimum, so timeout changes automatically change expiry safety.
