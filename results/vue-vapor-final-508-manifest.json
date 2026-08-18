@@ -1,0 +1,951 @@
+{
+  "analyzer": {
+    "coverageModule": "../packages/runner/src/vue-vapor-coverage.mjs",
+    "coverageSha256": "9ff3d1d78dad4899237f4934b165b753f526bef8f57708b5994084515d065081",
+    "module": "../packages/runner/src/abba-analysis.mjs",
+    "sha256": "1120f7a23fc888e0da7cb9076a8136a94a5fa5287f074bc29156e9c2449b9fc0",
+    "statisticsModule": "../packages/runner/src/abba-stats.mjs",
+    "statisticsSha256": "97e426a6f116af829d7992ef4bef996cd0d52bec2dfb1ea3c667e541947636c1"
+  },
+  "artifacts": {
+    "nativeStartupAdapter": {
+      "fingerprint": "4dba7f100fc15d02c51f04b573f48c7c7261080d6ce305e09e3f8a2d22dca4e7",
+      "path": "../.tmp/vue-vapor-native-formal/startup-cdp-suppressed-adapter.mjs",
+      "renderedRowOracle": "DOM.performSearch countOnly",
+      "sha256": "51925f53b4b2419593419c4b371cb12a66dd8e1ca40e29d192106a27ab03fb4b"
+    },
+    "nativeStartupApk": {
+      "path": "../.tmp/vue-vapor-final-largeheap-runtime-v9.apk",
+      "sha256": "91e818bc1367f375436d11fa45d11b8cd41ef53461f19289b698ad1a570ba01a"
+    },
+    "nativeTableApk": {
+      "path": "../.tmp/vue-vapor-matching-dom-filter-runtime.apk",
+      "sha256": "dc3d6a91a7bac4401ef7ac65869ba874d701cdf18193bd9a34ab2e76bd28956a"
+    }
+  },
+  "auditReceipts": {
+    "interpretation": [
+      "The supplied Vapor pair identifies the earlier final2 Native table artifacts at benchmark commit 369e1c86f6400cb77e3f5eddb5ed7e3a7b5dd4f0.",
+      "The accepted final4 Vapor table and v9 startup sequences use the rebuilt 69979813/4ec9dcf2 artifact pair at benchmark commit 81540aed4fcdee230a26d13e0800eea35065cc63.",
+      "The accepted IFR table retains the supplied 0695cd9c/8d64c663 pair; IFR v9 startup uses the rebuilt a82da6f2/05c25472 pair.",
+      "Every accepted leg remains bound to its exact full receipt SHA256 in domains[].receiptIdentities."
+    ],
+    "userSupplied": {
+      "baselineIfr": "0695cd9c8a0450f43de13231a023f72cac75f5d811df4d1193cee97bad5fc780",
+      "baselineVapor": "99fc0cda3c8f771ea229fc064fde570abb12e36844893c1440ff4de5c02f0960",
+      "tipIfr": "8d64c663f0d5442742df92d4654ab59a6ca75893100fbfbf6e47ab10debca740",
+      "tipVapor": "58ebd0989ef903e8e1947d1e5651030d7eb7b666c89876cf77f24607e0e6cfce"
+    }
+  },
+  "benchmarkCommit": "81540aed4fcdee230a26d13e0800eea35065cc63",
+  "domains": [
+    {
+      "comparisonId": "vue-vapor-baseline-tip",
+      "expectedAnalyzedKeys": 465,
+      "expectedIncludedKeys": 438,
+      "id": "web",
+      "include": [
+        {
+          "harness": "web"
+        }
+      ],
+      "receiptIdentities": {
+        "ifr-web-heap-1": {
+          "A1": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          }
+        },
+        "ifr-web-heap-2": {
+          "A1": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          }
+        },
+        "ifr-web-heap-3": {
+          "A1": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          }
+        },
+        "ifr-web-startup": {
+          "A1": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          }
+        },
+        "ifr-web-table": {
+          "A1": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-formal-baseline",
+            "receiptSha256": "c4f37c8495bff80eb795d6900ab1b55c09102d3613a7c595621d8a7573163009"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-formal-tip",
+            "receiptSha256": "770c45e728797e002c321811ca216341ddea90edb6f7829fbab0e5aded35a5e9"
+          }
+        },
+        "vapor-web-heap-1": {
+          "A1": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "A2": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "B1": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          },
+          "B2": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          }
+        },
+        "vapor-web-heap-2": {
+          "A1": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "A2": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "B1": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          },
+          "B2": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          }
+        },
+        "vapor-web-heap-3": {
+          "A1": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "A2": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "B1": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          },
+          "B2": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          }
+        },
+        "vapor-web-startup": {
+          "A1": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "A2": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "B1": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          },
+          "B2": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          }
+        },
+        "vapor-web-table": {
+          "A1": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "A2": {
+            "entry": "vue-vapor-formal-baseline",
+            "receiptSha256": "8fac719575e19617f66524746264795039b5a72f80eb9b2e6c8475c2632209ce"
+          },
+          "B1": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          },
+          "B2": {
+            "entry": "vue-vapor-formal-tip",
+            "receiptSha256": "968a8d67dc95ed08faa5db1cd3995512abc931a5a73826587d832cc35c4ad341"
+          }
+        },
+        "web-native-environment-anchor": {
+          "A1": {
+            "entry": "vue-vapor-native-baseline",
+            "receiptSha256": "e34bca43649618bb5b50b677291028f95938fb73f874972760131b84b03996ef"
+          },
+          "A2": {
+            "entry": "vue-vapor-native-baseline",
+            "receiptSha256": "e34bca43649618bb5b50b677291028f95938fb73f874972760131b84b03996ef"
+          },
+          "B1": {
+            "entry": "vue-vapor-native-tip",
+            "receiptSha256": "4e8f987a5967d34004a49d3c722fbb4f8d8eb5952e108040cbc1b2598428f7fe"
+          },
+          "B2": {
+            "entry": "vue-vapor-native-tip",
+            "receiptSha256": "4e8f987a5967d34004a49d3c722fbb4f8d8eb5952e108040cbc1b2598428f7fe"
+          }
+        }
+      },
+      "sequences": [
+        {
+          "harness": "web",
+          "id": "vapor-web-table",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-vapor-table-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-24-54-233Z-65160668d8d9-cmp-vapor-table-a1.json",
+              "runLabel": "cmp-vapor-table-a1",
+              "sha256": "229e36a3bfd83a8146631795c1bde8897ac3c8005da2c376e44e0aec28e52506"
+            },
+            "A2": {
+              "campaignId": "vue-vapor-table-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-47-26-999Z-65160668d8d9-cmp-vapor-table-a2.json",
+              "runLabel": "cmp-vapor-table-a2",
+              "sha256": "f590438978da27524ff7ee42bca8e9967e3d19ee6b68faf4d7a4470021f26544"
+            },
+            "B1": {
+              "campaignId": "vue-vapor-table-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-32-19-160Z-65160668d8d9-cmp-vapor-table-b1.json",
+              "runLabel": "cmp-vapor-table-b1",
+              "sha256": "0c50f189fc3d0bd262f95c9d79c83bae8542b3bba40a08fe902026fa8c7b724d"
+            },
+            "B2": {
+              "campaignId": "vue-vapor-table-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-39-58-792Z-65160668d8d9-cmp-vapor-table-b2.json",
+              "runLabel": "cmp-vapor-table-b2",
+              "sha256": "bac661da83a4797543217765acdb404d1918ae04428675d2e8573582c16d947c"
+            }
+          },
+          "phase": "table",
+          "sourceSequenceId": "vue-vapor-baseline-tip-table",
+          "variant": "vapor"
+        },
+        {
+          "harness": "web",
+          "id": "vapor-web-startup",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-vapor-startup-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-49-56-590Z-65160668d8d9-cmp-vapor-startup-a1.json",
+              "runLabel": "cmp-vapor-startup-a1",
+              "sha256": "852b215b64902ad6ea27c82ca66ebc01909f61b83682aa67ef75a10324030536"
+            },
+            "A2": {
+              "campaignId": "vue-vapor-startup-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-54-56-011Z-65160668d8d9-cmp-vapor-startup-a2.json",
+              "runLabel": "cmp-vapor-startup-a2",
+              "sha256": "f64955e60749a2a6295d931b1e21958f812ba3961b850b6af292b42ab643b738"
+            },
+            "B1": {
+              "campaignId": "vue-vapor-startup-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-51-35-357Z-65160668d8d9-cmp-vapor-startup-b1.json",
+              "runLabel": "cmp-vapor-startup-b1",
+              "sha256": "a69b645e61e07f6dedf30200e73ad0a157dc695e709bc235c8e6c2abb7d446d6"
+            },
+            "B2": {
+              "campaignId": "vue-vapor-startup-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-53-15-977Z-65160668d8d9-cmp-vapor-startup-b2.json",
+              "runLabel": "cmp-vapor-startup-b2",
+              "sha256": "f032a538b18e9515278014fb6fa3300a402ecfa9d83d0de692298dd9b3e02427"
+            }
+          },
+          "phase": "startup",
+          "sourceSequenceId": "vue-vapor-baseline-tip-startup",
+          "variant": "vapor"
+        },
+        {
+          "harness": "web",
+          "id": "vapor-web-heap-1",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-vapor-heap-1-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-56-57-238Z-65160668d8d9-cmp-vapor-heap-1-a1.json",
+              "runLabel": "cmp-vapor-heap-1-a1",
+              "sha256": "358e3edf83115b9e483a60e71c6fe743c454242121fac61702ed1722b1c37d0b"
+            },
+            "A2": {
+              "campaignId": "vue-vapor-heap-1-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-57-27-870Z-65160668d8d9-cmp-vapor-heap-1-a2.json",
+              "runLabel": "cmp-vapor-heap-1-a2",
+              "sha256": "344b339c32d17d65dbdbd02933988b2eef1e3ed00da7b82a4f242e5197bceb5f"
+            },
+            "B1": {
+              "campaignId": "vue-vapor-heap-1-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-57-07-674Z-65160668d8d9-cmp-vapor-heap-1-b1.json",
+              "runLabel": "cmp-vapor-heap-1-b1",
+              "sha256": "efbd1d4399ff8c01ef330b689fca442733d2853c85b97a30d56856cdf2596044"
+            },
+            "B2": {
+              "campaignId": "vue-vapor-heap-1-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-57-18-255Z-65160668d8d9-cmp-vapor-heap-1-b2.json",
+              "runLabel": "cmp-vapor-heap-1-b2",
+              "sha256": "640e54449faae4e22028ffa32abc8ce5ceb6a8321dca6f57e4f7f585e3dea979"
+            }
+          },
+          "phase": "heap",
+          "sourceSequenceId": "vue-vapor-baseline-tip-heap",
+          "variant": "vapor"
+        },
+        {
+          "harness": "web",
+          "id": "vapor-web-heap-2",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-vapor-heap-2-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-57-53-520Z-65160668d8d9-cmp-vapor-heap-2-a1.json",
+              "runLabel": "cmp-vapor-heap-2-a1",
+              "sha256": "ea1fdec8ebd1b83a6636c9442858dbd7350b10c7d58ef6bad885207fa888fb06"
+            },
+            "A2": {
+              "campaignId": "vue-vapor-heap-2-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-58-22-525Z-65160668d8d9-cmp-vapor-heap-2-a2.json",
+              "runLabel": "cmp-vapor-heap-2-a2",
+              "sha256": "289dfe6afeb07dce95853e66364c5f6906b828e2214c21ef1a83bbb4bf436f39"
+            },
+            "B1": {
+              "campaignId": "vue-vapor-heap-2-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-58-03-139Z-65160668d8d9-cmp-vapor-heap-2-b1.json",
+              "runLabel": "cmp-vapor-heap-2-b1",
+              "sha256": "fe5934fa216693ca57df8322918a33ea0b9e0d919dd17cecc73584632d31df65"
+            },
+            "B2": {
+              "campaignId": "vue-vapor-heap-2-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-58-12-815Z-65160668d8d9-cmp-vapor-heap-2-b2.json",
+              "runLabel": "cmp-vapor-heap-2-b2",
+              "sha256": "41f20f2789a74dbd3e8a9e832513738f886cf70e9ed4313feccf5b8e0714f777"
+            }
+          },
+          "phase": "heap",
+          "sourceSequenceId": "vue-vapor-baseline-tip-heap",
+          "variant": "vapor"
+        },
+        {
+          "harness": "web",
+          "id": "vapor-web-heap-3",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-vapor-heap-3-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-58-33-319Z-65160668d8d9-cmp-vapor-heap-3-a1.json",
+              "runLabel": "cmp-vapor-heap-3-a1",
+              "sha256": "f8e81ec747d9cea66ae2b3b118239eea0e42acb804ea5d5bdef6a5adfe341925"
+            },
+            "A2": {
+              "campaignId": "vue-vapor-heap-3-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-59-02-302Z-65160668d8d9-cmp-vapor-heap-3-a2.json",
+              "runLabel": "cmp-vapor-heap-3-a2",
+              "sha256": "2fb6048d16a0c30ba2cbf92fa0fef2818b02599dd649d2045c0bccd2ce4a0c9e"
+            },
+            "B1": {
+              "campaignId": "vue-vapor-heap-3-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-58-42-806Z-65160668d8d9-cmp-vapor-heap-3-b1.json",
+              "runLabel": "cmp-vapor-heap-3-b1",
+              "sha256": "456a7bc55abe4bf54bd7e914ce6d77d7292003d19eeee19af6e08c433dd2bc78"
+            },
+            "B2": {
+              "campaignId": "vue-vapor-heap-3-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T16-58-52-868Z-65160668d8d9-cmp-vapor-heap-3-b2.json",
+              "runLabel": "cmp-vapor-heap-3-b2",
+              "sha256": "66c877e5c65de251aced26d758f0e331baf84df0210b265a5f4af657282aed5f"
+            }
+          },
+          "phase": "heap",
+          "sourceSequenceId": "vue-vapor-baseline-tip-heap",
+          "variant": "vapor"
+        },
+        {
+          "harness": "web",
+          "id": "ifr-web-table",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-ifr-table-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-06-55-595Z-65160668d8d9-cmp-ifr-table-a1.json",
+              "runLabel": "cmp-ifr-table-a1",
+              "sha256": "dc146bbd11cebd86e8775dd1d63a31a463e1db98d69796eef44facf55f8dc7c0"
+            },
+            "A2": {
+              "campaignId": "vue-ifr-table-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-28-52-671Z-65160668d8d9-cmp-ifr-table-a2.json",
+              "runLabel": "cmp-ifr-table-a2",
+              "sha256": "81f65a1880f8ba85c4104a57c095d67f272f4e55685555785d1b08d97cc559cc"
+            },
+            "B1": {
+              "campaignId": "vue-ifr-table-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-14-17-677Z-65160668d8d9-cmp-ifr-table-b1.json",
+              "runLabel": "cmp-ifr-table-b1",
+              "sha256": "160c35244e0d871121d5e0ba54753c5ebfdceefb7b8e8b1241ca66120eeb0199"
+            },
+            "B2": {
+              "campaignId": "vue-ifr-table-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-21-27-889Z-65160668d8d9-cmp-ifr-table-b2.json",
+              "runLabel": "cmp-ifr-table-b2",
+              "sha256": "ee87185072640fbe67c0362a7678489866a49de2cc6aa04d997cebb8243a2aa5"
+            }
+          },
+          "phase": "table",
+          "sourceSequenceId": "vue-vapor-baseline-tip-table",
+          "variant": "ifr"
+        },
+        {
+          "harness": "web",
+          "id": "ifr-web-startup",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-ifr-startup-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-30-57-458Z-65160668d8d9-cmp-ifr-startup-a1.json",
+              "runLabel": "cmp-ifr-startup-a1",
+              "sha256": "77228ab641ae1ed95d8d445985e739318c2c53170ce7bf7b8cdda49a579ec5da"
+            },
+            "A2": {
+              "campaignId": "vue-ifr-startup-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-35-35-616Z-65160668d8d9-cmp-ifr-startup-a2.json",
+              "runLabel": "cmp-ifr-startup-a2",
+              "sha256": "9c2543853928beb568cf80ea7dda872a677aa9e392ffe7aecda865ccc5977cb7"
+            },
+            "B1": {
+              "campaignId": "vue-ifr-startup-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-32-25-332Z-65160668d8d9-cmp-ifr-startup-b1.json",
+              "runLabel": "cmp-ifr-startup-b1",
+              "sha256": "b00a5b4f99fbeabcfe024cfd8e3f804319479a771f5d23e07e7bdefa8edb4415"
+            },
+            "B2": {
+              "campaignId": "vue-ifr-startup-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-33-54-330Z-65160668d8d9-cmp-ifr-startup-b2.json",
+              "runLabel": "cmp-ifr-startup-b2",
+              "sha256": "ffb70222278b87dbd18f55d5d145ae80c993f645a42d7e2b93f224767d2eb5b9"
+            }
+          },
+          "phase": "startup",
+          "sourceSequenceId": "vue-vapor-baseline-tip-startup",
+          "variant": "ifr"
+        },
+        {
+          "harness": "web",
+          "id": "ifr-web-heap-1",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-ifr-heap-1-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-36-10-320Z-65160668d8d9-cmp-ifr-heap-1-a1.json",
+              "runLabel": "cmp-ifr-heap-1-a1",
+              "sha256": "2f42ba9f33db8890653490253966c48a70e2792117dcf73f84f6d848646a6b5b"
+            },
+            "A2": {
+              "campaignId": "vue-ifr-heap-1-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-36-39-571Z-65160668d8d9-cmp-ifr-heap-1-a2.json",
+              "runLabel": "cmp-ifr-heap-1-a2",
+              "sha256": "a458371593da394bfe5f2b740f35f4d1dcc4939b4afa9c9c805f4e642e628191"
+            },
+            "B1": {
+              "campaignId": "vue-ifr-heap-1-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-36-19-896Z-65160668d8d9-cmp-ifr-heap-1-b1.json",
+              "runLabel": "cmp-ifr-heap-1-b1",
+              "sha256": "03213a8792d93e7ccd6db2e3404cc2f685cbfade648971e674fd8214aea1f438"
+            },
+            "B2": {
+              "campaignId": "vue-ifr-heap-1-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-36-29-812Z-65160668d8d9-cmp-ifr-heap-1-b2.json",
+              "runLabel": "cmp-ifr-heap-1-b2",
+              "sha256": "7146f0a99549d0c703533ad6fd91de9aaedf10c85ccafa7dbd38c399de5dd96f"
+            }
+          },
+          "phase": "heap",
+          "sourceSequenceId": "vue-vapor-baseline-tip-heap",
+          "variant": "ifr"
+        },
+        {
+          "harness": "web",
+          "id": "ifr-web-heap-2",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-ifr-heap-2-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-36-49-725Z-65160668d8d9-cmp-ifr-heap-2-a1.json",
+              "runLabel": "cmp-ifr-heap-2-a1",
+              "sha256": "96bdb199f17d3d2757437bf861d0d0f1648b2a42d017ebce06f0b6f9fecd452e"
+            },
+            "A2": {
+              "campaignId": "vue-ifr-heap-2-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-37-19-199Z-65160668d8d9-cmp-ifr-heap-2-a2.json",
+              "runLabel": "cmp-ifr-heap-2-a2",
+              "sha256": "5d4f429b4f9e112d897c6f3a2b0c76dc83a74c301301a787068ef370c413bb70"
+            },
+            "B1": {
+              "campaignId": "vue-ifr-heap-2-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-36-59-789Z-65160668d8d9-cmp-ifr-heap-2-b1.json",
+              "runLabel": "cmp-ifr-heap-2-b1",
+              "sha256": "2253de888674843ce4d2f67e1a11a9cd1d29bdda9e384ecb72709df48d785a2b"
+            },
+            "B2": {
+              "campaignId": "vue-ifr-heap-2-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-37-09-559Z-65160668d8d9-cmp-ifr-heap-2-b2.json",
+              "runLabel": "cmp-ifr-heap-2-b2",
+              "sha256": "e11e8565399b6353532a2b234a9d0cf1a668b6c78d8fa3dbf5b661d6e72d2d04"
+            }
+          },
+          "phase": "heap",
+          "sourceSequenceId": "vue-vapor-baseline-tip-heap",
+          "variant": "ifr"
+        },
+        {
+          "harness": "web",
+          "id": "ifr-web-heap-3",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-ifr-heap-3-a1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-37-29-610Z-65160668d8d9-cmp-ifr-heap-3-a1.json",
+              "runLabel": "cmp-ifr-heap-3-a1",
+              "sha256": "6d244ed1476b21e9b488b2eea87c6e35803874d8bea452b9a227bf2d38894ee2"
+            },
+            "A2": {
+              "campaignId": "vue-ifr-heap-3-a2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-37-58-310Z-65160668d8d9-cmp-ifr-heap-3-a2.json",
+              "runLabel": "cmp-ifr-heap-3-a2",
+              "sha256": "a286a01ed244384c3df503852637ed2f51692e38991cac4db758198ccf0db9fd"
+            },
+            "B1": {
+              "campaignId": "vue-ifr-heap-3-b1",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-37-39-189Z-65160668d8d9-cmp-ifr-heap-3-b1.json",
+              "runLabel": "cmp-ifr-heap-3-b1",
+              "sha256": "f0247b3e866b3479f702f27446be099cff7cc0def8e5b21fd219ac39240b04b4"
+            },
+            "B2": {
+              "campaignId": "vue-ifr-heap-3-b2",
+              "path": "../.tmp/vue-vapor-formal/results/runs/2026-08-16T17-37-48-673Z-65160668d8d9-cmp-ifr-heap-3-b2.json",
+              "runLabel": "cmp-ifr-heap-3-b2",
+              "sha256": "d9dfebb5f834ccccae70f1d488e4b947ceb75313bf449eafdd5548c97ef2fcf6"
+            }
+          },
+          "phase": "heap",
+          "sourceSequenceId": "vue-vapor-baseline-tip-heap",
+          "variant": "ifr"
+        },
+        {
+          "harness": "native",
+          "id": "web-native-environment-anchor",
+          "legs": {
+            "A1": {
+              "campaignId": "vue-vapor-native-table-a1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T02-39-53-358Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-cmp-vapor-native-table-a1.json",
+              "runLabel": "cmp-vapor-native-table-a1",
+              "sha256": "30cf604bd0d5d833d3c1ad7326661cfd9f0da6ded2984052b02a9c0bccc3f65b"
+            },
+            "A2": {
+              "campaignId": "vue-vapor-native-table-a2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T03-37-35-703Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-cmp-vapor-native-table-a2.json",
+              "runLabel": "cmp-vapor-native-table-a2",
+              "sha256": "063dca8247f2d15dfcd50d315fc190eae626f2ca217cbb006f0fea84589a0caa"
+            },
+            "B1": {
+              "campaignId": "vue-vapor-native-table-b1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T02-56-07-569Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-cmp-vapor-native-table-b1.json",
+              "runLabel": "cmp-vapor-native-table-b1",
+              "sha256": "07ece51835ace008706f281b990a3a70104ba07655f857fa7846dd36c8cada00"
+            },
+            "B2": {
+              "campaignId": "vue-vapor-native-table-b2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T03-11-58-104Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-cmp-vapor-native-table-b2.json",
+              "runLabel": "cmp-vapor-native-table-b2",
+              "sha256": "6e5df37e2633e78c3a6627a536c7de7633d49549c211b739f288299a636e2c95"
+            }
+          },
+          "phase": "table",
+          "role": "environment-only",
+          "sourceSequenceId": "vue-vapor-baseline-tip-vapor-native-table",
+          "variant": "vapor"
+        }
+      ],
+      "sourceManifests": [
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-vapor-baseline-tip-table.json",
+          "sha256": "85329fbea09a2c39e8e62869c141e9b5f9f9ca43f0f838ee3db68bd4739e1f82"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-vapor-baseline-tip-startup.json",
+          "sha256": "8e8c09d9b43106697c1837bc2fbe9425c16d65904d5c0ec67b18b38206131f4f"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-vapor-heap-1.json",
+          "sha256": "3e6ab4715fbe95d7dea99d075657afdd4ac6832db7e4e640ce63dbf1ea33011f"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-vapor-heap-2.json",
+          "sha256": "9f47520f3d4e98b7d2cf22a03ec7409a4da65f1469bc26465be007a9b2adf07e"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-vapor-heap-3.json",
+          "sha256": "db91574eed1549b7f17d7ea3409d2452d5bd90f2d8bd87b37d87bc6a6268ad9c"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-ifr-table.json",
+          "sha256": "0653e3ee6b7dd9bac1a39d8b9cd828cbaa37d71cf6e7e29d94c21088621fa359"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-ifr-startup.json",
+          "sha256": "3bbd087e667a1ba2c6b484f3f733ef97c366698a8c22f62717740d9b4714fc1f"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-ifr-heap-1.json",
+          "sha256": "872379e56984bc03db00907859fecd576d34155145a45921dc606da36bcea445"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-ifr-heap-2.json",
+          "sha256": "13b69cbd0c27e3142e286f68a7a157bdbf28808dccb3486bede8a72038422350"
+        },
+        {
+          "path": "../.tmp/vue-vapor-formal/manifests/vue-ifr-heap-3.json",
+          "sha256": "37b6ff4cfdefcdc4dfaf3bfb72a938f8ba22444cf26e8de4957a5c42c30b0a4e"
+        },
+        {
+          "path": "../.tmp/vue-vapor-native-formal/manifests/vue-vapor-native-table.json",
+          "sha256": "4197b7e2debc7641325d1840029838df9bee9f457492e107bb9503910444beac"
+        }
+      ]
+    },
+    {
+      "comparisonId": "vue-vapor-final-508-v3",
+      "expectedAnalyzedKeys": 27,
+      "expectedIncludedKeys": 27,
+      "id": "vapor-native-table",
+      "include": [
+        {
+          "harness": "native",
+          "suite": "table",
+          "variant": "vapor"
+        }
+      ],
+      "receiptIdentities": {
+        "vapor-native-table": {
+          "A1": {
+            "entry": "vue-vapor-native-baseline",
+            "receiptSha256": "69979813d6b34f46ffb777e7e6c17f09171ab28e97b5b57de0d7697e4dc8c1ca"
+          },
+          "A2": {
+            "entry": "vue-vapor-native-baseline",
+            "receiptSha256": "69979813d6b34f46ffb777e7e6c17f09171ab28e97b5b57de0d7697e4dc8c1ca"
+          },
+          "B1": {
+            "entry": "vue-vapor-native-tip",
+            "receiptSha256": "4ec9dcf2c5b3683c8cfbe5a002ed5b5c609637da59831d1aa9ed26568012ad2c"
+          },
+          "B2": {
+            "entry": "vue-vapor-native-tip",
+            "receiptSha256": "4ec9dcf2c5b3683c8cfbe5a002ed5b5c609637da59831d1aa9ed26568012ad2c"
+          }
+        }
+      },
+      "sequences": [
+        {
+          "harness": "native",
+          "id": "vapor-native-table",
+          "legs": {
+            "A1": {
+              "campaignId": "final4-vapor-native-table-a1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T15-43-59-665Z-5353c7ed3999d5f067c943375add8b6ade4868097ccde5453497cdc910752eae-native-final4-vapor-native-table-a1.json",
+              "runLabel": "final4-vapor-native-table-a1",
+              "sha256": "6e69842cbd7a833b9180684b56cb175ffafdb7a7d0fda66922cd8a2505a08264"
+            },
+            "A2": {
+              "campaignId": "final4-vapor-native-table-a2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T16-34-25-833Z-5353c7ed3999d5f067c943375add8b6ade4868097ccde5453497cdc910752eae-native-final4-vapor-native-table-a2.json",
+              "runLabel": "final4-vapor-native-table-a2",
+              "sha256": "17dd077af6beccf950dbc3766376d581e994c415a33671914c534f87a8feedd6"
+            },
+            "B1": {
+              "campaignId": "final4-vapor-native-table-b1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T16-00-37-591Z-5353c7ed3999d5f067c943375add8b6ade4868097ccde5453497cdc910752eae-native-final4-vapor-native-table-b1.json",
+              "runLabel": "final4-vapor-native-table-b1",
+              "sha256": "d3cf6315abcfb22dd86020d5ff9c6627d326f7459533a70843fa7c1c9da595be"
+            },
+            "B2": {
+              "campaignId": "final4-vapor-native-table-b2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T16-18-10-659Z-5353c7ed3999d5f067c943375add8b6ade4868097ccde5453497cdc910752eae-native-final4-vapor-native-table-b2.json",
+              "runLabel": "final4-vapor-native-table-b2",
+              "sha256": "8c4d288dcbcf334ee8fa840273a4ec08599a6e7a55f05cbbba80d1a19912f820"
+            }
+          },
+          "phase": "table",
+          "sourceSequenceId": "final4-vapor-native-table",
+          "variant": "vapor"
+        }
+      ],
+      "sourceManifests": [
+        {
+          "path": "../.tmp/vue-vapor-native-formal/manifests/final4-vapor-native-table.json",
+          "sha256": "cc6b17c0384b8c8efffb09b48a199aefd3755ab332901d9450a411dad60f6141"
+        }
+      ]
+    },
+    {
+      "comparisonId": "vue-vapor-final-508",
+      "expectedAnalyzedKeys": 43,
+      "expectedIncludedKeys": 43,
+      "id": "native-final-508",
+      "include": [
+        {
+          "harness": "native",
+          "suite": "table",
+          "variant": "ifr"
+        },
+        {
+          "harness": "native",
+          "suite": "startup"
+        }
+      ],
+      "receiptIdentities": {
+        "ifr-native-startup": {
+          "A1": {
+            "entry": "vue-vapor-ifr-native-baseline",
+            "receiptSha256": "a82da6f26add3de14620f5531cd523968e01eb57b3b689092d390ff25e227f60"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-native-baseline",
+            "receiptSha256": "a82da6f26add3de14620f5531cd523968e01eb57b3b689092d390ff25e227f60"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-native-tip",
+            "receiptSha256": "05c25472fb069250d444feba09e441c7181ec59387a255b0d0381a3e0d2cb2ae"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-native-tip",
+            "receiptSha256": "05c25472fb069250d444feba09e441c7181ec59387a255b0d0381a3e0d2cb2ae"
+          }
+        },
+        "ifr-native-table": {
+          "A1": {
+            "entry": "vue-vapor-ifr-native-baseline",
+            "receiptSha256": "0695cd9c8a0450f43de13231a023f72cac75f5d811df4d1193cee97bad5fc780"
+          },
+          "A2": {
+            "entry": "vue-vapor-ifr-native-baseline",
+            "receiptSha256": "0695cd9c8a0450f43de13231a023f72cac75f5d811df4d1193cee97bad5fc780"
+          },
+          "B1": {
+            "entry": "vue-vapor-ifr-native-tip",
+            "receiptSha256": "8d64c663f0d5442742df92d4654ab59a6ca75893100fbfbf6e47ab10debca740"
+          },
+          "B2": {
+            "entry": "vue-vapor-ifr-native-tip",
+            "receiptSha256": "8d64c663f0d5442742df92d4654ab59a6ca75893100fbfbf6e47ab10debca740"
+          }
+        },
+        "vapor-native-startup": {
+          "A1": {
+            "entry": "vue-vapor-native-baseline",
+            "receiptSha256": "69979813d6b34f46ffb777e7e6c17f09171ab28e97b5b57de0d7697e4dc8c1ca"
+          },
+          "A2": {
+            "entry": "vue-vapor-native-baseline",
+            "receiptSha256": "69979813d6b34f46ffb777e7e6c17f09171ab28e97b5b57de0d7697e4dc8c1ca"
+          },
+          "B1": {
+            "entry": "vue-vapor-native-tip",
+            "receiptSha256": "4ec9dcf2c5b3683c8cfbe5a002ed5b5c609637da59831d1aa9ed26568012ad2c"
+          },
+          "B2": {
+            "entry": "vue-vapor-native-tip",
+            "receiptSha256": "4ec9dcf2c5b3683c8cfbe5a002ed5b5c609637da59831d1aa9ed26568012ad2c"
+          }
+        }
+      },
+      "sequences": [
+        {
+          "harness": "native",
+          "id": "ifr-native-table",
+          "legs": {
+            "A1": {
+              "campaignId": "final2-ifr-native-table-a1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T12-49-29-943Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-table-a1.json",
+              "runLabel": "final2-ifr-native-table-a1",
+              "sha256": "4e521a7acf5477742b85ad3e50c7fbd3cb16e420c82e1f874e27b70369c86d36"
+            },
+            "A2": {
+              "campaignId": "final2-ifr-native-table-a2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T13-38-50-629Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-table-a2.json",
+              "runLabel": "final2-ifr-native-table-a2",
+              "sha256": "ac3aa05a58129becf6f93163d0a63a1bfb7a298e810250db14f2cb8ec6ecd5b2"
+            },
+            "B1": {
+              "campaignId": "final2-ifr-native-table-b1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T13-05-58-739Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-table-b1.json",
+              "runLabel": "final2-ifr-native-table-b1",
+              "sha256": "f6d0f7eed53633afca85ef3bf13a81951f4baaca9c308af7ad342c588c97f660"
+            },
+            "B2": {
+              "campaignId": "final2-ifr-native-table-b2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T13-22-18-000Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-table-b2.json",
+              "runLabel": "final2-ifr-native-table-b2",
+              "sha256": "3014dc2a38a985ab0b2f11fd4ad4118303f435e599173bb7ae60b6dfe507153e"
+            }
+          },
+          "phase": "table",
+          "sourceSequenceId": "vue-vapor-final-ifr-native-table",
+          "variant": "ifr"
+        },
+        {
+          "harness": "native",
+          "id": "vapor-native-startup",
+          "legs": {
+            "A1": {
+              "campaignId": "final2-vapor-native-startup-a1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T20-20-48-552Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-vapor-native-startup-a1.json",
+              "runLabel": "final2-vapor-native-startup-a1",
+              "sha256": "37a6258f58f0210db4f5dbc59523cee106421aa3a927a651effc72e224de8ccb"
+            },
+            "A2": {
+              "campaignId": "final2-vapor-native-startup-a2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T21-14-11-884Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-vapor-native-startup-a2.json",
+              "runLabel": "final2-vapor-native-startup-a2",
+              "sha256": "1d3da74da288e8febd1ad96f58f3c2791a64b2412feddfc735a1b01047d49913"
+            },
+            "B1": {
+              "campaignId": "final2-vapor-native-startup-b1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T20-38-35-243Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-vapor-native-startup-b1.json",
+              "runLabel": "final2-vapor-native-startup-b1",
+              "sha256": "d8a696670e4f0344f2f37fbde8372bdebf6acb96c04b7dbc7143ef4e5049d91a"
+            },
+            "B2": {
+              "campaignId": "final2-vapor-native-startup-b2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T20-56-36-134Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-vapor-native-startup-b2.json",
+              "runLabel": "final2-vapor-native-startup-b2",
+              "sha256": "0de111e4d5d6dd10a56fd2dcb8cd1e8f4bf81fe75f3c22d6920af11990a736a4"
+            }
+          },
+          "phase": "startup",
+          "sourceSequenceId": "final2-vapor-native-startup",
+          "variant": "vapor"
+        },
+        {
+          "harness": "native",
+          "id": "ifr-native-startup",
+          "legs": {
+            "A1": {
+              "campaignId": "final2-ifr-native-startup-a1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T21-33-26-960Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-startup-a1.json",
+              "runLabel": "final2-ifr-native-startup-a1",
+              "sha256": "aa69be1af68f0f9a9ea43674c8d6e177fde34cc51e8471d96814cabf6381eb61"
+            },
+            "A2": {
+              "campaignId": "final2-ifr-native-startup-a2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T23-30-42-822Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-startup-a2.json",
+              "runLabel": "final2-ifr-native-startup-a2",
+              "sha256": "8a427c8afe92f9bf4bb8d88eced8ed2ac3389f400adf56c79e8603dedb3333ac"
+            },
+            "B1": {
+              "campaignId": "final2-ifr-native-startup-b1",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T21-53-34-755Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-startup-b1.json",
+              "runLabel": "final2-ifr-native-startup-b1",
+              "sha256": "e753a7d261d2c1022afd7f16ddd48674ea56574fc1a9ae000a3778558c240661"
+            },
+            "B2": {
+              "campaignId": "final2-ifr-native-startup-b2",
+              "path": "../.tmp/vue-vapor-native-formal/results/runs/2026-08-17T22-12-54-866Z-8afa59af3533bc7707f6c99f8845e11d8a0a93e322d3c727ea28e2c8d8397d66-native-final2-ifr-native-startup-b2.json",
+              "runLabel": "final2-ifr-native-startup-b2",
+              "sha256": "c9c3948c7607b17f27e459c7f15362146630ebf4c0508150a74f49320efb6373"
+            }
+          },
+          "phase": "startup",
+          "sourceSequenceId": "final2-ifr-native-startup",
+          "variant": "ifr"
+        }
+      ],
+      "sourceManifests": [
+        {
+          "path": "../.tmp/vue-vapor-native-formal/manifests/final-ifr-native-table.json",
+          "sha256": "b9d3e5ce80e479fbf7e234b917360696ad481b8c23e81abe486cf5b50d573776"
+        },
+        {
+          "path": "../.tmp/vue-vapor-native-formal/manifests/final2-vapor-native-startup.json",
+          "sha256": "8f8afddb2ad95f53111b4947c64508035dc3f833e78ae3b366b878c9d120934a"
+        },
+        {
+          "path": "../.tmp/vue-vapor-native-formal/manifests/final2-ifr-native-startup.json",
+          "sha256": "cb0a5aeeef3b29b40f1ec906beaf931997d64c70cd00cb06b3ddfdf76c24344b"
+        }
+      ]
+    }
+  ],
+  "expectedCoverage": {
+    "nativeStartup": 16,
+    "nativeTable": 54,
+    "total": 508,
+    "web": 438
+  },
+  "federationPolicy": {
+    "bootstrapSeedDomain": "Each cell retains the comparisonId recorded by its raw campaign.",
+    "duplicatePolicy": "reject",
+    "mergeKey": "canonicalMetricKey",
+    "missingExtraOrDnfPolicy": "invalidate",
+    "rawComparisonIdsRewritten": false,
+    "webEnvironmentAnchor": "The 27 Native anchor cells establish the expected Native environment and are excluded from the final surface."
+  },
+  "generatedAt": "2026-08-17T23:30:42.822Z",
+  "id": "vue-vapor-final-508",
+  "kind": "federated-abba-manifest",
+  "publication": {
+    "reason": "This formal baseline-to-tip ABBA result is not a same-run public ranking cohort.",
+    "resultsLatestUpdated": false
+  },
+  "schemaVersion": 1,
+  "status": "complete"
+}
