@@ -176,6 +176,11 @@ async function cmdRun(args) {
     let priorRecords = [];
     let priorDeviceCohort = null;
     let cellLeaseIds = {};
+    let methodRevisionChain = null;
+    let cellMethodRevisionIds = {};
+    let activeMethodRevisionId = null;
+    let persistedCampaign = campaign;
+    let persistedInputReceipt = inputs.receipt;
     let leaseChain = appendNativeLeaseReceipt(null, leaseReceipt);
     if (resumePath != null) {
       priorRun = JSON.parse(fs.readFileSync(resumePath, 'utf8'));
@@ -186,17 +191,31 @@ async function cmdRun(args) {
         connectorPackageTrees,
         entries,
         leaseReceipt,
+        methodRevisionReason: typeof args['method-revision'] === 'string'
+          ? args['method-revision']
+          : null,
+        methodRevisionInputReceiptSha256:
+          typeof args['method-revision-input-sha256'] === 'string'
+            ? args['method-revision-input-sha256']
+            : null,
       });
       priorRecords = resumed.records;
       priorDeviceCohort = resumed.priorDeviceCohort;
       cellLeaseIds = resumed.cellLeaseIds;
       leaseChain = resumed.leaseChain;
+      persistedCampaign = resumed.campaign;
+      persistedInputReceipt = resumed.campaignInputReceipt;
+      methodRevisionChain = resumed.methodRevisionChain;
+      cellMethodRevisionIds = resumed.cellMethodRevisionIds;
+      activeMethodRevisionId = resumed.activeMethodRevisionId;
     }
     const priorIndex = nativeRecordIndex(priorRecords, matrixContract);
     console.log(`[run:native] entries: ${entries.map((e) => e.id).join(', ')}`);
     console.log(
       `[run:native] contract=${matrixContract.expectedCellCount} cells `
-      + `scales=${scales.join(',')} startup=${startupScales.join(',')} campaign=${campaign.id}`,
+      + `scales=${scales.join(',')} startup=${startupScales.join(',')} `
+      + `campaign=${persistedCampaign.id}`
+      + (activeMethodRevisionId == null ? '' : ` method=${activeMethodRevisionId}`),
     );
     const now = new Date();
     const label = args.label ? `-${args.label}` : '';
@@ -215,6 +234,13 @@ async function cmdRun(args) {
           throw new Error(`Native cell ${key} already belongs to lease ${existingLeaseId}.`);
         }
         cellLeaseIds[key] = leaseReceipt.deviceLeaseId;
+        if (activeMethodRevisionId != null) {
+          const existingRevisionId = cellMethodRevisionIds[key];
+          if (existingRevisionId != null && existingRevisionId !== activeMethodRevisionId) {
+            throw new Error(`Native cell ${key} already belongs to method ${existingRevisionId}.`);
+          }
+          cellMethodRevisionIds[key] = activeMethodRevisionId;
+        }
       }
       if (outPath === null) {
         const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -236,10 +262,11 @@ async function cmdRun(args) {
           deviceCohort,
           leaseChain,
           cellLeaseIds,
-          campaign,
+          ...(methodRevisionChain == null ? {} : { methodRevisionChain, cellMethodRevisionIds }),
+          campaign: persistedCampaign,
           resolvedMatrix,
           matrixContract,
-          inputReceipt: inputs.receipt,
+          inputReceipt: persistedInputReceipt,
           entryCommits: Object.fromEntries(
             entries.map((e) => [e.id, e.provenance?.commit ?? null]),
           ),
@@ -264,9 +291,9 @@ async function cmdRun(args) {
       startupReps,
       bundleSnapshots: inputs.snapshots,
       campaignIdentity: {
-        campaignId: campaign.id,
+        campaignId: persistedCampaign.id,
         matrixContractSha256: matrixContract.sha256,
-        inputReceiptSha256: inputs.receipt.sha256,
+        inputReceiptSha256: persistedInputReceipt.sha256,
         connectorPackageTrees,
         connectorPackageTreesSha256: connectorPackageTrees.sha256,
         leaseReceipt,

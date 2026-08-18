@@ -96,6 +96,13 @@ hardware/environment, method policy, and stable device cohort before device work
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
 serial hashes, hardware, toolchains, methods, or campaign inputs can never be merged.
+If a correctness fix must land after an incomplete checkpoint, normal resume remains fail-closed.
+One explicitly approved source-only transition may be named with `--method-revision` and its exact
+`--method-revision-input-sha256`. The checkpoint retains the original campaign/input receipt, adds
+a hashed prefix-ordered method-revision chain containing both full source receipts, and attributes
+every cell to the revision that produced it. Bundles, manifests, entry commits, connector trees,
+matrix, runtime policy, hardware, and device cohort cannot change; missing, forked, or unknown
+revision evidence keeps the entire Native cohort archive-only.
 
 `@byted/agent-lynx` is intentionally not part of the public workspace lockfile because one of its
 connector dependencies is unavailable from the public npm registry used by GitHub Actions and the

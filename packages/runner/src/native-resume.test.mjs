@@ -18,9 +18,12 @@ import { runNativeHarness, runNativeMatrix } from './harness-native.mjs';
 import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  appendNativeMethodRevision,
   appendNativeLeaseReceipt,
   assertNativeLeaseChain,
+  assertNativeMethodRevisionChain,
   buildNativeDeviceCohort,
+  createNativeMethodRevisionChain,
   parseNativeLeaseReceipt,
   shouldStopBeforeLeaseExpiry,
 } from './native-protocol.mjs';
@@ -45,6 +48,22 @@ const deviceCohort = (serialSha256, cores = 8) => buildNativeDeviceCohort({
   connectorPackageTreesSha256: 'connector-a',
   harnessConfigId: 'method-a',
 });
+
+const sha256Json = (value) => crypto.createHash('sha256')
+  .update(JSON.stringify(value))
+  .digest('hex');
+
+function methodInputReceipt(sources, invariant = {}) {
+  const payload = {
+    version: 'native-input-receipt-v2',
+    adapter: 'adapter.mjs',
+    connectorPackageTrees: { sha256: 'connector-a' },
+    sources,
+    entryArtifacts: {},
+    ...invariant,
+  };
+  return { ...payload, sha256: sha256Json(payload) };
+}
 
 test('structured lease receipts reject malformed, expired, duplicate, and cross-serial chains', () => {
   const first = lease('issue-a', 2_000);
@@ -157,6 +176,95 @@ test('resume validation appends same-serial leases and rejects overlap or partia
     inputReceipt: value.inputReceipt, connectorPackageTrees: value.connectorPackageTrees,
     entries: value.entries, leaseReceipt: lease('other', 3_000, 'other:9'),
   }), /physical serial/);
+});
+
+test('approved method revision preserves the campaign base and attributes the exact prefix', () => {
+  const value = fixture();
+  const baseInput = methodInputReceipt({
+    adapter: { bytes: 1, sha256: 'a'.repeat(64) },
+    cli: { bytes: 1, sha256: 'b'.repeat(64) },
+    stable: { bytes: 1, sha256: 'c'.repeat(64) },
+  });
+  const currentInput = methodInputReceipt({
+    adapter: { bytes: 2, sha256: 'd'.repeat(64) },
+    cli: { bytes: 2, sha256: 'e'.repeat(64) },
+    stable: { bytes: 1, sha256: 'c'.repeat(64) },
+  });
+  const baseCampaign = {
+    ...value.campaign, id: 'campaign-base', inputReceiptSha256: baseInput.sha256,
+  };
+  const currentCampaign = {
+    ...baseCampaign, id: 'campaign-current', inputReceiptSha256: currentInput.sha256,
+  };
+  const run = {
+    ...value.run,
+    meta: { ...value.run.meta, campaign: baseCampaign, inputReceipt: baseInput },
+  };
+  const approval = {
+    reason: 'approved-test-revision',
+    baseCampaignId: baseCampaign.id,
+    baseInputReceiptSha256: baseInput.sha256,
+    baseRecordCount: 1,
+    baseLeaseCount: 1,
+    baseLastLeaseIssueId: value.firstLease.issueId,
+    requiredCurrentSources: { adapter: currentInput.sources.adapter.sha256 },
+    allowedChangedSources: ['adapter', 'cli'],
+  };
+  const secondLease = lease('issue-b', 3_000);
+  const resumed = validateNativeResumeCheckpoint(run, {
+    campaign: currentCampaign, matrixContract: value.matrixContract,
+    inputReceipt: currentInput, connectorPackageTrees: currentInput.connectorPackageTrees,
+    entries: value.entries, leaseReceipt: secondLease,
+    methodRevisionReason: approval.reason,
+    methodRevisionInputReceiptSha256: currentInput.sha256,
+    methodRevisionApproval: approval,
+  });
+  const chain = assertNativeMethodRevisionChain(resumed.methodRevisionChain);
+  assert.equal(chain.revisions.length, 2);
+  assert.equal(chain.revisions[0].inputReceipt.sha256, baseInput.sha256);
+  assert.equal(chain.revisions[1].inputReceipt.sha256, currentInput.sha256);
+  assert.equal(resumed.campaign.id, baseCampaign.id);
+  assert.equal(resumed.campaignInputReceipt.sha256, baseInput.sha256);
+  assert.equal(
+    resumed.cellMethodRevisionIds[nativeCellKey(value.record)],
+    chain.revisions[0].id,
+  );
+  assert.equal(resumed.activeMethodRevisionId, chain.revisions[1].id);
+
+  assert.throws(() => validateNativeResumeCheckpoint(run, {
+    campaign: currentCampaign, matrixContract: value.matrixContract,
+    inputReceipt: currentInput, connectorPackageTrees: currentInput.connectorPackageTrees,
+    entries: value.entries, leaseReceipt: secondLease,
+    methodRevisionReason: approval.reason,
+    methodRevisionInputReceiptSha256: '0'.repeat(64),
+    methodRevisionApproval: approval,
+  }), /not explicitly pinned/);
+
+  const continuedRun = {
+    ...run,
+    meta: {
+      ...run.meta,
+      methodRevisionChain: chain,
+      cellMethodRevisionIds: resumed.cellMethodRevisionIds,
+      leaseChain: resumed.leaseChain,
+    },
+  };
+  const continued = validateNativeResumeCheckpoint(continuedRun, {
+    campaign: currentCampaign, matrixContract: value.matrixContract,
+    inputReceipt: currentInput, connectorPackageTrees: currentInput.connectorPackageTrees,
+    entries: value.entries, leaseReceipt: lease('issue-c', 4_000),
+  });
+  assert.equal(continued.activeMethodRevisionId, chain.revisions[1].id);
+  const driftedInput = methodInputReceipt({
+    ...currentInput.sources,
+    stable: { bytes: 2, sha256: 'f'.repeat(64) },
+  });
+  assert.throws(() => validateNativeResumeCheckpoint(continuedRun, {
+    campaign: { ...currentCampaign, inputReceiptSha256: driftedInput.sha256 },
+    matrixContract: value.matrixContract, inputReceipt: driftedInput,
+    connectorPackageTrees: driftedInput.connectorPackageTrees,
+    entries: value.entries, leaseReceipt: lease('issue-c', 4_000),
+  }), /active method revision/);
 });
 
 function snapshots(entryId) {

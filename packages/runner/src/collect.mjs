@@ -20,6 +20,7 @@ import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   assertNativeDeviceCohort,
   assertNativeLeaseChain,
+  assertNativeMethodRevisionChain,
 } from './native-protocol.mjs';
 
 const recordKey = (machineId, r) =>
@@ -308,9 +309,13 @@ const nativeCohortIdentity = (run, environment) => {
     || !environment
   ) return null;
   let leaseChain;
+  let methodRevisionChain = null;
   let deviceCohort;
   try {
     leaseChain = assertNativeLeaseChain(run.meta.leaseChain);
+    if (run.meta.methodRevisionChain != null) {
+      methodRevisionChain = assertNativeMethodRevisionChain(run.meta.methodRevisionChain);
+    }
     deviceCohort = assertNativeDeviceCohort(run.meta.deviceCohort);
     assertNativeDeviceCohort(machine.deviceCohort);
   } catch {
@@ -337,8 +342,21 @@ const nativeCohortIdentity = (run, environment) => {
   if (cellLeaseIds === null || typeof cellLeaseIds !== 'object' || Array.isArray(cellLeaseIds)) {
     return null;
   }
-  for (const record of run.records.filter((candidate) => candidate.harness === 'native')) {
-    if (!leaseIds.has(cellLeaseIds[nativeCellKey(record)])) return null;
+  const revisionIds = new Set(methodRevisionChain?.revisions.map(({ id }) => id) ?? []);
+  const cellMethodRevisionIds = run.meta.cellMethodRevisionIds;
+  if (methodRevisionChain != null
+    && (cellMethodRevisionIds === null || typeof cellMethodRevisionIds !== 'object'
+      || Array.isArray(cellMethodRevisionIds))) return null;
+  if (methodRevisionChain != null
+    && JSON.stringify(methodRevisionChain.revisions[0].inputReceipt)
+      !== JSON.stringify(run.meta.inputReceipt)) return null;
+  const nativeRecords = run.records.filter((candidate) => candidate.harness === 'native');
+  if (methodRevisionChain != null
+    && Object.keys(cellMethodRevisionIds).length !== nativeRecords.length) return null;
+  for (const record of nativeRecords) {
+    const key = nativeCellKey(record);
+    if (!leaseIds.has(cellLeaseIds[key])) return null;
+    if (methodRevisionChain != null && !revisionIds.has(cellMethodRevisionIds[key])) return null;
   }
   const stableIdentity = [
     deviceCohort.id,
@@ -349,7 +367,7 @@ const nativeCohortIdentity = (run, environment) => {
     campaign.inputReceiptSha256,
     campaign.connectorPackageTreesSha256,
   ].join('|');
-  return { stableIdentity, deviceCohort, leaseChain };
+  return { stableIdentity, deviceCohort, leaseChain, methodRevisionChain };
 };
 
 function mergeLeaseChains(left, right) {
@@ -362,6 +380,20 @@ function mergeLeaseChains(left, right) {
     }
   }
   return leftReceipts.length >= rightReceipts.length ? left : right;
+}
+
+function mergeMethodRevisionChains(left, right) {
+  if (left == null) return right;
+  if (right == null) return left;
+  const leftRevisions = assertNativeMethodRevisionChain(left).revisions;
+  const rightRevisions = assertNativeMethodRevisionChain(right).revisions;
+  const prefixLength = Math.min(leftRevisions.length, rightRevisions.length);
+  for (let index = 0; index < prefixLength; index++) {
+    if (JSON.stringify(leftRevisions[index]) !== JSON.stringify(rightRevisions[index])) {
+      throw new Error(`forked Native method revision chains at revision ${index}.`);
+    }
+  }
+  return leftRevisions.length >= rightRevisions.length ? left : right;
 }
 
 const comparisonView = (run, featuredIds, entryById, harness) => ({
@@ -405,10 +437,12 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
         environment,
         stableCohortIdentity: identity.stableIdentity,
         leaseChain: identity.leaseChain,
+        methodRevisionChain: identity.methodRevisionChain,
         campaign,
         entries: new Map(),
         invalidOverlap: false,
         invalidLeaseChain: false,
+        invalidMethodRevisionChain: false,
         sourceFiles: new Set(),
       };
       group.sourceFiles.add(candidate.file);
@@ -416,6 +450,13 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
         group.leaseChain = mergeLeaseChains(group.leaseChain, identity.leaseChain);
       } catch {
         group.invalidLeaseChain = true;
+      }
+      try {
+        group.methodRevisionChain = mergeMethodRevisionChains(
+          group.methodRevisionChain, identity.methodRevisionChain,
+        );
+      } catch {
+        group.invalidMethodRevisionChain = true;
       }
       for (const entry of new Set(records
         .filter((record) => record.environment === environment)
@@ -445,7 +486,7 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
   let selected = null;
   let selectedRank = null;
   for (const group of groups.values()) {
-    if (group.invalidOverlap || group.invalidLeaseChain) {
+    if (group.invalidOverlap || group.invalidLeaseChain || group.invalidMethodRevisionChain) {
       for (const file of group.sourceFiles) archiveOnlyFiles.add(file);
       continue;
     }
@@ -479,7 +520,11 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
       selected = {
         ...group,
         latest,
-        cohortIdentity: [group.stableCohortIdentity, group.leaseChain.sha256].join('|'),
+        cohortIdentity: [
+          group.stableCohortIdentity,
+          group.leaseChain.sha256,
+          group.methodRevisionChain?.sha256,
+        ].filter(Boolean).join('|'),
       };
       selectedRank = rank;
     }
@@ -859,6 +904,9 @@ export function collectRuns({
         machineId: nativeCohort.deviceCohortId,
         sourceMachineId: source.run.meta.machine.id,
         deviceLeaseId: source.run.meta.cellLeaseIds[nativeCellKey(source.record)],
+        methodRevisionId: source.run.meta.cellMethodRevisionIds?.[nativeCellKey(source.record)]
+          ?? nativeCohort.methodRevisionChain?.revisions[0]?.id
+          ?? null,
       })))
     : [];
   const nativeCoverage = classifyNativeCoverage({
@@ -879,6 +927,7 @@ export function collectRuns({
       deviceCohort: nativeCohort.deviceCohort,
       deviceCohortId: nativeCohort.deviceCohortId,
       leaseChain: nativeCohort.leaseChain,
+      methodRevisionChain: nativeCohort.methodRevisionChain,
       perLeaseMachineIds: [...new Set(sources.map((source) => source.run.meta.machine.id))].sort(),
     };
   }
@@ -905,6 +954,7 @@ export function collectRuns({
     deviceCohort: nativeCohort.deviceCohort,
     deviceCohortId: nativeCohort.deviceCohortId,
     leaseChain: nativeCohort.leaseChain,
+    methodRevisionChain: nativeCohort.methodRevisionChain,
     campaign: nativeCohort.campaign,
     coverage: nativeCoverage.summary,
   } : null;
