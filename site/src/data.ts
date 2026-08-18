@@ -56,9 +56,9 @@ export interface Machine {
   cores: number;
   memGB?: number;
   node: string | null;
-  latestCalibration: { probeVersion: number; score: number } | null;
-  latestRunFile: string;
-  latestRunGeneratedAt: string;
+  latestCalibration?: { probeVersion: number; score: number } | null;
+  latestRunFile?: string;
+  latestRunGeneratedAt?: string;
 }
 
 export interface ComparisonRun {
