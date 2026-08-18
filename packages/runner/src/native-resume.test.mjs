@@ -9,6 +9,7 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 
 import {
   NATIVE_PRODUCER_PROTOCOL_ERROR,
+  nativeTransportFailureDnf,
   nativeProducerProtocolDnf,
   validateNativeStartupPayload,
   validateNativeTablePayload,
@@ -210,6 +211,67 @@ test('harness skips existing cells and stops gracefully before lease expiry', as
   const current = lease('expiry', 2_000);
   assert.equal(shouldStopBeforeLeaseExpiry(current, { now: 1_800, safetyMs: 201 }), true);
   assert.equal(shouldStopBeforeLeaseExpiry(current, { now: 1_000, safetyMs: 200 }), false);
+});
+
+test('resume skips an atomic startup transport-DNF pair without duplicates or partial records', async () => {
+  const entry = { id: 'react', framework: 'reactlynx' };
+  const matrixContract = buildNativeMatrixContract([entry]);
+  const firstProgress = [];
+  const first = await runNativeMatrix({
+    adapter: {
+      environment: 'native-test',
+      async loadBundle() {
+        throw new Error(
+          'CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable',
+        );
+      },
+      async collectStartup() { throw new Error('collectStartup must not run'); },
+      async recoverTransient() { return true; },
+      async classifyFailure(error, context) {
+        return nativeTransportFailureDnf(error, context, { transientRecoveries: [] });
+      },
+    },
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0],
+    startupReps: 1,
+    bundleSnapshots: snapshots(entry.id),
+    onProgress: async (records) => firstProgress.push(structuredClone(records)),
+  });
+  assert.deepEqual(firstProgress.map((records) => records.length), [2]);
+  assert.deepEqual(first.map((record) => record.metric), ['fcp', 'settled']);
+
+  const calls = [];
+  const second = await runNativeMatrix({
+    adapter: {
+      environment: 'native-test',
+      async loadBundle(_entry, { rows }) { calls.push(['load', rows]); },
+      async collectStartup() { return { fcpMs: 8, settledMs: 13 }; },
+    },
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0, 1000],
+    startupReps: 1,
+    bundleSnapshots: snapshots(entry.id),
+    existingCellKeys: new Set(first.map(nativeCellKey)),
+  });
+  assert.deepEqual(calls, [['load', 1000]]);
+
+  const merged = mergeNativeRecords(first, second, matrixContract);
+  const keys = merged.map(nativeCellKey);
+  assert.equal(new Set(keys).size, 4);
+  for (const rows of [0, 1000]) {
+    assert.deepEqual(
+      merged.filter((record) => record.scale === rows).map((record) => record.metric).sort(),
+      ['fcp', 'settled'],
+    );
+  }
+  assert.throws(
+    () => mergeNativeRecords(first, [second[0], first[0]], matrixContract),
+    /overlap/,
+  );
 });
 
 test('strict producer validation failures become cell-local evidenced DNF', () => {

@@ -398,6 +398,53 @@ export function nativeProducerProtocolDnf(error, { suite, entry, kase, scale, ro
   };
 }
 
+export function isNativeTransientTransportFailure(error) {
+  const message = String(error);
+  return message.includes('No response found')
+    || message.includes('inactive hook')
+    || message.includes('Native CDP channel closed')
+    || message.includes('Native CDP channel stopped')
+    || message.includes('DevTool open-page')
+    || message.includes('DevTool open-persistent-cdp-channel failed:')
+    || message.includes('DevTool list-session-after-open failed:')
+    || message.includes('DevTool restart-')
+    || message.includes('CDP Runtime.enable')
+    || message.includes('CDP DOM.')
+    || message.includes('CDP Input.')
+    || message.includes('Native session did not appear')
+    || message.includes('Lynx Explorer did not reconnect on sandbox')
+    || message.includes('timeout waiting for the Octane Native background root');
+}
+
+export function nativeTransportFailureDnf(
+  error,
+  { suite, entry, kase, scale, rows, stage = null } = {},
+  { transientRecoveries = [] } = {},
+) {
+  if (!isNativeTransientTransportFailure(error)) return null;
+  const entryId = entry?.id ?? entry;
+  const failure = {
+    category: 'transport-retries-exhausted',
+    entry: entryId,
+    workload: suite === 'startup' ? 'startup' : kase?.name ?? kase,
+    scale: suite === 'startup' ? rows : scale,
+    phase: suite,
+    stage,
+    triggerMode: entryId === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
+    message: String(error),
+    capabilityScope: 'cell',
+    evidence: {
+      failureStage: stage,
+      transientRecoveries: transientRecoveries.slice(-3),
+    },
+  };
+  return {
+    dnf: true,
+    failure,
+    metricContracts: suite === 'startup' ? startupMetricContracts(entryId) : undefined,
+  };
+}
+
 export function validateNativeTablePayload(payload, expectations = {}) {
   try {
     return validateNativeTablePayloadUnchecked(payload, expectations);
@@ -1203,15 +1250,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
 
     async recoverTransient(error) {
       const message = String(error);
-      if (
-        !message.includes('No response found')
-        && !message.includes('inactive hook')
-        && !message.includes('Native CDP channel closed')
-        && !message.includes('DevTool open-page failed: Error: closed')
-        && !message.includes('CDP DOM.')
-        && !message.includes('CDP Input.')
-        && !message.includes('timeout waiting for the Octane Native background root')
-      ) return false;
+      if (!isNativeTransientTransportFailure(error)) return false;
       machine.transientRecoveries.push({
         at: new Date().toISOString(),
         category: message.includes('timeout waiting for the Octane Native background root')
@@ -1236,37 +1275,19 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         }
         return producerDnf;
       }
-      const message = String(error);
-      if (
-        !message.includes('No response found')
-        && !message.includes('inactive hook')
-        && !message.includes('Native CDP channel closed')
-        && !message.includes('DevTool open-page failed: Error: closed')
-        && !message.includes('CDP DOM.')
-        && !message.includes('CDP Input.')
-      ) return null;
-      const failure = {
-        category: 'transport-retries-exhausted',
-        entry: context.entry.id,
-        workload: context.suite === 'startup' ? 'startup' : context.kase.name,
-        scale: context.suite === 'startup' ? context.rows : context.scale,
-        phase: context.suite,
-        triggerMode: context.entry.id === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
-        message,
-        evidence: { transientRecoveries: machine.transientRecoveries.slice(-3) },
-      };
+      const transportDnf = nativeTransportFailureDnf(error, context, {
+        transientRecoveries: machine.transientRecoveries,
+      });
+      if (transportDnf == null) return null;
+      await stopConsoleStream();
+      session = null;
+      const { failure } = transportDnf;
       if (context.suite === 'startup') {
         unsupportedStartupCells.set(`${context.entry.id}:${context.rows}`, failure);
       } else {
         unsupportedTableCells.set(`${context.entry.id}:${context.kase.name}:${context.scale}`, failure);
       }
-      return {
-        dnf: true,
-        failure,
-        metricContracts: context.suite === 'startup'
-          ? startupMetricContracts(context.entry.id)
-          : undefined,
-      };
+      return transportDnf;
     },
 
     async loadBundle(entry, { rows, bundleBytes, bundleSha256, suite }) {

@@ -60,7 +60,10 @@ Release the Sandbox lease after the command completes.
 `LYNX_SANDBOX_TIMEOUT_MS` overrides the 30-second control timeout and
 `LYNX_SANDBOX_LONG_TIMEOUT_MS` overrides the 240-second workload/startup timeout.
 `LYNX_SANDBOX_TRANSIENT_ATTEMPTS` controls the bounded number of transport attempts (three by
-default; one records the first transport failure as DNF without a recovery retry).
+default; one records the first transport failure as DNF without a recovery retry). Exhausted
+page/session-start failures, including `Runtime.enable`, are scoped to the first pending table cell
+or complete startup metric pair and do not mark the entry unsupported. They retain structured
+`transport-retries-exhausted` evidence and never invent startup timing values.
 `LYNX_SANDBOX_DEVTOOL_TRANSPORT` can opt back into `daemon` for diagnostics; formal runs use
 `direct`. `LYNX_SANDBOX_RECYCLE_EVERY_PAGES` and `LYNX_SANDBOX_ROUTER_SETTLE_MS` are explicit
 lifecycle controls whose chosen values are retained in run metadata. Formal runs also wait for

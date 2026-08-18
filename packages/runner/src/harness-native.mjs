@@ -74,9 +74,19 @@ async function withTransientRetry(
     try {
       return await action();
     } catch (error) {
+      if (error instanceof NativeLeaseExpiryStop) throw error;
       if (attempt >= attempts || !(await adapter.recoverTransient?.(error))) throw error;
     }
   }
+}
+
+async function classifyCellFailure(adapter, error, context) {
+  // Lease expiry is campaign control flow, never a failed measurement. Keep it
+  // ahead of adapter classification even if an adapter has a broad classifier.
+  if (error instanceof NativeLeaseExpiryStop) throw error;
+  const observed = await adapter.classifyFailure?.(error, context);
+  if (!observed?.dnf) throw error;
+  return observed;
 }
 
 export async function loadNativeAdapter(adapterPath, context = {}) {
@@ -132,6 +142,9 @@ export async function runNativeMatrix({
     if (shouldStopBeforeCell()) throw new NativeLeaseExpiryStop(records);
   };
   for (const entry of entries) {
+    // There is deliberately no entry-wide page/session setup here. loadBundle
+    // runs only after the next missing contract key has been selected, so an
+    // exhausted setup transport failure belongs to that exact cell.
     log(`[native:${adapter.environment}] ${entry.id}`);
     if (suites.includes('table')) {
       for (const kase of cases) {
@@ -154,8 +167,10 @@ export async function runNativeMatrix({
               continue;
             }
             let observed;
+            let failureStage = 'loadBundle';
             try {
               observed = await withTransientRetry(adapter, async () => {
+                failureStage = 'loadBundle';
                 await adapter.loadBundle(entry, {
                   rows: 0,
                   bundlePath: bundle.bundlePath,
@@ -163,14 +178,15 @@ export async function runNativeMatrix({
                   bundleSha256: bundle.sha256 ?? bundle.bundleSha256,
                   suite: 'table',
                 });
+                failureStage = 'driveCase';
                 await adapter.driveCase(kase, scale);
+                failureStage = 'collect';
                 return adapter.collect();
               });
             } catch (error) {
-              observed = await adapter.classifyFailure?.(error, {
-                suite: 'table', entry, kase, scale,
+              observed = await classifyCellFailure(adapter, error, {
+                suite: 'table', entry, kase, scale, stage: failureStage,
               });
-              if (!observed?.dnf) throw error;
             }
             if (observed?.dnf) {
               dnfCount++;
@@ -276,8 +292,10 @@ export async function runNativeMatrix({
             continue;
           }
           let observed;
+          let failureStage = 'loadBundle';
           try {
             observed = await withTransientRetry(adapter, async () => {
+              failureStage = 'loadBundle';
               await adapter.loadBundle(entry, {
                 rows,
                 bundlePath: bundle.bundlePath,
@@ -285,13 +303,13 @@ export async function runNativeMatrix({
                 bundleSha256: bundle.sha256 ?? bundle.bundleSha256,
                 suite: 'startup',
               });
+              failureStage = 'collectStartup';
               return adapter.collectStartup();
             });
           } catch (error) {
-            observed = await adapter.classifyFailure?.(error, {
-              suite: 'startup', entry, rows,
+            observed = await classifyCellFailure(adapter, error, {
+              suite: 'startup', entry, rows, stage: failureStage,
             });
-            if (!observed?.dnf) throw error;
           }
           if (observed?.dnf) {
             dnfCount++;
