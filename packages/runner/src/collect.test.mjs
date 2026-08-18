@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -14,8 +15,10 @@ import { repoRoot } from './entries.mjs';
 import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  appendNativeMethodRevision,
   appendNativeLeaseReceipt,
   buildNativeDeviceCohort,
+  createNativeMethodRevisionChain,
   parseNativeLeaseReceipt,
 } from './native-protocol.mjs';
 
@@ -95,6 +98,19 @@ const nativeLease = ({
   { serial, now: 1 },
 );
 const nativeLeaseChain = (...receipts) => receipts.reduce(appendNativeLeaseReceipt, null);
+const sha256Json = (value) => crypto.createHash('sha256')
+  .update(JSON.stringify(value))
+  .digest('hex');
+const methodInputReceipt = (sources, connectorPackageTrees = defaultConnectorReceipt) => {
+  const payload = {
+    version: 'native-input-receipt-v2',
+    adapter: 'packages/runner/adapters/test.mjs',
+    connectorPackageTrees,
+    sources,
+    entryArtifacts: {},
+  };
+  return { ...payload, sha256: sha256Json(payload) };
+};
 
 function nativeCampaignMeta(entries, {
   generatedAt = '2026-01-02T00:00:00Z',
@@ -526,6 +542,73 @@ test('collector keeps same-serial forked lease chains archive-only', () => {
     assert.equal(out.records.some(({ runFile }) => runFile === 'native-right.json'), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector publishes only completely attributed Native method-revision chains', () => {
+  for (const invalid of [null, 'missing-attribution', 'unknown-revision']) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-method-revision-'));
+    fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+    try {
+      writeRun(root, 'web.json', {
+        machineId: 'web', score: 100, entries: ['octane'],
+        entryCommits: { octane: 'current' },
+      });
+      const entries = nativeEntries(['octane']);
+      entries[0].provenance.commit = 'current';
+      const records = nativeContractRecords(entries);
+      const baseInput = methodInputReceipt({
+        adapter: { bytes: 1, sha256: 'a'.repeat(64) },
+      });
+      const currentInput = methodInputReceipt({
+        adapter: { bytes: 2, sha256: 'b'.repeat(64) },
+      });
+      const methodRevisionChain = appendNativeMethodRevision(
+        createNativeMethodRevisionChain(baseInput),
+        currentInput,
+        'transport-containment-test',
+      );
+      const [baseRevision, currentRevision] = methodRevisionChain.revisions;
+      const cellMethodRevisionIds = Object.fromEntries(records.map((candidate, index) => [
+        nativeCellKey(candidate),
+        index < 10 ? baseRevision.id : currentRevision.id,
+      ]));
+      if (invalid === 'missing-attribution') {
+        delete cellMethodRevisionIds[nativeCellKey(records[0])];
+      } else if (invalid === 'unknown-revision') {
+        cellMethodRevisionIds[nativeCellKey(records[0])] = 'unknown';
+      }
+      const meta = nativeCampaignMeta(entries, {
+        records, inputReceiptSha256: baseInput.sha256,
+      });
+      meta.inputReceipt = baseInput;
+      meta.methodRevisionChain = methodRevisionChain;
+      meta.cellMethodRevisionIds = cellMethodRevisionIds;
+      fs.writeFileSync(path.join(root, 'results/runs/native.json'), JSON.stringify({
+        schemaVersion: 2, meta, records,
+      }));
+
+      const out = collectRuns({
+        root, generatedAt: 'test', log: () => {},
+        entryTiers: entryTiers(['octane']), entries,
+      });
+      const nativeHarness = out.comparison.harnesses.find(({ harness }) => harness === 'native');
+      if (invalid === null) {
+        assert.equal(nativeHarness.recordCount, 35);
+        assert.equal(nativeHarness.methodRevisionChain.sha256, methodRevisionChain.sha256);
+        const native = out.comparisonRecords.filter(({ harness }) => harness === 'native');
+        assert.equal(native.length, 35);
+        assert.deepEqual(
+          new Set(native.map(({ methodRevisionId }) => methodRevisionId)),
+          new Set([baseRevision.id, currentRevision.id]),
+        );
+      } else {
+        assert.equal(nativeHarness, undefined, invalid);
+        assert.equal(out.comparisonRecords.some(({ harness }) => harness === 'native'), false);
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   }
 });
 

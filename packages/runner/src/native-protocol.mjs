@@ -6,6 +6,9 @@ export const NATIVE_SANDBOX_ADAPTER_PROTOCOL = 'native-sandbox-adapter-v3';
 export const NATIVE_LEASE_RECEIPT_PROTOCOL = 'lynx-sandbox-lease-receipt-v1';
 export const NATIVE_LEASE_CHAIN_PROTOCOL = 'lynx-sandbox-lease-chain-v1';
 export const NATIVE_DEVICE_COHORT_PROTOCOL = 'native-device-cohort-v1';
+export const NATIVE_METHOD_REVISION_PROTOCOL = 'native-method-revision-v1';
+export const NATIVE_METHOD_REVISION_CHAIN_PROTOCOL = 'native-method-revision-chain-v1';
+export const NATIVE_METHOD_REVISION_BASE_REASON = 'campaign-base';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const sha256Json = (value) => sha256(JSON.stringify(value));
@@ -138,6 +141,112 @@ export function appendNativeLeaseReceipt(chain, receipt) {
     receipts: [...receipts, receipt],
   };
   return assertNativeLeaseChain({ ...payload, sha256: sha256Json(payload) });
+}
+
+function assertMethodInputReceipt(receipt) {
+  object(receipt, 'Native method revision input receipt');
+  if (!/^[a-f0-9]{64}$/.test(nonempty(receipt.sha256, 'Native input receipt sha256'))) {
+    throw new Error('Native input receipt sha256 must be a SHA-256 digest.');
+  }
+  object(receipt.sources, 'Native input receipt sources');
+  const { sha256: claimedSha256, ...payload } = receipt;
+  if (sha256Json(payload) !== claimedSha256) {
+    throw new Error('Native method revision input receipt digest does not match its payload.');
+  }
+  return receipt;
+}
+
+function methodInvariantReceipt(receipt) {
+  const { sources: _sources, sha256: _sha256, ...invariant } = receipt;
+  return invariant;
+}
+
+function buildNativeMethodRevision(inputReceipt, { parentId, reason }) {
+  assertMethodInputReceipt(inputReceipt);
+  if (parentId !== null) nonempty(parentId, 'Native method revision parentId');
+  const payload = {
+    protocol: NATIVE_METHOD_REVISION_PROTOCOL,
+    parentId,
+    reason: nonempty(reason, 'Native method revision reason'),
+    inputReceipt,
+  };
+  return { ...payload, id: sha256Json(payload).slice(0, 16), sha256: sha256Json(payload) };
+}
+
+export function assertNativeMethodRevisionChain(chain) {
+  object(chain, 'Native method revision chain');
+  if (chain.protocol !== NATIVE_METHOD_REVISION_CHAIN_PROTOCOL || !Array.isArray(chain.revisions)) {
+    throw new Error('Native method revision chain has an invalid protocol or revisions list.');
+  }
+  if (chain.revisions.length === 0) {
+    throw new Error('Native method revision chain must contain its campaign-base revision.');
+  }
+  const ids = new Set();
+  let priorId = null;
+  let invariant = null;
+  for (const [index, revision] of chain.revisions.entries()) {
+    object(revision, `Native method revision ${index}`);
+    if (revision.protocol !== NATIVE_METHOD_REVISION_PROTOCOL) {
+      throw new Error(`Native method revision ${index} has an invalid protocol.`);
+    }
+    const rebuilt = buildNativeMethodRevision(revision.inputReceipt, {
+      parentId: revision.parentId,
+      reason: revision.reason,
+    });
+    if (revision.id !== rebuilt.id || revision.sha256 !== rebuilt.sha256) {
+      throw new Error(`Native method revision ${index} digest does not match its payload.`);
+    }
+    if (revision.parentId !== priorId) {
+      throw new Error(`Native method revision ${index} does not extend the exact chain prefix.`);
+    }
+    if (ids.has(revision.id)) {
+      throw new Error(`Native method revision chain repeats revision ${revision.id}.`);
+    }
+    const candidateInvariant = methodInvariantReceipt(revision.inputReceipt);
+    if (invariant !== null && JSON.stringify(candidateInvariant) !== JSON.stringify(invariant)) {
+      throw new Error('Native method revisions may change runner sources only.');
+    }
+    if (index === 0 && revision.reason !== NATIVE_METHOD_REVISION_BASE_REASON) {
+      throw new Error('Native method revision chain must begin with campaign-base.');
+    }
+    invariant = candidateInvariant;
+    priorId = revision.id;
+    ids.add(revision.id);
+  }
+  const payload = {
+    protocol: NATIVE_METHOD_REVISION_CHAIN_PROTOCOL,
+    revisions: chain.revisions,
+  };
+  if (chain.sha256 !== sha256Json(payload)) {
+    throw new Error('Native method revision chain digest does not match its revisions.');
+  }
+  return chain;
+}
+
+export function createNativeMethodRevisionChain(inputReceipt) {
+  const revision = buildNativeMethodRevision(inputReceipt, {
+    parentId: null,
+    reason: NATIVE_METHOD_REVISION_BASE_REASON,
+  });
+  const payload = {
+    protocol: NATIVE_METHOD_REVISION_CHAIN_PROTOCOL,
+    revisions: [revision],
+  };
+  return assertNativeMethodRevisionChain({ ...payload, sha256: sha256Json(payload) });
+}
+
+export function appendNativeMethodRevision(chain, inputReceipt, reason) {
+  const current = assertNativeMethodRevisionChain(chain);
+  const last = current.revisions.at(-1);
+  if (last.inputReceipt.sha256 === inputReceipt.sha256) {
+    throw new Error(`Native method input ${inputReceipt.sha256} is already the active revision.`);
+  }
+  const revision = buildNativeMethodRevision(inputReceipt, { parentId: last.id, reason });
+  const payload = {
+    protocol: NATIVE_METHOD_REVISION_CHAIN_PROTOCOL,
+    revisions: [...current.revisions, revision],
+  };
+  return assertNativeMethodRevisionChain({ ...payload, sha256: sha256Json(payload) });
 }
 
 export function shouldStopBeforeLeaseExpiry(receipt, {

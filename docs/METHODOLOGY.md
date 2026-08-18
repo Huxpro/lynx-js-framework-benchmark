@@ -169,9 +169,14 @@ had a documented weakness, the fix is noted.
   210-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
   checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
   its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
-  prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. The collector rejects
-  missing/malformed chains, overlaps, cross-serial or
-  hardware/toolchain changes, and inconsistent immutable method fields. It rejects a selected cohort
+  prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made
+  after an incomplete checkpoint can continue only through an explicitly allowlisted source-only
+  method revision whose exact target input digest is supplied by the operator. The original
+  campaign/input identity remains stable, while a second hashed prefix chain retains both complete
+  source receipts and maps every cell to its producing method revision. Bundles, manifests, entry
+  commits, connector trees, matrix, runtime policy, hardware, and device cohort are invariant across
+  that transition. The collector rejects missing/malformed chains, overlaps, cross-serial or
+  hardware/toolchain changes, unapproved method drift, and missing/unknown cell attribution. It rejects a selected cohort
   unless every cell is measured, DNF, or capability-proven unsupported. The incremental archive
   retains source identity on every record; stale entry commits and
   Lab variants cannot keep an older cohort public. Opt-in historical Lab time
