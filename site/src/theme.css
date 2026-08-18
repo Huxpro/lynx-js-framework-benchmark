@@ -492,7 +492,11 @@ table.heat td.data:hover { filter: brightness(1.12); }
 table.heat .rowhead { position: sticky; left: 0; background: var(--surface-1); font-family: ui-monospace, Menlo, monospace; }
 
 /* details table */
-details.data-table { margin-top: 0.6rem; }
+details.data-table {
+  margin-top: 0.6rem;
+  max-width: 100%;
+  overflow-x: auto;
+}
 details.data-table summary { cursor: pointer; color: var(--text-secondary); font-size: 0.84rem; }
 details.data-table table { border-collapse: collapse; margin-top: 0.5rem; font-size: 0.8rem; }
 details.data-table th, details.data-table td {
