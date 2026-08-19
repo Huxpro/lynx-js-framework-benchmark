@@ -243,6 +243,17 @@ calibration output, `latest.json`, and every site score/visual are derived.
   `ms` fields are scaled by source-score / comparison-score and marked `calibrated-estimate`;
   heap, wire, bundle, and count fields remain `historical`. Calibration cannot correct memory
   hierarchy or core-count differences.
+- A Lab manifest can separately opt into Native with
+  `nativeLab: { enabled: true, contract: "native-lab-entry-v1" }`. The Native CLI then requires
+  `--lab-native --entry <one-id>` and derives its matrix from the contract: 27 table cells plus
+  8 Octane startup cells. Collector acceptance is all-or-nothing: the source run must contain
+  exactly those 35 cells, no other entry, a matching contract hash, and the manifest commit. It
+  emits `nativeLabRuns` and `nativeLabRecords`, intentionally disjoint from featured
+  `comparisonRecords` and isolated featured `nativeObservationRecords`.
+  The paired `web-lab-entry-v1` contract likewise requires one explicit immutable Lab entry,
+  every table scale through 30k, all four startup scales, and fixed 7/3/5 repetitions. Its
+  latency/FCP/settled cells are a required coverage floor; Web CPU/wire/bundle records remain
+  additional observations from that same source run.
 - Web hypothesis mode: `bench run --entry vue-vapor --case select --scale 10000 --reps 20`
   gives a focused, high-N answer; Native diagnostics use a separate non-publishable tool.
 

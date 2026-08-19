@@ -14,7 +14,9 @@ import {
   connectorPackageTreesSha256,
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
-import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
+import { buildNativeMatrixContract, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
+import { LAB_NATIVE_CONTRACT_VERSION, buildLabNativeContract } from './lab-native.mjs';
+import { LAB_WEB_CONTRACT_VERSION, buildLabWebContract } from './lab-web.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   appendNativeMethodRevision,
@@ -129,8 +131,9 @@ function nativeCampaignMeta(entries, {
   connectorPackageTreesSha256 = connectorPackageTrees?.sha256,
   deviceCohort: suppliedDeviceCohort = null,
   cellLeaseIds: suppliedCellLeaseIds = null,
+  matrixContract: suppliedContract = null,
 } = {}) {
-  const contract = buildNativeMatrixContract(entries);
+  const contract = suppliedContract ?? buildNativeMatrixContract(entries);
   const campaign = {
     version: NATIVE_SANDBOX_CAMPAIGN_VERSION,
     id: campaignId,
@@ -201,6 +204,90 @@ const entryTiers = (featured, lab = []) => new Map([
   ...featured.map((id) => [id, 'featured']),
   ...lab.map((id) => [id, 'lab']),
 ]);
+
+test('collector admits only receipt-valid complete Native Lab checkpoints outside featured data', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-native-lab-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'featured-web.json', {
+      machineId: 'web', score: 100, entries: ['react'], entryCommits: { react: 'react-new' },
+    });
+    const featured = nativeEntries(['react']);
+    const lab = {
+      id: 'octane-new1', framework: 'octane', tier: 'lab',
+      distDir: path.join(root, 'missing-octane-new1'),
+      provenance: { commit: 'new1-sha' },
+      nativeLab: { enabled: true, contract: LAB_NATIVE_CONTRACT_VERSION },
+    };
+    const contract = buildLabNativeContract(lab);
+    const records = contract.cells.map((cell) => ({
+      ...cell, harness: 'native', environment: 'native-lab-device',
+      samples: Array(cell.expectedReps).fill(1), n: cell.expectedReps,
+      median: 1, mean: 1, std: 0, min: 1, max: 1, p95: 1, ci95: 0,
+      detail: null, dnfCount: 0, failures: [],
+    }));
+    const writeLab = (file, generatedAt, sourceRecords, mutate = () => {}) => {
+      const meta = nativeCampaignMeta([lab], {
+        generatedAt, records: sourceRecords, matrixContract: contract,
+        campaignId: 'octane-new1-campaign', inputReceiptSha256: 'lab-input',
+        environment: 'native-lab-device',
+      });
+      Object.assign(meta, {
+        comparisonScope: 'lab-entry',
+        labNative: {
+          contractVersion: contract.version, contractSha256: contract.sha256,
+          expectedCellCount: contract.expectedCellCount,
+          entryId: lab.id, entryCommit: lab.provenance.commit,
+        },
+      });
+      const run = {
+        schemaVersion: 2, meta,
+        nativeCoverage: classifyNativeCoverage({
+          entries: [lab], contract, sourceRecords,
+        }),
+        records: sourceRecords,
+      };
+      mutate(run);
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify(run));
+      return run;
+    };
+    const valid = writeLab('native-lab-valid.json', '2026-01-02T00:00:00Z', records);
+    writeLab('native-lab-newer-partial.json', '2026-01-03T00:00:00Z', records.slice(1));
+    writeLab('native-lab-newer-stale.json', '2026-01-04T00:00:00Z', records, (run) => {
+      run.meta.entryCommits[lab.id] = 'stale-sha';
+      run.meta.labNative.entryCommit = 'stale-sha';
+    });
+    writeLab('native-lab-newer-invalid-identity.json', '2026-01-05T00:00:00Z', records, (run) => {
+      delete run.meta.cellLeaseIds[nativeCellKey(records[0])];
+    });
+    writeLab('native-lab-newer-forged-ledger.json', '2026-01-06T00:00:00Z', records, (run) => {
+      run.nativeCoverage.summary = { measured: 34, unscheduled: 1 };
+    });
+
+    const out = collectRuns({
+      root, generatedAt: 'test', log: () => {},
+      entryTiers: entryTiers(['react'], [lab.id]),
+      entries: [...featured, lab],
+    });
+    assert.equal(out.comparisonRecords.some((record) => record.entry === lab.id), false);
+    assert.deepEqual(out.nativeCoverage.summary, { unscheduled: 35 });
+    assert.equal(out.nativeLabRecords.length, 35);
+    assert.deepEqual([...new Set(out.nativeLabRecords.map((record) => record.runFile))], [
+      'native-lab-valid.json',
+    ]);
+    assert.deepEqual(out.nativeLabRuns, [{
+      entryId: lab.id, entryCommit: lab.provenance.commit,
+      contractVersion: contract.version, contractSha256: contract.sha256,
+      expectedCellCount: 35, generatedAt: valid.meta.generatedAt,
+      machineId: valid.meta.machine.id, deviceCohortId: valid.meta.deviceCohort.id,
+      leaseChainSha256: valid.meta.leaseChain.sha256,
+      environment: 'native-lab-device', sourceRunFile: 'native-lab-valid.json',
+      sourceRecordCount: 35,
+    }]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('collect keeps record calibration and charts one coherent broadest run', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));

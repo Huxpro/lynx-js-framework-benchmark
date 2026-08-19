@@ -24,6 +24,7 @@ import {
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
 import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
+import { buildLabNativeContract } from './lab-native.mjs';
 
 const ENTRIES = [
   { id: 'octane', framework: 'octane' },
@@ -91,6 +92,21 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
   });
   assert.deepEqual(complete.summary, { measured: 210 });
   assert.doesNotThrow(() => assertNativeCoverage(complete));
+});
+
+test('Native coverage accepts an explicit single-entry Lab contract without filtering it out', () => {
+  const entry = {
+    id: 'octane-new1', framework: 'octane', tier: 'lab',
+    nativeLab: { enabled: true, contract: 'native-lab-entry-v1' },
+    provenance: { commit: '1'.repeat(40) },
+  };
+  const contract = buildLabNativeContract(entry);
+  const records = contract.cells.map((cell) => recordFor(cell));
+  const coverage = classifyNativeCoverage({ entries: [entry], contract, sourceRecords: records });
+  assert.equal(coverage.expectedCellCount, 35);
+  assert.deepEqual(coverage.entryIds, ['octane-new1']);
+  assert.deepEqual(coverage.summary, { measured: 35 });
+  assert.doesNotThrow(() => assertNativeCoverage(coverage));
 });
 
 test('Native defaults schedule the full table/startup matrix and reject silent scale loss', () => {

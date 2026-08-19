@@ -10,6 +10,9 @@ const entriesDir = path.join(root, 'entries');
 
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab']);
+const NATIVE_LAB_CONTRACT = 'native-lab-entry-v1';
+const WEB_LAB_CONTRACT = 'web-lab-entry-v1';
+const AUTOROWS = [0, 1000, 10000, 30000];
 
 let failures = 0;
 const fail = (msg) => {
@@ -38,6 +41,26 @@ for (const id of ids) {
     }
   }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
+  if (manifest.nativeLab != null) {
+    if (manifest.tier !== 'lab') fail(`${id}: nativeLab is only valid for tier=lab`);
+    if (manifest.nativeLab.enabled !== true) fail(`${id}: nativeLab.enabled must be true`);
+    if (manifest.nativeLab.contract !== NATIVE_LAB_CONTRACT) {
+      fail(`${id}: nativeLab.contract must be ${NATIVE_LAB_CONTRACT}`);
+    }
+    for (const rows of AUTOROWS) {
+      for (const flavor of ['web', 'lynx']) {
+        const rel = `rows-${rows}/main.${flavor}.bundle`;
+        if (!manifest.provenance?.sha256?.[rel]) fail(`${id}: nativeLab checksum missing ${rel}`);
+      }
+    }
+  }
+  if (manifest.webLab != null) {
+    if (manifest.tier !== 'lab') fail(`${id}: webLab is only valid for tier=lab`);
+    if (manifest.webLab.enabled !== true) fail(`${id}: webLab.enabled must be true`);
+    if (manifest.webLab.contract !== WEB_LAB_CONTRACT) {
+      fail(`${id}: webLab.contract must be ${WEB_LAB_CONTRACT}`);
+    }
+  }
   if (manifest.provenance?.patched && manifest.provenance?.patchFile) {
     if (!fs.existsSync(path.join(root, manifest.provenance.patchFile))) {
       fail(`${id}: provenance.patchFile ${manifest.provenance.patchFile} does not exist`);

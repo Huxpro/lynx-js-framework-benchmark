@@ -167,8 +167,10 @@ are never ranked as FCP. See
   adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
   entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
   harness. Native and Web numbers are never mixed in one chart. The published featured cohort
-  uses ReactLynx, four Vue-Lynx configs, and upstream Octane only; Octane Lab variants are not
-  run on Native.
+  uses ReactLynx, four Vue-Lynx configs, and upstream Octane only. A Lab manifest may opt into
+  the separate `native-lab-entry-v1` contract: one explicit immutable-commit entry, all 35
+  Native cells, 5 table reps and 3 startup reps. Those results are shown only as absolute Lab
+  observations and never enter the featured cohort, rankings, heatmaps, geomeans, or ratios.
 
 ## Adding an entry
 
@@ -189,6 +191,28 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 `scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
+
+For an opted-in Lab entry, run the real Sandbox campaign without matrix overrides:
+
+```sh
+pnpm bench run --harness native --lab-native --entry octane-new1 \
+  --adapter packages/runner/adapters/lynx-sandbox-android.mjs
+```
+
+`--lab-native` requires exactly one `nativeLab.enabled` entry. It rejects `--case`, `--scale`,
+`--suite`, repetition overrides, and `--quick`; a partial diagnostic cannot be published as a
+formal Lab campaign. The run source carries the entry commit and contract hash.
+For official Sandbox execution, `scripts/run-sandbox-lab.mjs` wraps that command with a fresh
+lease POST, exact-serial ADB connect, receipt capture, and mandatory DELETE-then-disconnect cleanup.
+The corresponding formal Web campaign is similarly explicit:
+
+```sh
+pnpm bench run --harness web --lab-web --entry octane-new1
+```
+
+It covers every table scale through 30k plus all startup scales at fixed 7/3/5
+table/storm/startup repetitions. Collector publication for `webLab` entries requires every
+contracted latency/FCP/settled cell and matching provenance; a partial run cannot replace it.
 
 ## Repository layout
 

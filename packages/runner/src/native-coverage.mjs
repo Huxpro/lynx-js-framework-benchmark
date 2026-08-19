@@ -139,15 +139,16 @@ function compactRecord(record) {
 
 export function classifyNativeCoverage({
   entries,
+  contract = null,
   sourceRecords = [],
   publishedRecords = sourceRecords,
   archiveRecords = [],
 }) {
-  const contract = buildNativeMatrixContract(entries);
+  const resolvedContract = contract ?? buildNativeMatrixContract(entries);
   const source = recordsByCell(sourceRecords);
   const published = recordsByCell(publishedRecords);
   const archive = recordsByCell(archiveRecords);
-  const cells = contract.cells.map((expected) => {
+  const cells = resolvedContract.cells.map((expected) => {
     const key = nativeCellKey(expected);
     const matches = source.get(key) ?? [];
     const publishedMatches = published.get(key) ?? [];
@@ -195,10 +196,10 @@ export function classifyNativeCoverage({
       .map((status) => [status, cells.filter((cell) => cell.status === status).length]),
   );
   return {
-    version: contract.version,
-    contractSha256: contract.sha256,
-    expectedCellCount: contract.expectedCellCount,
-    entryIds: contract.entryIds,
+    version: resolvedContract.version,
+    contractSha256: resolvedContract.sha256,
+    expectedCellCount: resolvedContract.expectedCellCount,
+    entryIds: resolvedContract.entryIds,
     summary,
     cells,
   };

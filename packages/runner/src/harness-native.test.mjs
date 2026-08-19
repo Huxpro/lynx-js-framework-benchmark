@@ -526,6 +526,8 @@ test('sandbox adapter imports without the device-only connector installed', asyn
       assertRuntimeConnectorPackageTrees,
       default: createAdapter,
       findExplorerClient,
+      isOctaneEntry,
+      nativeProducerProtocolDnf,
     } = await import('../adapters/lynx-sandbox-android.mjs');
     const unavailable = resolveConnectorPackageTrees({
       requireContext: { resolve() { throw new Error('not installed'); } },
@@ -573,6 +575,18 @@ test('sandbox adapter imports without the device-only connector installed', asyn
         info: { AppProcessName: 'com.lynx.explorer', debugRouterId: 'new-router' },
       },
     ], encodedSerial)?.id, `${encodedSerial}:8903`);
+    assert.equal(isOctaneEntry({ id: 'octane-new1', framework: 'octane' }), true);
+    assert.equal(isOctaneEntry({ id: 'react-lynx', framework: 'react-lynx' }), false);
+    const error = new Error('invalid producer');
+    error.code = 'ERR_NATIVE_PRODUCER_PROTOCOL_INVALID';
+    const dnf = nativeProducerProtocolDnf(error, {
+      suite: 'startup',
+      entry: { id: 'octane-new1', framework: 'octane' },
+      rows: 1000,
+    });
+    assert.deepEqual(dnf.metricContracts.map(({ name }) => name), [
+      'octaneCommitAck', 'octaneSecondFrame',
+    ]);
     await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_SERIAL/);
     process.env.LYNX_SANDBOX_SERIAL = 'reused-device:1234';
     await assert.rejects(() => createAdapter(), /Native lease receipt/);

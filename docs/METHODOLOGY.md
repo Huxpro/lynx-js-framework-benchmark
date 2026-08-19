@@ -201,6 +201,14 @@ had a documented weakness, the fix is noted.
   the same policy is in the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
   calibration or an outlier filter.
 
+- Native Lab campaigns are formal single-entry observations, not cohort members. They require an
+  immutable manifest commit, one official Sandbox lease, and the complete
+  `native-lab-entry-v1` matrix (27 table latency cells at 5 reps plus 8 Octane startup metric
+  cells at 3 reps). Checkpoint writes preserve completed cells, including structured DNF evidence,
+  but collector publication occurs only when all 35 metric identities and boundaries match the
+  contract. A diagnostic subset or stale-commit run remains source evidence and is never
+  materialized as a Native Lab result.
+
 ## Harness separation
 
 - `harness: "web"` — Lynx for Web in headless Chromium. Measures architectural behavior

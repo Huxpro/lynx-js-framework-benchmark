@@ -17,6 +17,8 @@ import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
+import { assertCompleteLabNativeRun } from './lab-native.mjs';
+import { assertCompleteLabWebRun } from './lab-web.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   assertNativeDeviceCohort,
@@ -257,7 +259,7 @@ const isPublishableRecord = (run, record) => !(
   )
 );
 
-const nativeCohortIdentity = (run, environment) => {
+export const nativeCohortIdentity = (run, environment) => {
   const campaign = run.meta.campaign;
   const machine = run.meta.machine;
   const inputConnectorPackageTrees = run.meta.inputReceipt?.connectorPackageTrees;
@@ -986,15 +988,51 @@ const calibrateLabRecord = (run, file, record, targetCalibration) => {
 const isBetterLabRun = (candidate, current, entryId) => {
   if (!current) return true;
   const count = new Set(candidate.run.records
-    .filter((r) => r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))
+    .filter((r) => r.entry === entryId && r.harness === 'web'
+      && isBenchmarkRecord(r) && isRankingEligible(r))
     .map(cellKey)).size;
   const currentCount = new Set(current.run.records
-    .filter((r) => r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))
+    .filter((r) => r.entry === entryId && r.harness === 'web'
+      && isBenchmarkRecord(r) && isRankingEligible(r))
     .map(cellKey)).size;
   const time = candidate.run.meta.generatedAt ?? candidate.file;
   const currentTime = current.run.meta.generatedAt ?? current.file;
   return count > currentCount || (count === currentCount && (time > currentTime
     || (time === currentTime && candidate.file > current.file)));
+};
+
+const selectNativeLabRuns = (runs, labEntries) => {
+  const selected = [];
+  for (const entry of labEntries.filter((candidate) => candidate.nativeLab?.enabled === true)) {
+    let current = null;
+    for (const candidate of runs) {
+      const complete = assertCompleteLabNativeRun(candidate.run, entry);
+      if (complete == null) continue;
+      const recomputedCoverage = classifyNativeCoverage({
+        entries: [entry], contract: complete.contract, sourceRecords: complete.records,
+      });
+      try {
+        assertNativeCoverage(recomputedCoverage);
+      } catch {
+        continue;
+      }
+      if (JSON.stringify(candidate.run.nativeCoverage) !== JSON.stringify(recomputedCoverage)) {
+        continue;
+      }
+      const environments = new Set(complete.records.map((record) => record.environment));
+      if (environments.size !== 1) continue;
+      const [environment] = environments;
+      const identity = nativeCohortIdentity(candidate.run, environment);
+      if (identity == null) continue;
+      const time = candidate.run.meta.generatedAt ?? candidate.file;
+      const currentTime = current?.run.meta.generatedAt ?? current?.file;
+      if (!current || time > currentTime || (time === currentTime && candidate.file > current.file)) {
+        current = { ...candidate, complete, identity };
+      }
+    }
+    if (current) selected.push({ entry, ...current });
+  }
+  return selected;
 };
 
 export function collectRuns({
@@ -1176,18 +1214,23 @@ export function collectRuns({
   const labComparisonRecords = [];
   const comparisonCohort = comparisonRun.run.meta.receipt?.comparabilityCohort ?? null;
   for (const entryId of labIds) {
+    const labEntry = entryById.get(entryId);
     let source = null;
     for (const candidate of runs) {
       const candidateCohort = candidate.run.meta.receipt?.comparabilityCohort ?? null;
       if (candidateCohort !== comparisonCohort) continue;
       if (!candidate.run.records.some((r) =>
-        r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))) continue;
+        r.entry === entryId && r.harness === 'web'
+        && isBenchmarkRecord(r) && isRankingEligible(r))) continue;
+      if (labEntry?.webLab?.enabled === true
+        && assertCompleteLabWebRun(candidate.run, labEntry) == null) continue;
       if (isBetterLabRun(candidate, source, entryId)) source = candidate;
     }
     if (!source) continue;
     const records = source.run.records.filter((r) =>
-      r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r));
-    assertCurrentEntryCommit(source.run, entryId, entryById.get(entryId), 'Lab comparison');
+      r.entry === entryId && r.harness === 'web'
+      && isBenchmarkRecord(r) && isRankingEligible(r));
+    assertCurrentEntryCommit(source.run, entryId, labEntry, 'Lab comparison');
     const sourceCalibration = source.run.meta.calibration;
     const targetCalibration = comparisonRun.run.meta.calibration;
     const compatibleCalibration = sourceCalibration?.probeVersion === targetCalibration?.probeVersion
@@ -1209,13 +1252,34 @@ export function collectRuns({
     });
     labComparisonRecords.push(...records.map((r) =>
       calibrateLabRecord(source.run, source.file, r, comparisonRun.run.meta.calibration)));
-    const entry = entryById.get(entryId);
+    const entry = labEntry;
     if (entry) {
       labComparisonRecords.push(...(staticByEntry.get(entryId) ?? []).map((record) =>
         annotateStatic(entry, record)));
     }
   }
   comparison.labEstimates = labEstimates;
+
+  const nativeLabSources = selectNativeLabRuns(
+    runs,
+    labIds.map((entryId) => entryById.get(entryId)).filter(Boolean),
+  );
+  const nativeLabRuns = nativeLabSources.map(({ entry, file, run, complete, identity }) => ({
+    entryId: entry.id,
+    entryCommit: entry.provenance.commit,
+    contractVersion: complete.contract.version,
+    contractSha256: complete.contract.sha256,
+    expectedCellCount: complete.contract.expectedCellCount,
+    generatedAt: run.meta.generatedAt,
+    machineId: run.meta.machine.id,
+    deviceCohortId: identity.deviceCohort.id,
+    leaseChainSha256: identity.leaseChain.sha256,
+    environment: complete.records[0]?.environment ?? null,
+    sourceRunFile: file,
+    sourceRecordCount: complete.records.length,
+  }));
+  const nativeLabRecords = nativeLabSources.flatMap(({ file, run, complete }) =>
+    complete.records.map((record) => annotate(run, file, record, 'lab-entry')));
 
   const archiveStaticRecords = currentEntries.flatMap((entry) =>
     (staticByEntry.get(entry.id) ?? []).map((record) => annotateStatic(entry, record)));
@@ -1232,6 +1296,8 @@ export function collectRuns({
     comparison,
     comparisonRecords,
     labComparisonRecords,
+    nativeLabRuns,
+    nativeLabRecords,
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
     nativeCoverage,
@@ -1253,6 +1319,6 @@ export function collectRuns({
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(out, null, 1));
-  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${nativeObservations.observations.length} isolated Native observations + ${labEstimates.length} calibrated Lab entries → ${path.relative(root, outPath)}`);
+  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${nativeObservations.observations.length} isolated Native observations + ${labEstimates.length} calibrated Web Lab entries + ${nativeLabRuns.length} Native Lab runs → ${path.relative(root, outPath)}`);
   return out;
 }

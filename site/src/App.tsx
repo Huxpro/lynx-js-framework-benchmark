@@ -7,23 +7,25 @@ import { HistoryRanking } from './components/HistoryRanking';
 import { MethodPage } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
+import { NativeLabRuns } from './components/NativeLabRuns';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
 import { TimelineSlider } from './components/TimelineSlider';
 import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
-import { ENTRIES, FEATURED_IDS, TIMELINE_SNAPSHOTS } from './data';
+import { ENTRIES, FEATURED_IDS, TIMELINE_SNAPSHOTS, TimelineSnapshot } from './data';
 import { useTheme } from './hooks';
 
 // Sharable comparison state: ?entries=a,b,c picks an exact featured set.
 function initialSelection(): Set<string> {
   const params = new URLSearchParams(location.search);
+  const allowed = params.get('lab') === '1' ? ENTRIES.map((entry) => entry.id) : FEATURED_IDS;
   const ids = params.get('entries')?.split(',').map((s) => s.trim())
-    .filter((id) => FEATURED_IDS.includes(id));
+    .filter((id) => allowed.includes(id));
   return new Set(ids?.length ? ids : FEATURED_IDS);
 }
 
-function syncUrl(selected: Set<string>) {
+function syncUrl(selected: Set<string>, labMode: boolean) {
   const params = new URLSearchParams(location.search);
   const isDefault = selected.size === FEATURED_IDS.length
     && FEATURED_IDS.every((id) => selected.has(id));
@@ -32,7 +34,8 @@ function syncUrl(selected: Set<string>) {
   } else {
     params.set('entries', ENTRIES.filter((e) => selected.has(e.id)).map((e) => e.id).join(','));
   }
-  params.delete('lab');
+  if (labMode) params.set('lab', '1');
+  else params.delete('lab');
   const qs = params.toString();
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
@@ -59,9 +62,13 @@ function initialSnapshotIndex(): number {
 function AppContent({
   snapshotIndex,
   onSnapshotChange,
+  labMode,
+  onLabModeChange,
 }: {
   snapshotIndex: number;
   onSnapshotChange: (index: number) => void;
+  labMode: boolean;
+  onLabModeChange: (enabled: boolean) => void;
 }) {
   const [theme, toggleTheme] = useTheme();
   const { select, workloadScales } = useBenchmarkData();
@@ -83,9 +90,21 @@ function AppContent({
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      syncUrl(next);
+      syncUrl(next, labMode);
       return next;
     });
+
+  const toggleLabMode = () => {
+    const next = !labMode;
+    setSelected((current) => {
+      const filtered = next
+        ? current
+        : new Set([...current].filter((id) => FEATURED_IDS.includes(id)));
+      syncUrl(filtered, next);
+      return filtered;
+    });
+    onLabModeChange(next);
+  };
 
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
@@ -111,6 +130,9 @@ function AppContent({
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
 
   const nativeHasData = select({ harness: 'native' }).length > 0;
+  const chartSelection = harness === 'native'
+    ? new Set([...selected].filter((id) => FEATURED_IDS.includes(id)))
+    : selected;
 
   return (
     <div className="page">
@@ -128,6 +150,9 @@ function AppContent({
             </button>
           ))}
         </div>
+        <button className="theme-toggle" aria-pressed={labMode} onClick={toggleLabMode}>
+          ⚗ Lab
+        </button>
         <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
           {theme === 'dark' ? '☀' : '☾'}
         </button>
@@ -167,10 +192,17 @@ function AppContent({
             Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
             any card's data table for exact numbers.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          <Legend
+            theme={theme}
+            selected={chartSelection}
+            onToggle={toggleEntry}
+            labMode={labMode}
+            harness={harness}
+          />
           {harness === 'native' && <NativeCoverage />}
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
+          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={chartSelection} />
           {harness === 'native' && <NativeObservations theme={theme} />}
+          {harness === 'native' && labMode && <NativeLabRuns theme={theme} />}
           <RankedBars
             title="interactive @1k"
             description={harness === 'web'
@@ -180,7 +212,7 @@ function AppContent({
             ops={tableOps([1000])}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={chartSelection}
           />
           <RankedBars
             title="interactive @10k"
@@ -191,7 +223,7 @@ function AppContent({
             ops={tableOps([10000])}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={chartSelection}
           />
           <RankedBars
             title="storms"
@@ -204,7 +236,7 @@ function AppContent({
                 .map((s) => ({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, workload: w, scale: s })))}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={chartSelection}
           />
           <RankedBars
             title="startup (first contentful paint)"
@@ -218,7 +250,7 @@ function AppContent({
             }))}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={chartSelection}
           />
           {harness === 'native' && ['octaneCommitAck', 'octaneSecondFrame'].map((metric) => {
             const metricRecords = select({ suite: 'startup', harness, workload: 'startup', metric });
@@ -238,7 +270,7 @@ function AppContent({
                 }))}
                 harness={harness}
                 theme={theme}
-                selected={selected}
+                selected={chartSelection}
               />
             );
           })}
@@ -251,10 +283,16 @@ function AppContent({
             log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing;
             0 ≈ scale-independent).
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
-          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={selected} />}
+          <Legend
+            theme={theme}
+            selected={chartSelection}
+            onToggle={toggleEntry}
+            labMode={labMode}
+            harness={harness}
+          />
+          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={chartSelection} />}
           {trendSpecsForHarness(harness).map((spec) => (
-            <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={selected} />
+            <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={chartSelection} />
           ))}
         </>
       ) : page === 'threads' ? (
@@ -266,8 +304,14 @@ function AppContent({
             here it's split apart: per-realm CPU, bytes and messages in each direction, and which
             rpc endpoints carried them.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
-          <ThreadsPage harness={harness} theme={theme} selected={selected} />
+          <Legend
+            theme={theme}
+            selected={chartSelection}
+            onToggle={toggleEntry}
+            labMode={labMode}
+            harness={harness}
+          />
+          <ThreadsPage harness={harness} theme={theme} selected={chartSelection} />
         </>
       ) : (
         <>
@@ -293,7 +337,13 @@ function AppContent({
 
 export default function App() {
   const [snapshotIndex, setSnapshotIndex] = useState(initialSnapshotIndex);
+  const [labMode, setLabMode] = useState(() =>
+    new URLSearchParams(location.search).get('lab') === '1');
   const snapshot = TIMELINE_SNAPSHOTS[snapshotIndex];
+  const dataSnapshot: TimelineSnapshot = labMode ? {
+    ...snapshot,
+    records: [...snapshot.records, ...snapshot.labComparisonRecords],
+  } : snapshot;
   const changeSnapshot = (index: number) => {
     setSnapshotIndex(index);
     const params = new URLSearchParams(location.search);
@@ -304,8 +354,13 @@ export default function App() {
     history.replaceState(null, '', query ? `?${query}` : location.pathname);
   };
   return (
-    <BenchmarkDataProvider snapshot={snapshot}>
-      <AppContent snapshotIndex={snapshotIndex} onSnapshotChange={changeSnapshot} />
+    <BenchmarkDataProvider snapshot={dataSnapshot}>
+      <AppContent
+        snapshotIndex={snapshotIndex}
+        onSnapshotChange={changeSnapshot}
+        labMode={labMode}
+        onLabModeChange={setLabMode}
+      />
     </BenchmarkDataProvider>
   );
 }
