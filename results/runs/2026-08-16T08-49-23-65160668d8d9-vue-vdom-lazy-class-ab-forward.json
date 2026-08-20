@@ -1,0 +1,4504 @@
+{
+ "schemaVersion": 2,
+ "meta": {
+  "generatedAt": "2026-08-16T08:49:23.337Z",
+  "machine": {
+   "id": "65160668d8d9",
+   "hostname": "n251-227-236",
+   "platform": "linux",
+   "arch": "x64",
+   "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+   "cores": 32,
+   "memGB": 67,
+   "node": "v22.22.2"
+  },
+  "calibration": {
+   "probeVersion": 1,
+   "score": 2263.8,
+   "iterations": 2264
+  },
+  "chromium": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+  "argv": [
+   "run",
+   "--entry",
+   "vue-vdom-grind-base,z-vue-vdom-lazy-class-candidate",
+   "--suite",
+   "table",
+   "--case",
+   "create,append1k,clear",
+   "--scale",
+   "1000,10000",
+   "--reps",
+   "9",
+   "--label",
+   "vue-vdom-lazy-class-ab-forward",
+   "--no-collect"
+  ],
+  "entryCommits": {
+   "vue-vdom-grind-base": "7fe932bde577d5137bc3522b3070e92ed3bc7ada",
+   "z-vue-vdom-lazy-class-candidate": "710e649bb6b3d175c83048ab7ac835da62b01110"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    141.2300000190735,
+    147.28999996185303,
+    138.5199999809265,
+    141.06499981880188,
+    147.00499987602234,
+    141.15000009536743,
+    137.15000009536743,
+    136.29500007629395,
+    128.81500005722046
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 141.06499981880188,
+   "mean": 139.83555555343628,
+   "std": 5.64673044193116,
+   "min": 128.81500005722046,
+   "max": 147.28999996185303,
+   "p95": 147.28999996185303,
+   "ci95": 4.340453466364418,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    29.788,
+    28.679,
+    35.136,
+    24.608,
+    25.175,
+    26.916,
+    28.002,
+    23.571,
+    25.035
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 26.916,
+   "mean": 27.434444444444445,
+   "std": 3.5491269740286526,
+   "min": 23.571,
+   "max": 35.136,
+   "p95": 35.136,
+   "ci95": 2.728095600703358,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    110.01,
+    116.011,
+    108.233,
+    113.7,
+    119.768,
+    111.861,
+    107.103,
+    110.501,
+    101.17
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 110.501,
+   "mean": 110.92855555555555,
+   "std": 5.36975588623708,
+   "min": 101.17,
+   "max": 119.768,
+   "p95": 119.768,
+   "ci95": 4.127552357887568,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    347,
+    347,
+    347,
+    347,
+    348,
+    348,
+    347,
+    346,
+    346
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_5": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_7": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_9": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 286
+      },
+      "ret_bg-to-main_11": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_13": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_15": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 286
+      },
+      "ret_bg-to-main_17": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 285
+      },
+      "ret_bg-to-main_19": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 285
+      },
+      "ret_bg-to-main_21": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 287
+     },
+     "ret_bg-to-main_5": {
+      "messages": 1,
+      "bytes": 60
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 347,
+   "mean": 347,
+   "std": 0.7071067811865476,
+   "min": 346,
+   "max": 348,
+   "p95": 348,
+   "ci95": 0.5435294124720595,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    351378,
+    361081,
+    361115,
+    363076,
+    363081,
+    363083,
+    363204,
+    363145,
+    364135
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 351378
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 361081
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 361115
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363076
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363081
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363083
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363204
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363145
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 364135
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 363081
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 363081,
+   "mean": 361477.55555555556,
+   "std": 3918.166475250609,
+   "min": 351378,
+   "max": 364135,
+   "p95": 364135,
+   "ci95": 3011.763963975968,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "max": 1,
+   "p95": 1,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1418.6499998569489,
+    1408.6749999523163,
+    1507.7649998664856,
+    1398.0650000572205,
+    1425.3949999809265,
+    1391.7249999046326,
+    1427.6899998188019,
+    1420.3199999332428,
+    1399.4100000858307
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1418.6499998569489,
+   "mean": 1421.9661110507118,
+   "std": 34.62458567508393,
+   "min": 1391.7249999046326,
+   "max": 1507.7649998664856,
+   "p95": 1507.7649998664856,
+   "ci95": 26.61476485558118,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    264.177,
+    270.784,
+    258.86,
+    277.69,
+    266.138,
+    264.367,
+    256.954,
+    257.548,
+    317.434
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 264.367,
+   "mean": 270.4391111111111,
+   "std": 18.834485747190215,
+   "min": 256.954,
+   "max": 317.434,
+   "p95": 317.434,
+   "ci95": 14.477441377673545,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1160.64,
+    1144.595,
+    1250.855,
+    1126.497,
+    1159.888,
+    1125.509,
+    1172.271,
+    1161.391,
+    1129.489
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1159.888,
+   "mean": 1159.015,
+   "std": 38.53431701418879,
+   "min": 1125.509,
+   "max": 1250.855,
+   "p95": 1250.855,
+   "ci95": 29.620045011573115,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    352,
+    352,
+    352,
+    353,
+    353,
+    353,
+    352,
+    342,
+    352
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_23": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_25": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_27": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_29": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_31": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_33": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_35": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 281
+      },
+      "ret_bg-to-main_37": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_39": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 291
+     },
+     "ret_bg-to-main_23": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 352,
+   "mean": 351.22222222222223,
+   "std": 3.4920544732928263,
+   "min": 342,
+   "max": 353,
+   "p95": 353,
+   "ci95": 2.684225871804419,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    3639716,
+    3759606,
+    3839699,
+    3841739,
+    3860086,
+    3860058,
+    3859777,
+    3859092,
+    3861133
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3639716
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3759606
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3839699
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3841739
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3860086
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3860058
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3859777
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3859092
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3861133
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 3859092
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 3859092,
+   "mean": 3820100.6666666665,
+   "std": 75020.1206777222,
+   "min": 3639716,
+   "max": 3861133,
+   "p95": 3861133,
+   "ci95": 57665.46609427579,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "max": 1,
+   "p95": 1,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    137.8199999332428,
+    132.7150001525879,
+    136.63000011444092,
+    136.81500005722046,
+    135.06500005722046,
+    135.37000012397766,
+    139.5350000858307,
+    145.1050000190735,
+    139.30999994277954
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 136.81500005722046,
+   "mean": 137.59611116515265,
+   "std": 3.533077388063754,
+   "min": 132.7150001525879,
+   "max": 145.1050000190735,
+   "p95": 145.1050000190735,
+   "ci95": 2.715758818958339,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    28.967,
+    27.849,
+    27.302,
+    28.176,
+    27.729,
+    28.416,
+    27.504,
+    27.819,
+    28.301
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 27.849,
+   "mean": 28.006999999999998,
+   "std": 0.5113100820441541,
+   "min": 27.302,
+   "max": 28.967,
+   "p95": 28.967,
+   "ci95": 0.3930270163979398,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    124.945,
+    119.266,
+    123.255,
+    121.77,
+    122.312,
+    122.888,
+    126.711,
+    133.17,
+    128.853
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 123.255,
+   "mean": 124.79666666666668,
+   "std": 4.215974442522152,
+   "min": 119.266,
+   "max": 133.17,
+   "p95": 133.17,
+   "ci95": 3.2406790214853616,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    405,
+    406,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    406
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_42": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_45": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_48": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_51": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_54": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_57": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_60": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_63": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_66": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 288
+     },
+     "ret_bg-to-main_42": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 405,
+   "mean": 405.22222222222223,
+   "std": 0.4409585518440984,
+   "min": 405,
+   "max": 406,
+   "p95": 406,
+   "ci95": 0.3389501401841636,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "max": 3,
+   "p95": 3,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    387191,
+    387223,
+    387266,
+    386962,
+    387155,
+    387097,
+    387095,
+    387141,
+    387281
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387125
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387157
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387200
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 386896
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387089
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387031
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387029
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387075
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387215
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 387089
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 387155,
+   "mean": 387156.77777777775,
+   "std": 99.05652146347784,
+   "min": 386962,
+   "max": 387281,
+   "p95": 387281,
+   "ci95": 76.14144616492663,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    307.9300000667572,
+    245.79999995231628,
+    254.7150001525879,
+    311.55999994277954,
+    288.88499999046326,
+    300.9649999141693,
+    271.4100000858307,
+    290.25,
+    273.0150001049042
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 288.88499999046326,
+   "mean": 282.7255555788676,
+   "std": 23.087732429887417,
+   "min": 245.79999995231628,
+   "max": 311.55999994277954,
+   "p95": 311.55999994277954,
+   "ci95": 17.74677032777346,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    15.132,
+    12.693,
+    12.385,
+    12.788,
+    21.323,
+    17.616,
+    13.144,
+    13.289,
+    11.048
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 13.144,
+   "mean": 14.379777777777779,
+   "std": 3.2098112786337527,
+   "min": 11.048,
+   "max": 21.323,
+   "p95": 21.323,
+   "ci95": 2.467274936176478,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    399.775,
+    367.522,
+    386.607,
+    437.208,
+    404.216,
+    417.802,
+    396.201,
+    434.769,
+    390.961
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 399.775,
+   "mean": 403.89566666666667,
+   "std": 22.698562718815484,
+   "min": 367.522,
+   "max": 437.208,
+   "p95": 437.208,
+   "ci95": 17.44762854319617,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    408,
+    409,
+    409,
+    408,
+    409,
+    408,
+    408,
+    408,
+    408
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_69": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_71": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_73": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_75": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_77": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_79": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_81": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_83": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_85": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 291
+     },
+     "ret_bg-to-main_69": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 408,
+   "mean": 408.3333333333333,
+   "std": 0.5,
+   "min": 408,
+   "max": 409,
+   "p95": 409,
+   "ci95": 0.3843333333333333,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "max": 3,
+   "p95": 3,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 120126
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 120192,
+   "mean": 120192,
+   "std": 0,
+   "min": 120192,
+   "max": 120192,
+   "p95": 120192,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapMts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "value": 38326728,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 38326728,
+   "mean": 38326728,
+   "std": 0,
+   "min": 38326728,
+   "max": 38326728,
+   "p95": 38326728,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapBts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "value": 53897092,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 53897092,
+   "mean": 53897092,
+   "std": 0,
+   "min": 53897092,
+   "max": 53897092,
+   "p95": 53897092,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    140.2350001335144,
+    136.85999989509583,
+    131.8550000190735,
+    197.1800000667572,
+    127.0149998664856,
+    129.14000010490417,
+    123.17500019073486,
+    128.7699999809265,
+    124.52999997138977
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 129.14000010490417,
+   "mean": 137.6400000254313,
+   "std": 22.99659242477495,
+   "min": 123.17500019073486,
+   "max": 197.1800000667572,
+   "p95": 197.1800000667572,
+   "ci95": 17.676714043843678,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    32.289,
+    23.962,
+    28.22,
+    24.137,
+    23.054,
+    24.292,
+    23.968,
+    21.708,
+    29.852
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 24.137,
+   "mean": 25.720222222222226,
+   "std": 3.5423160777158844,
+   "min": 21.708,
+   "max": 32.289,
+   "p95": 32.289,
+   "ci95": 2.72286029173761,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    111.605,
+    110.555,
+    109.507,
+    169.626,
+    100.964,
+    102.959,
+    96.424,
+    104.876,
+    100.794
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 104.876,
+   "mean": 111.92333333333335,
+   "std": 22.22507772764811,
+   "min": 96.424,
+   "max": 169.626,
+   "p95": 169.626,
+   "ci95": 17.083676413318848,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    347,
+    347,
+    403,
+    348,
+    348,
+    348,
+    348,
+    338,
+    347
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_5": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_7": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_9": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_11": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_13": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_15": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_17": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 277
+      },
+      "ret_bg-to-main_19": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 286
+      },
+      "ret_bg-to-main_21": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 287
+     },
+     "ret_bg-to-main_11": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 348,
+   "mean": 352.6666666666667,
+   "std": 19.144189719076646,
+   "min": 338,
+   "max": 403,
+   "p95": 403,
+   "ci95": 14.715500497396915,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2.111111111111111,
+   "std": 0.33333333333333337,
+   "min": 2,
+   "max": 3,
+   "p95": 3,
+   "ci95": 0.25622222222222224,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    351378,
+    361081,
+    361115,
+    363076,
+    363081,
+    363083,
+    363204,
+    363145,
+    364135
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 351378
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 361081
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 361115
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363076
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363081
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363083
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363204
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 363145
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 364135
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 363081
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 363081,
+   "mean": 361477.55555555556,
+   "std": 3918.166475250609,
+   "min": 351378,
+   "max": 364135,
+   "p95": 364135,
+   "ci95": 3011.763963975968,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "max": 1,
+   "p95": 1,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1473.3700001239777,
+    1474.1850001811981,
+    1409.335000038147,
+    1338.7649998664856,
+    1438.4500000476837,
+    1371.2250001430511,
+    1366.2599999904633,
+    1399.8949999809265,
+    1472.0049998760223
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1409.335000038147,
+   "mean": 1415.943333360884,
+   "std": 51.314290751288155,
+   "min": 1338.7649998664856,
+   "max": 1474.1850001811981,
+   "p95": 1474.1850001811981,
+   "ci95": 39.44358482415683,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    290.488,
+    302.645,
+    249.03,
+    238.754,
+    259.024,
+    253.198,
+    247.693,
+    254.187,
+    246.185
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 253.198,
+   "mean": 260.13377777777777,
+   "std": 21.63045809603773,
+   "min": 238.754,
+   "max": 302.645,
+   "p95": 302.645,
+   "ci95": 16.626612123154338,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1205.828,
+    1168.137,
+    1159.378,
+    1101.969,
+    1188.535,
+    1116.999,
+    1121.589,
+    1154.452,
+    1224.652
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1159.378,
+   "mean": 1160.1709999999998,
+   "std": 41.65863593542161,
+   "min": 1101.969,
+   "max": 1224.652,
+   "p95": 1224.652,
+   "ci95": 32.02160482236074,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    352,
+    352,
+    353,
+    352,
+    353,
+    353,
+    353,
+    352,
+    352
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_23": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_25": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_27": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_29": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_31": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_33": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_35": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_37": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_39": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 291
+     },
+     "ret_bg-to-main_23": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 352,
+   "mean": 352.44444444444446,
+   "std": 0.5270462766947298,
+   "min": 352,
+   "max": 353,
+   "p95": 353,
+   "ci95": 0.40512290468601564,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    3639716,
+    3759606,
+    3839699,
+    3841739,
+    3860086,
+    3860058,
+    3859777,
+    3859092,
+    3861133
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3639716
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3759606
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3839699
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3841739
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3860086
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3860058
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3859777
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3859092
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3861133
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 3859092
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 3859092,
+   "mean": 3820100.6666666665,
+   "std": 75020.1206777222,
+   "min": 3639716,
+   "max": 3861133,
+   "p95": 3861133,
+   "ci95": 57665.46609427579,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 1,
+   "mean": 1,
+   "std": 0,
+   "min": 1,
+   "max": 1,
+   "p95": 1,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    145.97500014305115,
+    156.67499995231628,
+    140.66999983787537,
+    136.26500010490417,
+    139.88499999046326,
+    133.29999995231628,
+    136.84500002861023,
+    133.77999997138977,
+    136.08500003814697
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 136.84500002861023,
+   "mean": 139.9422222243415,
+   "std": 7.390857571976449,
+   "min": 133.29999995231628,
+   "max": 156.67499995231628,
+   "p95": 156.67499995231628,
+   "ci95": 5.681105853659231,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    29.563,
+    50.127,
+    27.394,
+    26.624,
+    31.892,
+    29.743,
+    26.791,
+    26.997,
+    26.558
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 27.394,
+   "mean": 30.632111111111108,
+   "std": 7.538968736578705,
+   "min": 26.558,
+   "max": 50.127,
+   "p95": 50.127,
+   "ci95": 5.794953968850165,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    131.144,
+    122.285,
+    128.242,
+    124.194,
+    126.666,
+    123.592,
+    124.634,
+    120.33,
+    123.474
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 124.194,
+   "mean": 124.95122222222221,
+   "std": 3.265124414849218,
+   "min": 120.33,
+   "max": 131.144,
+   "p95": 131.144,
+   "ci95": 2.509792300214099,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    405,
+    405,
+    405,
+    405,
+    405,
+    406,
+    405,
+    405,
+    404
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_42": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_45": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_48": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_51": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_54": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_57": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_60": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_63": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 287
+      },
+      "ret_bg-to-main_66": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 288
+     },
+     "ret_bg-to-main_42": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 405,
+   "mean": 405,
+   "std": 0.5,
+   "min": 404,
+   "max": 406,
+   "p95": 406,
+   "ci95": 0.3843333333333333,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "max": 3,
+   "p95": 3,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    387191,
+    387223,
+    387266,
+    386962,
+    387155,
+    387097,
+    387095,
+    387141,
+    387281
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387125
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387157
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387200
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 386896
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387089
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387031
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387029
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387075
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 387215
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 387089
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 387155,
+   "mean": 387156.77777777775,
+   "std": 99.05652146347784,
+   "min": 386962,
+   "max": 387281,
+   "p95": 387281,
+   "ci95": 76.14144616492663,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    232.63000011444092,
+    284.77999997138977,
+    285.66999983787537,
+    297.68499994277954,
+    258.57499980926514,
+    242.3550000190735,
+    313.68499994277954,
+    287.59500002861023,
+    293.15499997138977
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 285.66999983787537,
+   "mean": 277.34777773751154,
+   "std": 26.902506368410815,
+   "min": 232.63000011444092,
+   "max": 313.68499994277954,
+   "p95": 313.68499994277954,
+   "ci95": 20.679059895185112,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    12.332,
+    12.355,
+    13.308,
+    13.185,
+    11.974,
+    10.152,
+    11.589,
+    11.06,
+    13.076
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 12.332,
+   "mean": 12.114555555555556,
+   "std": 1.0523371739978487,
+   "min": 10.152,
+   "max": 13.308,
+   "p95": 13.308,
+   "ci95": 0.8088965077463464,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    367.521,
+    358.412,
+    351.84,
+    361.982,
+    377.418,
+    367.614,
+    433.983,
+    419.077,
+    413.209
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 367.614,
+   "mean": 383.4506666666666,
+   "std": 30.282690649940605,
+   "min": 351.84,
+   "max": 433.983,
+   "p95": 433.983,
+   "ci95": 23.27729487958768,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    409,
+    408,
+    398,
+    408,
+    408,
+    408,
+    408,
+    408,
+    396
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 292
+      },
+      "ret_bg-to-main_69": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_71": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 281
+      },
+      "ret_bg-to-main_73": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_75": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_77": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_79": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_81": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 291
+      },
+      "ret_bg-to-main_83": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 279
+      },
+      "ret_bg-to-main_85": {
+       "messages": 1,
+       "bytes": 61
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 291
+     },
+     "ret_bg-to-main_71": {
+      "messages": 1,
+      "bytes": 61
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 408,
+   "mean": 405.6666666666667,
+   "std": 4.949747468305832,
+   "min": 396,
+   "max": 409,
+   "p95": 409,
+   "ci95": 3.804705887304416,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "max": 3,
+   "p95": 3,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "value": null,
+   "samples": [
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192,
+    120192
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 120126
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 120126
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 120192,
+   "mean": 120192,
+   "std": 0,
+   "min": 120192,
+   "max": 120192,
+   "p95": 120192,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 9,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapMts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "value": 38330264,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 38330264,
+   "mean": 38330264,
+   "std": 0,
+   "min": 38330264,
+   "max": 38330264,
+   "p95": 38330264,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "memory",
+   "scale": 10000,
+   "metric": "heapBts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "value": 47820140,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 47820140,
+   "mean": 47820140,
+   "std": 0,
+   "min": 47820140,
+   "max": 47820140,
+   "p95": 47820140,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 117796,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 117796,
+   "mean": 117796,
+   "std": 0,
+   "min": 117796,
+   "max": 117796,
+   "p95": 117796,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 41033,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 41033,
+   "mean": 41033,
+   "std": 0,
+   "min": 41033,
+   "max": 41033,
+   "p95": 41033,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "mtsSectionRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "mtsSectionGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 9603,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9603,
+   "mean": 9603,
+   "std": 0,
+   "min": 9603,
+   "max": 9603,
+   "p95": 9603,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "btsSectionRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 85689,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 85689,
+   "mean": 85689,
+   "std": 0,
+   "min": 85689,
+   "max": 85689,
+   "p95": 85689,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "btsSectionGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 31009,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 31009,
+   "mean": 31009,
+   "std": 0,
+   "min": 31009,
+   "max": 31009,
+   "p95": 31009,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 121722,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 121722,
+   "mean": 121722,
+   "std": 0,
+   "min": 121722,
+   "max": 121722,
+   "p95": 121722,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "vue-vdom-grind-base",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 49800,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 49800,
+   "mean": 49800,
+   "std": 0,
+   "min": 49800,
+   "max": 49800,
+   "p95": 49800,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 118236,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 118236,
+   "mean": 118236,
+   "std": 0,
+   "min": 118236,
+   "max": 118236,
+   "p95": 118236,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 41131,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 41131,
+   "mean": 41131,
+   "std": 0,
+   "min": 41131,
+   "max": 41131,
+   "p95": 41131,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "mtsSectionRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "mtsSectionGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 9603,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9603,
+   "mean": 9603,
+   "std": 0,
+   "min": 9603,
+   "max": 9603,
+   "p95": 9603,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "btsSectionRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 86129,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 86129,
+   "mean": 86129,
+   "std": 0,
+   "min": 86129,
+   "max": 86129,
+   "p95": 86129,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "btsSectionGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 31098,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 31098,
+   "mean": 31098,
+   "std": 0,
+   "min": 31098,
+   "max": 31098,
+   "p95": 31098,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 122162,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 122162,
+   "mean": 122162,
+   "std": 0,
+   "min": 122162,
+   "max": 122162,
+   "p95": 122162,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": "lynx-for-web",
+   "entry": "z-vue-vdom-lazy-class-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "metric": "bundleLynxGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "value": 49901,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 49901,
+   "mean": 49901,
+   "std": 0,
+   "min": 49901,
+   "max": 49901,
+   "p95": 49901,
+   "ci95": 0,
+   "detailKind": null
+  }
+ ]
+}

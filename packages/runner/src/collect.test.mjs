@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
+import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
+
 import { collectRuns } from './collect.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
@@ -180,6 +182,7 @@ function nativeCampaignMeta(entries, {
 
 const writeRun = (root, file, {
   machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z', entryCommits = null,
+  receipt = null,
 }) => {
   fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
     schemaVersion: 2,
@@ -188,6 +191,7 @@ const writeRun = (root, file, {
       machine: machine(machineId),
       calibration: { probeVersion: 1, score },
       ...(entryCommits ? { entryCommits } : {}),
+      ...(receipt ? { receipt } : {}),
     },
     records: entries.map((entry) => record(entry)),
   }));
@@ -251,6 +255,51 @@ test('comparison tie-breaks by matrix coverage, then newest run', () => {
     });
     assert.equal(out.comparison.runFile, '2026-01-03-c.json');
     assert.equal(out.comparison.recordCount, 3);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('incomplete DNF cells stay visible but cannot win comparison-run coverage', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'complete.json', {
+      machineId: 'complete', score: 100, entries: ['react', 'vue'],
+      generatedAt: '2026-01-01T00:00:00Z',
+    });
+    const incomplete = {
+      ...record('vue', 'selectStorm'),
+      samples: [],
+      n: 0,
+      median: null,
+      mean: null,
+      min: null,
+      dnfCount: 1,
+      failures: [{
+        rep: 0,
+        category: 'incomplete-storm-transport',
+        evidence: { toMtsMessages: 6, toBtsMessages: 14 },
+      }],
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/incomplete-newer.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-02T00:00:00Z',
+        machine: machine('incomplete'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [record('react'), incomplete],
+    }));
+
+    const out = collectRuns({
+      root, generatedAt: 'test', log: () => {}, entryTiers: entryTiers(['react', 'vue']),
+    });
+    assert.equal(out.comparison.runFile, 'complete.json');
+    const archived = out.records.find((candidate) =>
+      candidate.entry === 'vue' && candidate.workload === 'selectStorm');
+    assert.equal(archived.comparabilityStatus, 'incomplete-work');
+    assert.equal(archived.rankingEligible, false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -771,6 +820,49 @@ test('featured cohort wins over broad Lab run and legacy Octane IDs become calib
   }
 });
 
+test('prospective Lab estimates cannot cross comparison cohorts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const prospective = (entry, workload = 'create') => ({
+      ...record(entry, workload), attemptedCount: 1, acceptedCount: 1,
+    });
+    const writeProspective = (file, generatedAt, cohort, records) => {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: {
+          generatedAt,
+          machine: machine(file),
+          calibration: { probeVersion: 1, score: 100 },
+          receipt: { comparabilityCohort: cohort },
+        },
+        records,
+      }));
+    };
+    writeProspective('comparison.json', '2026-01-01T00:00:00Z', 'sha256:cohort-a', [
+      prospective('react'),
+    ]);
+    writeProspective('lab-compatible.json', '2026-01-02T00:00:00Z', 'sha256:cohort-a', [
+      prospective('lab'),
+    ]);
+    writeProspective('lab-incompatible-newer.json', '2026-01-03T00:00:00Z', 'sha256:cohort-b', [
+      prospective('lab'), prospective('lab', 'select'),
+    ]);
+
+    const out = collectRuns({
+      root, generatedAt: 'test', log: () => {}, entryTiers: entryTiers(['react'], ['lab']),
+    });
+    assert.equal(out.comparison.runFile, 'comparison.json');
+    assert.equal(out.comparison.labEstimates[0].sourceRunFile, 'lab-compatible.json');
+    assert.deepEqual(
+      [...new Set(out.labComparisonRecords.map((candidate) => candidate.comparabilityCohort))],
+      ['sha256:cohort-a'],
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector ignores stale aggregate snapshots and re-derives display detail from source observations', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -932,6 +1024,111 @@ test('collector preserves structured DNF evidence and rejects impossible failure
   }
 });
 
+test('collector keeps incomplete historical storms auditable but removes them from rankings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const storm = (entry, metric, samples) => ({
+      ...record(entry, 'selectStorm'),
+      metric,
+      boundary: metric === 'latency' ? 'test' : 'wire',
+      unit: metric === 'latency' ? 'ms' : 'count',
+      samples,
+      n: samples.length,
+      median: samples[0],
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/incomplete.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [
+        record('react'),
+        storm('react', 'latency', [30]),
+        storm('react', 'wireToMtsMsgs', [6]),
+        storm('react', 'wireToBtsMsgs', [14]),
+      ],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    assert.equal(out.comparisonRecords.some((candidate) =>
+      candidate.workload === 'selectStorm'), false);
+    const latency = out.records.find((candidate) =>
+      candidate.workload === 'selectStorm' && candidate.metric === 'latency');
+    assert.equal(latency.median, 30);
+    assert.equal(latency.comparabilityStatus, 'incomplete-work');
+    assert.equal(latency.rankingEligible, false);
+    assert.deepEqual(latency.workClassification, {
+      status: 'incomplete',
+      expectedSequentialCommits: STORM_SELECT_TICKS,
+      observed: {
+        toMtsMessages: { min: 6, max: 6 },
+        toBtsMessages: { min: 14, max: 14 },
+      },
+    });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector rejects prospective sampling mismatches and preserves complete storm cohorts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const receipt = { comparabilityCohort: 'sha256:test-cohort' };
+    const prospective = (workload, metric, samples, attemptedCount = samples.length) => ({
+      ...record('react', workload),
+      metric,
+      boundary: metric === 'latency' ? 'test' : 'wire',
+      unit: metric === 'latency' ? 'ms' : 'count',
+      samples,
+      n: samples.length,
+      median: samples[0],
+      attemptedCount,
+      acceptedCount: samples.length,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/prospective.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+        receipt,
+      },
+      records: [
+        { ...prospective('create', 'latency', [1, 2], 2), acceptedCount: 1 },
+        prospective('select', 'latency', [20], 2),
+        prospective('selectStorm', 'latency', [500]),
+        prospective('selectStorm', 'wireToMtsMsgs', [60]),
+        prospective('selectStorm', 'wireToBtsMsgs', [92]),
+      ],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    assert.equal(out.comparisonRecords.some((candidate) => candidate.workload === 'create'), false);
+    const complete = out.comparisonRecords.find((candidate) =>
+      candidate.workload === 'selectStorm' && candidate.metric === 'latency');
+    assert.equal(complete.comparabilityStatus, 'comparable');
+    assert.equal(complete.comparabilityCohort, receipt.comparabilityCohort);
+    assert.equal(complete.rankingEligible, true);
+    assert.equal(complete.workClassification.status, 'complete');
+    const incompatible = out.records.find((candidate) => candidate.workload === 'create');
+    assert.equal(incompatible.comparabilityStatus, 'incompatible-sampling');
+    assert.deepEqual(incompatible.comparabilityReasons, ['accepted-count-mismatch']);
+    const underfilled = out.records.find((candidate) => candidate.workload === 'select');
+    assert.equal(underfilled.comparabilityStatus, 'incompatible-sampling');
+    assert.deepEqual(underfilled.comparabilityReasons, ['attempt-accounting-underflow']);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('checked timeline snapshots keep Octane on the stable main identity', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
@@ -961,4 +1158,12 @@ test('checked timeline snapshots keep Octane on the stable main identity', () =>
     && record.metric === 'latency');
   assert.equal(selectStorm(fast).median, 34.44500017166138);
   assert.equal(selectStorm(current).median, 590.6499996185303);
+  const historical = fast.records.find((record) =>
+    record.harness === 'web'
+    && record.entry === 'octane'
+    && record.workload === 'selectStorm'
+    && record.scale === 1000
+    && record.metric === 'latency');
+  assert.equal(historical.comparabilityStatus, 'incomplete-work');
+  assert.equal(historical.rankingEligible, false);
 });
