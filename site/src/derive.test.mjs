@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { completeEntryScores, completeRowGeomeans, slopeFit } from './derive.mjs';
+import { completeEntryScores, completeRowGeomeans, rankHistoryCell, slopeFit } from './derive.mjs';
 
 test('interactive scores exclude entries with stale/incomplete matrices', () => {
   const result = completeEntryScores(['a', 'b', 'partial'], [
@@ -34,4 +34,25 @@ test('empty selections do not report phantom complete rows', () => {
   const result = completeRowGeomeans([], [{ key: 'row', values: {} }]);
   assert.equal(result.rowCount, 0);
   assert.equal(result.values.size, 0);
+});
+
+test('history ranks only exact eligible cohort values and preserves every missing state', () => {
+  const records = [
+    { entry: 'fast', median: 10, dnfCount: 0, rankEligible: true },
+    { entry: 'tied', median: 10, dnfCount: 0, rankEligible: true },
+    { entry: 'incomparable', median: 1, dnfCount: 0, rankEligible: false },
+    { entry: 'dnf', median: null, dnfCount: 5, rankEligible: true },
+  ];
+  assert.deepEqual(
+    rankHistoryCell(['fast', 'tied', 'incomparable', 'dnf', 'absent'], records),
+    [
+      { entry: 'fast', record: records[0], rank: 1, status: 'ranked' },
+      { entry: 'tied', record: records[1], rank: 1, status: 'ranked' },
+      { entry: 'incomparable', record: records[2], rank: null, status: 'incomparable' },
+      { entry: 'dnf', record: records[3], rank: null, status: 'dnf' },
+      { entry: 'absent', record: null, rank: null, status: 'missing' },
+    ],
+  );
+  assert.equal(rankHistoryCell(['fast'], records, false)[0].status, 'observation');
+  assert.equal(rankHistoryCell(['fast', 'absent'], records)[0].status, 'observation');
 });

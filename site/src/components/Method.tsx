@@ -1,9 +1,11 @@
 import { useBenchmarkData } from '../data-context';
-import { ENTRIES } from '../data';
+import { BENCHMARK_HISTORY, ENTRIES } from '../data';
 
 export function MethodPage() {
   const { snapshot } = useBenchmarkData();
   const comparison = snapshot.comparison;
+  const checkpoint = BENCHMARK_HISTORY.checkpoints.find((candidate) => candidate.id === snapshot.id);
+  const isCurrent = checkpoint?.current === true;
   return (
     <>
       <div className="card">
@@ -71,9 +73,10 @@ export function MethodPage() {
       <div className="card">
         <div className="card-title">machines &amp; calibration</div>
         <div className="card-desc">
-          Web featured charts are sourced from one coherent run: <code>{comparison.runFile}</code> on machine{' '}
-          <code>{comparison.machineId}</code>, preflight score {comparison.calibration.score} (v
-          {comparison.calibration.probeVersion}). Native featured charts combine one complete run
+          Web charts are sourced from one coherent run: <code>{comparison.runFile}</code> on machine{' '}
+          <code>{comparison.machineId}</code>{comparison.calibration.score > 0
+            ? `, preflight score ${comparison.calibration.score} (v${comparison.calibration.probeVersion})`
+            : ''}. Native charts combine one complete run
           per entry only when every run has the same device and environment identity. The collector
           keeps partial, stale-commit, cross-lease, cross-method, and cross-input records for provenance, but never merges
           them into the default ranking. A current featured entry measured under another Native
@@ -145,7 +148,7 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
-        {comparison.labEstimates.length > 0 && (
+        {isCurrent && comparison.labEstimates.length > 0 && (
           <details className="data-table">
             <summary>Calibration-only Lab sources</summary>
             <table>
@@ -166,7 +169,9 @@ export function MethodPage() {
             </table>
           </details>
         )}
-        <div className="note">snapshot source {new Date(snapshot.generatedAt).toLocaleString()}</div>
+        <div className="note">
+          exact checkpoint {new Date(snapshot.generatedAt).toLocaleString()} · {checkpoint?.sourceIndexes.length ?? 0} source run{checkpoint?.sourceIndexes.length === 1 ? '' : 's'}
+        </div>
       </div>
 
       <div className="card">

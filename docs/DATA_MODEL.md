@@ -64,10 +64,14 @@ Everything else is derived, including:
 - the Native 210-cell coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
-- the four checked timeline snapshots. Each historical position names exact source run files and
-  remaps that run's upstream-main Octane source to the stable public `octane` identity; dragging
-  the site slider swaps the complete record/comparison/machine context rather than filtering the
-  newest-per-cell archive;
+- the automatic exact-source history index. Every valid run has a source audit row; Web checkpoints
+  are one physical run and Native checkpoints rank only within an exact validated campaign, device,
+  environment, lease-chain, and method identity. Upstream-main `octane-main` observations map to the stable
+  public `octane` identity without losing their source ID or commit. Records are materialized once
+  and checkpoints reference them by index, so finer history does not duplicate full snapshots;
+- rank-over-time points. A point exists only inside its exact eligible cohort. Missing cells, DNF,
+  isolated observations, incompatible cohorts, and historical storms without enough transport
+  evidence remain explicit gaps and are never carried forward, interpolated, or cross-ranked;
 - `results/latest.json` in its entirety (a checked-in materialized cache);
 - entry lists, available scales/cases, rankings, baselines, ratios, interactive scores, geomeans,
   trend exponents, plot domains, bar widths, totals, sorting, and every table shown by the site.
@@ -104,6 +108,8 @@ Everything else is derived, including:
 12. Incomplete checkpoints from pre-resume Native protocols are diagnostic source archives only and
     are omitted from `results/latest.json`; only v2 checkpoints can participate in explicit
     prefix-compatible multi-lease continuation.
+13. History source coverage equals the full valid run-file list, and each checkpoint references
+   exact source records rather than a date cutoff or newest-per-cell archive.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

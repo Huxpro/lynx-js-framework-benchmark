@@ -189,6 +189,64 @@ export interface TimelineSnapshot {
   nativeCoverage: NativeCoverage;
 }
 
+export interface HistoryTransportEvidence {
+  comparable: boolean;
+  issue: 'incomplete-storm-transport' | 'missing-storm-transport-evidence' | null;
+  expectedSequentialCommits: number;
+  toMtsMessages: number | null;
+  toBtsMessages: number | null;
+}
+
+export interface HistoryRecord extends BenchRecord {
+  cohortId: string;
+  rankEligible: boolean;
+  transport?: HistoryTransportEvidence;
+}
+
+export interface HistoryCohort {
+  harness: string;
+  environment: string | null;
+  machineId: string;
+  sourceRunFiles: string[];
+  entryIds: string[];
+  rankEligible: boolean;
+}
+
+export interface HistoryCheckpoint {
+  id: string;
+  generatedAt: string;
+  label: string;
+  description: string;
+  octaneCommit: string | null;
+  current?: boolean;
+  activeRecordIndexes: number[];
+  sourceIndexes: number[];
+  harnesses: HistoryCohort[];
+  nativeCoverage?: NativeCoverage;
+}
+
+export interface HistorySource {
+  runFile: string;
+  generatedAt: string;
+  machineId: string;
+  harnesses: string[];
+  environments: string[];
+  entryIds: string[];
+  entryCommits: Record<string, string>;
+  machine: Machine;
+  calibration: { probeVersion: number; score: number } | null;
+  sourceRecordCount: number;
+  historyRecordCount: number;
+  rankEligible: boolean;
+  reason: string;
+}
+
+export interface BenchmarkHistory {
+  records: HistoryRecord[];
+  sources: HistorySource[];
+  checkpoints: HistoryCheckpoint[];
+}
+
 export interface EntryMeta {
   id: string;
   label: string;
@@ -206,15 +264,75 @@ export interface EntryMeta {
 
 // Featured charts use one physical run. Opt-in Lab records are historical and
 // explicitly tagged; millisecond values are calibrated to that run's probe.
-const collected = latest as {
+const collected = latest as unknown as {
   comparisonRecords: BenchRecord[];
   labComparisonRecords: BenchRecord[];
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
-  timelineSnapshots: TimelineSnapshot[];
+  history: BenchmarkHistory;
 };
-export const TIMELINE_SNAPSHOTS = collected.timelineSnapshots;
+export const BENCHMARK_HISTORY = collected.history;
+const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
+  version: 'history-no-native-data',
+  contractSha256: '',
+  expectedCellCount: 0,
+  entryIds: [],
+  summary: {},
+  cells: [],
+};
+export function historyRecordsForCheckpoint(checkpoint: HistoryCheckpoint): HistoryRecord[] {
+  if (checkpoint.current) return collected.comparisonRecords as HistoryRecord[];
+  return checkpoint.activeRecordIndexes.map((index) => BENCHMARK_HISTORY.records[index]);
+}
+export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoints.map((checkpoint) => {
+  // Incomparable observations stay in historyRecordsForCheckpoint() for the
+  // evidence chart, but comparison consumers see a real gap rather than a
+  // deceptively fast value.
+  const records = historyRecordsForCheckpoint(checkpoint)
+    .filter((record) => record.rankEligible !== false);
+  const harnesses = checkpoint.harnesses.map((cohort) => ({
+    harness: cohort.harness,
+    environment: cohort.environment,
+    generatedAt: checkpoint.generatedAt,
+    machineId: cohort.machineId,
+    calibration: null,
+    sourceRunFiles: cohort.sourceRunFiles,
+    entryIds: cohort.entryIds,
+    sourceRecordCount: records.filter((record) => record.harness === cohort.harness).length,
+    recordCount: records.filter((record) => record.harness === cohort.harness).length,
+  }));
+  const sources = checkpoint.sourceIndexes.map((index) => BENCHMARK_HISTORY.sources[index]);
+  const machines = Object.fromEntries(sources.map((source) => [source.machineId, {
+    ...source.machine,
+    latestCalibration: source.calibration,
+    latestRunFile: source.runFile,
+    latestRunGeneratedAt: source.generatedAt,
+  }]));
+  return {
+    id: checkpoint.id,
+    label: checkpoint.label,
+    description: checkpoint.description,
+    generatedAt: checkpoint.generatedAt,
+    octaneCommit: checkpoint.octaneCommit,
+    records,
+    comparison: {
+      runFile: checkpoint.harnesses[0]?.sourceRunFiles[0] ?? '',
+      generatedAt: checkpoint.generatedAt,
+      machineId: checkpoint.harnesses[0]?.machineId ?? '',
+      calibration: sources[0]?.calibration ?? { probeVersion: 0, score: 0 },
+      entryIds: [...new Set(checkpoint.harnesses.flatMap((cohort) => cohort.entryIds))].sort(),
+      sourceRecordCount: records.length,
+      recordCount: records.length,
+      harnesses,
+      labEstimates: checkpoint.current ? (latest as unknown as { comparison: ComparisonRun }).comparison.labEstimates : [],
+    },
+    machines,
+    nativeObservations: [],
+    nativeObservationRecords: [],
+    nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
+  };
+});
 
 const manifestModules = import.meta.glob('../../entries/*/entry.json', {
   eager: true,

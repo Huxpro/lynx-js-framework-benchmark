@@ -1129,41 +1129,83 @@ test('collector rejects prospective sampling mismatches and preserves complete s
   }
 });
 
-test('checked timeline snapshots keep Octane on the stable main identity', () => {
+test('history audits every run and restores exact-source upstream Octane checkpoints', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
+  assert.equal(out.history.sources.length, out.sources.runFiles.length);
   assert.deepEqual(
-    out.timelineSnapshots.map((snapshot) => snapshot.id),
-    ['2026-08-11-main', '2026-08-12-main', '2026-08-15-main', 'current-main'],
+    out.history.sources.map((source) => source.runFile),
+    out.sources.runFiles,
   );
-  for (const snapshot of out.timelineSnapshots) {
-    const octaneIds = new Set(snapshot.records
-      .filter((record) => record.harness === 'web' && record.entry.startsWith('octane'))
-      .map((record) => record.entry));
-    assert.deepEqual([...octaneIds], ['octane']);
-    assert.equal(
-      new Set(snapshot.records
-        .filter((record) => record.harness === 'web' && record.suite !== 'bundle')
-        .map((record) => record.entry)).size,
-      6,
-    );
-  }
-  const fast = out.timelineSnapshots.find((snapshot) => snapshot.id === '2026-08-12-main');
-  const current = out.timelineSnapshots.find((snapshot) => snapshot.id === 'current-main');
-  const selectStorm = (snapshot) => snapshot.records.find((record) =>
-    record.harness === 'web'
-    && record.entry === 'octane'
-    && record.workload === 'selectStorm'
-    && record.scale === 1000
-    && record.metric === 'latency');
-  assert.equal(selectStorm(fast).median, 34.44500017166138);
-  assert.equal(selectStorm(current).median, 590.6499996185303);
-  const historical = fast.records.find((record) =>
-    record.harness === 'web'
-    && record.entry === 'octane'
-    && record.workload === 'selectStorm'
-    && record.scale === 1000
-    && record.metric === 'latency');
-  assert.equal(historical.comparabilityStatus, 'incomplete-work');
-  assert.equal(historical.rankingEligible, false);
+  assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
+  assert.ok(out.history.checkpoints.length > 4);
+
+  const aug10 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json',
+    )));
+  assert.ok(aug10);
+  assert.equal(aug10.octaneCommit, 'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
+  assert.deepEqual(aug10.harnesses[0].entryIds, [
+    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+  ]);
+  assert.equal(aug10.harnesses[0].rankEligible, true);
+  const aug10Records = aug10.activeRecordIndexes.map((index) => out.history.records[index]);
+  const anomaly = aug10Records.find((record) => record.entry === 'octane'
+    && record.workload === 'create' && record.scale === 1000 && record.metric === 'latency');
+  assert.equal(anomaly.median, 373.5050001144409);
+  assert.equal(anomaly.sourceEntry, 'octane-main');
+  assert.equal(anomaly.rankEligible, true);
+
+  const aug8Observation = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
+    )));
+  assert.ok(aug8Observation);
+  assert.equal(aug8Observation.harnesses[0].rankEligible, false);
+  assert.equal(aug8Observation.harnesses[0].entryIds.length, 1);
+
+  const native = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
+    )));
+  assert.ok(native);
+  assert.equal(native.harnesses[0].rankEligible, true);
+  assert.equal(native.harnesses[0].sourceRunFiles.length, 1);
+  assert.equal(out.history.checkpoints.some((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',
+    ))), false);
+});
+
+test('history preserves storm evidence but excludes incomplete transport from ranks', () => {
+  const out = collectRuns({ root: repoRoot(), log: () => {} });
+  const aug12 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-12T18-02-55-65160668d8d9-upstream-main-6079a680-featured.json',
+    )));
+  const record = aug12.activeRecordIndexes.map((index) => out.history.records[index])
+    .find((candidate) => candidate.entry === 'octane'
+      && candidate.workload === 'selectStorm'
+      && candidate.scale === 1000
+      && candidate.metric === 'latency');
+  assert.equal(record.median, 34.44500017166138);
+  assert.equal(record.rankEligible, false);
+  assert.equal(record.transport.issue, 'incomplete-storm-transport');
+  assert.equal(record.transport.expectedSequentialCommits, 30);
+  assert.ok(record.transport.toMtsMessages < 30);
+  assert.ok(record.transport.toBtsMessages < 30);
+
+  const current = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json',
+    )));
+  const currentRecord = current.activeRecordIndexes.map((index) => out.history.records[index])
+    .find((candidate) => candidate.entry === 'octane'
+      && candidate.harness === 'web'
+      && candidate.workload === 'selectStorm'
+      && candidate.scale === 1000
+      && candidate.metric === 'latency');
+  assert.equal(currentRecord.median, 590.6499996185303);
+  assert.equal(currentRecord.rankEligible, true);
 });
