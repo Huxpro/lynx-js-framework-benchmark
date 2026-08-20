@@ -222,6 +222,7 @@ export interface HistoryCheckpoint {
   activeRecordIndexes: number[];
   sourceIndexes: number[];
   harnesses: HistoryCohort[];
+  nativeCoverage?: NativeCoverage;
 }
 
 export interface HistorySource {
@@ -272,6 +273,14 @@ const collected = latest as unknown as {
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
+const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
+  version: 'history-no-native-data',
+  contractSha256: '',
+  expectedCellCount: 0,
+  entryIds: [],
+  summary: {},
+  cells: [],
+};
 export function historyRecordsForCheckpoint(checkpoint: HistoryCheckpoint): HistoryRecord[] {
   if (checkpoint.current) return collected.comparisonRecords as HistoryRecord[];
   return checkpoint.activeRecordIndexes.map((index) => BENCHMARK_HISTORY.records[index]);
@@ -321,6 +330,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     machines,
     nativeObservations: [],
     nativeObservationRecords: [],
+    nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
   };
 });
 

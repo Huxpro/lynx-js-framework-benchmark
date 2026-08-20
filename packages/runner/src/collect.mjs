@@ -783,7 +783,7 @@ const buildTimelineSnapshots = ({ runs, featuredIds, featuredEntries, current })
       nativeCoverage,
     });
 */
-const buildHistory = ({ runs, featuredIds, current }) => {
+const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
   const records = [];
   const sources = [];
   const checkpoints = [];
@@ -883,6 +883,12 @@ const buildHistory = ({ runs, featuredIds, current }) => {
         activeRecordIndexes.push(records.push(history) - 1);
       }
       const rankEligible = candidate.run.meta.checkpointComplete === true && entryIds.size >= 2;
+      const nativeCoverage = classifyNativeCoverage({
+        entries: featuredEntries,
+        sourceRecords: candidateRecords,
+        publishedRecords: rankEligible ? candidateRecords : [],
+        archiveRecords: rankEligible ? [] : candidateRecords,
+      });
       checkpoints.push({
         id: historyId(candidate.run.meta.generatedAt, [candidate.file]),
         generatedAt: candidate.run.meta.generatedAt,
@@ -894,6 +900,7 @@ const buildHistory = ({ runs, featuredIds, current }) => {
           .find((record) => record.entry === 'octane')?.entryCommit ?? null,
         activeRecordIndexes,
         sourceIndexes: [sourceIndex],
+        nativeCoverage,
         harnesses: [{
           harness: 'native',
           environment,
@@ -918,6 +925,7 @@ const buildHistory = ({ runs, featuredIds, current }) => {
     description: 'Current published Web and Native comparison cohorts.',
     octaneCommit: current.octaneCommit,
     current: true,
+    nativeCoverage: current.nativeCoverage,
     activeRecordIndexes: [],
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
       .map((record) => sources.findIndex((source) => source.runFile === record.runFile))

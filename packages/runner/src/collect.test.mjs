@@ -1164,6 +1164,18 @@ test('history audits every run and restores exact-source upstream Octane checkpo
   assert.ok(aug8Observation);
   assert.equal(aug8Observation.harnesses[0].rankEligible, false);
   assert.equal(aug8Observation.harnesses[0].entryIds.length, 1);
+
+  const native = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
+    )));
+  assert.ok(native);
+  assert.equal(native.harnesses[0].rankEligible, true);
+  assert.equal(native.harnesses[0].sourceRunFiles.length, 1);
+  assert.equal(out.history.checkpoints.some((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
+      '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',
+    ))), false);
 });
 
 test('history preserves storm evidence but excludes incomplete transport from ranks', () => {
