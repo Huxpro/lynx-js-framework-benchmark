@@ -317,7 +317,26 @@ export async function runTableSuite({
         value: usedSize,
       }));
     }
-    log(`  ${entry.id} memory@10k: ${sessions.map((s) => s.key).join('+')} captured`);
+    await clickButton(memoryPage, 'Clear');
+    await untilPredicate(memoryPage, { type: 'rowCount', value: 0 }, 240000);
+    await settle(memoryPage, 200);
+    for (const s of sessions) {
+      await cdp.send('HeapProfiler.collectGarbage', {}, s.sessionId);
+      const { usedSize } = await cdp.send('Runtime.getHeapUsage', {}, s.sessionId);
+      records.push(makeRecord({
+        suite: 'table',
+        entry: entry.id,
+        workload: 'memoryAfterClear',
+        scale: 10000,
+        metric: `${s.key}AfterClear`,
+        boundary: 'gc-heap-after-clearing-10k-rows',
+        unit: 'bytes',
+        value: usedSize,
+      }));
+    }
+    log(
+      `  ${entry.id} memory@10k+afterClear: ${sessions.map((s) => s.key).join('+')} captured`,
+    );
   } catch (e) {
     log(`  [warn] ${entry.id} memory snapshot failed: ${String(e).slice(0, 120)}`);
   } finally {

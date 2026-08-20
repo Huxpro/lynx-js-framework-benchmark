@@ -106,13 +106,15 @@ export async function runNativeMatrix({
   cases,
   suites = ['table', 'startup'],
   scales = [1000, 10000],
-  startupScales = STARTUP_ROWS,
+  startupScales,
+  startupRows,
   reps = 5,
   startupReps = 3,
   log = () => {},
   onProgress = async () => {},
 }) {
   const records = [];
+  const selectedStartupRows = [...new Set(startupScales ?? startupRows ?? STARTUP_ROWS)];
   for (const entry of entries) {
     log(`[native:${adapter.environment}] ${entry.id}`);
     if (suites.includes('table')) {
@@ -207,7 +209,7 @@ export async function runNativeMatrix({
       }
     }
     if (suites.includes('startup')) {
-      for (const rows of STARTUP_ROWS.filter((rows) => startupScales.includes(rows))) {
+      for (const rows of STARTUP_ROWS.filter((rows) => selectedStartupRows.includes(rows))) {
         const bundle = bundleFor(entry, { rows, flavor: 'lynx' });
         if (!bundle) continue;
         const observations = new Map();
