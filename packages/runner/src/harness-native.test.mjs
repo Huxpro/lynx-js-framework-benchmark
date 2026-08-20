@@ -2,41 +2,74 @@
 // the documented contract, without this repository ever registering a proxy
 // adapter of its own (docs/METHODOLOGY.md "Harness separation").
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
+import {
+  isNativeTransientTransportFailure,
+  nativeTransportFailureDnf,
+} from '../adapters/lynx-sandbox-android.mjs';
 
-import { loadNativeAdapter, runNativeHarness, runNativeMatrix } from './harness-native.mjs';
+import {
+  CONNECTOR_PACKAGE_NAMES,
+  CONNECTOR_PACKAGE_TREES_PROTOCOL,
+  assertConnectorPackageTrees,
+  connectorPackageTreesSha256,
+  createPackageTreeReceipt,
+  resolveConnectorPackageTrees,
+} from './connector-receipt.mjs';
+import {
+  loadNativeAdapter,
+  runNativeHarness,
+  runNativeMatrix,
+} from './harness-native.mjs';
 
 const CASES = [
   { name: 'create', scales: [1000, 10000] },
   { name: 'clear', scales: [10000] },
 ];
 
-function fakeEntry(dir) {
-  for (const rows of [0, 1000]) {
+function fakeEntry(dir, { id = 'fake', framework = 'reactlynx' } = {}) {
+  const snapshots = new Map();
+  for (const rows of [0, 1000, 10000, 30000]) {
     const dist = path.join(dir, 'dist', `rows-${rows}`);
     fs.mkdirSync(dist, { recursive: true });
-    fs.writeFileSync(path.join(dist, 'main.lynx.bundle'), 'bundle');
+    const bundlePath = path.join(dist, 'main.lynx.bundle');
+    const bundleBytes = Buffer.from(`bundle:${id}:${rows}`);
+    fs.writeFileSync(bundlePath, bundleBytes);
     fs.writeFileSync(path.join(dist, 'main.web.bundle'), 'bundle');
+    snapshots.set(`${id}:${rows}`, {
+      entryId: id,
+      rows,
+      bundlePath,
+      bundleBytes,
+      sha256: crypto.createHash('sha256').update(bundleBytes).digest('hex'),
+    });
   }
-  return {
-    id: 'fake',
+  const entry = {
+    id,
+    framework,
     provenance: { commit: 'test' },
     dir,
     distDir: path.join(dir, 'dist'),
   };
+  return { entry, snapshots };
 }
 
 function mockAdapter(script) {
   return {
     environment: 'lynx-native-mock-sim',
     calls: script.calls,
-    async loadBundle(entry, { rows, bundlePath }) {
-      script.calls.push(['loadBundle', entry.id, rows, fs.existsSync(bundlePath)]);
+    async loadBundle(entry, { rows, bundlePath, bundleBytes, bundleSha256 }) {
+      script.calls.push([
+        'loadBundle', entry.id, rows, fs.existsSync(bundlePath),
+        Buffer.isBuffer(bundleBytes),
+        crypto.createHash('sha256').update(bundleBytes).digest('hex') === bundleSha256,
+      ]);
     },
     async driveCase(kase, scale) {
       script.calls.push(['driveCase', kase.name, scale]);
@@ -55,7 +88,7 @@ function mockAdapter(script) {
 
 test('native matrix emits schema-shaped native records with DNF accounting', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-harness-'));
-  const entry = fakeEntry(dir);
+  const { entry, snapshots } = fakeEntry(dir);
   const script = {
     calls: [],
     collect: [
@@ -75,8 +108,8 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
         dnf: true,
         failure: { category: 'timeout', phase: 'startup', timeoutMs: 240000 },
         metricContracts: [
-          { name: 'octaneCommitAck', unit: 'ms', boundary: 'native-open-request-to-octane-transport-ack' },
-          { name: 'octaneSecondFrame', unit: 'ms', boundary: 'native-open-request-to-second-frame-after-octane-transport-ack' },
+          { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
+          { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
         ],
       },
     ],
@@ -88,7 +121,9 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
     cases: CASES,
     scales: [1000, 10000],
     reps: 3,
+    startupScales: [0, 1000],
     startupReps: 1,
+    bundleSnapshots: snapshots,
     onProgress: async (partial) => progress.push(partial.length),
   });
 
@@ -112,10 +147,10 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   assert.equal(startupFcp.boundary, 'native-open-to-fcp');
   const settled = records.find((r) => r.metric === 'settled' && r.scale === 0);
   assert.equal(settled.median, 120);
-  const octaneAck = records.find((r) => r.metric === 'octaneCommitAck' && r.scale === 1000);
-  assert.equal(octaneAck.n, 0);
-  assert.equal(octaneAck.dnfCount, 1);
-  assert.deepEqual(octaneAck.failures, [{
+  const fcpDnf = records.find((r) => r.metric === 'fcp' && r.scale === 1000);
+  assert.equal(fcpDnf.n, 0);
+  assert.equal(fcpDnf.dnfCount, 1);
+  assert.deepEqual(fcpDnf.failures, [{
     rep: 0, category: 'timeout', phase: 'startup', timeoutMs: 240000,
   }]);
 
@@ -130,7 +165,7 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
 
 test('known exhausted transport failures become evidenced DNF instead of discarding prior cells', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-transport-dnf-'));
-  const entry = fakeEntry(dir);
+  const { entry, snapshots } = fakeEntry(dir);
   const adapter = mockAdapter({ calls: [], collect: [], startup: [] });
   adapter.driveCase = async () => {
     throw new Error('No response found for clientId: device');
@@ -151,6 +186,7 @@ test('known exhausted transport failures become evidenced DNF instead of discard
     suites: ['table'],
     scales: [1000],
     reps: 2,
+    bundleSnapshots: snapshots,
     onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
   });
   assert.equal(records.length, 1);
@@ -163,17 +199,200 @@ test('known exhausted transport failures become evidenced DNF instead of discard
   assert.equal(checkpoints[0][0].dnfCount, 2);
 });
 
-test('preclassified startup capability failures still emit every metric and scale', async () => {
+test('table loadBundle transport exhaustion maps to the first pending cell and the next cell runs', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-table-load-transport-'));
+  const { entry, snapshots } = fakeEntry(dir);
+  const calls = [];
+  let loadAttempts = 0;
+  const recoveries = [];
+  const adapter = {
+    environment: 'lynx-native-mock-sim',
+    async loadBundle(_entry, { rows }) {
+      calls.push(['loadBundle', rows]);
+      loadAttempts++;
+      if (loadAttempts <= 3) {
+        throw new Error('CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable');
+      }
+    },
+    async driveCase(kase, scale) { calls.push(['driveCase', kase.name, scale]); },
+    async collect() { return { latencyMs: 9 }; },
+    async recoverTransient(error) {
+      recoveries.push(String(error));
+      return true;
+    },
+    async classifyFailure(error, context) {
+      return nativeTransportFailureDnf(error, context, {
+        transientRecoveries: recoveries.map((message) => ({ message })),
+      });
+    },
+  };
+  const records = await runNativeMatrix({
+    adapter,
+    entries: [entry],
+    cases: [{ name: 'create', scales: [1000, 3000, 5000] }],
+    suites: ['table'],
+    scales: [1000, 3000, 5000],
+    reps: 1,
+    bundleSnapshots: snapshots,
+    existingCellKeys: new Set(['fake|table|create|1000|latency']),
+  });
+
+  assert.deepEqual(records.map((record) => record.scale), [3000, 5000]);
+  const failed = records[0];
+  assert.equal(failed.entry, 'fake');
+  assert.equal(failed.workload, 'create');
+  assert.equal(failed.metric, 'latency');
+  assert.equal(failed.n, 0);
+  assert.equal(failed.dnfCount, 1);
+  assert.deepEqual(failed.samples, []);
+  assert.equal(failed.failures[0].category, 'transport-retries-exhausted');
+  assert.equal(failed.failures[0].stage, 'loadBundle');
+  assert.equal(failed.failures[0].capabilityScope, 'cell');
+  assert.equal(failed.failures[0].evidence.failureStage, 'loadBundle');
+  assert.equal(failed.failures[0].evidence.transientRecoveries.length, 2);
+  assert.equal(records[1].median, 9);
+  assert.deepEqual(
+    calls.filter(([method]) => method === 'driveCase'),
+    [['driveCase', 'create', 5000]],
+  );
+});
+
+test('startup loadBundle transport exhaustion checkpoints a DNF pair and the next scale runs', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-load-transport-'));
+  const { entry, snapshots } = fakeEntry(dir);
+  const calls = [];
+  let loadAttempts = 0;
+  const recoveries = [];
+  const checkpoints = [];
+  const adapter = {
+    environment: 'lynx-native-mock-sim',
+    async loadBundle(_entry, { rows }) {
+      calls.push(['loadBundle', rows]);
+      loadAttempts++;
+      if (loadAttempts <= 3) {
+        throw new Error('CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable');
+      }
+    },
+    async collectStartup() { return { fcpMs: 17, settledMs: 23 }; },
+    async recoverTransient(error) {
+      recoveries.push(String(error));
+      return true;
+    },
+    async classifyFailure(error, context) {
+      return nativeTransportFailureDnf(error, context, {
+        transientRecoveries: recoveries.map((message) => ({ message })),
+      });
+    },
+  };
+  const records = await runNativeMatrix({
+    adapter,
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0, 1000],
+    startupReps: 1,
+    bundleSnapshots: snapshots,
+    onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
+  });
+
+  assert.deepEqual(checkpoints.map((checkpoint) => checkpoint.length), [2, 4]);
+  const failedPair = records.filter((record) => record.scale === 0);
+  assert.deepEqual(failedPair.map((record) => record.metric), ['fcp', 'settled']);
+  for (const record of failedPair) {
+    assert.equal(record.n, 0);
+    assert.equal(record.dnfCount, 1);
+    assert.deepEqual(record.samples, []);
+    assert.equal(record.value, null);
+    assert.equal(record.median, null);
+    assert.equal(record.failures[0].category, 'transport-retries-exhausted');
+    assert.equal(record.failures[0].stage, 'loadBundle');
+    assert.equal(record.failures[0].capabilityScope, 'cell');
+  }
+  assert.deepEqual(
+    records.filter((record) => record.scale === 1000).map((record) => record.median),
+    [17, 23],
+  );
+  assert.deepEqual(
+    calls.filter(([method]) => method === 'loadBundle').map(([, rows]) => rows),
+    [0, 0, 0, 1000],
+  );
+});
+
+test('lease-expiry control flow bypasses transport recovery and classification', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-lease-stop-precedence-'));
+  const marker = path.join(dir, 'calls.txt');
+  const adapterPath = path.join(dir, 'adapter.mjs');
+  const harnessUrl = new URL('./harness-native.mjs', import.meta.url).href;
+  fs.writeFileSync(adapterPath, `
+    import fs from 'node:fs';
+    import { NativeLeaseExpiryStop } from ${JSON.stringify(harnessUrl)};
+    const mark = (value) => fs.appendFileSync(${JSON.stringify(marker)}, value + String.fromCharCode(10));
+    export default async () => ({
+      environment: 'native-test', machine: { id: 'test' },
+      loadBundle: async () => { throw new NativeLeaseExpiryStop([]); },
+      driveCase: async () => {}, collect: async () => ({ latencyMs: 1 }),
+      collectStartup: async () => ({}),
+      recoverTransient: async () => { mark('recover'); return true; },
+      classifyFailure: async () => { mark('classify'); return { dnf: true }; },
+      dispose: async () => { mark('dispose'); },
+    });
+  `);
+  const entry = { id: 'react', framework: 'reactlynx' };
+  try {
+    const stopped = await runNativeHarness({
+      adapterPath,
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000] }],
+      suites: ['table'],
+      scales: [1000],
+      reps: 1,
+      bundleSnapshots: new Map([
+        ['react:0', {
+          entryId: 'react', rows: 0, bundlePath: '/unused/0',
+          bundleBytes: Buffer.from('react:0'), bundleSha256: 'unused',
+        }],
+      ]),
+    });
+    assert.equal(stopped.stoppedForLeaseExpiry, true);
+    assert.deepEqual(stopped.records, []);
+    assert.deepEqual(fs.readFileSync(marker, 'utf8').trim().split('\n'), ['dispose']);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('transport classification is narrow and preserves producer and integrity failures', () => {
+  const runtimeFailure = new Error(
+    'CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable',
+  );
+  assert.equal(isNativeTransientTransportFailure(runtimeFailure), true);
+  assert.equal(
+    isNativeTransientTransportFailure(new Error('CDP Runtime.evaluate failed: application error')),
+    false,
+  );
+  assert.equal(
+    isNativeTransientTransportFailure(new Error('in-memory bundle sha256 mismatch')),
+    false,
+  );
+  assert.equal(
+    isNativeTransientTransportFailure(new Error('Native startup payload.firstFrameMs must be finite.')),
+    false,
+  );
+  assert.equal(nativeTransportFailureDnf(new Error('programming error'), {
+    suite: 'table', entry: { id: 'fake' }, kase: { name: 'create' }, scale: 1000,
+  }), null);
+});
+
+test('startup failures remain per-cell and still emit every expected metric and scale', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-capability-'));
-  const entry = fakeEntry(dir);
+  const { entry, snapshots } = fakeEntry(dir);
   const adapter = mockAdapter({ calls: [], collect: [], startup: [] });
   adapter.isStartupUnsupported = () => true;
   adapter.startupUnsupportedReason = (_entry, rows) => ({
-    category: rows === 0
-      ? 'performance-pipeline-unavailable'
-      : 'performance-pipeline-unavailable-inherited',
+    category: 'performance-pipeline-unavailable',
     scale: rows,
-    evidence: { performanceEntryCount: 0 },
+    capabilityScope: 'cell',
+    evidence: { performanceEntryCount: 0, capabilityProven: false },
   });
   adapter.startupUnsupportedContracts = () => [
     { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
@@ -186,6 +405,7 @@ test('preclassified startup capability failures still emit every metric and scal
     suites: ['startup'],
     startupScales: [0, 1000],
     startupReps: 3,
+    bundleSnapshots: snapshots,
   });
   assert.equal(records.length, 4);
   for (const rows of [0, 1000]) {
@@ -200,32 +420,58 @@ test('preclassified startup capability failures still emit every metric and scal
   assert.equal(adapter.calls.some(([method]) => method === 'loadBundle'), false);
 });
 
-test('an explicit startup row filter loads each requested bundle once', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-filter-'));
-  const entry = fakeEntry(dir);
+test('a startup timeout at scale 0 does not suppress later startup scales', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-cell-scope-'));
+  const { entry, snapshots } = fakeEntry(dir);
   const script = {
     calls: [],
     collect: [],
-    startup: [{ fcpMs: 75, settledMs: 90 }],
+    startup: [
+      {
+        dnf: true,
+        failure: { category: 'timeout', capabilityScope: 'cell', scale: 0 },
+        metricContracts: [
+          { name: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
+          { name: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
+        ],
+      },
+      { fcpMs: 42, settledMs: 55 },
+    ],
   };
-
   const records = await runNativeMatrix({
     adapter: mockAdapter(script),
     entries: [entry],
     cases: [],
     suites: ['startup'],
-    startupRows: [1000, 1000],
+    startupScales: [0, 1000],
     startupReps: 1,
+    bundleSnapshots: snapshots,
   });
+  assert.equal(records.find((record) => record.scale === 0 && record.metric === 'fcp').dnfCount, 1);
+  assert.equal(records.find((record) => record.scale === 1000 && record.metric === 'fcp').median, 42);
+  assert.deepEqual(
+    script.calls.filter(([method]) => method === 'loadBundle').map(([, , rows]) => rows),
+    [0, 1000],
+  );
+});
 
-  assert.deepEqual(
-    script.calls.filter(([name]) => name === 'loadBundle'),
-    [['loadBundle', 'fake', 1000, true]],
-  );
-  assert.deepEqual(
-    [...new Set(records.map((record) => record.scale))],
-    [1000],
-  );
+test('startup producers cannot silently change an entry metric contract', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-contract-'));
+  const { entry, snapshots } = fakeEntry(dir, { id: 'octane', framework: 'octane' });
+  const adapter = mockAdapter({
+    calls: [],
+    collect: [],
+    startup: [{ fcpMs: 1, settledMs: 2 }],
+  });
+  await assert.rejects(() => runNativeMatrix({
+    adapter,
+    entries: [entry],
+    cases: [],
+    suites: ['startup'],
+    startupScales: [0],
+    startupReps: 1,
+    bundleSnapshots: snapshots,
+  }), /invalid metric set/);
 });
 
 test('adapter modules are validated against the documented contract', async () => {
@@ -270,15 +516,52 @@ test('without an adapter the harness still explains itself instead of proxying',
 });
 
 test('sandbox adapter imports without the device-only connector installed', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-connector-receipt-'));
   const priorSerial = process.env.LYNX_SANDBOX_SERIAL;
-  const priorLeaseId = process.env.LYNX_SANDBOX_LEASE_ID;
+  const priorLeaseReceipt = process.env.LYNX_SANDBOX_LEASE_RECEIPT;
   delete process.env.LYNX_SANDBOX_SERIAL;
-  delete process.env.LYNX_SANDBOX_LEASE_ID;
+  delete process.env.LYNX_SANDBOX_LEASE_RECEIPT;
   try {
     const {
+      assertRuntimeConnectorPackageTrees,
       default: createAdapter,
       findExplorerClient,
     } = await import('../adapters/lynx-sandbox-android.mjs');
+    const unavailable = resolveConnectorPackageTrees({
+      requireContext: { resolve() { throw new Error('not installed'); } },
+    });
+    assert.doesNotThrow(() => assertConnectorPackageTrees(
+      unavailable, { requireAvailable: false },
+    ));
+    assert.equal(unavailable.packages.every((receipt) => (
+      receipt.available === false
+      && receipt.version === null
+      && receipt.resolvedPath === null
+      && receipt.rootSha256 === null
+      && receipt.fileCount === null
+      && receipt.byteCount === null
+      && typeof receipt.reason === 'string'
+    )), true);
+    assert.throws(() => assertConnectorPackageTrees(unavailable), /is unavailable/);
+    const makeConnectorReceipt = (base) => {
+      const packages = CONNECTOR_PACKAGE_NAMES.map((name, index) => {
+        const packageRoot = path.join(base, String(index));
+        fs.mkdirSync(packageRoot, { recursive: true });
+        fs.writeFileSync(path.join(packageRoot, 'package.json'), JSON.stringify({
+          name, version: `2.0.${index}`,
+        }));
+        fs.writeFileSync(path.join(packageRoot, 'index.js'), `module.exports = ${index};`);
+        return createPackageTreeReceipt(name, packageRoot);
+      });
+      const payload = { protocol: CONNECTOR_PACKAGE_TREES_PROTOCOL, packages };
+      return { ...payload, sha256: connectorPackageTreesSha256(payload) };
+    };
+    const expected = makeConnectorReceipt(path.join(dir, 'connector-expected'));
+    const runtime = makeConnectorReceipt(path.join(dir, 'connector-runtime'));
+    assert.throws(
+      () => assertRuntimeConnectorPackageTrees(expected, runtime),
+      /does not match campaign receipt/,
+    );
     const encodedSerial = encodeURIComponent('sandbox.example:1234');
     assert.equal(findExplorerClient([
       {
@@ -292,11 +575,12 @@ test('sandbox adapter imports without the device-only connector installed', asyn
     ], encodedSerial)?.id, `${encodedSerial}:8903`);
     await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_SERIAL/);
     process.env.LYNX_SANDBOX_SERIAL = 'reused-device:1234';
-    await assert.rejects(() => createAdapter(), /requires LYNX_SANDBOX_LEASE_ID/);
+    await assert.rejects(() => createAdapter(), /Native lease receipt/);
   } finally {
     if (priorSerial === undefined) delete process.env.LYNX_SANDBOX_SERIAL;
     else process.env.LYNX_SANDBOX_SERIAL = priorSerial;
-    if (priorLeaseId === undefined) delete process.env.LYNX_SANDBOX_LEASE_ID;
-    else process.env.LYNX_SANDBOX_LEASE_ID = priorLeaseId;
+    if (priorLeaseReceipt === undefined) delete process.env.LYNX_SANDBOX_LEASE_RECEIPT;
+    else process.env.LYNX_SANDBOX_LEASE_RECEIPT = priorLeaseReceipt;
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });

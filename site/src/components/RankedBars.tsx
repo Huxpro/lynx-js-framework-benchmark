@@ -14,6 +14,7 @@ import {
 } from '../data';
 import { completeEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
+import { coverageCellLabel } from './NativeCoverage';
 
 interface OpSpec {
   key: string; // workload@scale
@@ -52,7 +53,7 @@ export function RankedBars({
   selected: Set<string>;
   unitFmt?: (v: number | null) => string;
 }) {
-  const { select } = useBenchmarkData();
+  const { select, snapshot } = useBenchmarkData();
   const firstOp = ops[0]?.key ?? 'overall';
   const [op, setOp] = useState<'overall' | string>(
     harness === 'native' ? firstOp : 'overall',
@@ -77,6 +78,13 @@ export function RankedBars({
     }
     return m;
   }, [suite, harness, metric, ops, select]);
+  const coverageByCell = useMemo(() => new Map(snapshot.nativeCoverage.cells.map((cell) => [
+    [cell.entry, cell.suite, cell.workload, cell.scale, cell.metric].join('|'),
+    cell,
+  ])), [snapshot.nativeCoverage]);
+  const missingCoverage = (id: string, spec: OpSpec) => harness !== 'native'
+    ? null
+    : coverageByCell.get([id, suite, spec.workload, spec.scale, metric].join('|'));
 
   const view = useMemo(() => {
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
@@ -93,7 +101,12 @@ export function RankedBars({
       rows.sort((a, b) => a.value - b.value);
       return {
         rows,
-        missing: score.missing.map((id) => ({ id, record: undefined })),
+        missing: score.missing.map((id) => {
+          const statuses = ops.map((spec) => missingCoverage(id, spec))
+            .filter((cell) => cell != null);
+          const firstGap = statuses.find((cell) => !['measured', 'measured-with-dnf'].includes(cell.status));
+          return { id, record: undefined, coverage: firstGap };
+        }),
         fmt: fmtX,
         scoreOps: score.cellCount,
         caption: `geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
@@ -118,6 +131,7 @@ export function RankedBars({
     const missing = rows.filter((r) => r.value == null).map((r) => ({
       id: r.id,
       record: inner.get(r.id),
+      coverage: missingCoverage(r.id, spec),
     }));
     return { rows: present, missing, fmt: unitFmt, scoreOps: 1, caption: `median ${spec.label} — lower is better` };
   }, [activeOp, byOp, selected, ops, unitFmt]);
@@ -178,10 +192,12 @@ export function RankedBars({
             </div>
           );
         })}
-        {view.missing.map(({ id, record }) => (
+        {view.missing.map(({ id, record, coverage }) => (
           <div key={id} className="bar-row" title={record?.failures?.[0]?.message}>
             <div className="bar-label">{shortLabel(id)}</div>
-            <div className="bar-dnf">— {activeOp === 'overall' ? 'incomplete matrix' : failureSummary(record)}</div>
+            <div className="bar-dnf">— {coverage
+              ? coverageCellLabel(coverage)
+              : activeOp === 'overall' ? 'incomplete matrix' : failureSummary(record)}</div>
           </div>
         ))}
       </div>
@@ -201,9 +217,13 @@ export function RankedBars({
                 <td>{o.label}</td>
                 {ENTRIES.filter((e) => selected.has(e.id)).map((e) => {
                   const r = byOp.get(o.key)?.get(e.id);
+                  const coverage = missingCoverage(e.id, o);
                   return (
                     <td key={e.id} title={r?.failures?.[0]?.message}>
-                      {r?.median != null ? unitFmt(r.median) : (r?.dnfCount ?? 0) > 0 ? 'DNF' : '—'}
+                      {r?.median != null
+                        ? unitFmt(r.median)
+                        : coverage ? coverageCellLabel(coverage)
+                          : (r?.dnfCount ?? 0) > 0 ? 'DNF' : '—'}
                     </td>
                   );
                 })}

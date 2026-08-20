@@ -60,12 +60,12 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
 
   return (
     <section className="native-observations" aria-labelledby="native-observations-title">
-      <div className="observation-kicker">Separate Device Observation</div>
-      <h2 id="native-observations-title">Native entries outside the comparison cohort</h2>
+      <div className="observation-kicker">Archive-only device evidence</div>
+      <h2 id="native-observations-title">Native entries outside the selected campaign</h2>
       <p>
-        These measurements are real, but they were captured under a different Sandbox lease from
-        the five-entry comparison cohort above. They are shown as absolute observations and never
-        enter heatmaps, geomeans, “fastest” rankings, or cross-framework ratios.
+        These measurements are real, but their machine, lease, method, campaign, or immutable input
+        receipt differs from the selected cohort (or predates explicit identity). They are shown as
+        absolute evidence and never enter heatmaps, geomeans, rankings, or ratios.
       </p>
       {snapshot.nativeObservations.map((observation) => {
         const records = selectNativeObservations({
@@ -88,7 +88,7 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
                   Real Native tap → renderer ACK → second Native frame
                 </div>
               </div>
-              <div className="observation-stamp">not cross-comparable</div>
+                <div className="observation-stamp">archive only</div>
             </header>
             <div className="observation-grid">
               {TABLE_GROUPS.map((group) => (

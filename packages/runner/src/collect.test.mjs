@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,7 +8,21 @@ import test from 'node:test';
 import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
 
 import { collectRuns } from './collect.mjs';
+import {
+  CONNECTOR_PACKAGE_NAMES,
+  CONNECTOR_PACKAGE_TREES_PROTOCOL,
+  connectorPackageTreesSha256,
+} from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
+import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
+import {
+  NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  appendNativeMethodRevision,
+  appendNativeLeaseReceipt,
+  buildNativeDeviceCohort,
+  createNativeMethodRevisionChain,
+  parseNativeLeaseReceipt,
+} from './native-protocol.mjs';
 
 const machine = (id) => ({
   id, hostname: id, platform: 'test', arch: 'x64', cpuModel: id, cores: 1, memGB: 1, node: 'test',
@@ -23,6 +38,147 @@ const nativeRecord = (entry, workload = 'create', environment = 'native-test') =
   ...record(entry, workload), harness: 'native', environment,
   boundary: 'native-input-handler-to-second-native-frame',
 });
+
+const nativeEntries = (ids) => ids.map((id) => ({
+  id,
+  framework: id === 'octane' ? 'octane' : 'test',
+  distDir: `/missing-${id}`,
+  provenance: { commit: `${id}-new` },
+}));
+
+const nativeContractRecords = (entries, environment = 'native-test') =>
+  buildNativeMatrixContract(entries).cells.map((cell) => ({
+    ...cell,
+    harness: 'native',
+    environment,
+    samples: [1],
+    n: 1,
+    median: 1,
+    mean: 1,
+    std: null,
+    min: 1,
+    max: 1,
+    p95: null,
+    ci95: null,
+    detail: null,
+    dnfCount: 0,
+    failures: [],
+  }));
+
+const connectorReceipt = ({ available = true, suffix = 'a' } = {}) => {
+  const packages = CONNECTOR_PACKAGE_NAMES.map((name, index) => available ? {
+    name,
+    version: `1.0.${index}`,
+    available: true,
+    resolvedPath: `/connector-${suffix}/${index}`,
+    rootSha256: String(index + 1).repeat(64),
+    fileCount: index + 1,
+    byteCount: index + 10,
+  } : {
+    name,
+    version: null,
+    available: false,
+    resolvedPath: null,
+    rootSha256: null,
+    fileCount: null,
+    byteCount: null,
+    reason: 'not-installed',
+    errorCode: null,
+  });
+  const payload = { protocol: CONNECTOR_PACKAGE_TREES_PROTOCOL, packages };
+  return { ...payload, sha256: connectorPackageTreesSha256(payload) };
+};
+
+const defaultConnectorReceipt = connectorReceipt();
+const defaultNativeSerial = 'sandbox.test:41315';
+const nativeLease = ({
+  issueId = 'issue-a',
+  expiredAt = 2_000,
+  serial = defaultNativeSerial,
+} = {}) => parseNativeLeaseReceipt(
+  { serial, issueId, expiredAt },
+  { serial, now: 1 },
+);
+const nativeLeaseChain = (...receipts) => receipts.reduce(appendNativeLeaseReceipt, null);
+const sha256Json = (value) => crypto.createHash('sha256')
+  .update(JSON.stringify(value))
+  .digest('hex');
+const methodInputReceipt = (sources, connectorPackageTrees = defaultConnectorReceipt) => {
+  const payload = {
+    version: 'native-input-receipt-v2',
+    adapter: 'packages/runner/adapters/test.mjs',
+    connectorPackageTrees,
+    sources,
+    entryArtifacts: {},
+  };
+  return { ...payload, sha256: sha256Json(payload) };
+};
+
+function nativeCampaignMeta(entries, {
+  generatedAt = '2026-01-02T00:00:00Z',
+  records = nativeContractRecords(entries),
+  leaseChain = nativeLeaseChain(nativeLease()),
+  recordLeaseId = leaseChain.receipts.at(-1)?.deviceLeaseId,
+  harnessConfigId = 'method-a',
+  campaignId = 'campaign-a',
+  inputReceiptSha256 = 'input-a',
+  environment = 'native-test',
+  hardware = { cpuModel: 'test-device', cores: 8, osVersion: '10' },
+  connectorPackageTrees = defaultConnectorReceipt,
+  machineConnectorPackageTrees = connectorPackageTrees,
+  connectorPackageTreesSha256 = connectorPackageTrees?.sha256,
+  deviceCohort: suppliedDeviceCohort = null,
+  cellLeaseIds: suppliedCellLeaseIds = null,
+} = {}) {
+  const contract = buildNativeMatrixContract(entries);
+  const campaign = {
+    version: NATIVE_SANDBOX_CAMPAIGN_VERSION,
+    id: campaignId,
+    matrixContractSha256: contract.sha256,
+    inputReceiptSha256,
+    connectorPackageTreesSha256,
+  };
+  const deviceCohort = suppliedDeviceCohort ?? buildNativeDeviceCohort({
+    serialSha256: leaseChain.serialSha256,
+    environment,
+    hardware,
+    campaignId,
+    matrixContractSha256: contract.sha256,
+    inputReceiptSha256,
+    connectorPackageTreesSha256: connectorPackageTreesSha256 ?? 'missing-connector',
+    harnessConfigId,
+  });
+  const cellLeaseIds = suppliedCellLeaseIds ?? Object.fromEntries(
+    records.map((candidate) => [nativeCellKey(candidate), recordLeaseId]),
+  );
+  return {
+    generatedAt,
+    checkpoint: true,
+    checkpointComplete: records.length === contract.cells.length,
+    machine: {
+      ...machine(`lease-${recordLeaseId}`),
+      deviceLeaseId: recordLeaseId,
+      deviceCohortId: deviceCohort.id,
+      deviceCohort,
+      harnessConfigId,
+      campaignId,
+      matrixContractSha256: contract.sha256,
+      inputReceiptSha256,
+      connectorPackageTreesSha256,
+      connectorPackageTrees: machineConnectorPackageTrees,
+    },
+    calibration: null,
+    campaign,
+    matrixContract: contract,
+    inputReceipt: { sha256: inputReceiptSha256, connectorPackageTrees },
+    leaseChain,
+    deviceCohort,
+    cellLeaseIds,
+    entryCommits: Object.fromEntries(entries.map((entry) => [
+      entry.id, entry.provenance.commit,
+    ])),
+  };
+}
 
 const writeRun = (root, file, {
   machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z', entryCommits = null,
@@ -149,7 +305,7 @@ test('incomplete DNF cells stay visible but cannot win comparison-run coverage',
   }
 });
 
-test('collector combines current per-entry Native runs only on one device and ignores stale commits', () => {
+test('collector publishes only a complete exact-identity Native campaign', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
   try {
@@ -157,35 +313,71 @@ test('collector combines current per-entry Native runs only on one device and ig
       machineId: 'web', score: 100, entries: ['react', 'vue'],
       entryCommits: { react: 'react-new', vue: 'vue-new' },
     });
-    const writeNative = (file, machineId, generatedAt, entry, commit, records) => {
+    const entries = nativeEntries(['react', 'vue']);
+    fs.writeFileSync(path.join(root, 'results/runs/native-legacy-stale.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-04T00:00:00Z',
+        machine: machine('device-a'),
+        calibration: null,
+        entryCommits: { react: 'old' },
+      },
+      records: [
+      nativeRecord('react'), nativeRecord('react', 'select'), nativeRecord('react', 'swap'),
+      ],
+    }));
+    fs.writeFileSync(path.join(root, 'results/runs/native-v1-incomplete.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-05T00:00:00Z',
+        machine: machine('device-diagnostic'),
+        calibration: null,
+        checkpoint: true,
+        checkpointComplete: false,
+        campaign: { version: 'native-sandbox-campaign-v1' },
+        entryCommits: { react: 'react-new' },
+      },
+      records: [nativeRecord('react')],
+    }));
+    const validRecords = nativeContractRecords(entries);
+    const validMeta = nativeCampaignMeta(entries, {
+      generatedAt: '2026-01-03T00:00:00Z',
+      records: validRecords,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/native-campaign.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: validMeta,
+      records: validRecords,
+    }));
+    const unavailableConnectorReceipt = connectorReceipt({ available: false });
+    const invalidConnectorCampaigns = [
+      ['native-missing-connector.json', {
+        connectorPackageTrees: null,
+        machineConnectorPackageTrees: null,
+        connectorPackageTreesSha256: null,
+      }],
+      ['native-unavailable-connector.json', {
+        connectorPackageTrees: unavailableConnectorReceipt,
+        machineConnectorPackageTrees: unavailableConnectorReceipt,
+        connectorPackageTreesSha256: unavailableConnectorReceipt.sha256,
+      }],
+      ['native-mismatched-connector.json', {
+        connectorPackageTrees: defaultConnectorReceipt,
+        machineConnectorPackageTrees: connectorReceipt({ suffix: 'runtime-mismatch' }),
+        connectorPackageTreesSha256: defaultConnectorReceipt.sha256,
+      }],
+    ];
+    for (const [file, overrides] of invalidConnectorCampaigns) {
       fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
         schemaVersion: 2,
-        meta: {
-          generatedAt,
-          machine: machine(machineId),
-          calibration: null,
-          entryCommits: { [entry]: commit },
-        },
-        records,
+        meta: nativeCampaignMeta(entries, {
+          generatedAt: '2026-01-04T00:00:00Z',
+          records: validRecords,
+          ...overrides,
+        }),
+        records: validRecords,
       }));
-    };
-    writeNative('native-react-stale.json', 'device-a', '2026-01-04T00:00:00Z', 'react', 'old', [
-      nativeRecord('react'), nativeRecord('react', 'select'), nativeRecord('react', 'swap'),
-    ]);
-    writeNative('native-react-current.json', 'device-a', '2026-01-02T00:00:00Z', 'react', 'react-new', [
-      nativeRecord('react'), nativeRecord('react', 'select'),
-    ]);
-    writeNative('native-vue-current.json', 'device-a', '2026-01-03T00:00:00Z', 'vue', 'vue-new', [
-      nativeRecord('vue'), nativeRecord('vue', 'select'),
-    ]);
-    writeNative('native-other-device.json', 'device-b', '2026-01-05T00:00:00Z', 'react', 'react-new', [
-      nativeRecord('react', 'swap'),
-    ]);
-
-    const entries = [
-      { id: 'react', distDir: path.join(root, 'missing-react'), provenance: { commit: 'react-new' } },
-      { id: 'vue', distDir: path.join(root, 'missing-vue'), provenance: { commit: 'vue-new' } },
-    ];
+    }
     const out = collectRuns({
       root,
       generatedAt: 'test',
@@ -194,20 +386,31 @@ test('collector combines current per-entry Native runs only on one device and ig
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 4);
-    assert.deepEqual([...new Set(native.map((candidate) => candidate.machineId))], ['device-a']);
-    assert.deepEqual([...new Set(native.map((candidate) => candidate.comparisonKind))], ['same-machine']);
-    assert.equal(native.some((candidate) => candidate.runFile === 'native-react-stale.json'), false);
+    assert.equal(native.length, 70);
+    assert.deepEqual(
+      [...new Set(native.map((candidate) => candidate.machineId))],
+      [validMeta.deviceCohort.id],
+    );
+    assert.deepEqual(
+      [...new Set(native.map((candidate) => candidate.comparisonKind))],
+      ['same-device-cohort'],
+    );
+    assert.equal(native.some((candidate) => candidate.runFile === 'native-legacy-stale.json'), false);
+    assert.equal(out.records.some(({ runFile }) => runFile === 'native-v1-incomplete.json'), false);
+    assert.equal(
+      out.nativeObservationRecords.some(({ runFile }) => runFile === 'native-v1-incomplete.json'),
+      false,
+    );
     assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
-    assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, [
-      'native-react-current.json', 'native-vue-current.json',
-    ]);
+    assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, ['native-campaign.json']);
+    assert.equal(native.some(({ runFile }) => runFile.includes('connector')), false);
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 70 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('collector publishes a missing Native entry as one isolated run without merging leases', () => {
+test('legacy Native runs remain archive-only and are selected separately per entry', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
   try {
@@ -255,61 +458,58 @@ test('collector publishes a missing Native entry as one isolated run without mer
       entries,
     });
 
-    assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
-    assert.equal(out.comparisonRecords.some((record) =>
-      record.harness === 'native' && record.entry === 'octane'), false);
-    assert.deepEqual(out.nativeObservations, [{
-      entryId: 'octane',
-      harness: 'native',
-      environment: 'native-test',
-      generatedAt: '2026-01-03T00:00:00Z',
-      machineId: 'device-c',
-      sourceRunFile: 'native-octane-new-lease.json',
-      sourceRecordCount: 2,
-    }]);
-    assert.deepEqual(
-      out.nativeObservationRecords.map((record) => [
-        record.runFile, record.machineId, record.median, record.comparisonKind,
-      ]),
-      [
-        ['native-octane-new-lease.json', 'device-c', 3, 'isolated-observation'],
-        ['native-octane-new-lease.json', 'device-c', 4, 'isolated-observation'],
-      ],
-    );
+    assert.equal(out.comparison.harnesses.some(({ harness }) => harness === 'native'), false);
+    assert.equal(out.comparisonRecords.some((record) => record.harness === 'native'), false);
+    assert.deepEqual(out.nativeObservations.map((observation) => [
+      observation.entryId, observation.machineId, observation.sourceRunFile,
+    ]), [
+      ['react', 'device-a', 'native-react.json'],
+      ['vue', 'device-a', 'native-vue.json'],
+      ['octane', 'device-c', 'native-octane-new-lease.json'],
+    ]);
+    assert.equal(out.nativeObservationRecords.every((record) =>
+      record.comparisonKind === 'isolated-observation'), true);
+    assert.equal(out.nativeCoverage.summary['invalid-incomparable'], 4);
+    assert.equal(out.nativeCoverage.summary.unscheduled, 101);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
 
-test('collector combines split Native suites cell-by-cell on the same device', () => {
+test('collector combines split checkpoints only inside one exact Native campaign identity', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
   try {
     writeRun(root, 'web.json', {
       machineId: 'web', score: 100, entries: ['octane'], entryCommits: { octane: 'current' },
     });
-    const writeNative = (file, generatedAt, records) => {
+    const entries = nativeEntries(['octane']);
+    entries[0].provenance.commit = 'current';
+    const contractRecords = nativeContractRecords(entries);
+    const firstLease = nativeLease({ issueId: 'split-a', expiredAt: 2_000 });
+    const secondLease = nativeLease({ issueId: 'split-b', expiredAt: 3_000 });
+    const firstChain = nativeLeaseChain(firstLease);
+    const completeChain = nativeLeaseChain(firstLease, secondLease);
+    const writeNative = (file, generatedAt, records, overrides = {}) => {
       fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
         schemaVersion: 2,
-        meta: {
-          generatedAt,
-          machine: machine('device-a'),
-          calibration: null,
-          entryCommits: { octane: 'current' },
-        },
+        meta: nativeCampaignMeta(entries, { generatedAt, records, ...overrides }),
         records,
       }));
     };
-    writeNative('native-table.json', '2026-01-02T00:00:00Z', [
-      nativeRecord('octane'), nativeRecord('octane', 'select'),
-    ]);
-    writeNative('native-startup.json', '2026-01-03T00:00:00Z', [{
-      ...nativeRecord('octane', 'startup'),
-      suite: 'startup', metric: 'fcp', scale: 0, boundary: 'native-open-to-fcp',
-    }, {
-      ...nativeRecord('octane', 'startup'),
-      suite: 'startup', metric: 'settled', scale: 0, boundary: 'native-open-to-pipeline-end',
-    }]);
+    writeNative('native-table.json', '2026-01-02T00:00:00Z',
+      contractRecords.filter(({ suite }) => suite === 'table'), {
+        leaseChain: firstChain,
+        recordLeaseId: firstLease.deviceLeaseId,
+      });
+    writeNative('native-startup.json', '2026-01-03T00:00:00Z',
+      contractRecords.filter(({ suite }) => suite === 'startup'), {
+        leaseChain: completeChain,
+        recordLeaseId: secondLease.deviceLeaseId,
+      });
+    writeNative('native-wrong-receipt.json', '2026-01-04T00:00:00Z', [
+      contractRecords.find(({ workload }) => workload === 'create'),
+    ], { campaignId: 'campaign-b', inputReceiptSha256: 'input-b' });
     fs.writeFileSync(path.join(root, 'results/runs/native-driver-diagnostic.json'), JSON.stringify({
       schemaVersion: 2,
       meta: {
@@ -324,9 +524,6 @@ test('collector combines split Native suites cell-by-cell on the same device', (
       }],
     }));
 
-    const entries = [{
-      id: 'octane', distDir: path.join(root, 'missing-octane'), provenance: { commit: 'current' },
-    }];
     const out = collectRuns({
       root,
       generatedAt: 'test',
@@ -335,14 +532,239 @@ test('collector combines split Native suites cell-by-cell on the same device', (
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 4);
+    assert.equal(native.length, 35);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, [
       'native-startup.json', 'native-table.json',
     ]);
+    assert.deepEqual(
+      out.comparison.harnesses[1].leaseChain.receipts.map(({ deviceLeaseId }) => deviceLeaseId),
+      [firstLease.deviceLeaseId, secondLease.deviceLeaseId],
+    );
     assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
     assert.equal(native.some((candidate) => candidate.runFile === 'native-driver-diagnostic.json'), false);
+    assert.equal(native.some((candidate) => candidate.runFile === 'native-wrong-receipt.json'), false);
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 35 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector keeps same-serial forked lease chains archive-only', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-forked-chain-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['octane'], entryCommits: { octane: 'current' },
+    });
+    const entries = nativeEntries(['octane']);
+    entries[0].provenance.commit = 'current';
+    const records = nativeContractRecords(entries);
+    const table = records.filter(({ suite }) => suite === 'table');
+    const startup = records.filter(({ suite }) => suite === 'startup');
+    const first = nativeLease({ issueId: 'fork-a', expiredAt: 2_000 });
+    const left = nativeLease({ issueId: 'fork-b', expiredAt: 3_000 });
+    const right = nativeLease({ issueId: 'fork-c', expiredAt: 4_000 });
+    for (const [file, generatedAt, subset, leaseChain, recordLeaseId] of [
+      ['native-left.json', '2026-01-02T00:00:00Z', table,
+        nativeLeaseChain(first, left), left.deviceLeaseId],
+      ['native-right.json', '2026-01-03T00:00:00Z', startup,
+        nativeLeaseChain(first, right), right.deviceLeaseId],
+    ]) {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: nativeCampaignMeta(entries, {
+          generatedAt, records: subset, leaseChain, recordLeaseId,
+        }),
+        records: subset,
+      }));
+    }
+
+    const out = collectRuns({
+      root, generatedAt: 'test', log: () => {},
+      entryTiers: entryTiers(['octane']), entries,
+    });
+    assert.equal(out.comparison.harnesses.some(({ harness }) => harness === 'native'), false);
+    assert.equal(out.comparisonRecords.some(({ harness }) => harness === 'native'), false);
+    assert.equal(out.nativeObservationRecords.some(({ runFile }) =>
+      runFile === 'native-left.json' || runFile === 'native-right.json'), false);
+    assert.equal(out.records.some(({ runFile }) => runFile === 'native-left.json'), true);
+    assert.equal(out.records.some(({ runFile }) => runFile === 'native-right.json'), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector publishes only completely attributed Native method-revision chains', () => {
+  for (const invalid of [null, 'missing-attribution', 'unknown-revision']) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-method-revision-'));
+    fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+    try {
+      writeRun(root, 'web.json', {
+        machineId: 'web', score: 100, entries: ['octane'],
+        entryCommits: { octane: 'current' },
+      });
+      const entries = nativeEntries(['octane']);
+      entries[0].provenance.commit = 'current';
+      const records = nativeContractRecords(entries);
+      const baseInput = methodInputReceipt({
+        adapter: { bytes: 1, sha256: 'a'.repeat(64) },
+      });
+      const currentInput = methodInputReceipt({
+        adapter: { bytes: 2, sha256: 'b'.repeat(64) },
+      });
+      const methodRevisionChain = appendNativeMethodRevision(
+        createNativeMethodRevisionChain(baseInput),
+        currentInput,
+        'transport-containment-test',
+      );
+      const [baseRevision, currentRevision] = methodRevisionChain.revisions;
+      const cellMethodRevisionIds = Object.fromEntries(records.map((candidate, index) => [
+        nativeCellKey(candidate),
+        index < 10 ? baseRevision.id : currentRevision.id,
+      ]));
+      if (invalid === 'missing-attribution') {
+        delete cellMethodRevisionIds[nativeCellKey(records[0])];
+      } else if (invalid === 'unknown-revision') {
+        cellMethodRevisionIds[nativeCellKey(records[0])] = 'unknown';
+      }
+      const meta = nativeCampaignMeta(entries, {
+        records, inputReceiptSha256: baseInput.sha256,
+      });
+      meta.inputReceipt = baseInput;
+      meta.methodRevisionChain = methodRevisionChain;
+      meta.cellMethodRevisionIds = cellMethodRevisionIds;
+      fs.writeFileSync(path.join(root, 'results/runs/native.json'), JSON.stringify({
+        schemaVersion: 2, meta, records,
+      }));
+
+      const out = collectRuns({
+        root, generatedAt: 'test', log: () => {},
+        entryTiers: entryTiers(['octane']), entries,
+      });
+      const nativeHarness = out.comparison.harnesses.find(({ harness }) => harness === 'native');
+      if (invalid === null) {
+        assert.equal(nativeHarness.recordCount, 35);
+        assert.equal(nativeHarness.methodRevisionChain.sha256, methodRevisionChain.sha256);
+        const native = out.comparisonRecords.filter(({ harness }) => harness === 'native');
+        assert.equal(native.length, 35);
+        assert.deepEqual(
+          new Set(native.map(({ methodRevisionId }) => methodRevisionId)),
+          new Set([baseRevision.id, currentRevision.id]),
+        );
+      } else {
+        assert.equal(nativeHarness, undefined, invalid);
+        assert.equal(out.comparisonRecords.some(({ harness }) => harness === 'native'), false);
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test('collector rejects missing, malformed, overlapping, and cross-serial Native lease evidence', () => {
+  const scenarios = [
+    {
+      name: 'missing-chain',
+      write(root, entries, records) {
+        const meta = nativeCampaignMeta(entries, { records });
+        delete meta.leaseChain;
+        fs.writeFileSync(path.join(root, 'results/runs/native.json'), JSON.stringify({
+          schemaVersion: 2, meta, records,
+        }));
+      },
+    },
+    {
+      name: 'malformed-chain',
+      write(root, entries, records) {
+        const meta = nativeCampaignMeta(entries, { records });
+        meta.leaseChain.sha256 = '0'.repeat(64);
+        fs.writeFileSync(path.join(root, 'results/runs/native.json'), JSON.stringify({
+          schemaVersion: 2, meta, records,
+        }));
+      },
+    },
+    {
+      name: 'missing-cell-attribution',
+      write(root, entries, records) {
+        const meta = nativeCampaignMeta(entries, { records });
+        delete meta.cellLeaseIds[nativeCellKey(records[0])];
+        fs.writeFileSync(path.join(root, 'results/runs/native.json'), JSON.stringify({
+          schemaVersion: 2, meta, records,
+        }));
+      },
+    },
+    {
+      name: 'overlap',
+      write(root, entries, records) {
+        for (const [file, generatedAt] of [
+          ['native-a.json', '2026-01-02T00:00:00Z'],
+          ['native-b.json', '2026-01-03T00:00:00Z'],
+        ]) {
+          fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+            schemaVersion: 2,
+            meta: nativeCampaignMeta(entries, { generatedAt, records }),
+            records,
+          }));
+        }
+      },
+    },
+    {
+      name: 'cross-serial-split',
+      write(root, entries, records) {
+        const table = records.filter(({ suite }) => suite === 'table');
+        const startup = records.filter(({ suite }) => suite === 'startup');
+        const leases = [
+          nativeLease({ issueId: 'serial-a', expiredAt: 2_000, serial: 'sandbox-a:1' }),
+          nativeLease({ issueId: 'serial-b', expiredAt: 3_000, serial: 'sandbox-b:2' }),
+        ];
+        for (const [index, subset] of [table, startup].entries()) {
+          const leaseChain = nativeLeaseChain(leases[index]);
+          fs.writeFileSync(path.join(root, 'results/runs', `native-${index}.json`), JSON.stringify({
+            schemaVersion: 2,
+            meta: nativeCampaignMeta(entries, {
+              generatedAt: `2026-01-0${index + 2}T00:00:00Z`,
+              records: subset,
+              leaseChain,
+              recordLeaseId: leases[index].deviceLeaseId,
+            }),
+            records: subset,
+          }));
+        }
+      },
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), `lynx-bench-${scenario.name}-`));
+    fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+    try {
+      writeRun(root, 'web.json', {
+        machineId: 'web', score: 100, entries: ['octane'],
+        entryCommits: { octane: 'current' },
+      });
+      const entries = nativeEntries(['octane']);
+      entries[0].provenance.commit = 'current';
+      scenario.write(root, entries, nativeContractRecords(entries));
+      const out = collectRuns({
+        root,
+        generatedAt: 'test',
+        log: () => {},
+        entryTiers: entryTiers(['octane']),
+        entries,
+      });
+      assert.equal(
+        out.comparisonRecords.some(({ harness }) => harness === 'native'),
+        false,
+        scenario.name,
+      );
+      assert.equal(
+        out.comparison.harnesses.some(({ harness }) => harness === 'native'),
+        false,
+        scenario.name,
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   }
 });
 
