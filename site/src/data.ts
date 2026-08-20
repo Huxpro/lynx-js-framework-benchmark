@@ -26,6 +26,8 @@ export interface BenchRecord {
   detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
+  attemptedCount?: number;
+  acceptedCount?: number;
   failures?: {
     rep: number;
     category?: string;
@@ -41,6 +43,15 @@ export interface BenchRecord {
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
   comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
+  comparabilityReasons?: string[];
+  comparabilityCohort?: string | null;
+  rankingEligible?: boolean;
+  workClassification?: {
+    status: 'complete' | 'incomplete' | 'unverified';
+    expectedSequentialCommits: number;
+    observed: Record<string, unknown> | null;
+  };
   sourceEntry?: string;
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
@@ -56,9 +67,9 @@ export interface Machine {
   cores: number;
   memGB?: number;
   node: string | null;
-  latestCalibration: { probeVersion: number; score: number } | null;
-  latestRunFile: string;
-  latestRunGeneratedAt: string;
+  latestCalibration?: { probeVersion: number; score: number } | null;
+  latestRunFile?: string;
+  latestRunGeneratedAt?: string;
 }
 
 export interface ComparisonRun {
@@ -79,6 +90,9 @@ export interface ComparisonRun {
     entryIds: string[];
     sourceRecordCount: number;
     recordCount: number;
+    cohortIdentity?: string;
+    campaign?: NativeCampaign;
+    coverage?: Record<NativeCoverageStatus, number>;
   }[];
   labEstimates: {
     entryId: string;
@@ -91,6 +105,64 @@ export interface ComparisonRun {
     sourceRecordCount: number;
     recordCount: number;
   }[];
+}
+
+export type NativeCoverageStatus =
+  | 'measured'
+  | 'measured-with-dnf'
+  | 'dnf'
+  | 'unsupported'
+  | 'unscheduled'
+  | 'invalid-incomparable'
+  | 'display-derivation-bug';
+
+export interface NativeCampaign {
+  version: string;
+  id: string;
+  label: string | null;
+  matrixContractSha256: string;
+  inputReceiptSha256: string;
+  resolvedMatrix: {
+    suites: string[];
+    cases: string[];
+    scales: number[];
+    startupScales: number[];
+    reps: number;
+    startupReps: number;
+  };
+  runtimePolicy: Record<string, string | number>;
+}
+
+export interface NativeCoverageCell {
+  entry: string;
+  suite: string;
+  workload: string;
+  scale: number;
+  metric: string;
+  unit: string;
+  boundary: string;
+  key: string;
+  status: NativeCoverageStatus;
+  reason: string | null;
+  record: {
+    n: number;
+    dnfCount: number;
+    median: number | null;
+    boundary: string;
+    unit: string;
+    runFile: string | null;
+    machineId: string | null;
+    failureCategories: string[];
+  } | null;
+}
+
+export interface NativeCoverage {
+  version: string;
+  contractSha256: string;
+  expectedCellCount: number;
+  entryIds: string[];
+  summary: Partial<Record<NativeCoverageStatus, number>>;
+  cells: NativeCoverageCell[];
 }
 
 export interface NativeObservation {
@@ -114,6 +186,7 @@ export interface TimelineSnapshot {
   machines: Record<string, Machine>;
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
+  nativeCoverage: NativeCoverage;
 }
 
 export interface HistoryTransportEvidence {
@@ -149,6 +222,7 @@ export interface HistoryCheckpoint {
   activeRecordIndexes: number[];
   sourceIndexes: number[];
   harnesses: HistoryCohort[];
+  nativeCoverage?: NativeCoverage;
 }
 
 export interface HistorySource {
@@ -195,9 +269,18 @@ const collected = latest as unknown as {
   labComparisonRecords: BenchRecord[];
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
+  nativeCoverage: NativeCoverage;
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
+const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
+  version: 'history-no-native-data',
+  contractSha256: '',
+  expectedCellCount: 0,
+  entryIds: [],
+  summary: {},
+  cells: [],
+};
 export function historyRecordsForCheckpoint(checkpoint: HistoryCheckpoint): HistoryRecord[] {
   if (checkpoint.current) return collected.comparisonRecords as HistoryRecord[];
   return checkpoint.activeRecordIndexes.map((index) => BENCHMARK_HISTORY.records[index]);
@@ -247,6 +330,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     machines,
     nativeObservations: [],
     nativeObservationRecords: [],
+    nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
   };
 });
 
@@ -296,7 +380,9 @@ export interface RecordFilter {
 
 export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
   return records.filter((r) =>
-    (filter.suite == null || r.suite === filter.suite)
+    (r.rankingEligible !== false
+      || (r.comparabilityStatus === 'incomplete-work' && r.n === 0 && r.dnfCount > 0))
+    && (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)
     && (filter.entry == null || r.entry === filter.entry)
     && (filter.workload == null || r.workload === filter.workload)

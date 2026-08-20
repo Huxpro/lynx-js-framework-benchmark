@@ -13,13 +13,23 @@ These are the only files/fields that require an update when their real-world inp
 `results/runs/*.json` is the immutable observation log:
 
 - run identity and environment: `schemaVersion`, `meta.generatedAt`, machine, Chromium,
-  calibration probe, CLI arguments, and entry commits;
+  calibration probe, CLI arguments, and entry commits. Prospective runs also retain a receipt for
+  benchmark-repository commit/dirty digest, runtime lockfile versions and integrities, browser
+  version, workload-contract hashes, every entry bundle hash, and sampling policy;
+- Native campaign identity: versioned 210-cell matrix hash, immutable input-receipt and connector
+  tree hashes, stable device-cohort identity, ordered structured lease-receipt chain, harness
+  configuration, and the complete runtime policy;
+- Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
+  hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
+  persisting the raw ADB serial;
 - record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
   phase, timeout, trigger mode, message, and observed device state);
-- per-repetition wire endpoint observations: `detailSamples`.
+- per-repetition wire endpoint observations: `detailSamples`;
+- sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
+  incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
@@ -43,12 +53,20 @@ Everything else is derived, including:
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
+- comparability/work classification. Incomplete or unverified work and prospective
+  sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
+  the archive and exact timeline snapshots, but site data selectors and collector comparison
+  cohorts keep them out of ranked views. Prospective Lab estimates must match the selected Web
+  cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
-  published cohort; each observation comes from one source run and is never merged across leases
-  or included in cross-entry rankings;
+  published cohort; each observation comes from one source run and is never merged outside an
+  explicitly validated lease chain or included in cross-entry rankings;
+- the Native 210-cell coverage classification and totals. Each cell is derived as measured,
+  measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
+  display/derivation bug;
 - the automatic exact-source history index. Every valid run has a source audit row; Web checkpoints
-  are one physical run and Native checkpoints accumulate only within an identical machine, lease,
-  environment, and method identity. Upstream-main `octane-main` observations map to the stable
+  are one physical run and Native checkpoints rank only within an exact validated campaign, device,
+  environment, lease-chain, and method identity. Upstream-main `octane-main` observations map to the stable
   public `octane` identity without losing their source ID or commit. Records are materialized once
   and checkpoints reference them by index, so finer history does not duplicate full snapshots;
 - rank-over-time points. A point exists only inside its exact eligible cohort. Missing cells, DNF,
@@ -70,7 +88,27 @@ Everything else is derived, including:
    silently change one entry's denominator.
 6. Site entry discovery and available scales/cases come from current manifests/records rather
    than duplicated lists of result data.
-7. History source coverage equals the full valid run-file list, and each checkpoint references
+7. A publishable Native checkpoint materializes exactly 35 cells per featured entry / 210 total.
+   `unscheduled`, `invalid-incomparable`, and `display-derivation-bug` fail collection; DNF stays
+   DNF, while `unsupported` requires affirmative scoped capability evidence.
+8. Native bundle bytes are snapshotted before adapter creation and served from memory. Runner
+   source, entry manifests, provenance patches, disk bundles, and in-memory bundles are hashed in
+   one receipt and reverified before a checkpoint is marked complete.
+9. An incomplete Native checkpoint may resume only with a new official receipt for the same serial
+   hash and the same stable device cohort. Campaign, matrix, input, connector, hardware, environment,
+   and method identities must match exactly; existing cells are skipped, overlaps and partial
+   startup pairs are rejected, and every new cell is attributed to its producing lease.
+10. Publication may combine explicit split checkpoints only when their immutable identities match,
+    their cell keys do not overlap, and one ordered receipt chain is an exact receipt-for-receipt
+    prefix of the other. The longer chain is published; same-serial forks remain archive-only.
+    Missing, unavailable, malformed, or mismatched connector/lease evidence is archive-only.
+11. The pre-cell expiry boundary is derived from the configured worst single-cell envelope: formal
+    repetitions, thermal gate, page/session plus long-workload timeouts, all transport attempts and
+    reconnect windows, and cleanup margin. An override can only increase this derived minimum.
+12. Incomplete checkpoints from pre-resume Native protocols are diagnostic source archives only and
+    are omitted from `results/latest.json`; only v2 checkpoints can participate in explicit
+    prefix-compatible multi-lease continuation.
+13. History source coverage equals the full valid run-file list, and each checkpoint references
    exact source records rather than a date cutoff or newest-per-cell archive.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting

@@ -39,7 +39,9 @@ had a documented weakness, the fix is noted.
   to `harness: "native"`, which the schema already isolates.
 - **Native startup** = Lynx pipeline `openTime` → `totalFcp.duration` from
   `Performance.getAllPerformanceEntries`, after enabling the Explorer
-  `enable_perf_metrics` switch. `pipelineEnd - openTime` is retained as settled when available.
+  `enable_perf_metrics` switch. A versioned producer receipt must also prove the requested row
+  state after two Native frames; a producer frame timestamp alone is never called FCP.
+  `pipelineEnd - openTime` is retained as settled only when both sources validate.
   Octane's custom renderer publishes no pipeline entries in this Explorer build, so **no Native
   Octane FCP is reported**. Instead it emits two isolated metrics with different names and
   boundaries: host `openPage` request → initial transport commit ACK (`octaneCommitAck`), and →
@@ -82,8 +84,10 @@ had a documented weakness, the fix is noted.
   superlinearly. The patch no-ops `lynx.profile:`-prefixed entries only, in both realms,
   for every entry identically (inherited from the unified benchmark, documented here).
 - **Same runtime within each harness**: Web uses one pinned `@lynx-js/web-core`; Native uses the
-  same LynxExplorer/Sandbox lease for every featured entry. Bundles are served locally through
-  ADB reverse with cache-busting URLs;
+  same physical LynxExplorer/Sandbox device cohort for every featured entry. A formal matrix may
+  span explicit official leases of that same serial, but hardware/environment, input, connector
+  toolchain, method policy, and campaign identity cannot change. Bundles are served locally
+  through ADB reverse with cache-busting URLs;
   bundles are vendored with commit + build command + sha256 (fixing the lynx-table PR's
   unverifiable references).
 - The driver contract (buttons, classes, predicates) is shared, versioned in this repo, and
@@ -108,11 +112,26 @@ had a documented weakness, the fix is noted.
   `failures` evidence, and shown; a slow framework looks slow, never absent. Long Native
   workload/startup cells use a configurable ceiling (240 seconds by default). If a failed create makes a later cell's
   prestate unreachable, that later DNF records the inherited cause rather than spending another
-  timeout or silently skipping the cell. Non-timeout harness errors still abort the run.
-  DevTool `No response found`/inactive-hook failures use a configurable bounded attempt count
-  (three by default); exhaustion becomes a `transport-retries-exhausted` DNF with the recovery
-  log. Native source files are
-  atomically checkpointed after each cell, so a later transport failure cannot erase prior cells.
+  timeout or silently skipping the cell. Strict producer payload validation failures become
+  `producer-protocol-invalid` DNF evidence for the current cell only. Evidence says validation was
+  attempted and did not pass; it never claims successful validation and contains no fabricated
+  timing. Unrelated cells continue. Other non-timeout harness/programming errors still abort the run.
+  DevTool `No response found`/inactive-hook failures and page/session-start transport failures
+  (including an unresponsive `Runtime.enable`) use a configurable bounded attempt count (three by
+  default); exhaustion becomes a `transport-retries-exhausted` DNF with the recovery log. Bundle
+  integrity, thermal, producer validation, and unknown harness errors are not folded into that
+  category. Device/adapter initialization before any contract key exists remains fatal; entry-specific
+  page/session setup happens only after the first pending contract cell is selected, so its failure
+  maps deterministically to that table key or to the complete two-metric startup scale, never to
+  broad entry-wide unsupported status. Startup transport DNFs contain no fabricated
+  FCP/settled observations. Semantic timeouts are never retried and never converted to numbers.
+  Native source files are atomically checkpointed after each cell (and each complete startup pair),
+  so a later transport failure or lease boundary cannot erase prior cells. Before the lease safety
+  window the runner exits cleanly with an incomplete checkpoint rather than starting a cell it may
+  not finish. The safety window is derived from the
+  largest formal repetition count and configured thermal gate, page/session and long-workload
+  timeouts, every transient attempt and reconnect window, plus cleanup. An environment override
+  may increase but cannot lower that minimum, so timeout changes automatically change expiry safety.
   The original `No response found` chain was traced to Explorer DebugRouter's single USB-client
   rule: a persistent Runtime console stream and a second DOM/Input connection replaced each other,
   after which the device logged `ReadAndCheckMessageHeader` protocol failure. Formal runs use one
@@ -122,12 +141,10 @@ had a documented weakness, the fix is noted.
   use the configured 30-second control ceiling; Web case timeouts are not imported into the Native
   domain and a global Octane timeout is not imposed on every framework.
 - Startup polling applies the cell deadline to each individual CDP request as the remaining total
-  time, so a final unresponsive Performance request cannot overrun the declared timeout. If a
-  non-Octane entry's rows-0 probe reaches that deadline with zero pipeline entries, the adapter
-  records the last Performance/timing payload as an entry-level
-  `performance-pipeline-unavailable` capability failure. Every later startup scale still emits its
-  full `fcp`/`settled` DNF contracts and all requested repetition failures, explicitly inherited
-  from rows 0; no scale is silently skipped or charged another identical capability timeout.
+  time, so a final unresponsive Performance request cannot overrun the declared timeout. A timeout
+  at rows 0 proves only that cell failed: every later scale is attempted independently and emits
+  complete `fcp`/`settled` records. Entry-wide unsupported status is allowed only with affirmative
+  capability evidence; absence or one timeout is not capability proof.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
   audit rejected a global score; we follow).
 - The site time slider is generated from every defensible exact-source checkpoint rather than four
@@ -144,30 +161,44 @@ had a documented weakness, the fix is noted.
   end-to-end commits. The slider labels this comparability break. New Web storm samples fail
   closed as `incomplete-storm-transport` unless both transport directions observe at least one
   rpc message per requested tick (50 update / 30 select); reaching only the final DOM predicate is
-  no longer sufficient. Those old medians remain visible as provenance-bearing incomparable points,
-  but are excluded from rank lines.
+  no longer sufficient. The controlled immutable-bundle replay and exact root-cause split are in
+  [OCTANE_WEB_AUDIT.md](./OCTANE_WEB_AUDIT.md). Those old medians remain visible as
+  provenance-bearing incomparable points, but are excluded from rank lines.
 
 ## Machines and calibration
 
 - Every run embeds a machine fingerprint (CPU model, cores, OS, node) and a **preflight
   calibration score**: a fixed, versioned, seeded CPU probe (~1s of JSON/array/string churn
   approximating render work) run in the same headless browser. Higher = faster machine.
-- Web default comparisons use records from one physical run. Native runs are split per entry to
-  keep long device sessions recoverable; the collector combines them only when they share the
-  same anonymized Sandbox lease ID, device class, and environment, and chooses one complete run
-  per current entry. The incremental archive retains source identity on every record. Run
-  selection ranks featured-entry coverage and featured matrix coverage; stale entry commits and
+- Web default comparisons use records from one physical run. Native checkpoints combine only when
+  they share the exact stable physical-device cohort, environment, harness configuration, campaign,
+  210-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
+  checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
+  its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
+  prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made
+  after an incomplete checkpoint can continue only through an explicitly allowlisted source-only
+  method revision whose exact target input digest is supplied by the operator. The original
+  campaign/input identity remains stable, while a second hashed prefix chain retains both complete
+  source receipts and maps every cell to its producing method revision. Bundles, manifests, entry
+  commits, connector trees, matrix, runtime policy, hardware, and device cohort are invariant across
+  that transition. The collector rejects missing/malformed chains, overlaps, cross-serial or
+  hardware/toolchain changes, unapproved method drift, and missing/unknown cell attribution. It rejects a selected cohort
+  unless every cell is measured, DNF, or capability-proven unsupported. The incremental archive
+  retains source identity on every record; stale entry commits and
   Lab variants cannot keep an older cohort public. Opt-in historical Lab time
   fields are multiplied by source-score / comparison-score and marked as calibrated estimates.
   Heap, wire, bundle, and count fields are not scaled. The probe corrects scalar CPU speed,
   never memory hierarchy or core count; probe version bumps invalidate cross-version estimates.
-  The lease ID hashes an explicit acquisition identity together with the serial. Hashing the serial
-  alone is forbidden because Sandbox can reassign the same device in a later lease. Every Native
+  Each lease ID hashes the issue ID, expiry, and serial SHA-256. The stable cohort intentionally
+  excludes the individual lease IDs but includes the serial digest plus hardware/environment,
+  method, input, matrix, campaign, and connector digest. Hashing the serial alone is forbidden, and
+  silently reusing a serial without its explicit ordered receipt chain is forbidden. Every Native
   source run also retains Explorer package version, DebugRouter and Lynx SDK versions, plus battery
-  temperature, Android thermal status, and the named HAL temperature readings at adapter start and
-  end. Sampling starts only after thermal status returns to 0 and battery temperature is at or below
-  the declared 40 °C ceiling. The lifecycle, input mode, and thermal-gate configuration hash is part
-  of the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
+  temperature, Android thermal status, and named HAL readings at every bundle-load gate plus
+  adapter start/end. Each sample starts only after thermal status returns to 0 and battery
+  temperature is at or below the declared 40 °C ceiling. The versioned campaign hashes the matrix,
+  immutable input receipt, timeout/render/retry settings, and lifecycle/reconnect/thermal policy;
+  the same policy is in the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
   calibration or an outlier filter.
 
 ## Harness separation

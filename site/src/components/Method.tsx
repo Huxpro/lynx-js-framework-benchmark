@@ -39,8 +39,9 @@ export function MethodPage() {
             Octane waits for its renderer transport acknowledgement before two Native frames and
             emits a post-ACK state snapshot, which the adapter checks against the requested
             workload. Its DevTool driver is diagnostic-only and has a distinct recorded source.
-            Native startup normally comes from Lynx pipeline performance entries (<b>open →
-            FCP</b>) on bundles whose first screen pre-renders N rows. Octane's custom renderer
+            Native startup requires both a Lynx pipeline performance entry (<b>open → FCP</b>) and
+            a versioned producer receipt proving the requested rows exist after two Native frames.
+            A producer frame timestamp alone is never relabelled FCP. Octane's custom renderer
             publishes no such entry in this Explorer build, so it reports no Native FCP; its
             transport-ACK and post-ACK-frame startup metrics are isolated under different names
             and boundaries.
@@ -77,11 +78,13 @@ export function MethodPage() {
             ? `, preflight score ${comparison.calibration.score} (v${comparison.calibration.probeVersion})`
             : ''}. Native charts combine one complete run
           per entry only when every run has the same device and environment identity. The collector
-          keeps partial, stale-commit, and cross-machine records for provenance, but never merges
+          keeps partial, stale-commit, cross-lease, cross-method, and cross-input records for provenance, but never merges
           them into the default ranking. A current featured entry measured under another Native
           lease may appear in a separate absolute-observation panel with its machine and source run
           visible; those records never enter rankings, heatmaps, geomeans, or cross-framework
-          ratios. Opt-in Lab
+          ratios. The campaign ID hashes the full 210-cell schedule, immutable bundle/source
+          receipt, retry policy, timeouts, Explorer lifecycle/reconnect cadence, render grace, and
+          thermal gate. Opt-in Lab
           variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
           millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
           and count fields cannot be CPU-calibrated and remain explicitly historical values.

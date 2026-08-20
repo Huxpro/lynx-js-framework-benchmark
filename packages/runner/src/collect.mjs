@@ -3,23 +3,153 @@
 // boundary and unit);
 // records from different machines coexist, each tagged with its source run and
 // calibration. Web featured comparisonRecords come from one coherent run;
-// Native featured records may come from one complete run per entry, but only
-// when every run belongs to the same physical device/environment. Opt-in Lab
+// Native featured records may come from checkpoints of one campaign, but only
+// when every record belongs to the same machine, lease, method and input receipt. Opt-in Lab
 // records are separate, explicitly calibrated historical estimates.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workloads';
 
 import { bundleRecords } from './bundles.mjs';
+import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, repoRoot } from './entries.mjs';
+import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
+import {
+  NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  assertNativeDeviceCohort,
+  assertNativeLeaseChain,
+  assertNativeMethodRevisionChain,
+} from './native-protocol.mjs';
 
 const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
 const isBenchmarkRecord = (r) => r.suite !== 'bundle';
+const isRankingEligible = (record) => record.rankingEligible !== false;
+const isComparisonVisible = (record) => isRankingEligible(record)
+  || (record.comparabilityStatus === 'incomplete-work'
+    && observationValues(record).length === 0
+    && (record.dnfCount ?? 0) > 0);
+
+const STORM_TICKS = new Map([
+  ['updateStorm', STORM_UPDATE_TICKS],
+  ['selectStorm', STORM_SELECT_TICKS],
+]);
+
+const observationValues = (record) => {
+  if (Array.isArray(record?.samples)) return record.samples.filter(Number.isFinite);
+  if (Number.isFinite(record?.value)) return [record.value];
+  if (record?.samples == null && record?.n === 1 && Number.isFinite(record?.median)) {
+    return [record.median];
+  }
+  return [];
+};
+
+const operationCellKey = (record) => [
+  record.suite,
+  record.harness,
+  record.environment,
+  record.entry,
+  record.workload,
+  record.scale,
+].join('|');
+
+function stormWorkClassification(records, record) {
+  const expected = STORM_TICKS.get(record.workload);
+  if (expected == null || record.suite !== 'table' || record.harness !== 'web') return null;
+  const siblings = records.filter((candidate) => operationCellKey(candidate) === operationCellKey(record));
+  const failure = siblings.flatMap((candidate) => candidate.failures ?? [])
+    .find((candidate) => candidate.category === 'incomplete-storm-transport');
+  if (failure) {
+    return {
+      status: 'incomplete',
+      expectedSequentialCommits: expected,
+      observed: failure.evidence ?? null,
+    };
+  }
+  const toMts = observationValues(siblings.find((candidate) => candidate.metric === 'wireToMtsMsgs'));
+  const toBts = observationValues(siblings.find((candidate) => candidate.metric === 'wireToBtsMsgs'));
+  const observed = {
+    toMtsMessages: toMts.length ? { min: Math.min(...toMts), max: Math.max(...toMts) } : null,
+    toBtsMessages: toBts.length ? { min: Math.min(...toBts), max: Math.max(...toBts) } : null,
+  };
+  if (toMts.some((value) => value < expected) || toBts.some((value) => value < expected)) {
+    return { status: 'incomplete', expectedSequentialCommits: expected, observed };
+  }
+  if (toMts.length > 0 && toBts.length > 0) {
+    return { status: 'complete', expectedSequentialCommits: expected, observed };
+  }
+  return { status: 'unverified', expectedSequentialCommits: expected, observed };
+}
+
+function samplingProblems(run, record) {
+  if (!run.meta.receipt || !isBenchmarkRecord(record) || record.workload === 'memory') return [];
+  const problems = [];
+  const sourceCount = Array.isArray(record.samples)
+    ? record.samples.length
+    : Number.isFinite(record.value) ? 1 : 0;
+  if (!Number.isInteger(record.acceptedCount) || record.acceptedCount !== sourceCount) {
+    problems.push('accepted-count-mismatch');
+  }
+  if (!Number.isInteger(record.attemptedCount) || record.attemptedCount < sourceCount) {
+    problems.push('attempted-count-invalid');
+  }
+  if (record.metric === 'latency' || record.metric === 'fcp' || record.metric === 'settled') {
+    if (Number.isInteger(record.attemptedCount)) {
+      const accounted = sourceCount + (record.dnfCount ?? 0);
+      if (accounted < record.attemptedCount) problems.push('attempt-accounting-underflow');
+      if (accounted > record.attemptedCount) problems.push('attempt-accounting-overflow');
+    }
+  }
+  return problems;
+}
+
+function classifyComparability(run, records) {
+  const cohort = run.meta.receipt?.comparabilityCohort ?? null;
+  return records.map((record) => {
+    const work = stormWorkClassification(records, record);
+    const problems = samplingProblems(run, record);
+    let comparabilityStatus = null;
+    const comparabilityReasons = [];
+    if (problems.length) {
+      comparabilityStatus = 'incompatible-sampling';
+      comparabilityReasons.push(...problems);
+    }
+    if (problems.length) {
+      // Sampling accounting is a prospective source-integrity contract and
+      // takes precedence over any derived work classification.
+    } else if (work?.status === 'incomplete') {
+      comparabilityStatus = 'incomplete-work';
+      comparabilityReasons.push('storm-transport-below-sequential-tick-contract');
+    } else if (work?.status === 'unverified') {
+      comparabilityStatus = 'unverified-work';
+      comparabilityReasons.push('storm-transport-counts-unavailable');
+    } else if (work?.status === 'complete') {
+      comparabilityStatus = cohort ? 'comparable' : 'legacy-complete-work';
+      if (!cohort) comparabilityReasons.push('run-has-no-prospective-receipt');
+    } else if (cohort) {
+      comparabilityStatus = 'comparable';
+    }
+    const rankingEligible = comparabilityStatus !== 'incomplete-work'
+      && comparabilityStatus !== 'unverified-work'
+      && comparabilityStatus !== 'incompatible-sampling';
+    if (comparabilityStatus === null && cohort === null) {
+      return { ...record, comparabilityStatus: 'legacy-unverified' };
+    }
+    return {
+      ...record,
+      comparabilityStatus: comparabilityStatus ?? 'legacy-unverified',
+      ...(comparabilityReasons.length ? { comparabilityReasons } : {}),
+      ...(cohort ? { comparabilityCohort: cohort } : {}),
+      rankingEligible,
+      ...(work ? { workClassification: work } : {}),
+    };
+  });
+}
 
 const HUX1_COMMITS = new Set([
   '99cae97204ff9ef2b0cb00765ee648078d7872e7',
@@ -46,7 +176,7 @@ const normalizeRun = (rawRun, file) => {
     throw new Error(`${file}: invalid meta.generatedAt`);
   }
   if (!Array.isArray(rawRun.records)) throw new Error(`${file}: records must be an array`);
-  const records = rawRun.records.map((record, index) => {
+  const normalizedRecords = rawRun.records.map((record, index) => {
     const hasRepeatedSource = Array.isArray(record.samples);
     const hasScalarSource = typeof record.value === 'number' && Number.isFinite(record.value);
     const hasLegacyScalar = record.samples == null && record.n === 1
@@ -66,6 +196,7 @@ const normalizeRun = (rawRun, file) => {
     }
     return normalizeRecord(rawRun, record);
   });
+  const records = classifyComparability(rawRun, normalizedRecords);
   const seen = new Set();
   for (const record of records) {
     const key = [record.entry, cellKey(record)].join('|');
@@ -88,7 +219,10 @@ const readEntryTiers = (root) => {
 };
 
 const comparisonRank = (run, featuredIds) => {
-  const featuredRecords = run.records.filter((r) => featuredIds.has(r.entry) && isBenchmarkRecord(r));
+  // Fail-closed DNF records remain visible in an exact snapshot, but cannot
+  // make a run look broader or more complete during cohort selection.
+  const featuredRecords = run.records.filter((r) =>
+    featuredIds.has(r.entry) && isBenchmarkRecord(r) && isRankingEligible(r));
   const entries = new Set(featuredRecords.map((r) => r.entry));
   const cellsByEntry = [...entries].map((entry) => new Set(
     featuredRecords.filter((r) => r.entry === entry).map(cellKey),
@@ -123,11 +257,118 @@ const isPublishableRecord = (run, record) => !(
   )
 );
 
+const nativeCohortIdentity = (run, environment) => {
+  const campaign = run.meta.campaign;
+  const machine = run.meta.machine;
+  const inputConnectorPackageTrees = run.meta.inputReceipt?.connectorPackageTrees;
+  const machineConnectorPackageTrees = machine?.connectorPackageTrees;
+  if (
+    campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION
+    || !campaign?.id
+    || !campaign?.matrixContractSha256
+    || !campaign?.inputReceiptSha256
+    || !campaign?.connectorPackageTreesSha256
+    || !machine?.id
+    || !machine?.deviceLeaseId
+    || !machine?.deviceCohortId
+    || !machine?.harnessConfigId
+    || !machine?.connectorPackageTreesSha256
+    || !environment
+  ) return null;
+  let leaseChain;
+  let methodRevisionChain = null;
+  let deviceCohort;
+  try {
+    leaseChain = assertNativeLeaseChain(run.meta.leaseChain);
+    if (run.meta.methodRevisionChain != null) {
+      methodRevisionChain = assertNativeMethodRevisionChain(run.meta.methodRevisionChain);
+    }
+    deviceCohort = assertNativeDeviceCohort(run.meta.deviceCohort);
+    assertNativeDeviceCohort(machine.deviceCohort);
+  } catch {
+    return null;
+  }
+  if (connectorPackageTreesError(inputConnectorPackageTrees) !== null) return null;
+  if (connectorPackageTreesError(machineConnectorPackageTrees) !== null) return null;
+  if (run.meta.matrixContract?.sha256 !== campaign.matrixContractSha256) return null;
+  if (run.meta.inputReceipt?.sha256 !== campaign.inputReceiptSha256) return null;
+  if (inputConnectorPackageTrees.sha256 !== campaign.connectorPackageTreesSha256) return null;
+  if (machine.campaignId !== campaign.id) return null;
+  if (machine.matrixContractSha256 !== campaign.matrixContractSha256) return null;
+  if (machine.inputReceiptSha256 !== campaign.inputReceiptSha256) return null;
+  if (machine.connectorPackageTreesSha256 !== campaign.connectorPackageTreesSha256) return null;
+  if (JSON.stringify(machineConnectorPackageTrees) !== JSON.stringify(inputConnectorPackageTrees)) {
+    return null;
+  }
+  if (JSON.stringify(machine.deviceCohort) !== JSON.stringify(deviceCohort)) return null;
+  if (machine.deviceCohortId !== deviceCohort.id) return null;
+  if (leaseChain.serialSha256 !== deviceCohort.serialSha256) return null;
+  const leaseIds = new Set(leaseChain.receipts.map((receipt) => receipt.deviceLeaseId));
+  if (!leaseIds.has(machine.deviceLeaseId)) return null;
+  const cellLeaseIds = run.meta.cellLeaseIds;
+  if (cellLeaseIds === null || typeof cellLeaseIds !== 'object' || Array.isArray(cellLeaseIds)) {
+    return null;
+  }
+  const revisionIds = new Set(methodRevisionChain?.revisions.map(({ id }) => id) ?? []);
+  const cellMethodRevisionIds = run.meta.cellMethodRevisionIds;
+  if (methodRevisionChain != null
+    && (cellMethodRevisionIds === null || typeof cellMethodRevisionIds !== 'object'
+      || Array.isArray(cellMethodRevisionIds))) return null;
+  if (methodRevisionChain != null
+    && JSON.stringify(methodRevisionChain.revisions[0].inputReceipt)
+      !== JSON.stringify(run.meta.inputReceipt)) return null;
+  const nativeRecords = run.records.filter((candidate) => candidate.harness === 'native');
+  if (methodRevisionChain != null
+    && Object.keys(cellMethodRevisionIds).length !== nativeRecords.length) return null;
+  for (const record of nativeRecords) {
+    const key = nativeCellKey(record);
+    if (!leaseIds.has(cellLeaseIds[key])) return null;
+    if (methodRevisionChain != null && !revisionIds.has(cellMethodRevisionIds[key])) return null;
+  }
+  const stableIdentity = [
+    deviceCohort.id,
+    environment,
+    machine.harnessConfigId,
+    campaign.id,
+    campaign.matrixContractSha256,
+    campaign.inputReceiptSha256,
+    campaign.connectorPackageTreesSha256,
+  ].join('|');
+  return { stableIdentity, deviceCohort, leaseChain, methodRevisionChain };
+};
+
+function mergeLeaseChains(left, right) {
+  const leftReceipts = assertNativeLeaseChain(left).receipts;
+  const rightReceipts = assertNativeLeaseChain(right).receipts;
+  const prefixLength = Math.min(leftReceipts.length, rightReceipts.length);
+  for (let index = 0; index < prefixLength; index++) {
+    if (JSON.stringify(leftReceipts[index]) !== JSON.stringify(rightReceipts[index])) {
+      throw new Error(`forked Native lease chains at receipt ${index}.`);
+    }
+  }
+  return leftReceipts.length >= rightReceipts.length ? left : right;
+}
+
+function mergeMethodRevisionChains(left, right) {
+  if (left == null) return right;
+  if (right == null) return left;
+  const leftRevisions = assertNativeMethodRevisionChain(left).revisions;
+  const rightRevisions = assertNativeMethodRevisionChain(right).revisions;
+  const prefixLength = Math.min(leftRevisions.length, rightRevisions.length);
+  for (let index = 0; index < prefixLength; index++) {
+    if (JSON.stringify(leftRevisions[index]) !== JSON.stringify(rightRevisions[index])) {
+      throw new Error(`forked Native method revision chains at revision ${index}.`);
+    }
+  }
+  return leftRevisions.length >= rightRevisions.length ? left : right;
+}
+
 const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
     && record.harness === harness
+    && isComparisonVisible(record)
     && isPublishableRecord(run, record)
     && commitMatchesManifest(run, record, entryById)),
 });
@@ -150,12 +391,40 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
   for (const candidate of runs) {
     const records = comparisonView(candidate.run, featuredIds, entryById, 'native').records;
     for (const environment of new Set(records.map((record) => record.environment))) {
-      const groupKey = `${candidate.run.meta.machine.id}|${environment}`;
+      const campaign = candidate.run.meta.campaign;
+      const identity = nativeCohortIdentity(candidate.run, environment);
+      // Legacy runs predate explicit lease, campaign and immutable input
+      // receipts. They stay archived, but cannot supply ranked comparisons.
+      if (identity == null) continue;
+      const groupKey = identity.stableIdentity;
       const group = groups.get(groupKey) ?? {
-        machineId: candidate.run.meta.machine.id,
+        machineId: identity.deviceCohort.id,
+        deviceCohortId: identity.deviceCohort.id,
+        deviceCohort: identity.deviceCohort,
         environment,
+        stableCohortIdentity: identity.stableIdentity,
+        leaseChain: identity.leaseChain,
+        methodRevisionChain: identity.methodRevisionChain,
+        campaign,
         entries: new Map(),
+        invalidOverlap: false,
+        invalidLeaseChain: false,
+        invalidMethodRevisionChain: false,
+        sourceFiles: new Set(),
       };
+      group.sourceFiles.add(candidate.file);
+      try {
+        group.leaseChain = mergeLeaseChains(group.leaseChain, identity.leaseChain);
+      } catch {
+        group.invalidLeaseChain = true;
+      }
+      try {
+        group.methodRevisionChain = mergeMethodRevisionChains(
+          group.methodRevisionChain, identity.methodRevisionChain,
+        );
+      } catch {
+        group.invalidMethodRevisionChain = true;
+      }
       for (const entry of new Set(records
         .filter((record) => record.environment === environment)
         .map((record) => record.entry))) {
@@ -165,9 +434,9 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
           && record.entry === entry)) {
           const key = cellKey(record);
           const current = entryCohort.cells.get(key);
-          const currentTime = current?.run.meta.generatedAt ?? current?.file;
-          if (!current || candidateTime > currentTime
-            || (candidateTime === currentTime && candidate.file > current.file)) {
+          if (current != null) {
+            group.invalidOverlap = true;
+          } else {
             entryCohort.cells.set(key, { ...candidate, record });
           }
         }
@@ -180,9 +449,24 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
     }
   }
 
+  const archiveOnlyFiles = new Set();
   let selected = null;
   let selectedRank = null;
   for (const group of groups.values()) {
+    if (group.invalidOverlap || group.invalidLeaseChain || group.invalidMethodRevisionChain) {
+      for (const file of group.sourceFiles) archiveOnlyFiles.add(file);
+      continue;
+    }
+    const groupRecords = [...group.entries.values()].flatMap((entry) =>
+      [...entry.cells.values()].map((source) => source.record));
+    try {
+      assertNativeCoverage(classifyNativeCoverage({
+        entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+        sourceRecords: groupRecords,
+      }));
+    } catch {
+      continue;
+    }
     const entries = [...group.entries.values()];
     const cellsByEntry = entries.map((entry) => new Set(entry.cells.keys()));
     const sharedCells = cellsByEntry.length
@@ -200,14 +484,24 @@ const selectNativeCohort = (runs, featuredIds, entryById) => {
       && value > selectedRank[index]);
     if (better || (rank.every((value, index) => value === selectedRank?.[index])
       && latest > selected.latest)) {
-      selected = { ...group, latest };
+      selected = {
+        ...group,
+        latest,
+        cohortIdentity: [
+          group.stableCohortIdentity,
+          group.leaseChain.sha256,
+          group.methodRevisionChain?.sha256,
+        ].filter(Boolean).join('|'),
+      };
       selectedRank = rank;
     }
   }
-  return selected;
+  return { selected, archiveOnlyFiles };
 };
 
-const selectNativeObservations = (runs, featuredIds, entryById, nativeCohort) => {
+const selectNativeObservations = (
+  runs, featuredIds, entryById, nativeCohort, archiveOnlyFiles = new Set(),
+) => {
   const cohortEntries = new Set(nativeCohort?.entries.keys() ?? []);
   const observations = [];
   const records = [];
@@ -215,6 +509,7 @@ const selectNativeObservations = (runs, featuredIds, entryById, nativeCohort) =>
     if (cohortEntries.has(entryId)) continue;
     let selected = null;
     for (const candidate of runs) {
+      if (archiveOnlyFiles.has(candidate.file)) continue;
       const candidateRecords = comparisonView(
         candidate.run,
         featuredIds,
@@ -377,7 +672,118 @@ const historySourceSummary = ({ file, run }, recordCount, entryIds, rankEligible
   reason,
 });
 
-const buildHistory = ({ runs, featuredIds, current }) => {
+/* Superseded by the exact-source history index below.
+const buildTimelineSnapshots = ({ runs, featuredIds, featuredEntries, current }) => {
+  const byFile = new Map(runs.map((candidate) => [candidate.file, candidate]));
+  const snapshots = [];
+  for (const spec of TIMELINE_SPECS) {
+    const web = byFile.get(spec.webRunFile);
+    if (!web) continue;
+    const webAuditSourceRecords = web.run.records
+      .filter((record) => featuredIds.has(record.entry) && isPublishableRecord(web.run, record));
+    const webRecords = webAuditSourceRecords
+      .map((record) => timelineRecord(web.run, web.file, record, 'same-run'));
+    const nativeSources = (spec.nativeRunFiles ?? []).map((file) => byFile.get(file)).filter(Boolean);
+    const nativeRecords = nativeSources.flatMap((source) => source.run.records
+      .filter((record) => featuredIds.has(record.entry)
+        && isBenchmarkRecord(record)
+        && isComparisonVisible(record)
+        && isPublishableRecord(source.run, record))
+      .map((record) => timelineRecord(source.run, source.file, record, 'same-machine')));
+    const observationSources = (spec.nativeObservationFiles ?? [])
+      .map((file) => byFile.get(file))
+      .filter(Boolean);
+    const nativeObservationRecords = observationSources.flatMap((source) => source.run.records
+      .filter((record) => record.entry === 'octane'
+        && isBenchmarkRecord(record)
+        && isComparisonVisible(record)
+        && isPublishableRecord(source.run, record))
+      .map((record) => timelineRecord(source.run, source.file, record, 'isolated-observation')));
+    const nativeObservationMachineIds = [...new Set(
+      nativeObservationRecords.map((record) => record.machineId),
+    )];
+    const nativeObservations = nativeObservationRecords.length === 0 ? [] : [{
+      entryId: 'octane',
+      harness: 'native',
+      environment: nativeObservationRecords[0].environment,
+      generatedAt: observationSources.reduce((latest, source) =>
+        latest == null || source.run.meta.generatedAt > latest
+          ? source.run.meta.generatedAt
+          : latest, null),
+      machineId: nativeObservationMachineIds.length === 1 ? nativeObservationMachineIds[0] : null,
+      sourceRunFile: observationSources.map((source) => source.file).join(', '),
+      sourceRecordCount: nativeObservationRecords.length,
+    }];
+    const sourceCandidates = [web, ...nativeSources, ...observationSources];
+    const snapshotMachines = Object.fromEntries(sourceCandidates.map((source) => [
+      source.run.meta.machine.id,
+      timelineMachine(source.run, source.file),
+    ]));
+    const nativeEntryIds = [...new Set(nativeRecords.map((record) => record.entry))].sort();
+    const webEntryIds = [...new Set(webRecords
+      .filter(isBenchmarkRecord)
+      .map((record) => record.entry))].sort();
+    const octaneCommit = web.run.meta.entryCommits?.octane
+      ?? web.run.meta.entryCommits?.['octane-main']
+      ?? null;
+    const generatedAt = sourceCandidates.reduce((latest, source) =>
+      latest == null || source.run.meta.generatedAt > latest
+        ? source.run.meta.generatedAt
+        : latest, null);
+    const nativeCoverage = classifyNativeCoverage({
+      entries: featuredEntries,
+      sourceRecords: nativeRecords,
+      publishedRecords: nativeRecords,
+      archiveRecords: nativeObservationRecords,
+    });
+    snapshots.push({
+      id: spec.id,
+      label: spec.label,
+      description: spec.description,
+      generatedAt,
+      octaneCommit,
+      records: [...webRecords, ...nativeRecords],
+      comparison: {
+        runFile: web.file,
+        generatedAt: web.run.meta.generatedAt,
+        machineId: web.run.meta.machine.id,
+        calibration: web.run.meta.calibration,
+        entryIds: webEntryIds,
+        sourceRecordCount: webRecords.filter(isBenchmarkRecord).length,
+        recordCount: webRecords.length + nativeRecords.length,
+        harnesses: [
+          {
+            harness: 'web',
+            environment: webRecords[0]?.environment ?? null,
+            generatedAt: web.run.meta.generatedAt,
+            machineId: web.run.meta.machine.id,
+            calibration: web.run.meta.calibration,
+            sourceRunFiles: [web.file],
+            entryIds: webEntryIds,
+            sourceRecordCount: webRecords.filter(isBenchmarkRecord).length,
+            recordCount: webRecords.length,
+          },
+          ...(nativeRecords.length ? [{
+            harness: 'native',
+            environment: nativeRecords[0].environment,
+            generatedAt,
+            machineId: nativeRecords[0].machineId,
+            calibration: null,
+            sourceRunFiles: nativeSources.map((source) => source.file),
+            entryIds: nativeEntryIds,
+            sourceRecordCount: nativeRecords.length,
+            recordCount: nativeRecords.length,
+          }] : []),
+        ],
+        labEstimates: [],
+      },
+      machines: snapshotMachines,
+      nativeObservations,
+      nativeObservationRecords,
+      nativeCoverage,
+    });
+*/
+const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
   const records = [];
   const sources = [];
   const checkpoints = [];
@@ -430,11 +836,12 @@ const buildHistory = ({ runs, featuredIds, current }) => {
       }
     }
 
-    if (native.length) {
-      const key = `${run.meta.machine.id}|${native[0].environment}`;
-      const group = nativeGroups.get(key) ?? [];
-      group.push(candidate);
-      nativeGroups.set(key, group);
+    for (const environment of new Set(native.map((record) => record.environment))) {
+      const identity = nativeCohortIdentity(run, environment);
+      if (identity == null) continue;
+      const group = nativeGroups.get(identity.stableIdentity) ?? [];
+      group.push({ candidate, environment, identity });
+      nativeGroups.set(identity.stableIdentity, group);
     }
 
     records.push(...sourceHistoryRecords);
@@ -453,64 +860,61 @@ const buildHistory = ({ runs, featuredIds, current }) => {
 
   for (const candidates of nativeGroups.values()) {
     const ordered = [...candidates].sort((a, b) =>
-      a.run.meta.generatedAt.localeCompare(b.run.meta.generatedAt) || a.file.localeCompare(b.file));
-    const cells = new Map();
-    const sourceIndexes = [];
-    const files = [];
-    const recordIndexesByCell = new Map();
-    let hasOctane = false;
-    for (const candidate of ordered) {
+      a.candidate.run.meta.generatedAt.localeCompare(b.candidate.run.meta.generatedAt)
+      || a.candidate.file.localeCompare(b.candidate.file));
+    for (const { candidate, environment, identity } of ordered) {
       const sourceIndex = runs.indexOf(candidate);
-      sourceIndexes.push(sourceIndex);
-      files.push(candidate.file);
-      for (const record of candidate.run.records.filter((item) => isBenchmarkRecord(item)
+      const candidateRecords = candidate.run.records.filter((item) => isBenchmarkRecord(item)
         && item.harness === 'native'
-        && isPublishableRecord(candidate.run, item))) {
+        && item.environment === environment
+        && isPublishableRecord(candidate.run, item));
+      const entryIds = new Set(candidateRecords.map((record) =>
+        publicHistoryEntry(candidate.run, record)).filter((entry) => featuredIds.has(entry)));
+      if (!entryIds.has('octane')) continue;
+      const activeRecordIndexes = [];
+      for (const record of candidateRecords) {
         const entry = publicHistoryEntry(candidate.run, record);
         if (!featuredIds.has(entry)) continue;
-        if (entry === 'octane') hasOctane = true;
-        const key = `${entry}|${cellKey(record)}`;
-        cells.set(key, { candidate, record });
         const history = historyRecord(
           candidate.run, candidate.file, record,
-          'same-machine',
-          `native:${candidate.run.meta.machine.id}:${candidate.run.records[0]?.environment}`,
+          'exact-native-campaign',
+          `native:${identity.stableIdentity}`,
         );
-        recordIndexesByCell.set(key, records.push(history) - 1);
+        activeRecordIndexes.push(records.push(history) - 1);
       }
-      if (!hasOctane) continue;
-      const groupRecords = [...cells.values()];
-      const entryIds = new Set(groupRecords.map(({ candidate: source, record }) =>
-        publicHistoryEntry(source.run, record)));
-      const rankEligible = entryIds.size >= 2;
-      const activeRecordIndexes = [...cells.keys()].map((key) => recordIndexesByCell.get(key));
+      const rankEligible = candidate.run.meta.checkpointComplete === true && entryIds.size >= 2;
+      const nativeCoverage = classifyNativeCoverage({
+        entries: featuredEntries,
+        sourceRecords: candidateRecords,
+        publishedRecords: rankEligible ? candidateRecords : [],
+        archiveRecords: rankEligible ? [] : candidateRecords,
+      });
       checkpoints.push({
-        id: historyId(candidate.run.meta.generatedAt, [...files].sort()),
+        id: historyId(candidate.run.meta.generatedAt, [candidate.file]),
         generatedAt: candidate.run.meta.generatedAt,
         label: new Date(candidate.run.meta.generatedAt).toISOString(),
         description: rankEligible
-          ? `Exact Native machine/environment cohort from ${files.length} source run${files.length === 1 ? '' : 's'}.`
-          : `Exact Native Octane observation; no other framework shares its machine/environment identity.`,
+          ? `Exact complete Native campaign checkpoint from ${candidate.file}.`
+          : `Exact Native Octane observation; this checkpoint is incomplete or has no peer entry.`,
         octaneCommit: activeRecordIndexes.map((index) => records[index])
           .find((record) => record.entry === 'octane')?.entryCommit ?? null,
         activeRecordIndexes,
-        sourceIndexes: [...sourceIndexes],
+        sourceIndexes: [sourceIndex],
+        nativeCoverage,
         harnesses: [{
           harness: 'native',
-          environment: groupRecords[0].record.environment,
-          machineId: candidate.run.meta.machine.id,
-          sourceRunFiles: [...files],
+          environment,
+          machineId: identity.deviceCohort.id,
+          sourceRunFiles: [candidate.file],
           entryIds: [...entryIds].sort(),
           rankEligible,
         }],
       });
-      for (const usedSourceIndex of new Set(sourceIndexes)) {
-        const source = sources[usedSourceIndex];
-        source.rankEligible ||= rankEligible;
-        source.reason = source.rankEligible
-          ? 'exact Native machine/environment cohort'
-          : 'exact Native observation only; no second eligible entry in this identity';
-      }
+      const source = sources[sourceIndex];
+      source.rankEligible ||= rankEligible;
+      source.reason = source.rankEligible
+        ? 'exact complete Native campaign checkpoint'
+        : 'exact Native observation only; incomplete checkpoint or no peer entry';
     }
   }
 
@@ -521,6 +925,7 @@ const buildHistory = ({ runs, featuredIds, current }) => {
     description: 'Current published Web and Native comparison cohorts.',
     octaneCommit: current.octaneCommit,
     current: true,
+    nativeCoverage: current.nativeCoverage,
     activeRecordIndexes: [],
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
       .map((record) => sources.findIndex((source) => source.runFile === record.runFile))
@@ -581,10 +986,10 @@ const calibrateLabRecord = (run, file, record, targetCalibration) => {
 const isBetterLabRun = (candidate, current, entryId) => {
   if (!current) return true;
   const count = new Set(candidate.run.records
-    .filter((r) => r.entry === entryId && isBenchmarkRecord(r))
+    .filter((r) => r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))
     .map(cellKey)).size;
   const currentCount = new Set(current.run.records
-    .filter((r) => r.entry === entryId && isBenchmarkRecord(r))
+    .filter((r) => r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))
     .map(cellKey)).size;
   const time = candidate.run.meta.generatedAt ?? candidate.file;
   const currentTime = current.run.meta.generatedAt ?? current.file;
@@ -623,6 +1028,14 @@ export function collectRuns({
     const rawRun = JSON.parse(fs.readFileSync(path.join(runsDir, file), 'utf-8'));
     if (rawRun.schemaVersion !== SCHEMA_VERSION) {
       log(`[collect] skip ${file}: schemaVersion ${rawRun.schemaVersion} != ${SCHEMA_VERSION}`);
+      continue;
+    }
+    if (
+      rawRun.meta?.checkpoint === true
+      && rawRun.meta?.checkpointComplete !== true
+      && rawRun.meta?.campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION
+    ) {
+      log(`[collect] archive-only ${file}: incomplete legacy Native checkpoint`);
       continue;
     }
     const run = normalizeRun(rawRun, file);
@@ -673,17 +1086,49 @@ export function collectRuns({
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
     ...comparisonStaticRecords,
   ];
-  const nativeCohort = selectNativeCohort(runs, featuredIds, entryById);
+  const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
+    selectNativeCohort(runs, featuredIds, entryById);
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
-      annotate(source.run, source.file, source.record, 'same-machine')))
+      ({
+        ...annotate(source.run, source.file, source.record, 'same-device-cohort'),
+        machineId: nativeCohort.deviceCohortId,
+        sourceMachineId: source.run.meta.machine.id,
+        deviceLeaseId: source.run.meta.cellLeaseIds[nativeCellKey(source.record)],
+        methodRevisionId: source.run.meta.cellMethodRevisionIds?.[nativeCellKey(source.record)]
+          ?? nativeCohort.methodRevisionChain?.revisions[0]?.id
+          ?? null,
+      })))
     : [];
+  const nativeCoverage = classifyNativeCoverage({
+    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+    sourceRecords: nativeSourceRecords,
+    publishedRecords: nativeSourceRecords,
+    archiveRecords: [...merged.values()].filter((record) => record.harness === 'native'),
+  });
+  if (nativeCohort) assertNativeCoverage(nativeCoverage);
+  if (nativeCohort) {
+    const sources = [...nativeCohort.entries.values()].flatMap((entry) =>
+      [...entry.cells.values()]);
+    const latestSource = sources.sort((left, right) =>
+      String(left.run.meta.generatedAt).localeCompare(String(right.run.meta.generatedAt))).at(-1);
+    machines[nativeCohort.deviceCohortId] = {
+      ...(latestSource?.run.meta.machine ?? {}),
+      id: nativeCohort.deviceCohortId,
+      deviceCohort: nativeCohort.deviceCohort,
+      deviceCohortId: nativeCohort.deviceCohortId,
+      leaseChain: nativeCohort.leaseChain,
+      methodRevisionChain: nativeCohort.methodRevisionChain,
+      perLeaseMachineIds: [...new Set(sources.map((source) => source.run.meta.machine.id))].sort(),
+    };
+  }
   comparisonRecords.push(...nativeSourceRecords);
   const nativeObservations = selectNativeObservations(
     runs,
     featuredIds,
     entryById,
     nativeCohort,
+    nativeArchiveOnlyFiles,
   );
   const nativeComparison = nativeCohort ? {
     harness: 'native',
@@ -696,6 +1141,13 @@ export function collectRuns({
     entryIds: [...nativeCohort.entries.keys()].sort(),
     sourceRecordCount: nativeSourceRecords.length,
     recordCount: nativeSourceRecords.length,
+    cohortIdentity: nativeCohort.cohortIdentity,
+    deviceCohort: nativeCohort.deviceCohort,
+    deviceCohortId: nativeCohort.deviceCohortId,
+    leaseChain: nativeCohort.leaseChain,
+    methodRevisionChain: nativeCohort.methodRevisionChain,
+    campaign: nativeCohort.campaign,
+    coverage: nativeCoverage.summary,
   } : null;
   const comparison = {
     runFile: comparisonRun.file,
@@ -722,14 +1174,19 @@ export function collectRuns({
   };
   const labEstimates = [];
   const labComparisonRecords = [];
+  const comparisonCohort = comparisonRun.run.meta.receipt?.comparabilityCohort ?? null;
   for (const entryId of labIds) {
     let source = null;
     for (const candidate of runs) {
-      if (!candidate.run.records.some((r) => r.entry === entryId && isBenchmarkRecord(r))) continue;
+      const candidateCohort = candidate.run.meta.receipt?.comparabilityCohort ?? null;
+      if (candidateCohort !== comparisonCohort) continue;
+      if (!candidate.run.records.some((r) =>
+        r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r))) continue;
       if (isBetterLabRun(candidate, source, entryId)) source = candidate;
     }
     if (!source) continue;
-    const records = source.run.records.filter((r) => r.entry === entryId && isBenchmarkRecord(r));
+    const records = source.run.records.filter((r) =>
+      r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r));
     assertCurrentEntryCommit(source.run, entryId, entryById.get(entryId), 'Lab comparison');
     const sourceCalibration = source.run.meta.calibration;
     const targetCalibration = comparisonRun.run.meta.calibration;
@@ -777,15 +1234,21 @@ export function collectRuns({
     labComparisonRecords,
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
+    nativeCoverage,
   };
   out.history = buildHistory({
     runs,
     featuredIds,
+    featuredEntries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
     current: {
       generatedAt: out.generatedAt,
       octaneCommit: entryById.get('octane')?.provenance?.commit ?? null,
       records: comparisonRecords,
       comparison,
+      machines,
+      nativeObservations: out.nativeObservations,
+      nativeObservationRecords: out.nativeObservationRecords,
+      nativeCoverage: out.nativeCoverage,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
