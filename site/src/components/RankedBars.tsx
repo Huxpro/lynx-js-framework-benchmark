@@ -3,13 +3,13 @@
 // Visual language follows octanejs.dev/benchmarks; implementation is ours.
 import { useEffect, useMemo, useState } from 'react';
 
+import { useBenchmarkData } from '../data-context';
 import {
   BenchRecord,
   ENTRIES,
   entryColor,
   fmtMs,
   fmtX,
-  select,
   shortLabel,
 } from '../data';
 import { completeEntryScores } from '../derive.mjs';
@@ -20,6 +20,15 @@ interface OpSpec {
   label: string;
   workload: string;
   scale: number;
+}
+
+function failureSummary(record: BenchRecord | undefined): string {
+  if (!record || record.dnfCount < 1) return 'not run';
+  const failure = record.failures?.[0];
+  if (!failure) return `${record.dnfCount} DNF`;
+  const reason = failure.category ?? failure.phase ?? 'failed';
+  const timeout = failure.timeoutMs ? ` after ${(failure.timeoutMs / 1000).toFixed(0)}s` : '';
+  return `${record.dnfCount} DNF: ${reason}${timeout}`;
 }
 
 export function RankedBars({
@@ -43,9 +52,16 @@ export function RankedBars({
   selected: Set<string>;
   unitFmt?: (v: number | null) => string;
 }) {
-  const [op, setOp] = useState<'overall' | string>('overall');
+  const { select } = useBenchmarkData();
+  const firstOp = ops[0]?.key ?? 'overall';
+  const [op, setOp] = useState<'overall' | string>(
+    harness === 'native' ? firstOp : 'overall',
+  );
   const { setTip, onMove, tipNode } = useTooltip();
   const activeOp = op === 'overall' || ops.some((spec) => spec.key === op) ? op : 'overall';
+  useEffect(() => {
+    setOp(harness === 'native' ? firstOp : 'overall');
+  }, [firstOp, harness]);
   useEffect(() => {
     if (op !== 'overall' && !ops.some((spec) => spec.key === op)) setOp('overall');
   }, [op, ops]);
@@ -60,7 +76,7 @@ export function RankedBars({
       m.set(spec.key, inner);
     }
     return m;
-  }, [suite, harness, metric, ops]);
+  }, [suite, harness, metric, ops, select]);
 
   const view = useMemo(() => {
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
@@ -77,7 +93,7 @@ export function RankedBars({
       rows.sort((a, b) => a.value - b.value);
       return {
         rows,
-        missing: score.missing,
+        missing: score.missing.map((id) => ({ id, record: undefined })),
         fmt: fmtX,
         scoreOps: score.cellCount,
         caption: `geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
@@ -99,7 +115,10 @@ export function RankedBars({
       });
     const present = rows.filter((r) => r.value != null) as { id: string; value: number; ci95: number | null; n: number; dnf: boolean }[];
     present.sort((a, b) => a.value - b.value);
-    const missing = rows.filter((r) => r.value == null).map((r) => r.id);
+    const missing = rows.filter((r) => r.value == null).map((r) => ({
+      id: r.id,
+      record: inner.get(r.id),
+    }));
     return { rows: present, missing, fmt: unitFmt, scoreOps: 1, caption: `median ${spec.label} — lower is better` };
   }, [activeOp, byOp, selected, ops, unitFmt]);
 
@@ -159,10 +178,10 @@ export function RankedBars({
             </div>
           );
         })}
-        {view.missing.map((id) => (
-          <div key={id} className="bar-row">
+        {view.missing.map(({ id, record }) => (
+          <div key={id} className="bar-row" title={record?.failures?.[0]?.message}>
             <div className="bar-label">{shortLabel(id)}</div>
-            <div className="bar-dnf">— {activeOp === 'overall' ? 'incomplete matrix' : 'no data (DNF or not run)'}</div>
+            <div className="bar-dnf">— {activeOp === 'overall' ? 'incomplete matrix' : failureSummary(record)}</div>
           </div>
         ))}
       </div>
@@ -183,7 +202,7 @@ export function RankedBars({
                 {ENTRIES.filter((e) => selected.has(e.id)).map((e) => {
                   const r = byOp.get(o.key)?.get(e.id);
                   return (
-                    <td key={e.id}>
+                    <td key={e.id} title={r?.failures?.[0]?.message}>
                       {r?.median != null ? unitFmt(r.median) : (r?.dnfCount ?? 0) > 0 ? 'DNF' : '—'}
                     </td>
                   );

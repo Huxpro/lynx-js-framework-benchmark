@@ -4,7 +4,8 @@
 import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ENTRIES, entryColor, select, shortLabel } from '../data';
+import { useBenchmarkData } from '../data-context';
+import { ENTRIES, entryColor, shortLabel } from '../data';
 import { slopeFit } from '../derive.mjs';
 
 interface TrendSpec {
@@ -27,6 +28,7 @@ export function ScaleTrend({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { select, selectNativeObservations } = useBenchmarkData();
   const [scaleMode, setScaleMode] = useState<'linear' | 'log'>('linear');
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,18 +36,31 @@ export function ScaleTrend({
     const out: { entry: string; label: string; scale: number; value: number }[] = [];
     for (const e of ENTRIES) {
       if (!selected.has(e.id)) continue;
-      for (const r of select({ suite: spec.suite, harness, workload: spec.workload, metric: spec.metric, entry: e.id })) {
+      const filter = {
+        suite: spec.suite,
+        harness,
+        workload: spec.workload,
+        metric: spec.metric,
+        entry: e.id,
+      };
+      const comparisonRecords = select(filter);
+      const records = comparisonRecords.length > 0
+        ? comparisonRecords
+        : spec.metric.startsWith('octane')
+          ? selectNativeObservations(filter)
+          : [];
+      for (const r of records) {
         if (r.median != null && r.scale > 0) {
           out.push({ entry: e.id, label: shortLabel(e.id), scale: r.scale, value: r.median });
         }
       }
     }
     return out.sort((a, b) => a.scale - b.scale);
-  }, [spec, harness, selected]);
+  }, [spec, harness, selected, select, selectNativeObservations]);
 
   const alphas = useMemo(() => {
     const out: { entry: string; alpha: number | null }[] = [];
-    const ids = ENTRIES.map((entry) => entry.id).filter((id) => selected.has(id));
+    const ids = [...new Set(data.map((point) => point.entry))];
     const commonScales = [...new Set(data.map((point) => point.scale))]
       .filter((scale) => ids.every((id) => data.some((point) => point.entry === id && point.scale === scale)));
     for (const id of ids) {
@@ -151,7 +166,7 @@ export function ScaleTrend({
   );
 }
 
-export const TREND_SPECS: TrendSpec[] = [
+const COMMON_TREND_SPECS: TrendSpec[] = [
   {
     title: 'startup — first contentful paint vs rows',
     desc: 'view attach → first frame with table content, on bundles whose first screen pre-renders N rows. The IFR story lives here: main-thread first frame vs background hydration.',
@@ -183,3 +198,22 @@ export const TREND_SPECS: TrendSpec[] = [
     suite: 'table', workload: 'create', metric: 'wireToMtsBytes', unit: 'bytes',
   },
 ];
+
+const NATIVE_OCTANE_STARTUP_SPECS: TrendSpec[] = [
+  {
+    title: 'Octane startup — transport commit ACK vs rows',
+    desc: 'Open request → Octane transport acknowledgement after the initial root render. This isolated Native metric is not FCP and is never ranked against pipeline FCP.',
+    suite: 'startup', workload: 'startup', metric: 'octaneCommitAck', unit: 'ms',
+  },
+  {
+    title: 'Octane startup — second post-ACK frame vs rows',
+    desc: 'Open request → second Native animation frame after Octane acknowledges the initial transport commit. This remains an isolated renderer metric, not FCP.',
+    suite: 'startup', workload: 'startup', metric: 'octaneSecondFrame', unit: 'ms',
+  },
+];
+
+export function trendSpecsForHarness(harness: string): TrendSpec[] {
+  return harness === 'native'
+    ? [...COMMON_TREND_SPECS, ...NATIVE_OCTANE_STARTUP_SPECS]
+    : COMMON_TREND_SPECS;
+}

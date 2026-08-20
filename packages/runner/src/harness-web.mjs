@@ -11,6 +11,8 @@ import {
   STARTUP_CASES,
   CREATE_BUTTON,
   READY_TEXT,
+  STORM_SELECT_TICKS,
+  STORM_UPDATE_TICKS,
 } from '@lynx-bench/shared/workloads';
 
 import { launchBrowser } from './browser.mjs';
@@ -72,6 +74,29 @@ function wireDelta(before, after) {
     };
   };
   return { toBts: side(before.toBts, after.toBts), toMts: side(before.toMts, after.toMts) };
+}
+
+export function stormCommitGuard(kase, wire) {
+  const expected = kase.name === 'updateStorm'
+    ? STORM_UPDATE_TICKS
+    : kase.name === 'selectStorm'
+      ? STORM_SELECT_TICKS
+      : null;
+  if (expected == null) return null;
+  const observed = {
+    toMtsMessages: wire.toMts.messages,
+    toBtsMessages: wire.toBts.messages,
+  };
+  if (observed.toMtsMessages >= expected && observed.toBtsMessages >= expected) return null;
+  return {
+    category: 'incomplete-storm-transport',
+    phase: 'table',
+    expectedSequentialCommits: expected,
+    evidence: observed,
+    message: `${kase.name} completed its final predicate with only `
+      + `${observed.toMtsMessages} BTS→MTS / ${observed.toBtsMessages} MTS→BTS messages; `
+      + `expected at least ${expected} in each direction.`,
+  };
 }
 
 async function gc(page) {
@@ -325,6 +350,7 @@ export async function runTableSuite({
       kase._scale = scale;
       const samples = { latency: [], btsCpu: [], mtsCpu: [], wire: [] };
       let dnfCount = 0;
+      const failures = [];
       for (let rep = 0; rep < stormReps; rep++) {
         const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
         try {
@@ -340,6 +366,13 @@ export async function runTableSuite({
             spec,
             timeoutMs: kase.timeoutMs ?? 240000,
           });
+          const incomplete = stormCommitGuard(kase, s.wire);
+          if (incomplete) {
+            dnfCount += 1;
+            failures.push({ rep, ...incomplete });
+            log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}: ${incomplete.message}`);
+            continue;
+          }
           samples.latency.push(s.ms);
           if (s.cpu.bts != null) samples.btsCpu.push(s.cpu.bts);
           if (s.cpu.mts != null) samples.mtsCpu.push(s.cpu.mts);
@@ -355,7 +388,7 @@ export async function runTableSuite({
           await fresh.page.close();
         }
       }
-      records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount }));
+      records.push(...emitOpRecords({ entry, kase, scale, samples, dnfCount, failures }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
   }
@@ -368,7 +401,7 @@ function fmtSummary(samples) {
   return s ? `${s.median.toFixed(1)}ms ±${(s.ci95 ?? 0).toFixed(1)} (n=${s.n})` : 'no samples';
 }
 
-function emitOpRecords({ entry, kase, scale, samples, dnfCount }) {
+function emitOpRecords({ entry, kase, scale, samples, dnfCount, failures = [] }) {
   const records = [];
   const base = { suite: 'table', entry: entry.id, workload: kase.name, scale };
   records.push(makeRecord({
@@ -378,6 +411,7 @@ function emitOpRecords({ entry, kase, scale, samples, dnfCount }) {
     unit: 'ms',
     samples: samples.latency,
     dnfCount,
+    failures,
   }));
   for (const [key, metric, boundary] of [
     ['btsCpu', 'btsCpu', BOUNDARIES.btsCpu],

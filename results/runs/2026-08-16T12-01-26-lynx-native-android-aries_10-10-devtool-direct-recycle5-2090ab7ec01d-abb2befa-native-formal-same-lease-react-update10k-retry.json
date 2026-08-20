@@ -1,0 +1,248 @@
+{
+ "schemaVersion": 2,
+ "meta": {
+  "generatedAt": "2026-08-16T12:01:26.210Z",
+  "machine": {
+   "id": "lynx-native-android-aries_10-10-devtool-direct-recycle5-2090ab7ec01d-abb2befa",
+   "platform": "android",
+   "osVersion": "10",
+   "cpuModel": "linaro",
+   "cores": 8,
+   "node": null,
+   "deviceModel": "ByteDance aries_10",
+   "app": "LynxExplorer",
+   "appVersion": "1.0",
+   "explorerPackage": {
+    "versionName": "1.0",
+    "versionCode": 1
+   },
+   "debugRouterVersion": "0.0.1",
+   "lynxSdkVersion": "0.0.1",
+   "agentLynxVersion": "0.14.4",
+   "devtoolTransport": "direct",
+   "debugRouterSettleMs": 100,
+   "explorerRecycleEveryPages": 5,
+   "maxBatteryTemperatureC": 40,
+   "thermalGateTimeoutMs": 300000,
+   "explorerReconnectTimeoutMs": 90000,
+   "harnessConfigId": "abb2befa",
+   "octaneTriggerMode": "tap",
+   "deviceLeaseId": "2090ab7ec01d",
+   "deviceLeaseIdentitySource": "explicit-env",
+   "deviceClockOffsetMs": 4108.5,
+   "deviceClockCalibrationRttMs": 23,
+   "thermalStart": {
+    "capturedAt": "2026-08-16T12:01:27.300Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   },
+   "transientRecoveries": [
+    {
+     "at": "2026-08-16T12:01:56.909Z",
+     "category": "devtool-transport-disconnect",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+    },
+    {
+     "at": "2026-08-16T12:02:27.207Z",
+     "category": "devtool-transport-disconnect",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+    }
+   ],
+   "thermalEnd": {
+    "capturedAt": "2026-08-16T12:02:57.838Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   }
+  },
+  "calibration": null,
+  "harness": "native",
+  "adapter": "/data00/home/xuan.huang/github/lynx-js-framework-benchmark/packages/runner/adapters/lynx-sandbox-android.mjs",
+  "argv": [
+   "run",
+   "--harness",
+   "native",
+   "--adapter",
+   "packages/runner/adapters/lynx-sandbox-android.mjs",
+   "--entry",
+   "react",
+   "--suite",
+   "table",
+   "--case",
+   "update10th",
+   "--scale",
+   "10000",
+   "--label",
+   "formal-same-lease-react-update10k-retry",
+   "--no-collect"
+  ],
+  "checkpoint": true,
+  "entryCommits": {
+   "react": "28f7acbab990b3b574f04944e0d21c769719cc68"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "react",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 5,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": [
+       {
+        "at": "2026-08-16T12:01:56.909Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       },
+       {
+        "at": "2026-08-16T12:02:27.207Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       }
+      ]
+     }
+    },
+    {
+     "rep": 1,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": [
+       {
+        "at": "2026-08-16T12:01:56.909Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       },
+       {
+        "at": "2026-08-16T12:02:27.207Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       }
+      ]
+     }
+    },
+    {
+     "rep": 2,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": [
+       {
+        "at": "2026-08-16T12:01:56.909Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       },
+       {
+        "at": "2026-08-16T12:02:27.207Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       }
+      ]
+     }
+    },
+    {
+     "rep": 3,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": [
+       {
+        "at": "2026-08-16T12:01:56.909Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       },
+       {
+        "at": "2026-08-16T12:02:27.207Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       }
+      ]
+     }
+    },
+    {
+     "rep": 4,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": [
+       {
+        "at": "2026-08-16T12:01:56.909Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       },
+       {
+        "at": "2026-08-16T12:02:27.207Z",
+        "category": "devtool-transport-disconnect",
+        "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed."
+       }
+      ]
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  }
+ ]
+}

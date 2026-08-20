@@ -6,6 +6,7 @@
 // - repeated observations live in `samples`
 // - one-shot observations live in `value`
 // - DNF observations live in `dnfCount`
+// - structured DNF evidence lives in `failures`
 // - wire endpoint observations live in `detailSamples`
 //
 // n/median/mean/std/min/max/p95/ci95 and `detail` are materialized derivatives.
@@ -108,6 +109,7 @@ export function makeRecord({
   detailSamples = null,
   detail = null,
   dnfCount = 0,
+  failures = [],
 }) {
   if (!suite || !entry || !workload || !metric || !boundary || !unit) {
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
@@ -127,6 +129,7 @@ export function makeRecord({
     detailSamples,
     detail,
     dnfCount,
+    failures,
   });
 }
 

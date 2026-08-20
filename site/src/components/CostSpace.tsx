@@ -4,7 +4,8 @@
 import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { ENTRIES, entryColor, one, shortLabel, workloadScales } from '../data';
+import { useBenchmarkData } from '../data-context';
+import { ENTRIES, entryColor, shortLabel } from '../data';
 
 export function CostSpace({
   harness,
@@ -15,11 +16,12 @@ export function CostSpace({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { one, workloadScales } = useBenchmarkData();
   const ref = useRef<HTMLDivElement>(null);
   const scales = useMemo(
     () => workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })
       .filter((value) => value > 0),
-    [harness],
+    [harness, workloadScales],
   );
   const [scale, setScale] = useState(10000);
   const activeScale = scales.includes(scale) ? scale : (scales.find((value) => value === 10000) ?? scales[0]);
@@ -36,7 +38,7 @@ export function CostSpace({
       }
     }
     return out;
-  }, [harness, selected, activeScale]);
+  }, [harness, selected, activeScale, one]);
 
   useEffect(() => {
     const node = ref.current;

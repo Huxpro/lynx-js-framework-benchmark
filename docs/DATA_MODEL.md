@@ -17,7 +17,8 @@ These are the only files/fields that require an update when their real-world inp
 - record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
-- failures: `dnfCount`;
+- failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
+  phase, timeout, trigger mode, message, and observed device state);
 - per-repetition wire endpoint observations: `detailSamples`.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
@@ -42,6 +43,13 @@ Everything else is derived, including:
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
+- separately selected Native observations for current featured entries measured outside the
+  published cohort; each observation comes from one source run and is never merged across leases
+  or included in cross-entry rankings;
+- the four checked timeline snapshots. Each historical position names exact source run files and
+  remaps that run's upstream-main Octane source to the stable public `octane` identity; dragging
+  the site slider swaps the complete record/comparison/machine context rather than filtering the
+  newest-per-cell archive;
 - `results/latest.json` in its entirety (a checked-in materialized cache);
 - entry lists, available scales/cases, rankings, baselines, ratios, interactive scores, geomeans,
   trend exponents, plot domains, bar widths, totals, sorting, and every table shown by the site.

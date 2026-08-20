@@ -26,12 +26,21 @@ export interface BenchRecord {
   detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
+  failures?: {
+    rep: number;
+    category?: string;
+    phase?: string;
+    timeoutMs?: number;
+    triggerMode?: string;
+    message?: string;
+    evidence?: Record<string, unknown>;
+  }[];
   machineId: string | null;
   runFile: string | null;
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'same-machine' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
   sourceEntry?: string;
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
@@ -84,6 +93,29 @@ export interface ComparisonRun {
   }[];
 }
 
+export interface NativeObservation {
+  entryId: string;
+  harness: 'native';
+  environment: string;
+  generatedAt: string;
+  machineId: string;
+  sourceRunFile: string;
+  sourceRecordCount: number;
+}
+
+export interface TimelineSnapshot {
+  id: string;
+  label: string;
+  description: string;
+  generatedAt: string;
+  octaneCommit: string | null;
+  records: BenchRecord[];
+  comparison: ComparisonRun;
+  machines: Record<string, Machine>;
+  nativeObservations: NativeObservation[];
+  nativeObservationRecords: BenchRecord[];
+}
+
 export interface EntryMeta {
   id: string;
   label: string;
@@ -104,11 +136,11 @@ export interface EntryMeta {
 const collected = latest as {
   comparisonRecords: BenchRecord[];
   labComparisonRecords: BenchRecord[];
+  nativeObservations: NativeObservation[];
+  nativeObservationRecords: BenchRecord[];
+  timelineSnapshots: TimelineSnapshot[];
 };
-export const RECORDS = [...collected.comparisonRecords, ...collected.labComparisonRecords];
-export const MACHINES = (latest as { machines: Record<string, Machine> }).machines;
-export const COMPARISON = (latest as { comparison: ComparisonRun }).comparison;
-export const GENERATED_AT = (latest as { generatedAt: string }).generatedAt;
+export const TIMELINE_SNAPSHOTS = collected.timelineSnapshots;
 
 const manifestModules = import.meta.glob('../../entries/*/entry.json', {
   eager: true,
@@ -127,8 +159,6 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
     }));
 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
-export const LAB_IDS = ENTRIES.filter((e) => e.tier === 'lab').map((e) => e.id);
-export const CALIBRATED_LAB_IDS = new Set(COMPARISON.labEstimates.map((e) => e.entryId));
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 
@@ -156,8 +186,8 @@ export interface RecordFilter {
   unit?: string;
 }
 
-export function select(filter: RecordFilter): BenchRecord[] {
-  return RECORDS.filter((r) =>
+export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
+  return records.filter((r) =>
     (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)
     && (filter.entry == null || r.entry === filter.entry)
@@ -170,18 +200,19 @@ export function select(filter: RecordFilter): BenchRecord[] {
   );
 }
 
-export function one(filter: RecordFilter): BenchRecord | null {
-  const rs = select(filter);
+export function oneFrom(records: BenchRecord[], filter: RecordFilter): BenchRecord | null {
+  const rs = filterRecords(records, filter);
   if (rs.length > 1) {
     throw new Error(`ambiguous benchmark record (${rs.length} matches): ${JSON.stringify(filter)}`);
   }
   return rs.length ? rs[0] : null;
 }
 
-export const HARNESSES = [...new Set(RECORDS.map((r) => r.harness))];
-
-export function workloadScales(filter: Omit<RecordFilter, 'scale'>): number[] {
-  return [...new Set(select(filter).map((r) => r.scale))].sort((a, b) => a - b);
+export function workloadScalesFrom(
+  records: BenchRecord[],
+  filter: Omit<RecordFilter, 'scale'>,
+): number[] {
+  return [...new Set(filterRecords(records, filter).map((r) => r.scale))].sort((a, b) => a - b);
 }
 
 export const fmtMs = (v: number | null): string => {

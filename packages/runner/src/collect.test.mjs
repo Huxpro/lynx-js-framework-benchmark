@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { collectRuns } from './collect.mjs';
+import { repoRoot } from './entries.mjs';
 
 const machine = (id) => ({
   id, hostname: id, platform: 'test', arch: 'x64', cpuModel: id, cores: 1, memGB: 1, node: 'test',
@@ -157,6 +158,80 @@ test('collector combines current per-entry Native runs only on one device and ig
   }
 });
 
+test('collector publishes a missing Native entry as one isolated run without merging leases', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['react', 'vue', 'octane'],
+      entryCommits: { react: 'react-new', vue: 'vue-new', octane: 'octane-new' },
+    });
+    const writeNative = (file, machineId, generatedAt, entry, commit, records) => {
+      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+        schemaVersion: 2,
+        meta: {
+          generatedAt,
+          machine: machine(machineId),
+          calibration: null,
+          entryCommits: { [entry]: commit },
+        },
+        records,
+      }));
+    };
+    writeNative('native-react.json', 'device-a', '2026-01-01T00:00:00Z', 'react', 'react-new', [
+      nativeRecord('react'),
+    ]);
+    writeNative('native-vue.json', 'device-a', '2026-01-01T00:01:00Z', 'vue', 'vue-new', [
+      nativeRecord('vue'),
+    ]);
+    writeNative('native-octane-old-lease.json', 'device-b', '2026-01-02T00:00:00Z', 'octane', 'octane-new', [
+      nativeRecord('octane'),
+      nativeRecord('octane', 'select'),
+    ]);
+    writeNative('native-octane-new-lease.json', 'device-c', '2026-01-03T00:00:00Z', 'octane', 'octane-new', [
+      { ...nativeRecord('octane'), samples: [3], median: 3 },
+      { ...nativeRecord('octane', 'select'), samples: [4], median: 4 },
+    ]);
+
+    const entries = [
+      { id: 'react', distDir: path.join(root, 'missing-react'), provenance: { commit: 'react-new' } },
+      { id: 'vue', distDir: path.join(root, 'missing-vue'), provenance: { commit: 'vue-new' } },
+      { id: 'octane', distDir: path.join(root, 'missing-octane'), provenance: { commit: 'octane-new' } },
+    ];
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue', 'octane']),
+      entries,
+    });
+
+    assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
+    assert.equal(out.comparisonRecords.some((record) =>
+      record.harness === 'native' && record.entry === 'octane'), false);
+    assert.deepEqual(out.nativeObservations, [{
+      entryId: 'octane',
+      harness: 'native',
+      environment: 'native-test',
+      generatedAt: '2026-01-03T00:00:00Z',
+      machineId: 'device-c',
+      sourceRunFile: 'native-octane-new-lease.json',
+      sourceRecordCount: 2,
+    }]);
+    assert.deepEqual(
+      out.nativeObservationRecords.map((record) => [
+        record.runFile, record.machineId, record.median, record.comparisonKind,
+      ]),
+      [
+        ['native-octane-new-lease.json', 'device-c', 3, 'isolated-observation'],
+        ['native-octane-new-lease.json', 'device-c', 4, 'isolated-observation'],
+      ],
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector combines split Native suites cell-by-cell on the same device', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -186,6 +261,19 @@ test('collector combines split Native suites cell-by-cell on the same device', (
       ...nativeRecord('octane', 'startup'),
       suite: 'startup', metric: 'settled', scale: 0, boundary: 'native-open-to-pipeline-end',
     }]);
+    fs.writeFileSync(path.join(root, 'results/runs/native-driver-diagnostic.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-04T00:00:00Z',
+        machine: { ...machine('device-a'), octaneTriggerMode: 'driver' },
+        calibration: null,
+        entryCommits: { octane: 'current' },
+      },
+      records: [{
+        ...nativeRecord('octane', 'swap'),
+        boundary: 'native-devtool-driver-handler-to-second-native-frame',
+      }],
+    }));
 
     const entries = [{
       id: 'octane', distDir: path.join(root, 'missing-octane'), provenance: { commit: 'current' },
@@ -203,6 +291,7 @@ test('collector combines split Native suites cell-by-cell on the same device', (
       'native-startup.json', 'native-table.json',
     ]);
     assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
+    assert.equal(native.some((candidate) => candidate.runFile === 'native-driver-diagnostic.json'), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -376,4 +465,78 @@ test('collector rejects ambiguous duplicate source cells', () => {
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('collector preserves structured DNF evidence and rejects impossible failure counts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const dnf = {
+      ...record('react'),
+      samples: [],
+      n: 0,
+      median: null,
+      dnfCount: 1,
+      failures: [{ rep: 0, category: 'timeout', timeoutMs: 240000 }],
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/dnf.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [dnf],
+    }));
+    const out = collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) });
+    assert.deepEqual(out.comparisonRecords[0].failures, dnf.failures);
+
+    dnf.failures.push({ rep: 1, category: 'timeout' });
+    fs.writeFileSync(path.join(root, 'results/runs/dnf.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+      },
+      records: [dnf],
+    }));
+    assert.throws(
+      () => collectRuns({ root, log: () => {}, entryTiers: entryTiers(['react']) }),
+      /failures cannot exceed dnfCount/,
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('checked timeline snapshots keep Octane on the stable main identity', () => {
+  const root = repoRoot();
+  const out = collectRuns({ root, log: () => {} });
+  assert.deepEqual(
+    out.timelineSnapshots.map((snapshot) => snapshot.id),
+    ['2026-08-11-main', '2026-08-12-main', '2026-08-15-main', 'current-main'],
+  );
+  for (const snapshot of out.timelineSnapshots) {
+    const octaneIds = new Set(snapshot.records
+      .filter((record) => record.harness === 'web' && record.entry.startsWith('octane'))
+      .map((record) => record.entry));
+    assert.deepEqual([...octaneIds], ['octane']);
+    assert.equal(
+      new Set(snapshot.records
+        .filter((record) => record.harness === 'web' && record.suite !== 'bundle')
+        .map((record) => record.entry)).size,
+      6,
+    );
+  }
+  const fast = out.timelineSnapshots.find((snapshot) => snapshot.id === '2026-08-12-main');
+  const current = out.timelineSnapshots.find((snapshot) => snapshot.id === 'current-main');
+  const selectStorm = (snapshot) => snapshot.records.find((record) =>
+    record.harness === 'web'
+    && record.entry === 'octane'
+    && record.workload === 'selectStorm'
+    && record.scale === 1000
+    && record.metric === 'latency');
+  assert.equal(selectStorm(fast).median, 34.44500017166138);
+  assert.equal(selectStorm(current).median, 590.6499996185303);
 });

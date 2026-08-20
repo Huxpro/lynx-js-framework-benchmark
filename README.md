@@ -29,18 +29,41 @@ For a leased Lynx Sandbox Android device:
 ```bash
 # Make the device-only @byted/agent-lynx@0.14.4 package resolvable from packages/runner using the ByteDance
 # registry in the Native runner environment first.
-LYNX_SANDBOX_SERIAL='<leased-adb-serial>' pnpm bench run \
+LYNX_SANDBOX_SERIAL='<leased-adb-serial>' \
+LYNX_SANDBOX_LEASE_ID='<unique-issue-id-and-expiry>' \
+pnpm bench run \
   --harness native \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
 LynxExplorer, drives the Native benchmark through Lynx DevTool, and records device-clock timings.
-ReactLynx and Vue-Lynx use real touch input. Upstream Octane currently uses a benchmark-only
-background driver because its registered string-event tokens have no public Native background
-receiver; the driver call happens before the measured handler-to-frame window. Release the
-Sandbox lease after the command completes. `LYNX_SANDBOX_TIMEOUT_MS` can override the 30-second
-per-sample timeout.
+It defaults to the connector's direct Android transport and carries Runtime events, DOM queries,
+and input over one persistent CDP channel. Explorer's DebugRouter accepts one USB connector; using
+a long-lived console stream plus separate command connections makes the device replace its own
+client and surfaces as `No response found`. The adapter starts a clean Explorer, serializes that
+channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
+the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
+with different lifecycle policies cannot be merged.
+Every featured entry, including upstream Octane, uses real Native touch input. Octane samples
+begin in the background handler, wait for the renderer's correlated transport acknowledgement,
+then wait two Native frames; the recorded post-ACK state is checked against the semantic workload
+predicate. A DevTool driver exists only as an explicitly labelled diagnostic mode and is never the
+default benchmark path. Release the Sandbox lease after the command completes.
+`LYNX_SANDBOX_TIMEOUT_MS` overrides the 30-second control timeout and
+`LYNX_SANDBOX_LONG_TIMEOUT_MS` overrides the 240-second workload/startup timeout.
+`LYNX_SANDBOX_TRANSIENT_ATTEMPTS` controls the bounded number of transport attempts (three by
+default; one records the first transport failure as DNF without a recovery retry).
+`LYNX_SANDBOX_DEVTOOL_TRANSPORT` can opt back into `daemon` for diagnostics; formal runs use
+`direct`. `LYNX_SANDBOX_RECYCLE_EVERY_PAGES` and `LYNX_SANDBOX_ROUTER_SETTLE_MS` are explicit
+lifecycle controls whose chosen values are retained in run metadata. Formal runs also wait for
+Android thermal status 0 and battery temperature at or below 40 °C before sampling
+(`LYNX_SANDBOX_MAX_BATTERY_TEMP_C` overrides the ceiling). A hash of these
+lifecycle/thermal/input/timeout/retry settings is part of the machine identity, preventing
+differently configured runs from joining one Native cohort.
+`LYNX_SANDBOX_LEASE_ID` is mandatory and must uniquely identify the acquisition (for example the
+traceable X-Issue-Id plus `expiredAt` returned by the lease API). The machine fingerprint hashes it
+with the serial so a device reassigned in a later lease cannot be silently merged into the cohort.
 
 `@byted/agent-lynx` is intentionally not part of the public workspace lockfile because one of its
 connector dependencies is unavailable from the public npm registry used by GitHub Actions and the
@@ -68,19 +91,25 @@ public ranking. Opt-in Lab entries use one complete historical run per entry; mi
 are scaled by source-score / comparison-score and marked as estimates. Non-time fields remain
 explicitly historical because the CPU probe cannot calibrate them.
 `run` refreshes the derived cache immediately; site dev/build refresh it again before loading.
+Native runs atomically checkpoint the source file after every completed cell. If DevTool transport
+is exhausted later in a long lease, already completed cells remain reproducible instead of being
+lost with the process. Known transport exhaustion is retained as structured DNF evidence; unknown
+adapter/programming errors still abort.
 
 ## What is measured
 
 | layer | metrics | how |
 | --- | --- | --- |
-| time | `latency` (tap → DOM predicate), `fcp`/`settled` (startup at N rows) | real Chromium input; rAF-polled composed-DOM predicates |
+| time | Web `latency`/`fcp`/`settled`; Native `latency` and pipeline startup where available | real input; harness-specific boundaries are stored on every record |
 | dual-thread | `btsCpu` / `mtsCpu` | CDP sampling profiler attached per realm (page + `lynx-bg` worker) |
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
 
 Cases: the krausest superset (`create` 1k/10k, `append1k`, `update10th`, `select`, `swap`,
 `remove`, `clear`) + storms (50 update / 30 select sequential ticks) at 1k–30k scales +
-startup FCP at 0/1k/10k/30k pre-rendered rows. See
+startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
+post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these
+are never ranked as FCP. See
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the measurement rules and
 [docs/DESIGN.md](docs/DESIGN.md) for the architecture.
 

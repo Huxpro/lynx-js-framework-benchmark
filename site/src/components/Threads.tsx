@@ -3,14 +3,13 @@
 // per-endpoint breakdown; plus the static MTS/BTS bundle-section split.
 import { useMemo, useState } from 'react';
 
+import { useBenchmarkData } from '../data-context';
 import {
   ENTRIES,
   entryColor,
   fmtBytes,
   fmtCount,
   fmtMs,
-  one,
-  select,
   shortLabel,
 } from '../data';
 import { useTooltip } from '../hooks';
@@ -34,6 +33,7 @@ function GroupedTimeBars({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { one } = useBenchmarkData();
   const { setTip, onMove, tipNode } = useTooltip();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => {
     const lat = one({ suite: 'table', harness, entry: e.id, workload, scale, metric: 'latency' });
@@ -120,6 +120,7 @@ function WireBars({
   metric: 'Bytes' | 'Msgs';
   fmt: (v: number | null) => string;
 }) {
+  const { one } = useBenchmarkData();
   const { setTip, onMove, tipNode } = useTooltip();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => {
     const down = one({ suite: 'table', harness, entry: e.id, workload, scale, metric: `wireToMts${metric}` });
@@ -209,6 +210,7 @@ export function ThreadsPage({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { select } = useBenchmarkData();
   const available = useMemo(
     () => THREAD_WORKLOADS.flatMap((workload) => [...new Set(
       select({ suite: 'table', harness, workload, metric: 'latency' }).map((record) => record.scale),
@@ -218,7 +220,7 @@ export function ThreadsPage({
       scale,
       label: `${workload} @${scaleLabel(scale)}`,
     }))),
-    [harness],
+    [harness, select],
   );
   const [caseKey, setCaseKey] = useState<string | null>(null);
   const active = available.find((c) => c.key === caseKey) ?? available[0];
@@ -286,6 +288,7 @@ function MemoryCard({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { one } = useBenchmarkData();
   const { setTip, onMove, tipNode } = useTooltip();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => ({
     id: e.id,
@@ -354,6 +357,7 @@ function EndpointTable({
   harness: string;
   selected: Set<string>;
 }) {
+  const { one } = useBenchmarkData();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => {
     const down = one({ suite: 'table', harness, entry: e.id, workload, scale, metric: 'wireToMtsBytes' });
     const up = one({ suite: 'table', harness, entry: e.id, workload, scale, metric: 'wireToBtsBytes' });
@@ -404,6 +408,7 @@ function EndpointTable({
 }
 
 function BundleSections({ theme, selected }: { theme: 'light' | 'dark'; selected: Set<string> }) {
+  const { one } = useBenchmarkData();
   const { setTip, onMove, tipNode } = useTooltip();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => ({
     id: e.id,

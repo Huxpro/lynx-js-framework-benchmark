@@ -1,0 +1,7030 @@
+{
+ "schemaVersion": 2,
+ "meta": {
+  "generatedAt": "2026-08-16T16:43:55.954Z",
+  "machine": {
+   "id": "lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa",
+   "platform": "android",
+   "osVersion": "10",
+   "cpuModel": "linaro",
+   "cores": 8,
+   "node": null,
+   "deviceModel": "ByteDance aries_10",
+   "app": "LynxExplorer",
+   "appVersion": "1.0",
+   "explorerPackage": {
+    "versionName": "1.0",
+    "versionCode": 1
+   },
+   "debugRouterVersion": "0.0.1",
+   "lynxSdkVersion": "0.0.1",
+   "agentLynxVersion": "0.14.4",
+   "devtoolTransport": "direct",
+   "debugRouterSettleMs": 100,
+   "explorerRecycleEveryPages": 1,
+   "maxBatteryTemperatureC": 40,
+   "longWorkloadTimeoutMs": 30000,
+   "transientAttempts": 1,
+   "thermalGateTimeoutMs": 300000,
+   "explorerReconnectTimeoutMs": 90000,
+   "harnessConfigId": "ce0729fa",
+   "octaneTriggerMode": "tap",
+   "deviceLeaseId": "0582f99c1abc",
+   "deviceLeaseIdentitySource": "explicit-env",
+   "deviceClockOffsetMs": -5357.5,
+   "deviceClockCalibrationRttMs": 23,
+   "thermalStart": {
+    "capturedAt": "2026-08-16T16:43:57.039Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   },
+   "transientRecoveries": [],
+   "thermalEnd": {
+    "capturedAt": "2026-08-16T17:03:53.429Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   }
+  },
+  "calibration": null,
+  "harness": "native",
+  "adapter": "/data00/home/xuan.huang/github/lynx-js-framework-benchmark/packages/runner/adapters/lynx-sandbox-android.mjs",
+  "argv": [
+   "run",
+   "--harness",
+   "native",
+   "--adapter",
+   "packages/runner/adapters/lynx-sandbox-android.mjs",
+   "--entry",
+   "octane,react,vue-vapor,vue-vapor-ifr,vue-vdom,vue-vdom-ifr-et",
+   "--reps",
+   "1",
+   "--startup-reps",
+   "1",
+   "--label",
+   "2026-08-16-native-six-framework-final-bounded",
+   "--no-collect"
+  ],
+  "checkpoint": true,
+  "entryCommits": {
+   "octane": "0fc84da02fd05403ac5e36d2aff631b31168d5ac",
+   "react": "28f7acbab990b3b574f04944e0d21c769719cc68",
+   "vue-vapor": "28f7acbab990b3b574f04944e0d21c769719cc68",
+   "vue-vapor-ifr": "28f7acbab990b3b574f04944e0d21c769719cc68",
+   "vue-vdom": "28f7acbab990b3b574f04944e0d21c769719cc68",
+   "vue-vdom-ifr-et": "28f7acbab990b3b574f04944e0d21c769719cc68"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    12130
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898632276,
+     "commitAckMs": 1786898644387,
+     "firstFrameMs": 1786898644390,
+     "endMs": 1786898644406,
+     "latencyMs": 12130,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "big brown burger",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898632276,
+    "commitAckMs": 1786898644387,
+    "firstFrameMs": 1786898644390,
+    "endMs": 1786898644406,
+    "latencyMs": 12130,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "big brown burger",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 12130,
+   "mean": 12130,
+   "std": 0,
+   "min": 12130,
+   "max": 12130,
+   "p95": 12130,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    17086
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898721848,
+     "commitAckMs": 1786898738911,
+     "firstFrameMs": 1786898738917,
+     "endMs": 1786898738934,
+     "latencyMs": 17086,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1001,
+      "secondId": 1002,
+      "thirdId": 1003,
+      "row998Id": 1999,
+      "firstLabel": "helpful blue burger",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898721848,
+    "commitAckMs": 1786898738911,
+    "firstFrameMs": 1786898738917,
+    "endMs": 1786898738934,
+    "latencyMs": 17086,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1001,
+     "secondId": 1002,
+     "thirdId": 1003,
+     "row998Id": 1999,
+     "firstLabel": "helpful blue burger",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 17086,
+   "mean": 17086,
+   "std": 0,
+   "min": 17086,
+   "max": 17086,
+   "p95": 17086,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "append1k",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing append1k.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 1000,
+       "firstId": 1,
+       "secondId": 2,
+       "thirdId": 3,
+       "row998Id": 999,
+       "firstLabel": "helpful brown car",
+       "selectedId": null
+      },
+      "mainLabelNodeCount": 2000,
+      "timingEvents": [],
+      "errors": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    535
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898804407,
+     "commitAckMs": 1786898804917,
+     "firstFrameMs": 1786898804925,
+     "endMs": 1786898804942,
+     "latencyMs": 535,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "plain purple pony !!!",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898804407,
+    "commitAckMs": 1786898804917,
+    "firstFrameMs": 1786898804925,
+    "endMs": 1786898804942,
+    "latencyMs": 535,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "plain purple pony !!!",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 535,
+   "mean": 535,
+   "std": 0,
+   "min": 535,
+   "max": 535,
+   "p95": 535,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    456
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898819488,
+     "commitAckMs": 1786898819915,
+     "firstFrameMs": 1786898819927,
+     "endMs": 1786898819944,
+     "latencyMs": 456,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "short white cookie",
+      "selectedId": 2
+     }
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898819488,
+    "commitAckMs": 1786898819915,
+    "firstFrameMs": 1786898819927,
+    "endMs": 1786898819944,
+    "latencyMs": 456,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "short white cookie",
+     "selectedId": 2
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 456,
+   "mean": 456,
+   "std": 0,
+   "min": 456,
+   "max": 456,
+   "p95": 456,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    552
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898833893,
+     "commitAckMs": 1786898834420,
+     "firstFrameMs": 1786898834429,
+     "endMs": 1786898834445,
+     "latencyMs": 552,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 999,
+      "thirdId": 3,
+      "row998Id": 2,
+      "firstLabel": "mushy green mouse",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898833893,
+    "commitAckMs": 1786898834420,
+    "firstFrameMs": 1786898834429,
+    "endMs": 1786898834445,
+    "latencyMs": 552,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 999,
+     "thirdId": 3,
+     "row998Id": 2,
+     "firstLabel": "mushy green mouse",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 552,
+   "mean": 552,
+   "std": 0,
+   "min": 552,
+   "max": 552,
+   "p95": 552,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    571
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898848443,
+     "commitAckMs": 1786898848982,
+     "firstFrameMs": 1786898848997,
+     "endMs": 1786898849014,
+     "latencyMs": 571,
+     "snapshot": {
+      "rowCount": 999,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 4,
+      "row998Id": 1000,
+      "firstLabel": "expensive purple house",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898848443,
+    "commitAckMs": 1786898848982,
+    "firstFrameMs": 1786898848997,
+    "endMs": 1786898849014,
+    "latencyMs": 571,
+    "snapshot": {
+     "rowCount": 999,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 4,
+     "row998Id": 1000,
+     "firstLabel": "expensive purple house",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 571,
+   "mean": 571,
+   "std": 0,
+   "min": 571,
+   "max": 571,
+   "p95": 571,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    24871
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898862980,
+     "commitAckMs": 1786898887826,
+     "firstFrameMs": 1786898887835,
+     "endMs": 1786898887851,
+     "latencyMs": 24871,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "bench 50",
+      "selectedId": null
+     }
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898862980,
+    "commitAckMs": 1786898887826,
+    "firstFrameMs": 1786898887835,
+    "endMs": 1786898887851,
+    "latencyMs": 24871,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "bench 50",
+     "selectedId": null
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 24871,
+   "mean": 24871,
+   "std": 0,
+   "min": 24871,
+   "max": 24871,
+   "p95": 24871,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    13218
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "source": "native-tap",
+     "boundary": "native-input-handler-to-second-native-frame",
+     "commitGate": "octane-root.flushTransport",
+     "startMs": 1786898901853,
+     "commitAckMs": 1786898915042,
+     "firstFrameMs": 1786898915055,
+     "endMs": 1786898915071,
+     "latencyMs": 13218,
+     "snapshot": {
+      "rowCount": 1000,
+      "firstId": 1,
+      "secondId": 2,
+      "thirdId": 3,
+      "row998Id": 999,
+      "firstLabel": "adorable pink sandwich",
+      "selectedId": 1
+     }
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "source": "native-tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "commitGate": "octane-root.flushTransport",
+    "startMs": 1786898901853,
+    "commitAckMs": 1786898915042,
+    "firstFrameMs": 1786898915055,
+    "endMs": 1786898915071,
+    "latencyMs": 13218,
+    "snapshot": {
+     "rowCount": 1000,
+     "firstId": 1,
+     "secondId": 2,
+     "thirdId": 3,
+     "row998Id": 999,
+     "firstLabel": "adorable pink sandwich",
+     "selectedId": 1
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 13218,
+   "mean": 13218,
+   "std": 0,
+   "min": 13218,
+   "max": 13218,
+   "p95": 13218,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "unreachable-prestate",
+     "entry": "octane",
+     "workload": "create",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "phase": "operation",
+     "triggerMode": "tap",
+     "message": "Error: timeout waiting for Native timing create.",
+     "evidence": {
+      "backgroundSnapshot": {
+       "rowCount": 0,
+       "firstId": null,
+       "secondId": null,
+       "thirdId": null,
+       "row998Id": null,
+       "firstLabel": null,
+       "selectedId": null
+      },
+      "mainLabelNodeCount": null,
+      "timingEvents": [],
+      "errors": [
+       "main DOM row search: Error: CDP DOM.performSearch failed: Error: timeout waiting 30000ms for DOM.performSearch"
+      ]
+     },
+     "originatingWorkload": "create"
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    184.5
+   ],
+   "detailSamples": [
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786898916556.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786898916699,
+      "commitAckMs": 1786898916741,
+      "firstFrameMs": 1786898916755,
+      "secondFrameMs": 1786898916772
+     }
+    }
+   ],
+   "detail": {
+    "kind": "octane-commit-fallback",
+    "openTime": 1786898916556.5,
+    "timingInfo": null,
+    "startup": {
+     "moduleStartMs": 1786898916699,
+     "commitAckMs": 1786898916741,
+     "firstFrameMs": 1786898916755,
+     "secondFrameMs": 1786898916772
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 184.5,
+   "mean": 184.5,
+   "std": 0,
+   "min": 184.5,
+   "max": 184.5,
+   "p95": 184.5,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    215.5
+   ],
+   "detailSamples": [
+    {
+     "kind": "octane-commit-fallback",
+     "openTime": 1786898916556.5,
+     "timingInfo": null,
+     "startup": {
+      "moduleStartMs": 1786898916699,
+      "commitAckMs": 1786898916741,
+      "firstFrameMs": 1786898916755,
+      "secondFrameMs": 1786898916772
+     }
+    }
+   ],
+   "detail": {
+    "kind": "octane-commit-fallback",
+    "openTime": 1786898916556.5,
+    "timingInfo": null,
+    "startup": {
+     "moduleStartMs": 1786898916699,
+     "commitAckMs": 1786898916741,
+     "firstFrameMs": 1786898916755,
+     "secondFrameMs": 1786898916772
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 215.5,
+   "mean": 215.5,
+   "std": 0,
+   "min": 215.5,
+   "max": 215.5,
+   "p95": 215.5,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:49:14.063Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:49:14.063Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Runtime.evaluate failed: Error: timeout waiting 10ms for Runtime.evaluate",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:49:45.940Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Runtime.evaluate failed: Error: timeout waiting 10ms for Runtime.evaluate",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:49:45.940Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "octaneCommitAck",
+   "boundary": "native-open-request-to-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:50:17.960Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "octane",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "octaneSecondFrame",
+   "boundary": "native-open-request-to-second-frame-after-octane-transport-ack",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "timeout",
+     "entry": "octane",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "cell",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:50:17.960Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": null
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    202
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899014481,
+     "endMs": 1786899014683,
+     "latencyMs": 202
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899014481,
+    "endMs": 1786899014683,
+    "latencyMs": 202
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 202,
+   "mean": 202,
+   "std": 0,
+   "min": 202,
+   "max": 202,
+   "p95": 202,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1905
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899016662,
+     "endMs": 1786899018567,
+     "latencyMs": 1905
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899016662,
+    "endMs": 1786899018567,
+    "latencyMs": 1905
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 1905,
+   "mean": 1905,
+   "std": 0,
+   "min": 1905,
+   "max": 1905,
+   "p95": 1905,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    817
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899021767,
+     "endMs": 1786899022584,
+     "latencyMs": 817
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899021767,
+    "endMs": 1786899022584,
+    "latencyMs": 817
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 817,
+   "mean": 817,
+   "std": 0,
+   "min": 817,
+   "max": 817,
+   "p95": 817,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    335
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "startMs": 1786899025849,
+     "endMs": 1786899026184,
+     "latencyMs": 335
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "startMs": 1786899025849,
+    "endMs": 1786899026184,
+    "latencyMs": 335
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 335,
+   "mean": 335,
+   "std": 0,
+   "min": 335,
+   "max": 335,
+   "p95": 335,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    147
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "startMs": 1786899029454,
+     "endMs": 1786899029601,
+     "latencyMs": 147
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "startMs": 1786899029454,
+    "endMs": 1786899029601,
+    "latencyMs": 147
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 147,
+   "mean": 147,
+   "std": 0,
+   "min": 147,
+   "max": 147,
+   "p95": 147,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    164
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "startMs": 1786899063141,
+     "endMs": 1786899063305,
+     "latencyMs": 164
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "startMs": 1786899063141,
+    "endMs": 1786899063305,
+    "latencyMs": 164
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 164,
+   "mean": 164,
+   "std": 0,
+   "min": 164,
+   "max": 164,
+   "p95": 164,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "select",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    154
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "startMs": 1786899096655,
+     "endMs": 1786899096809,
+     "latencyMs": 154
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "startMs": 1786899096655,
+    "endMs": 1786899096809,
+    "latencyMs": 154
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 154,
+   "mean": 154,
+   "std": 0,
+   "min": 154,
+   "max": 154,
+   "p95": 154,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    149
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "startMs": 1786899099994,
+     "endMs": 1786899100143,
+     "latencyMs": 149
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "startMs": 1786899099994,
+    "endMs": 1786899100143,
+    "latencyMs": 149
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 149,
+   "mean": 149,
+   "std": 0,
+   "min": 149,
+   "max": 149,
+   "p95": 149,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "clear",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    7932
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "startMs": 1786899133599,
+     "endMs": 1786899141531,
+     "latencyMs": 7932
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "startMs": 1786899133599,
+    "endMs": 1786899141531,
+    "latencyMs": 7932
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 7932,
+   "mean": 7932,
+   "std": 0,
+   "min": 7932,
+   "max": 7932,
+   "p95": 7932,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "updateStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    4594
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "startMs": 1786899174775,
+     "endMs": 1786899179369,
+     "latencyMs": 4594
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "startMs": 1786899174775,
+    "endMs": 1786899179369,
+    "latencyMs": 4594
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 4594,
+   "mean": 4594,
+   "std": 0,
+   "min": 4594,
+   "max": 4594,
+   "p95": 4594,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "selectStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    62.585
+   ],
+   "detailSamples": [
+    {
+     "kind": "pipeline",
+     "pipeline": {
+      "containerInitEnd": 1786899211850,
+      "containerInitStart": 1786899211846,
+      "createLynxEnd": 1786899211852,
+      "createLynxStart": 1786899211851,
+      "create_vdom_end": 1786899211897.234,
+      "create_vdom_start": 1786899211894.36,
+      "entryType": "pipeline",
+      "fcp": {
+       "duration": 55.585,
+       "endTimestamp": 1786899211908.585,
+       "endTimestampName": "paintEnd",
+       "name": "fcp",
+       "startTimestamp": 1786899211853,
+       "startTimestampName": "prepareTemplateStart"
+      },
+      "ffiEnd": 1786899211891.925,
+      "ffiStart": 1786899211891.809,
+      "frameworkRenderingTiming": {
+       "dataProcessorEnd": 1786899211894.295,
+       "dataProcessorStart": 1786899211894.278,
+       "setInitDataEnd": 1786899211894.297,
+       "setInitDataStart": 1786899211894.295,
+       "vmExecuteEnd": 1786899211894.272,
+       "vmExecuteStart": 1786899211893.329
+      },
+      "hostPlatformTiming": {
+       "drawEnd": 1786899211908.581,
+       "drawStart": 1786899211907.051,
+       "hostPlatformType": "Android",
+       "layoutEnd": 1786899211906.996,
+       "layoutStart": 1786899211906.891,
+       "measureEnd": 1786899211906.864,
+       "measureStart": 1786899211906.746
+      },
+      "instanceId": 1,
+      "layoutEnd": 1786899211901.344,
+      "layoutStart": 1786899211899.092,
+      "layoutUiOperationExecuteEnd": 1786899211902.433,
+      "layoutUiOperationExecuteStart": 1786899211902.048,
+      "loadBackgroundEnd": 1786899211913.515,
+      "loadBackgroundStart": 1786899211894.51,
+      "loadBundleEnd": 1786899211902.765,
+      "loadBundleStart": 1786899211890.986,
+      "loadCoreEnd": 1786899211867.804,
+      "loadCoreStart": 1786899211852.402,
+      "lynxFcp": {
+       "duration": 17.599,
+       "endTimestamp": 1786899211908.585,
+       "endTimestampName": "paintEnd",
+       "name": "lynxFcp",
+       "startTimestamp": 1786899211890.986,
+       "startTimestampName": "loadBundleStart"
+      },
+      "mtsRenderEnd": 1786899211897.237,
+      "mtsRenderStart": 1786899211893.325,
+      "name": "loadBundle",
+      "openTime": 1786899211846,
+      "paintEnd": 1786899211908.585,
+      "paintingUiOperationExecuteEnd": 1786899211901.983,
+      "paintingUiOperationExecuteStart": 1786899211901.401,
+      "parseEnd": 1786899211893.323,
+      "parseStart": 1786899211891.98,
+      "pipelineEnd": 1786899211908.585,
+      "pipelineStart": 1786899211890.986,
+      "prepareTemplateEnd": 1786899211853,
+      "prepareTemplateStart": 1786899211853,
+      "resolveEnd": 1786899211899.051,
+      "resolveStart": 1786899211897.239,
+      "totalFcp": {
+       "duration": 62.585,
+       "endTimestamp": 1786899211908.585,
+       "endTimestampName": "paintEnd",
+       "name": "totalFcp",
+       "startTimestamp": 1786899211846,
+       "startTimestampName": "openTime"
+      }
+     }
+    }
+   ],
+   "detail": {
+    "kind": "pipeline",
+    "pipeline": {
+     "containerInitEnd": 1786899211850,
+     "containerInitStart": 1786899211846,
+     "createLynxEnd": 1786899211852,
+     "createLynxStart": 1786899211851,
+     "create_vdom_end": 1786899211897.234,
+     "create_vdom_start": 1786899211894.36,
+     "entryType": "pipeline",
+     "fcp": {
+      "duration": 55.585,
+      "endTimestamp": 1786899211908.585,
+      "endTimestampName": "paintEnd",
+      "name": "fcp",
+      "startTimestamp": 1786899211853,
+      "startTimestampName": "prepareTemplateStart"
+     },
+     "ffiEnd": 1786899211891.925,
+     "ffiStart": 1786899211891.809,
+     "frameworkRenderingTiming": {
+      "dataProcessorEnd": 1786899211894.295,
+      "dataProcessorStart": 1786899211894.278,
+      "setInitDataEnd": 1786899211894.297,
+      "setInitDataStart": 1786899211894.295,
+      "vmExecuteEnd": 1786899211894.272,
+      "vmExecuteStart": 1786899211893.329
+     },
+     "hostPlatformTiming": {
+      "drawEnd": 1786899211908.581,
+      "drawStart": 1786899211907.051,
+      "hostPlatformType": "Android",
+      "layoutEnd": 1786899211906.996,
+      "layoutStart": 1786899211906.891,
+      "measureEnd": 1786899211906.864,
+      "measureStart": 1786899211906.746
+     },
+     "instanceId": 1,
+     "layoutEnd": 1786899211901.344,
+     "layoutStart": 1786899211899.092,
+     "layoutUiOperationExecuteEnd": 1786899211902.433,
+     "layoutUiOperationExecuteStart": 1786899211902.048,
+     "loadBackgroundEnd": 1786899211913.515,
+     "loadBackgroundStart": 1786899211894.51,
+     "loadBundleEnd": 1786899211902.765,
+     "loadBundleStart": 1786899211890.986,
+     "loadCoreEnd": 1786899211867.804,
+     "loadCoreStart": 1786899211852.402,
+     "lynxFcp": {
+      "duration": 17.599,
+      "endTimestamp": 1786899211908.585,
+      "endTimestampName": "paintEnd",
+      "name": "lynxFcp",
+      "startTimestamp": 1786899211890.986,
+      "startTimestampName": "loadBundleStart"
+     },
+     "mtsRenderEnd": 1786899211897.237,
+     "mtsRenderStart": 1786899211893.325,
+     "name": "loadBundle",
+     "openTime": 1786899211846,
+     "paintEnd": 1786899211908.585,
+     "paintingUiOperationExecuteEnd": 1786899211901.983,
+     "paintingUiOperationExecuteStart": 1786899211901.401,
+     "parseEnd": 1786899211893.323,
+     "parseStart": 1786899211891.98,
+     "pipelineEnd": 1786899211908.585,
+     "pipelineStart": 1786899211890.986,
+     "prepareTemplateEnd": 1786899211853,
+     "prepareTemplateStart": 1786899211853,
+     "resolveEnd": 1786899211899.051,
+     "resolveStart": 1786899211897.239,
+     "totalFcp": {
+      "duration": 62.585,
+      "endTimestamp": 1786899211908.585,
+      "endTimestampName": "paintEnd",
+      "name": "totalFcp",
+      "startTimestamp": 1786899211846,
+      "startTimestampName": "openTime"
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62.585,
+   "mean": 62.585,
+   "std": 0,
+   "min": 62.585,
+   "max": 62.585,
+   "p95": 62.585,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    62.5849609375
+   ],
+   "detailSamples": [
+    {
+     "kind": "pipeline",
+     "pipeline": {
+      "containerInitEnd": 1786899211850,
+      "containerInitStart": 1786899211846,
+      "createLynxEnd": 1786899211852,
+      "createLynxStart": 1786899211851,
+      "create_vdom_end": 1786899211897.234,
+      "create_vdom_start": 1786899211894.36,
+      "entryType": "pipeline",
+      "fcp": {
+       "duration": 55.585,
+       "endTimestamp": 1786899211908.585,
+       "endTimestampName": "paintEnd",
+       "name": "fcp",
+       "startTimestamp": 1786899211853,
+       "startTimestampName": "prepareTemplateStart"
+      },
+      "ffiEnd": 1786899211891.925,
+      "ffiStart": 1786899211891.809,
+      "frameworkRenderingTiming": {
+       "dataProcessorEnd": 1786899211894.295,
+       "dataProcessorStart": 1786899211894.278,
+       "setInitDataEnd": 1786899211894.297,
+       "setInitDataStart": 1786899211894.295,
+       "vmExecuteEnd": 1786899211894.272,
+       "vmExecuteStart": 1786899211893.329
+      },
+      "hostPlatformTiming": {
+       "drawEnd": 1786899211908.581,
+       "drawStart": 1786899211907.051,
+       "hostPlatformType": "Android",
+       "layoutEnd": 1786899211906.996,
+       "layoutStart": 1786899211906.891,
+       "measureEnd": 1786899211906.864,
+       "measureStart": 1786899211906.746
+      },
+      "instanceId": 1,
+      "layoutEnd": 1786899211901.344,
+      "layoutStart": 1786899211899.092,
+      "layoutUiOperationExecuteEnd": 1786899211902.433,
+      "layoutUiOperationExecuteStart": 1786899211902.048,
+      "loadBackgroundEnd": 1786899211913.515,
+      "loadBackgroundStart": 1786899211894.51,
+      "loadBundleEnd": 1786899211902.765,
+      "loadBundleStart": 1786899211890.986,
+      "loadCoreEnd": 1786899211867.804,
+      "loadCoreStart": 1786899211852.402,
+      "lynxFcp": {
+       "duration": 17.599,
+       "endTimestamp": 1786899211908.585,
+       "endTimestampName": "paintEnd",
+       "name": "lynxFcp",
+       "startTimestamp": 1786899211890.986,
+       "startTimestampName": "loadBundleStart"
+      },
+      "mtsRenderEnd": 1786899211897.237,
+      "mtsRenderStart": 1786899211893.325,
+      "name": "loadBundle",
+      "openTime": 1786899211846,
+      "paintEnd": 1786899211908.585,
+      "paintingUiOperationExecuteEnd": 1786899211901.983,
+      "paintingUiOperationExecuteStart": 1786899211901.401,
+      "parseEnd": 1786899211893.323,
+      "parseStart": 1786899211891.98,
+      "pipelineEnd": 1786899211908.585,
+      "pipelineStart": 1786899211890.986,
+      "prepareTemplateEnd": 1786899211853,
+      "prepareTemplateStart": 1786899211853,
+      "resolveEnd": 1786899211899.051,
+      "resolveStart": 1786899211897.239,
+      "totalFcp": {
+       "duration": 62.585,
+       "endTimestamp": 1786899211908.585,
+       "endTimestampName": "paintEnd",
+       "name": "totalFcp",
+       "startTimestamp": 1786899211846,
+       "startTimestampName": "openTime"
+      }
+     }
+    }
+   ],
+   "detail": {
+    "kind": "pipeline",
+    "pipeline": {
+     "containerInitEnd": 1786899211850,
+     "containerInitStart": 1786899211846,
+     "createLynxEnd": 1786899211852,
+     "createLynxStart": 1786899211851,
+     "create_vdom_end": 1786899211897.234,
+     "create_vdom_start": 1786899211894.36,
+     "entryType": "pipeline",
+     "fcp": {
+      "duration": 55.585,
+      "endTimestamp": 1786899211908.585,
+      "endTimestampName": "paintEnd",
+      "name": "fcp",
+      "startTimestamp": 1786899211853,
+      "startTimestampName": "prepareTemplateStart"
+     },
+     "ffiEnd": 1786899211891.925,
+     "ffiStart": 1786899211891.809,
+     "frameworkRenderingTiming": {
+      "dataProcessorEnd": 1786899211894.295,
+      "dataProcessorStart": 1786899211894.278,
+      "setInitDataEnd": 1786899211894.297,
+      "setInitDataStart": 1786899211894.295,
+      "vmExecuteEnd": 1786899211894.272,
+      "vmExecuteStart": 1786899211893.329
+     },
+     "hostPlatformTiming": {
+      "drawEnd": 1786899211908.581,
+      "drawStart": 1786899211907.051,
+      "hostPlatformType": "Android",
+      "layoutEnd": 1786899211906.996,
+      "layoutStart": 1786899211906.891,
+      "measureEnd": 1786899211906.864,
+      "measureStart": 1786899211906.746
+     },
+     "instanceId": 1,
+     "layoutEnd": 1786899211901.344,
+     "layoutStart": 1786899211899.092,
+     "layoutUiOperationExecuteEnd": 1786899211902.433,
+     "layoutUiOperationExecuteStart": 1786899211902.048,
+     "loadBackgroundEnd": 1786899211913.515,
+     "loadBackgroundStart": 1786899211894.51,
+     "loadBundleEnd": 1786899211902.765,
+     "loadBundleStart": 1786899211890.986,
+     "loadCoreEnd": 1786899211867.804,
+     "loadCoreStart": 1786899211852.402,
+     "lynxFcp": {
+      "duration": 17.599,
+      "endTimestamp": 1786899211908.585,
+      "endTimestampName": "paintEnd",
+      "name": "lynxFcp",
+      "startTimestamp": 1786899211890.986,
+      "startTimestampName": "loadBundleStart"
+     },
+     "mtsRenderEnd": 1786899211897.237,
+     "mtsRenderStart": 1786899211893.325,
+     "name": "loadBundle",
+     "openTime": 1786899211846,
+     "paintEnd": 1786899211908.585,
+     "paintingUiOperationExecuteEnd": 1786899211901.983,
+     "paintingUiOperationExecuteStart": 1786899211901.401,
+     "parseEnd": 1786899211893.323,
+     "parseStart": 1786899211891.98,
+     "pipelineEnd": 1786899211908.585,
+     "pipelineStart": 1786899211890.986,
+     "prepareTemplateEnd": 1786899211853,
+     "prepareTemplateStart": 1786899211853,
+     "resolveEnd": 1786899211899.051,
+     "resolveStart": 1786899211897.239,
+     "totalFcp": {
+      "duration": 62.585,
+      "endTimestamp": 1786899211908.585,
+      "endTimestampName": "paintEnd",
+      "name": "totalFcp",
+      "startTimestamp": 1786899211846,
+      "startTimestampName": "openTime"
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62.5849609375,
+   "mean": 62.5849609375,
+   "std": 0,
+   "min": 62.5849609375,
+   "max": 62.5849609375,
+   "p95": 62.5849609375,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1390.796
+   ],
+   "detailSamples": [
+    {
+     "kind": "pipeline",
+     "pipeline": {
+      "containerInitEnd": 1786899213701,
+      "containerInitStart": 1786899213697,
+      "createLynxEnd": 1786899213703,
+      "createLynxStart": 1786899213701,
+      "create_vdom_end": 1786899214613.342,
+      "create_vdom_start": 1786899213758.209,
+      "entryType": "pipeline",
+      "fcp": {
+       "duration": 1384.796,
+       "endTimestamp": 1786899215087.796,
+       "endTimestampName": "paintEnd",
+       "name": "fcp",
+       "startTimestamp": 1786899213703,
+       "startTimestampName": "prepareTemplateStart"
+      },
+      "ffiEnd": 1786899213742.461,
+      "ffiStart": 1786899213742.353,
+      "frameworkRenderingTiming": {
+       "dataProcessorEnd": 1786899213758.137,
+       "dataProcessorStart": 1786899213758.114,
+       "setInitDataEnd": 1786899213758.139,
+       "setInitDataStart": 1786899213758.137,
+       "vmExecuteEnd": 1786899213758.11,
+       "vmExecuteStart": 1786899213743.903
+      },
+      "hostPlatformTiming": {
+       "drawEnd": 1786899215087.789,
+       "drawStart": 1786899215051.66,
+       "hostPlatformType": "Android",
+       "layoutEnd": 1786899215051.56,
+       "layoutStart": 1786899215047.684,
+       "measureEnd": 1786899215047.644,
+       "measureStart": 1786899215045.601
+      },
+      "instanceId": 1,
+      "layoutEnd": 1786899214994.21,
+      "layoutStart": 1786899214875.66,
+      "layoutUiOperationExecuteEnd": 1786899215042.4,
+      "layoutUiOperationExecuteStart": 1786899215024.229,
+      "loadBackgroundEnd": 1786899213969.205,
+      "loadBackgroundStart": 1786899213758.265,
+      "loadBundleEnd": 1786899215044.235,
+      "loadBundleStart": 1786899213741.678,
+      "loadCoreEnd": 1786899213716.258,
+      "loadCoreStart": 1786899213702.999,
+      "lynxFcp": {
+       "duration": 1346.118,
+       "endTimestamp": 1786899215087.796,
+       "endTimestampName": "paintEnd",
+       "name": "lynxFcp",
+       "startTimestamp": 1786899213741.678,
+       "startTimestampName": "loadBundleStart"
+      },
+      "mtsRenderEnd": 1786899214613.346,
+      "mtsRenderStart": 1786899213743.899,
+      "name": "loadBundle",
+      "openTime": 1786899213697,
+      "paintEnd": 1786899215087.796,
+      "paintingUiOperationExecuteEnd": 1786899215019.902,
+      "paintingUiOperationExecuteStart": 1786899214999.261,
+      "parseEnd": 1786899213743.897,
+      "parseStart": 1786899213742.516,
+      "pipelineEnd": 1786899215087.796,
+      "pipelineStart": 1786899213741.678,
+      "prepareTemplateEnd": 1786899213703,
+      "prepareTemplateStart": 1786899213703,
+      "resolveEnd": 1786899214875.577,
+      "resolveStart": 1786899214613.35,
+      "totalFcp": {
+       "duration": 1390.796,
+       "endTimestamp": 1786899215087.796,
+       "endTimestampName": "paintEnd",
+       "name": "totalFcp",
+       "startTimestamp": 1786899213697,
+       "startTimestampName": "openTime"
+      }
+     }
+    }
+   ],
+   "detail": {
+    "kind": "pipeline",
+    "pipeline": {
+     "containerInitEnd": 1786899213701,
+     "containerInitStart": 1786899213697,
+     "createLynxEnd": 1786899213703,
+     "createLynxStart": 1786899213701,
+     "create_vdom_end": 1786899214613.342,
+     "create_vdom_start": 1786899213758.209,
+     "entryType": "pipeline",
+     "fcp": {
+      "duration": 1384.796,
+      "endTimestamp": 1786899215087.796,
+      "endTimestampName": "paintEnd",
+      "name": "fcp",
+      "startTimestamp": 1786899213703,
+      "startTimestampName": "prepareTemplateStart"
+     },
+     "ffiEnd": 1786899213742.461,
+     "ffiStart": 1786899213742.353,
+     "frameworkRenderingTiming": {
+      "dataProcessorEnd": 1786899213758.137,
+      "dataProcessorStart": 1786899213758.114,
+      "setInitDataEnd": 1786899213758.139,
+      "setInitDataStart": 1786899213758.137,
+      "vmExecuteEnd": 1786899213758.11,
+      "vmExecuteStart": 1786899213743.903
+     },
+     "hostPlatformTiming": {
+      "drawEnd": 1786899215087.789,
+      "drawStart": 1786899215051.66,
+      "hostPlatformType": "Android",
+      "layoutEnd": 1786899215051.56,
+      "layoutStart": 1786899215047.684,
+      "measureEnd": 1786899215047.644,
+      "measureStart": 1786899215045.601
+     },
+     "instanceId": 1,
+     "layoutEnd": 1786899214994.21,
+     "layoutStart": 1786899214875.66,
+     "layoutUiOperationExecuteEnd": 1786899215042.4,
+     "layoutUiOperationExecuteStart": 1786899215024.229,
+     "loadBackgroundEnd": 1786899213969.205,
+     "loadBackgroundStart": 1786899213758.265,
+     "loadBundleEnd": 1786899215044.235,
+     "loadBundleStart": 1786899213741.678,
+     "loadCoreEnd": 1786899213716.258,
+     "loadCoreStart": 1786899213702.999,
+     "lynxFcp": {
+      "duration": 1346.118,
+      "endTimestamp": 1786899215087.796,
+      "endTimestampName": "paintEnd",
+      "name": "lynxFcp",
+      "startTimestamp": 1786899213741.678,
+      "startTimestampName": "loadBundleStart"
+     },
+     "mtsRenderEnd": 1786899214613.346,
+     "mtsRenderStart": 1786899213743.899,
+     "name": "loadBundle",
+     "openTime": 1786899213697,
+     "paintEnd": 1786899215087.796,
+     "paintingUiOperationExecuteEnd": 1786899215019.902,
+     "paintingUiOperationExecuteStart": 1786899214999.261,
+     "parseEnd": 1786899213743.897,
+     "parseStart": 1786899213742.516,
+     "pipelineEnd": 1786899215087.796,
+     "pipelineStart": 1786899213741.678,
+     "prepareTemplateEnd": 1786899213703,
+     "prepareTemplateStart": 1786899213703,
+     "resolveEnd": 1786899214875.577,
+     "resolveStart": 1786899214613.35,
+     "totalFcp": {
+      "duration": 1390.796,
+      "endTimestamp": 1786899215087.796,
+      "endTimestampName": "paintEnd",
+      "name": "totalFcp",
+      "startTimestamp": 1786899213697,
+      "startTimestampName": "openTime"
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 1390.796,
+   "mean": 1390.796,
+   "std": 0,
+   "min": 1390.796,
+   "max": 1390.796,
+   "p95": 1390.796,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1390.7958984375
+   ],
+   "detailSamples": [
+    {
+     "kind": "pipeline",
+     "pipeline": {
+      "containerInitEnd": 1786899213701,
+      "containerInitStart": 1786899213697,
+      "createLynxEnd": 1786899213703,
+      "createLynxStart": 1786899213701,
+      "create_vdom_end": 1786899214613.342,
+      "create_vdom_start": 1786899213758.209,
+      "entryType": "pipeline",
+      "fcp": {
+       "duration": 1384.796,
+       "endTimestamp": 1786899215087.796,
+       "endTimestampName": "paintEnd",
+       "name": "fcp",
+       "startTimestamp": 1786899213703,
+       "startTimestampName": "prepareTemplateStart"
+      },
+      "ffiEnd": 1786899213742.461,
+      "ffiStart": 1786899213742.353,
+      "frameworkRenderingTiming": {
+       "dataProcessorEnd": 1786899213758.137,
+       "dataProcessorStart": 1786899213758.114,
+       "setInitDataEnd": 1786899213758.139,
+       "setInitDataStart": 1786899213758.137,
+       "vmExecuteEnd": 1786899213758.11,
+       "vmExecuteStart": 1786899213743.903
+      },
+      "hostPlatformTiming": {
+       "drawEnd": 1786899215087.789,
+       "drawStart": 1786899215051.66,
+       "hostPlatformType": "Android",
+       "layoutEnd": 1786899215051.56,
+       "layoutStart": 1786899215047.684,
+       "measureEnd": 1786899215047.644,
+       "measureStart": 1786899215045.601
+      },
+      "instanceId": 1,
+      "layoutEnd": 1786899214994.21,
+      "layoutStart": 1786899214875.66,
+      "layoutUiOperationExecuteEnd": 1786899215042.4,
+      "layoutUiOperationExecuteStart": 1786899215024.229,
+      "loadBackgroundEnd": 1786899213969.205,
+      "loadBackgroundStart": 1786899213758.265,
+      "loadBundleEnd": 1786899215044.235,
+      "loadBundleStart": 1786899213741.678,
+      "loadCoreEnd": 1786899213716.258,
+      "loadCoreStart": 1786899213702.999,
+      "lynxFcp": {
+       "duration": 1346.118,
+       "endTimestamp": 1786899215087.796,
+       "endTimestampName": "paintEnd",
+       "name": "lynxFcp",
+       "startTimestamp": 1786899213741.678,
+       "startTimestampName": "loadBundleStart"
+      },
+      "mtsRenderEnd": 1786899214613.346,
+      "mtsRenderStart": 1786899213743.899,
+      "name": "loadBundle",
+      "openTime": 1786899213697,
+      "paintEnd": 1786899215087.796,
+      "paintingUiOperationExecuteEnd": 1786899215019.902,
+      "paintingUiOperationExecuteStart": 1786899214999.261,
+      "parseEnd": 1786899213743.897,
+      "parseStart": 1786899213742.516,
+      "pipelineEnd": 1786899215087.796,
+      "pipelineStart": 1786899213741.678,
+      "prepareTemplateEnd": 1786899213703,
+      "prepareTemplateStart": 1786899213703,
+      "resolveEnd": 1786899214875.577,
+      "resolveStart": 1786899214613.35,
+      "totalFcp": {
+       "duration": 1390.796,
+       "endTimestamp": 1786899215087.796,
+       "endTimestampName": "paintEnd",
+       "name": "totalFcp",
+       "startTimestamp": 1786899213697,
+       "startTimestampName": "openTime"
+      }
+     }
+    }
+   ],
+   "detail": {
+    "kind": "pipeline",
+    "pipeline": {
+     "containerInitEnd": 1786899213701,
+     "containerInitStart": 1786899213697,
+     "createLynxEnd": 1786899213703,
+     "createLynxStart": 1786899213701,
+     "create_vdom_end": 1786899214613.342,
+     "create_vdom_start": 1786899213758.209,
+     "entryType": "pipeline",
+     "fcp": {
+      "duration": 1384.796,
+      "endTimestamp": 1786899215087.796,
+      "endTimestampName": "paintEnd",
+      "name": "fcp",
+      "startTimestamp": 1786899213703,
+      "startTimestampName": "prepareTemplateStart"
+     },
+     "ffiEnd": 1786899213742.461,
+     "ffiStart": 1786899213742.353,
+     "frameworkRenderingTiming": {
+      "dataProcessorEnd": 1786899213758.137,
+      "dataProcessorStart": 1786899213758.114,
+      "setInitDataEnd": 1786899213758.139,
+      "setInitDataStart": 1786899213758.137,
+      "vmExecuteEnd": 1786899213758.11,
+      "vmExecuteStart": 1786899213743.903
+     },
+     "hostPlatformTiming": {
+      "drawEnd": 1786899215087.789,
+      "drawStart": 1786899215051.66,
+      "hostPlatformType": "Android",
+      "layoutEnd": 1786899215051.56,
+      "layoutStart": 1786899215047.684,
+      "measureEnd": 1786899215047.644,
+      "measureStart": 1786899215045.601
+     },
+     "instanceId": 1,
+     "layoutEnd": 1786899214994.21,
+     "layoutStart": 1786899214875.66,
+     "layoutUiOperationExecuteEnd": 1786899215042.4,
+     "layoutUiOperationExecuteStart": 1786899215024.229,
+     "loadBackgroundEnd": 1786899213969.205,
+     "loadBackgroundStart": 1786899213758.265,
+     "loadBundleEnd": 1786899215044.235,
+     "loadBundleStart": 1786899213741.678,
+     "loadCoreEnd": 1786899213716.258,
+     "loadCoreStart": 1786899213702.999,
+     "lynxFcp": {
+      "duration": 1346.118,
+      "endTimestamp": 1786899215087.796,
+      "endTimestampName": "paintEnd",
+      "name": "lynxFcp",
+      "startTimestamp": 1786899213741.678,
+      "startTimestampName": "loadBundleStart"
+     },
+     "mtsRenderEnd": 1786899214613.346,
+     "mtsRenderStart": 1786899213743.899,
+     "name": "loadBundle",
+     "openTime": 1786899213697,
+     "paintEnd": 1786899215087.796,
+     "paintingUiOperationExecuteEnd": 1786899215019.902,
+     "paintingUiOperationExecuteStart": 1786899214999.261,
+     "parseEnd": 1786899213743.897,
+     "parseStart": 1786899213742.516,
+     "pipelineEnd": 1786899215087.796,
+     "pipelineStart": 1786899213741.678,
+     "prepareTemplateEnd": 1786899213703,
+     "prepareTemplateStart": 1786899213703,
+     "resolveEnd": 1786899214875.577,
+     "resolveStart": 1786899214613.35,
+     "totalFcp": {
+      "duration": 1390.796,
+      "endTimestamp": 1786899215087.796,
+      "endTimestampName": "paintEnd",
+      "name": "totalFcp",
+      "startTimestamp": 1786899213697,
+      "startTimestampName": "openTime"
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 1390.7958984375,
+   "mean": 1390.7958984375,
+   "std": 0,
+   "min": 1390.7958984375,
+   "max": 1390.7958984375,
+   "p95": 1390.7958984375,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "startup",
+     "scale": 10000,
+     "phase": "startup",
+     "triggerMode": "tap",
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "startup",
+     "scale": 10000,
+     "phase": "startup",
+     "triggerMode": "tap",
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "startup",
+     "scale": 30000,
+     "phase": "startup",
+     "triggerMode": "tap",
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "react",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "react",
+     "workload": "startup",
+     "scale": 30000,
+     "phase": "startup",
+     "triggerMode": "tap",
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    342
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899278539,
+     "endMs": 1786899278881,
+     "latencyMs": 342
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899278539,
+    "endMs": 1786899278881,
+    "latencyMs": 342
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 342,
+   "mean": 342,
+   "std": 0,
+   "min": 342,
+   "max": 342,
+   "p95": 342,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    3228
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899280770,
+     "endMs": 1786899283998,
+     "latencyMs": 3228
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899280770,
+    "endMs": 1786899283998,
+    "latencyMs": 3228
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 3228,
+   "mean": 3228,
+   "std": 0,
+   "min": 3228,
+   "max": 3228,
+   "p95": 3228,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    365
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899287133,
+     "endMs": 1786899287498,
+     "latencyMs": 365
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899287133,
+    "endMs": 1786899287498,
+    "latencyMs": 365
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 365,
+   "mean": 365,
+   "std": 0,
+   "min": 365,
+   "max": 365,
+   "p95": 365,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    368
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "startMs": 1786899290647,
+     "endMs": 1786899291015,
+     "latencyMs": 368
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "startMs": 1786899290647,
+    "endMs": 1786899291015,
+    "latencyMs": 368
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 368,
+   "mean": 368,
+   "std": 0,
+   "min": 368,
+   "max": 368,
+   "p95": 368,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    18
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "startMs": 1786899294198,
+     "endMs": 1786899294216,
+     "latencyMs": 18
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "startMs": 1786899294198,
+    "endMs": 1786899294216,
+    "latencyMs": 18
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 18,
+   "mean": 18,
+   "std": 0,
+   "min": 18,
+   "max": 18,
+   "p95": 18,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    21
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "startMs": 1786899311347,
+     "endMs": 1786899311368,
+     "latencyMs": 21
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "startMs": 1786899311347,
+    "endMs": 1786899311368,
+    "latencyMs": 21
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 21,
+   "mean": 21,
+   "std": 0,
+   "min": 21,
+   "max": 21,
+   "p95": 21,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor",
+     "workload": "select",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    34
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "startMs": 1786899329003,
+     "endMs": 1786899329037,
+     "latencyMs": 34
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "startMs": 1786899329003,
+    "endMs": 1786899329037,
+    "latencyMs": 34
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 34,
+   "mean": 34,
+   "std": 0,
+   "min": 34,
+   "max": 34,
+   "p95": 34,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    22
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "startMs": 1786899332248,
+     "endMs": 1786899332270,
+     "latencyMs": 22
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "startMs": 1786899332248,
+    "endMs": 1786899332270,
+    "latencyMs": 22
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 22,
+   "mean": 22,
+   "std": 0,
+   "min": 22,
+   "max": 22,
+   "p95": 22,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor",
+     "workload": "clear",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    198
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "startMs": 1786899349441,
+     "endMs": 1786899349639,
+     "latencyMs": 198
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "startMs": 1786899349441,
+    "endMs": 1786899349639,
+    "latencyMs": 198
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 198,
+   "mean": 198,
+   "std": 0,
+   "min": 198,
+   "max": 198,
+   "p95": 198,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor",
+     "workload": "updateStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    29
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "startMs": 1786899366679,
+     "endMs": 1786899366708,
+     "latencyMs": 29
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "startMs": 1786899366679,
+    "endMs": 1786899366708,
+    "latencyMs": 29
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 29,
+   "mean": 29,
+   "std": 0,
+   "min": 29,
+   "max": 29,
+   "p95": 29,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor",
+     "workload": "selectStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:56:57.872Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899382187,
+         "container_init_start": 1786899382183,
+         "open_time": 1786899382183,
+         "prepare_template_end": 1786899382189,
+         "prepare_template_start": 1786899382189
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    339
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899414508,
+     "endMs": 1786899414847,
+     "latencyMs": 339
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899414508,
+    "endMs": 1786899414847,
+    "latencyMs": 339
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 339,
+   "mean": 339,
+   "std": 0,
+   "min": 339,
+   "max": 339,
+   "p95": 339,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    3351
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899416913,
+     "endMs": 1786899420264,
+     "latencyMs": 3351
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899416913,
+    "endMs": 1786899420264,
+    "latencyMs": 3351
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 3351,
+   "mean": 3351,
+   "std": 0,
+   "min": 3351,
+   "max": 3351,
+   "p95": 3351,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    397
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899423467,
+     "endMs": 1786899423864,
+     "latencyMs": 397
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899423467,
+    "endMs": 1786899423864,
+    "latencyMs": 397
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 397,
+   "mean": 397,
+   "std": 0,
+   "min": 397,
+   "max": 397,
+   "p95": 397,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    368
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "startMs": 1786899427183,
+     "endMs": 1786899427551,
+     "latencyMs": 368
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "startMs": 1786899427183,
+    "endMs": 1786899427551,
+    "latencyMs": 368
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 368,
+   "mean": 368,
+   "std": 0,
+   "min": 368,
+   "max": 368,
+   "p95": 368,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    27
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "startMs": 1786899430755,
+     "endMs": 1786899430782,
+     "latencyMs": 27
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "startMs": 1786899430755,
+    "endMs": 1786899430782,
+    "latencyMs": 27
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 27,
+   "mean": 27,
+   "std": 0,
+   "min": 27,
+   "max": 27,
+   "p95": 27,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor-ifr",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    27
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "startMs": 1786899448357,
+     "endMs": 1786899448384,
+     "latencyMs": 27
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "startMs": 1786899448357,
+    "endMs": 1786899448384,
+    "latencyMs": 27
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 27,
+   "mean": 27,
+   "std": 0,
+   "min": 27,
+   "max": 27,
+   "p95": 27,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor-ifr",
+     "workload": "select",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    30
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "startMs": 1786899466373,
+     "endMs": 1786899466403,
+     "latencyMs": 30
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "startMs": 1786899466373,
+    "endMs": 1786899466403,
+    "latencyMs": 30
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 30,
+   "mean": 30,
+   "std": 0,
+   "min": 30,
+   "max": 30,
+   "p95": 30,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    30
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "startMs": 1786899469590,
+     "endMs": 1786899469620,
+     "latencyMs": 30
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "startMs": 1786899469590,
+    "endMs": 1786899469620,
+    "latencyMs": 30
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 30,
+   "mean": 30,
+   "std": 0,
+   "min": 30,
+   "max": 30,
+   "p95": 30,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor-ifr",
+     "workload": "clear",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    202
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "startMs": 1786899487303,
+     "endMs": 1786899487505,
+     "latencyMs": 202
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "startMs": 1786899487303,
+    "endMs": 1786899487505,
+    "latencyMs": 202
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 202,
+   "mean": 202,
+   "std": 0,
+   "min": 202,
+   "max": 202,
+   "p95": 202,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor-ifr",
+     "workload": "updateStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    30
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "startMs": 1786899505361,
+     "endMs": 1786899505391,
+     "latencyMs": 30
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "startMs": 1786899505361,
+    "endMs": 1786899505391,
+    "latencyMs": 30
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 30,
+   "mean": 30,
+   "std": 0,
+   "min": 30,
+   "max": 30,
+   "p95": 30,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vapor-ifr",
+     "workload": "selectStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vapor-ifr",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vapor-ifr",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T16:59:16.486Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899520786,
+         "container_init_start": 1786899520781,
+         "open_time": 1786899520781,
+         "prepare_template_end": 1786899520788,
+         "prepare_template_start": 1786899520788
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    358
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899553005,
+     "endMs": 1786899553363,
+     "latencyMs": 358
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899553005,
+    "endMs": 1786899553363,
+    "latencyMs": 358
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 358,
+   "mean": 358,
+   "std": 0,
+   "min": 358,
+   "max": 358,
+   "p95": 358,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    3424
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899555339,
+     "endMs": 1786899558763,
+     "latencyMs": 3424
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899555339,
+    "endMs": 1786899558763,
+    "latencyMs": 3424
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 3424,
+   "mean": 3424,
+   "std": 0,
+   "min": 3424,
+   "max": 3424,
+   "p95": 3424,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    392
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899561989,
+     "endMs": 1786899562381,
+     "latencyMs": 392
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899561989,
+    "endMs": 1786899562381,
+    "latencyMs": 392
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 392,
+   "mean": 392,
+   "std": 0,
+   "min": 392,
+   "max": 392,
+   "p95": 392,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    456
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "startMs": 1786899565708,
+     "endMs": 1786899566164,
+     "latencyMs": 456
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "startMs": 1786899565708,
+    "endMs": 1786899566164,
+    "latencyMs": 456
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 456,
+   "mean": 456,
+   "std": 0,
+   "min": 456,
+   "max": 456,
+   "p95": 456,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    124
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "startMs": 1786899569507,
+     "endMs": 1786899569631,
+     "latencyMs": 124
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "startMs": 1786899569507,
+    "endMs": 1786899569631,
+    "latencyMs": 124
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 124,
+   "mean": 124,
+   "std": 0,
+   "min": 124,
+   "max": 124,
+   "p95": 124,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    129
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "startMs": 1786899587388,
+     "endMs": 1786899587517,
+     "latencyMs": 129
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "startMs": 1786899587388,
+    "endMs": 1786899587517,
+    "latencyMs": 129
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 129,
+   "mean": 129,
+   "std": 0,
+   "min": 129,
+   "max": 129,
+   "p95": 129,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom",
+     "workload": "select",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    126
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "startMs": 1786899605193,
+     "endMs": 1786899605319,
+     "latencyMs": 126
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "startMs": 1786899605193,
+    "endMs": 1786899605319,
+    "latencyMs": 126
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 126,
+   "mean": 126,
+   "std": 0,
+   "min": 126,
+   "max": 126,
+   "p95": 126,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    131
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "startMs": 1786899608622,
+     "endMs": 1786899608753,
+     "latencyMs": 131
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "startMs": 1786899608622,
+    "endMs": 1786899608753,
+    "latencyMs": 131
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 131,
+   "mean": 131,
+   "std": 0,
+   "min": 131,
+   "max": 131,
+   "p95": 131,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom",
+     "workload": "clear",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    5787
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "startMs": 1786899626702,
+     "endMs": 1786899632489,
+     "latencyMs": 5787
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "startMs": 1786899626702,
+    "endMs": 1786899632489,
+    "latencyMs": 5787
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 5787,
+   "mean": 5787,
+   "std": 0,
+   "min": 5787,
+   "max": 5787,
+   "p95": 5787,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom",
+     "workload": "updateStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    3393
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "startMs": 1786899650232,
+     "endMs": 1786899653625,
+     "latencyMs": 3393
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "startMs": 1786899650232,
+    "endMs": 1786899653625,
+    "latencyMs": 3393
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 3393,
+   "mean": 3393,
+   "std": 0,
+   "min": 3393,
+   "max": 3393,
+   "p95": 3393,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom",
+     "workload": "selectStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: CDP Performance.getAllPerformanceEntries failed: Error: timeout waiting 4ms for Performance.getAllPerformanceEntries",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:01:45.280Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899669601,
+         "container_init_start": 1786899669597,
+         "open_time": 1786899669597,
+         "prepare_template_end": 1786899669604,
+         "prepare_template_start": 1786899669604
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    257
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899701907,
+     "endMs": 1786899702164,
+     "latencyMs": 257
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899701907,
+    "endMs": 1786899702164,
+    "latencyMs": 257
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 257,
+   "mean": 257,
+   "std": 0,
+   "min": 257,
+   "max": 257,
+   "p95": 257,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    2458
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899704340,
+     "endMs": 1786899706798,
+     "latencyMs": 2458
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899704340,
+    "endMs": 1786899706798,
+    "latencyMs": 2458
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 2458,
+   "mean": 2458,
+   "std": 0,
+   "min": 2458,
+   "max": 2458,
+   "p95": 2458,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    270
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786899709778,
+     "endMs": 1786899710048,
+     "latencyMs": 270
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786899709778,
+    "endMs": 1786899710048,
+    "latencyMs": 270
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 270,
+   "mean": 270,
+   "std": 0,
+   "min": 270,
+   "max": 270,
+   "p95": 270,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    324
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "startMs": 1786899713058,
+     "endMs": 1786899713382,
+     "latencyMs": 324
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "startMs": 1786899713058,
+    "endMs": 1786899713382,
+    "latencyMs": 324
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 324,
+   "mean": 324,
+   "std": 0,
+   "min": 324,
+   "max": 324,
+   "p95": 324,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    79
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "startMs": 1786899716403,
+     "endMs": 1786899716482,
+     "latencyMs": 79
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "startMs": 1786899716403,
+    "endMs": 1786899716482,
+    "latencyMs": 79
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 79,
+   "mean": 79,
+   "std": 0,
+   "min": 79,
+   "max": 79,
+   "p95": 79,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "update10th",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "update10th",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "select",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    79
+   ],
+   "detailSamples": [
+    {
+     "name": "select",
+     "startMs": 1786899731438,
+     "endMs": 1786899731517,
+     "latencyMs": 79
+    }
+   ],
+   "detail": {
+    "name": "select",
+    "startMs": 1786899731438,
+    "endMs": 1786899731517,
+    "latencyMs": 79
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 79,
+   "mean": 79,
+   "std": 0,
+   "min": 79,
+   "max": 79,
+   "p95": 79,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "select",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "select",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "swap",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    80
+   ],
+   "detailSamples": [
+    {
+     "name": "swap",
+     "startMs": 1786899746205,
+     "endMs": 1786899746285,
+     "latencyMs": 80
+    }
+   ],
+   "detail": {
+    "name": "swap",
+    "startMs": 1786899746205,
+    "endMs": 1786899746285,
+    "latencyMs": 80
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 80,
+   "mean": 80,
+   "std": 0,
+   "min": 80,
+   "max": 80,
+   "p95": 80,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "remove",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    80
+   ],
+   "detailSamples": [
+    {
+     "name": "remove",
+     "startMs": 1786899749289,
+     "endMs": 1786899749369,
+     "latencyMs": 80
+    }
+   ],
+   "detail": {
+    "name": "remove",
+    "startMs": 1786899749289,
+    "endMs": 1786899749369,
+    "latencyMs": 80
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 80,
+   "mean": 80,
+   "std": 0,
+   "min": 80,
+   "max": 80,
+   "p95": 80,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "clear",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "clear",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "updateStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    3493
+   ],
+   "detailSamples": [
+    {
+     "name": "updateStorm",
+     "startMs": 1786899764128,
+     "endMs": 1786899767621,
+     "latencyMs": 3493
+    }
+   ],
+   "detail": {
+    "name": "updateStorm",
+    "startMs": 1786899764128,
+    "endMs": 1786899767621,
+    "latencyMs": 3493
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 3493,
+   "mean": 3493,
+   "std": 0,
+   "min": 3493,
+   "max": 3493,
+   "p95": 3493,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "updateStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "updateStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "selectStorm",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    2034
+   ],
+   "detailSamples": [
+    {
+     "name": "selectStorm",
+     "startMs": 1786899782306,
+     "endMs": 1786899784340,
+     "latencyMs": 2034
+    }
+   ],
+   "detail": {
+    "name": "selectStorm",
+    "startMs": 1786899782306,
+    "endMs": 1786899784340,
+    "latencyMs": 2034
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 2034,
+   "mean": 2034,
+   "std": 0,
+   "min": 2034,
+   "max": 2034,
+   "p95": 2034,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "selectStorm",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "transport-retries-exhausted",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "selectStorm",
+     "scale": 10000,
+     "phase": "table",
+     "triggerMode": "tap",
+     "message": "Error: CDP Input.emulateTouchFromMouseEvent failed: Error: Native CDP channel closed before pending commands completed.",
+     "evidence": {
+      "transientRecoveries": []
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 0,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 0,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     }
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 1000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 1000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 10000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 10000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "fcp",
+   "boundary": "native-open-to-fcp",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  },
+  {
+   "suite": "startup",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle1",
+   "entry": "vue-vdom-ifr-et",
+   "workload": "startup",
+   "scale": 30000,
+   "metric": "settled",
+   "boundary": "native-open-to-pipeline-end",
+   "unit": "ms",
+   "value": null,
+   "samples": [],
+   "detailSamples": [],
+   "detail": null,
+   "dnfCount": 1,
+   "failures": [
+    {
+     "rep": 0,
+     "category": "performance-pipeline-unavailable-inherited",
+     "entry": "vue-vdom-ifr-et",
+     "workload": "startup",
+     "scale": 30000,
+     "timeoutMs": 30000,
+     "message": "Error: timeout waiting for the Native loadBundle timing pipeline.",
+     "capabilityScope": "entry",
+     "evidence": {
+      "lastStartupProbe": {
+       "capturedAt": "2026-08-16T17:03:53.244Z",
+       "performanceEntryCount": 0,
+       "pipelineEntries": [],
+       "timingInfo": {
+        "extraTiming": {
+         "container_init_end": 1786899797536,
+         "container_init_start": 1786899797532,
+         "open_time": 1786899797532,
+         "prepare_template_end": 1786899797538,
+         "prepare_template_start": 1786899797538
+        }
+       }
+      }
+     },
+     "inheritedFromScale": 0
+    }
+   ],
+   "n": 0,
+   "median": null,
+   "mean": null,
+   "std": null,
+   "min": null,
+   "max": null,
+   "p95": null,
+   "ci95": null,
+   "detailKind": null
+  }
+ ]
+}

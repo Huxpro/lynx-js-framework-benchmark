@@ -1,0 +1,432 @@
+{
+ "schemaVersion": 2,
+ "meta": {
+  "generatedAt": "2026-08-16T11:54:52.911Z",
+  "machine": {
+   "id": "lynx-native-android-aries_10-10-devtool-direct-recycle5-2090ab7ec01d-abb2befa",
+   "platform": "android",
+   "osVersion": "10",
+   "cpuModel": "linaro",
+   "cores": 8,
+   "node": null,
+   "deviceModel": "ByteDance aries_10",
+   "app": "LynxExplorer",
+   "appVersion": "1.0",
+   "explorerPackage": {
+    "versionName": "1.0",
+    "versionCode": 1
+   },
+   "debugRouterVersion": "0.0.1",
+   "lynxSdkVersion": "0.0.1",
+   "agentLynxVersion": "0.14.4",
+   "devtoolTransport": "direct",
+   "debugRouterSettleMs": 100,
+   "explorerRecycleEveryPages": 5,
+   "maxBatteryTemperatureC": 40,
+   "thermalGateTimeoutMs": 300000,
+   "explorerReconnectTimeoutMs": 90000,
+   "harnessConfigId": "abb2befa",
+   "octaneTriggerMode": "tap",
+   "deviceLeaseId": "2090ab7ec01d",
+   "deviceLeaseIdentitySource": "explicit-env",
+   "deviceClockOffsetMs": 4102,
+   "deviceClockCalibrationRttMs": 26,
+   "thermalStart": {
+    "capturedAt": "2026-08-16T11:54:54.083Z",
+    "batteryTemperatureC": 35,
+    "thermalStatus": 0,
+    "temperatures": [
+     {
+      "valueC": 30.8,
+      "type": 3,
+      "name": "test temperature sensor",
+      "status": 0
+     }
+    ]
+   },
+   "transientRecoveries": [
+    {
+     "at": "2026-08-16T11:55:15.698Z",
+     "category": "open-page-no-response",
+     "message": "Error: DevTool open-page failed: Error: No response found for clientId: [redacted]"
+    },
+    {
+     "at": "2026-08-16T11:55:29.516Z",
+     "category": "open-page-no-response",
+     "message": "Error: DevTool open-page failed: Error: No response found for clientId: [redacted]"
+    },
+    {
+     "at": "2026-08-16T11:55:43.384Z",
+     "category": "open-page-no-response",
+     "message": "Error: DevTool open-page failed: Error: No response found for clientId: [redacted]"
+    },
+    {
+     "at": "2026-08-16T11:55:57.211Z",
+     "category": "open-page-no-response",
+     "message": "Error: DevTool open-page failed: Error: No response found for clientId: [redacted]"
+    }
+   ]
+  },
+  "calibration": null,
+  "harness": "native",
+  "adapter": "/data00/home/xuan.huang/github/lynx-js-framework-benchmark/packages/runner/adapters/lynx-sandbox-android.mjs",
+  "argv": [
+   "run",
+   "--harness",
+   "native",
+   "--adapter",
+   "packages/runner/adapters/lynx-sandbox-android.mjs",
+   "--entry",
+   "react",
+   "--label",
+   "formal-same-lease-react-direct-rerun",
+   "--no-collect"
+  ],
+  "checkpoint": true,
+  "entryCommits": {
+   "react": "28f7acbab990b3b574f04944e0d21c769719cc68"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "react",
+   "workload": "create",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    199,
+    191,
+    195,
+    184,
+    183
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786881298832,
+     "endMs": 1786881299031,
+     "latencyMs": 199
+    },
+    {
+     "name": "create",
+     "startMs": 1786881300540,
+     "endMs": 1786881300731,
+     "latencyMs": 191
+    },
+    {
+     "name": "create",
+     "startMs": 1786881302203,
+     "endMs": 1786881302398,
+     "latencyMs": 195
+    },
+    {
+     "name": "create",
+     "startMs": 1786881303881,
+     "endMs": 1786881304065,
+     "latencyMs": 184
+    },
+    {
+     "name": "create",
+     "startMs": 1786881305532,
+     "endMs": 1786881305715,
+     "latencyMs": 183
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786881300540,
+    "endMs": 1786881300731,
+    "latencyMs": 191
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 191,
+   "mean": 190.4,
+   "std": 6.913754406977442,
+   "min": 183,
+   "max": 199,
+   "p95": 199,
+   "ci95": 8.583183707692617,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "react",
+   "workload": "create",
+   "scale": 10000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    1893,
+    1902,
+    1916,
+    1896,
+    1908
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786881307690,
+     "endMs": 1786881309583,
+     "latencyMs": 1893
+    },
+    {
+     "name": "create",
+     "startMs": 1786881321499,
+     "endMs": 1786881323401,
+     "latencyMs": 1902
+    },
+    {
+     "name": "create",
+     "startMs": 1786881335353,
+     "endMs": 1786881337269,
+     "latencyMs": 1916
+    },
+    {
+     "name": "create",
+     "startMs": 1786881349191,
+     "endMs": 1786881351087,
+     "latencyMs": 1896
+    },
+    {
+     "name": "create",
+     "startMs": 1786881363048,
+     "endMs": 1786881364956,
+     "latencyMs": 1908
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786881321499,
+    "endMs": 1786881323401,
+    "latencyMs": 1902
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 1902,
+   "mean": 1903,
+   "std": 9.273618495495704,
+   "min": 1893,
+   "max": 1916,
+   "p95": 1916,
+   "ci95": 11.51287223936755,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "react",
+   "workload": "replace",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    816,
+    819,
+    817,
+    827,
+    832
+   ],
+   "detailSamples": [
+    {
+     "name": "create",
+     "startMs": 1786881368223,
+     "endMs": 1786881369039,
+     "latencyMs": 816
+    },
+    {
+     "name": "create",
+     "startMs": 1786881372021,
+     "endMs": 1786881372840,
+     "latencyMs": 819
+    },
+    {
+     "name": "create",
+     "startMs": 1786881375840,
+     "endMs": 1786881376657,
+     "latencyMs": 817
+    },
+    {
+     "name": "create",
+     "startMs": 1786881379664,
+     "endMs": 1786881380491,
+     "latencyMs": 827
+    },
+    {
+     "name": "create",
+     "startMs": 1786881383476,
+     "endMs": 1786881384308,
+     "latencyMs": 832
+    }
+   ],
+   "detail": {
+    "name": "create",
+    "startMs": 1786881372021,
+    "endMs": 1786881372840,
+    "latencyMs": 819
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 819,
+   "mean": 822.2,
+   "std": 6.978538528947161,
+   "min": 816,
+   "max": 832,
+   "p95": 832,
+   "ci95": 8.66361092385848,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "react",
+   "workload": "append1k",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    341,
+    332,
+    344,
+    335,
+    333
+   ],
+   "detailSamples": [
+    {
+     "name": "append1k",
+     "startMs": 1786881387701,
+     "endMs": 1786881388042,
+     "latencyMs": 341
+    },
+    {
+     "name": "append1k",
+     "startMs": 1786881391193,
+     "endMs": 1786881391525,
+     "latencyMs": 332
+    },
+    {
+     "name": "append1k",
+     "startMs": 1786881394699,
+     "endMs": 1786881395043,
+     "latencyMs": 344
+    },
+    {
+     "name": "append1k",
+     "startMs": 1786881398225,
+     "endMs": 1786881398560,
+     "latencyMs": 335
+    },
+    {
+     "name": "append1k",
+     "startMs": 1786881401744,
+     "endMs": 1786881402077,
+     "latencyMs": 333
+    }
+   ],
+   "detail": {
+    "name": "append1k",
+    "startMs": 1786881398225,
+    "endMs": 1786881398560,
+    "latencyMs": 335
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 335,
+   "mean": 337,
+   "std": 5.244044240850758,
+   "min": 332,
+   "max": 344,
+   "p95": 344,
+   "ci95": 6.51029707463492,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "native",
+   "environment": "lynx-native-android-aries_10-10-devtool-direct-recycle5",
+   "entry": "react",
+   "workload": "update10th",
+   "scale": 1000,
+   "metric": "latency",
+   "boundary": "native-input-handler-to-second-native-frame",
+   "unit": "ms",
+   "value": null,
+   "samples": [
+    147,
+    158,
+    162,
+    158,
+    148
+   ],
+   "detailSamples": [
+    {
+     "name": "update10th",
+     "startMs": 1786881405447,
+     "endMs": 1786881405594,
+     "latencyMs": 147
+    },
+    {
+     "name": "update10th",
+     "startMs": 1786881407403,
+     "endMs": 1786881407561,
+     "latencyMs": 158
+    },
+    {
+     "name": "update10th",
+     "startMs": 1786881409399,
+     "endMs": 1786881409561,
+     "latencyMs": 162
+    },
+    {
+     "name": "update10th",
+     "startMs": 1786881411386,
+     "endMs": 1786881411544,
+     "latencyMs": 158
+    },
+    {
+     "name": "update10th",
+     "startMs": 1786881413363,
+     "endMs": 1786881413511,
+     "latencyMs": 148
+    }
+   ],
+   "detail": {
+    "name": "update10th",
+    "startMs": 1786881407403,
+    "endMs": 1786881407561,
+    "latencyMs": 158
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "n": 5,
+   "median": 158,
+   "mean": 154.6,
+   "std": 6.6932802122726045,
+   "min": 147,
+   "max": 162,
+   "p95": 162,
+   "ci95": 8.309472724547568,
+   "detailKind": "sample-nearest-median"
+  }
+ ]
+}

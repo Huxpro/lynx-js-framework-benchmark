@@ -1,6 +1,9 @@
-import { COMPARISON, ENTRIES, GENERATED_AT, MACHINES } from '../data';
+import { useBenchmarkData } from '../data-context';
+import { ENTRIES } from '../data';
 
 export function MethodPage() {
+  const { snapshot } = useBenchmarkData();
+  const comparison = snapshot.comparison;
   return (
     <>
       <div className="card">
@@ -9,8 +12,8 @@ export function MethodPage() {
           <p>
             <b>Benchmark source</b> is limited to run/environment identity, record identity,
             raw repeated <code>samples</code>, one-shot <code>value</code>, <code>dnfCount</code>,
-            and per-repetition wire <code>detailSamples</code>. Entry manifests and their checked
-            bundles are build source.
+            structured per-repetition <code>failures</code>, and per-repetition wire{' '}
+            <code>detailSamples</code>. Entry manifests and their checked bundles are build source.
           </p>
           <p>
             <b>Everything else is derived:</b> median/mean/CI, endpoint display samples, cohort and
@@ -30,13 +33,15 @@ export function MethodPage() {
             framework. The Web boundary is <b>in-page pointerdown → the first animation frame
             where a composed-DOM predicate holds</b>. The Native boundary is <b>input handler →
             second native animation frame</b>, emitted by the bundle on the device clock and read
-            through the Lynx Runtime console. ReactLynx and Vue-Lynx use real touch input. Because
-            upstream Octane cannot receive its registered string-event token in the Native
-            background realm, DevTool invokes the same handler through a benchmark-only driver
-            before the timer starts. Native startup normally comes from Lynx pipeline performance
-            entries (<b>open → FCP</b>) on bundles whose first screen pre-renders N rows. Octane's
-            custom renderer publishes no such entry in this Explorer build, so its documented
-            fallback uses a clock-calibrated open request → first/second post-commit Native frame.
+            through the Lynx Runtime console. Every featured entry uses real Native touch input.
+            Octane waits for its renderer transport acknowledgement before two Native frames and
+            emits a post-ACK state snapshot, which the adapter checks against the requested
+            workload. Its DevTool driver is diagnostic-only and has a distinct recorded source.
+            Native startup normally comes from Lynx pipeline performance entries (<b>open →
+            FCP</b>) on bundles whose first screen pre-renders N rows. Octane's custom renderer
+            publishes no such entry in this Explorer build, so it reports no Native FCP; its
+            transport-ACK and post-ACK-frame startup metrics are isolated under different names
+            and boundaries.
           </p>
           <p>
             Dual-thread metrics come from two framework-neutral instruments: a{' '}
@@ -56,8 +61,8 @@ export function MethodPage() {
             The two harnesses are separate comparison domains. Web numbers are
             Lynx-for-Web-in-Chromium; Native numbers are real <code>main.lynx.bundle</code> runs in
             LynxExplorer on a leased Android Sandbox device. They are never charted against one
-            another. A timeout or an unsupported current-device path is retained as DNF rather
-            than omitted or replaced with a proxy number.
+            another. A timeout or an unreachable prestate is retained as DNF with structured
+            evidence rather than omitted or replaced with a proxy number.
           </p>
         </div>
       </div>
@@ -65,12 +70,15 @@ export function MethodPage() {
       <div className="card">
         <div className="card-title">machines &amp; calibration</div>
         <div className="card-desc">
-          Web featured charts are sourced from one coherent run: <code>{COMPARISON.runFile}</code> on machine{' '}
-          <code>{COMPARISON.machineId}</code>, preflight score {COMPARISON.calibration.score} (v
-          {COMPARISON.calibration.probeVersion}). Native featured charts combine one complete run
+          Web featured charts are sourced from one coherent run: <code>{comparison.runFile}</code> on machine{' '}
+          <code>{comparison.machineId}</code>, preflight score {comparison.calibration.score} (v
+          {comparison.calibration.probeVersion}). Native featured charts combine one complete run
           per entry only when every run has the same device and environment identity. The collector
           keeps partial, stale-commit, and cross-machine records for provenance, but never merges
-          them into the default ranking. Opt-in Lab
+          them into the default ranking. A current featured entry measured under another Native
+          lease may appear in a separate absolute-observation panel with its machine and source run
+          visible; those records never enter rankings, heatmaps, geomeans, or cross-framework
+          ratios. Opt-in Lab
           variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
           millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
           and count fields cannot be CPU-calibrated and remain explicitly historical values.
@@ -82,7 +90,7 @@ export function MethodPage() {
               <tr><th>harness</th><th>environment</th><th>machine</th><th>entries</th><th>source runs</th></tr>
             </thead>
             <tbody>
-              {COMPARISON.harnesses.map((cohort) => (
+              {comparison.harnesses.map((cohort) => (
                 <tr key={cohort.harness}>
                   <td>{cohort.harness}</td>
                   <td style={{ textAlign: 'left' }}>{cohort.environment ?? '—'}</td>
@@ -94,6 +102,27 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
+        {snapshot.nativeObservations.length > 0 && (
+          <details className="data-table" open>
+            <summary>Separate Native observations</summary>
+            <table>
+              <thead>
+                <tr><th>entry</th><th>environment</th><th>machine</th><th>source run</th><th>records</th></tr>
+              </thead>
+              <tbody>
+                {snapshot.nativeObservations.map((observation) => (
+                  <tr key={`${observation.entryId}:${observation.machineId}`}>
+                    <td>{observation.entryId}</td>
+                    <td style={{ textAlign: 'left' }}>{observation.environment}</td>
+                    <td>{observation.machineId}</td>
+                    <td style={{ textAlign: 'left' }}>{observation.sourceRunFile}</td>
+                    <td>{observation.sourceRecordCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
         <details className="data-table" open>
           <summary>Machines in this dataset</summary>
           <table>
@@ -101,7 +130,7 @@ export function MethodPage() {
               <tr><th>machine</th><th>cpu</th><th>cores</th><th>node</th><th>latest preflight</th></tr>
             </thead>
             <tbody>
-              {Object.values(MACHINES).map((m) => (
+              {Object.values(snapshot.machines).map((m) => (
                 <tr key={m.id}>
                   <td>{m.id}</td>
                   <td style={{ textAlign: 'left' }}>{m.cpuModel} ({m.platform}/{m.arch})</td>
@@ -113,7 +142,7 @@ export function MethodPage() {
             </tbody>
           </table>
         </details>
-        {COMPARISON.labEstimates.length > 0 && (
+        {comparison.labEstimates.length > 0 && (
           <details className="data-table">
             <summary>Calibration-only Lab sources</summary>
             <table>
@@ -121,7 +150,7 @@ export function MethodPage() {
                 <tr><th>entry</th><th>source run</th><th>source score</th><th>target score</th><th>ratio</th></tr>
               </thead>
               <tbody>
-                {COMPARISON.labEstimates.map((estimate) => (
+                {comparison.labEstimates.map((estimate) => (
                   <tr key={estimate.entryId}>
                     <td>{estimate.entryId}</td>
                     <td style={{ textAlign: 'left' }}>{estimate.sourceRunFile}</td>
@@ -134,7 +163,7 @@ export function MethodPage() {
             </table>
           </details>
         )}
-        <div className="note">newest source run {new Date(GENERATED_AT).toLocaleString()}</div>
+        <div className="note">snapshot source {new Date(snapshot.generatedAt).toLocaleString()}</div>
       </div>
 
       <div className="card">

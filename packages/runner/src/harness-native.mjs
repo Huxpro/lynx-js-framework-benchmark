@@ -25,12 +25,15 @@
 //                               domain) or agent-device. Resolves when the
 //                               operation's predicate holds on-device.
 //   async collect()             per-op observations for the last drive:
-//                               `{ latencyMs, dnf?, metrics? }` where metrics
+//                               `{ latencyMs, dnf?, failure?, metrics? }` where metrics
 //                               is an optional `{ name: { value, unit,
 //                               boundary } }` map (native wire stats, engine
 //                               counters) recorded verbatim.
 //   async collectStartup()      startup observations for the last loadBundle:
-//                               `{ fcpMs, settledMs?, dnf? }`.
+//                               `{ fcpMs?, settledMs?, metrics?, detail?, dnf?,
+//                               failure?, metricContracts? }`. Contracts let
+//                               a DNF retain metric identity without fabricating
+//                               a value (for example Octane's isolated ACK metrics).
 //   async dispose()             release the device.
 //
 // The harness never fabricates native numbers: without an adapter it explains
@@ -52,8 +55,14 @@ export const NATIVE_BOUNDARIES = {
 };
 
 const STARTUP_ROWS = [0, 1000, 10000, 30000];
+const TRANSIENT_ATTEMPTS = Number(process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS ?? 3);
+if (!Number.isInteger(TRANSIENT_ATTEMPTS) || TRANSIENT_ATTEMPTS <= 0) {
+  throw new Error(
+    `invalid LYNX_SANDBOX_TRANSIENT_ATTEMPTS=${process.env.LYNX_SANDBOX_TRANSIENT_ATTEMPTS}.`,
+  );
+}
 
-async function withTransientRetry(adapter, action, attempts = 3) {
+async function withTransientRetry(adapter, action, attempts = TRANSIENT_ATTEMPTS) {
   for (let attempt = 1; ; attempt++) {
     try {
       return await action();
@@ -97,13 +106,15 @@ export async function runNativeMatrix({
   cases,
   suites = ['table', 'startup'],
   scales = [1000, 10000],
-  startupRows = STARTUP_ROWS,
+  startupScales,
+  startupRows,
   reps = 5,
   startupReps = 3,
   log = () => {},
+  onProgress = async () => {},
 }) {
   const records = [];
-  const uniqueStartupRows = [...new Set(startupRows)];
+  const selectedStartupRows = [...new Set(startupScales ?? startupRows ?? STARTUP_ROWS)];
   for (const entry of entries) {
     log(`[native:${adapter.environment}] ${entry.id}`);
     if (suites.includes('table')) {
@@ -115,26 +126,46 @@ export async function runNativeMatrix({
             continue;
           }
           const samples = [];
+          const detailSamples = [];
           const extras = new Map();
+          let latencyBoundary = null;
           let dnfCount = 0;
+          const failures = [];
           for (let rep = 0; rep < reps; rep++) {
             if (adapter.isTableUnsupported?.(entry, kase, scale)) {
               dnfCount++;
+              const failure = adapter.tableUnsupportedReason?.(entry, kase, scale);
+              if (failure != null) failures.push({ rep, ...failure });
               continue;
             }
-            const observed = await withTransientRetry(adapter, async () => {
-              await adapter.loadBundle(entry, { rows: 0, bundlePath: bundle.abs });
-              await adapter.driveCase(kase, scale);
-              return adapter.collect();
-            });
+            let observed;
+            try {
+              observed = await withTransientRetry(adapter, async () => {
+                await adapter.loadBundle(entry, { rows: 0, bundlePath: bundle.abs, suite: 'table' });
+                await adapter.driveCase(kase, scale);
+                return adapter.collect();
+              });
+            } catch (error) {
+              observed = await adapter.classifyFailure?.(error, {
+                suite: 'table', entry, kase, scale,
+              });
+              if (!observed?.dnf) throw error;
+            }
             if (observed?.dnf) {
               dnfCount++;
+              if (observed.failure != null) failures.push({ rep, ...observed.failure });
               continue;
             }
             if (typeof observed?.latencyMs !== 'number') {
               throw new Error(`native adapter returned no latency for ${kase.name}@${scale}.`);
             }
             samples.push(observed.latencyMs);
+            detailSamples.push(observed.detail ?? null);
+            const observedBoundary = observed.boundary ?? NATIVE_BOUNDARIES.latency;
+            if (latencyBoundary !== null && latencyBoundary !== observedBoundary) {
+              throw new Error(`native adapter changed the latency boundary within ${kase.name}@${scale}.`);
+            }
+            latencyBoundary = observedBoundary;
             for (const [name, extra] of Object.entries(observed.metrics ?? {})) {
               if (!extras.has(name)) extras.set(name, { unit: extra.unit, boundary: extra.boundary, values: [] });
               extras.get(name).values.push(extra.value);
@@ -149,11 +180,13 @@ export async function runNativeMatrix({
             workload: kase.name,
             scale,
             metric: 'latency',
-            boundary: NATIVE_BOUNDARIES.latency,
+            boundary: latencyBoundary ?? NATIVE_BOUNDARIES.latency,
             unit: 'ms',
             stat,
             samples,
+            detailSamples,
             dnfCount,
+            failures,
           }));
           for (const [name, extra] of extras) {
             records.push(makeRecord({
@@ -171,40 +204,71 @@ export async function runNativeMatrix({
             }));
           }
           log(`  ${entry.id} ${kase.name}@${scale}: ${stat ? `${stat.median.toFixed(1)}ms (n=${stat.n})` : 'no samples'}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
+          await onProgress(records);
         }
       }
     }
     if (suites.includes('startup')) {
-      for (const rows of uniqueStartupRows) {
+      for (const rows of STARTUP_ROWS.filter((rows) => selectedStartupRows.includes(rows))) {
         const bundle = bundleFor(entry, { rows, flavor: 'lynx' });
         if (!bundle) continue;
-        const samples = { fcp: [], settled: [] };
+        const observations = new Map();
         let dnfCount = 0;
+        const failures = [];
+        const addContract = (name, unit, boundary) => {
+          if (!observations.has(name)) observations.set(name, { unit, boundary, values: [], details: [] });
+        };
+        const addObservation = (name, value, unit, boundary, detail) => {
+          if (!Number.isFinite(value)) return;
+          addContract(name, unit, boundary);
+          const current = observations.get(name);
+          if (current.unit !== unit || current.boundary !== boundary) {
+            throw new Error(`native adapter changed the ${name} startup metric contract within one cell.`);
+          }
+          current.values.push(value);
+          current.details.push(detail ?? null);
+        };
         for (let rep = 0; rep < startupReps; rep++) {
           if (adapter.isStartupUnsupported?.(entry, rows)) {
             dnfCount++;
+            const failure = adapter.startupUnsupportedReason?.(entry, rows);
+            if (failure != null) failures.push({ rep, ...failure });
+            for (const contract of adapter.startupUnsupportedContracts?.(entry, rows) ?? []) {
+              addContract(contract.name, contract.unit, contract.boundary);
+            }
             continue;
           }
-          const observed = await withTransientRetry(adapter, async () => {
-            await adapter.loadBundle(entry, { rows, bundlePath: bundle.abs });
-            return adapter.collectStartup();
-          });
+          let observed;
+          try {
+            observed = await withTransientRetry(adapter, async () => {
+              await adapter.loadBundle(entry, { rows, bundlePath: bundle.abs, suite: 'startup' });
+              return adapter.collectStartup();
+            });
+          } catch (error) {
+            observed = await adapter.classifyFailure?.(error, {
+              suite: 'startup', entry, rows,
+            });
+            if (!observed?.dnf) throw error;
+          }
           if (observed?.dnf) {
             dnfCount++;
+            if (observed.failure != null) failures.push({ rep, ...observed.failure });
+            for (const contract of observed.metricContracts ?? []) {
+              addContract(contract.name, contract.unit, contract.boundary);
+            }
             continue;
           }
-          if (typeof observed?.fcpMs !== 'number') {
-            throw new Error(`native adapter returned no fcp for startup@${rows}.`);
+          addObservation('fcp', observed?.fcpMs, 'ms', NATIVE_BOUNDARIES.fcp, observed?.detail);
+          addObservation('settled', observed?.settledMs, 'ms', NATIVE_BOUNDARIES.settled, observed?.detail);
+          for (const [name, metric] of Object.entries(observed?.metrics ?? {})) {
+            addObservation(name, metric.value, metric.unit ?? 'count', metric.boundary ?? `native-${name}`, observed?.detail);
           }
-          samples.fcp.push(observed.fcpMs);
-          if (typeof observed.settledMs === 'number') samples.settled.push(observed.settledMs);
+          if (observations.size === 0) {
+            throw new Error(`native adapter returned no startup metrics for startup@${rows}.`);
+          }
         }
-        for (const [key, metric, boundary] of [
-          ['fcp', 'fcp', NATIVE_BOUNDARIES.fcp],
-          ['settled', 'settled', NATIVE_BOUNDARIES.settled],
-        ]) {
-          const stat = summarize(samples[key]);
-          if (!stat && metric !== 'fcp') continue;
+        for (const [metric, observation] of observations) {
+          const stat = summarize(observation.values);
           records.push(makeRecord({
             suite: 'startup',
             harness: 'native',
@@ -213,13 +277,16 @@ export async function runNativeMatrix({
             workload: 'startup',
             scale: rows,
             metric,
-            boundary,
-            unit: 'ms',
+            boundary: observation.boundary,
+            unit: observation.unit,
             stat,
-            samples: samples[key],
-            dnfCount: metric === 'fcp' ? dnfCount : 0,
+            samples: observation.values,
+            detailSamples: observation.details,
+            dnfCount,
+            failures,
           }));
         }
+        await onProgress(records);
       }
     }
   }
@@ -236,8 +303,13 @@ export async function runNativeHarness(options = undefined) {
   }
   const adapter = await loadNativeAdapter(options.adapterPath, { log: options.log });
   try {
+    const onProgress = async (records) => options.onProgress?.({
+      records,
+      environment: adapter.environment,
+      machine: adapter.machine ?? null,
+    });
     return {
-      records: await runNativeMatrix({ ...options, adapter }),
+      records: await runNativeMatrix({ ...options, adapter, onProgress }),
       environment: adapter.environment,
       machine: adapter.machine ?? null,
     };
