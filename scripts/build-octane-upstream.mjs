@@ -3,7 +3,8 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const checkout = path.resolve(process.argv[2] ?? process.env.OCTANE_BUILD ?? '');
+const checkoutInput = path.resolve(process.argv[2] ?? process.env.OCTANE_BUILD ?? '');
+const checkout = fs.existsSync(checkoutInput) ? fs.realpathSync(checkoutInput) : checkoutInput;
 const buildScript = path.join(checkout, 'benchmarks/lynx-table/scripts/build-app.mjs');
 if (!checkout || !fs.existsSync(buildScript)) {
   throw new Error('usage: node scripts/build-octane-upstream.mjs <octane-checkout>');

@@ -33,8 +33,8 @@ function command(binary, args, { env = process.env } = {}) {
 
 const [entryId, evidenceInput, ...extra] = process.argv.slice(2);
 if (!entryId || !evidenceInput || extra.length > 0) usage();
-if (!/^octane-new[12]$/.test(entryId)) {
-  throw new Error('Sandbox Lab runner only accepts octane-new1 or octane-new2.');
+if (!/^octane-new-\d{4}-\d{2}-\d{2}$/.test(entryId)) {
+  throw new Error('Sandbox Lab runner only accepts a dated octane-new-YYYY-MM-DD entry.');
 }
 const issuer = required(process.env.SANDBOX_ISSUER, 'SANDBOX_ISSUER');
 const issueId = required(process.env.SANDBOX_ISSUE_ID, 'SANDBOX_ISSUE_ID');
@@ -50,6 +50,18 @@ const resumeCheckpoint = process.env.SANDBOX_RESUME_CHECKPOINT == null
 if (resumeCheckpoint != null && !fs.existsSync(resumeCheckpoint)) {
   throw new Error(`SANDBOX_RESUME_CHECKPOINT does not exist: ${resumeCheckpoint}`);
 }
+const targetLeaseReceipt = process.env.SANDBOX_TARGET_LEASE_RECEIPT == null
+  ? null
+  : path.resolve(process.env.SANDBOX_TARGET_LEASE_RECEIPT);
+if (targetLeaseReceipt != null && !fs.existsSync(targetLeaseReceipt)) {
+  throw new Error(`SANDBOX_TARGET_LEASE_RECEIPT does not exist: ${targetLeaseReceipt}`);
+}
+const targetSerial = targetLeaseReceipt == null
+  ? null
+  : required(
+      JSON.parse(fs.readFileSync(targetLeaseReceipt, 'utf8')).serial,
+      'target lease receipt serial',
+    );
 let serial = null;
 let connected = false;
 let primaryError = null;
@@ -66,7 +78,7 @@ try {
       'X-Issuer': issuer,
       'X-Issue-Id': issueId,
     },
-    body: '{}',
+    body: JSON.stringify(targetSerial == null ? {} : { serial: targetSerial }),
   });
   const leaseText = await leaseResponse.text();
   write(path.join(evidenceDir, 'lease-response.json'), {

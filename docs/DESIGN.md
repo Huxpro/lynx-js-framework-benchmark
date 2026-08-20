@@ -239,10 +239,14 @@ calibration output, `latest.json`, and every site score/visual are derived.
   historical Lab variants therefore cannot replace the public ranking. A current featured Native
   entry absent from that cohort may be exposed separately from one unmerged source run as an
   absolute observation; it never enters rankings, ratios, heatmaps, or geomeans. For opt-in Lab
-  mode, the collector chooses one complete source run per entry and emits `labComparisonRecords`:
+  mode, the collector may expose legacy Lab entries from a matching featured comparison cohort as
+  `labComparisonRecords`:
   `ms` fields are scaled by source-score / comparison-score and marked `calibrated-estimate`;
   heap, wire, bundle, and count fields remain `historical`. Calibration cannot correct memory
   hierarchy or core-count differences.
+- A formal `web-lab-entry-v1` run is instead emitted as `webLabRuns` and `webLabRecords`: one
+  complete immutable-commit, single-entry campaign shown only as absolute observations. It never
+  enters featured rankings, heatmaps, geomeans, calibrated estimates, or cross-entry ratios.
 - A Lab manifest can separately opt into Native with
   `nativeLab: { enabled: true, contract: "native-lab-entry-v1" }`. The Native CLI then requires
   `--lab-native --entry <one-id>` and derives its matrix from the contract: 27 table cells plus

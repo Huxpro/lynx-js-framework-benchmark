@@ -63,4 +63,8 @@ test('Lab Web acceptance requires every contracted cell and exact provenance', (
   assert.equal(assertCompleteLabWebRun({
     ...run, records: [...records, { ...records[0], entry: 'other' }],
   }, lab), null);
+  assert.equal(assertCompleteLabWebRun(run, {
+    ...lab,
+    provenance: { ...lab.provenance, patched: true, patchFile: 'entry.patch' },
+  }), null);
 });

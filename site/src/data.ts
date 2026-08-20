@@ -190,6 +190,19 @@ export interface NativeLabRun {
   sourceRecordCount: number;
 }
 
+export interface WebLabRun {
+  entryId: string;
+  entryCommit: string;
+  contractVersion: 'web-lab-entry-v1';
+  contractSha256: string;
+  expectedCellCount: number;
+  generatedAt: string;
+  machineId: string;
+  environment: string;
+  sourceRunFile: string;
+  sourceRecordCount: number;
+}
+
 export interface TimelineSnapshot {
   id: string;
   label: string;
@@ -203,6 +216,8 @@ export interface TimelineSnapshot {
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   labComparisonRecords: BenchRecord[];
+  webLabRuns: WebLabRun[];
+  webLabRecords: BenchRecord[];
   nativeLabRuns: NativeLabRun[];
   nativeLabRecords: BenchRecord[];
 }
@@ -291,6 +306,8 @@ const collected = latest as unknown as {
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   history: BenchmarkHistory;
+  webLabRuns: WebLabRun[];
+  webLabRecords: BenchRecord[];
   nativeLabRuns: NativeLabRun[];
   nativeLabRecords: BenchRecord[];
 };
@@ -354,6 +371,8 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     nativeObservationRecords: [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
     labComparisonRecords: checkpoint.current ? collected.labComparisonRecords : [],
+    webLabRuns: checkpoint.current ? collected.webLabRuns : [],
+    webLabRecords: checkpoint.current ? collected.webLabRecords : [],
     nativeLabRuns: checkpoint.current ? collected.nativeLabRuns : [],
     nativeLabRecords: checkpoint.current ? collected.nativeLabRecords : [],
   };

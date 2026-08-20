@@ -307,7 +307,6 @@ async function cmdRun(args) {
           entryCommits: Object.fromEntries(
             entries.map((e) => [e.id, e.provenance?.commit ?? null]),
           ),
-          receipt,
         },
         nativeCoverage,
         records,

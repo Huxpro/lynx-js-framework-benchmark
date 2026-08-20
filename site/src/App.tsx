@@ -8,6 +8,7 @@ import { MethodPage } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
 import { NativeLabRuns } from './components/NativeLabRuns';
+import { WebLabRuns } from './components/WebLabRuns';
 import { RankedBars } from './components/RankedBars';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
@@ -202,6 +203,7 @@ function AppContent({
           {harness === 'native' && <NativeCoverage />}
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={chartSelection} />
           {harness === 'native' && <NativeObservations theme={theme} />}
+          {harness === 'web' && labMode && <WebLabRuns theme={theme} />}
           {harness === 'native' && labMode && <NativeLabRuns theme={theme} />}
           <RankedBars
             title="interactive @1k"

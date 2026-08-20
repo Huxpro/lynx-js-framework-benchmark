@@ -218,6 +218,7 @@ function expectedStormTicks(name) {
 
 function validateNativeTablePayloadUnchecked(payload, {
   entryId,
+  octane = entryId === 'octane',
   expectedName,
   expectedSource,
   renderGraceFrames = RENDER_GRACE_FRAMES,
@@ -269,7 +270,7 @@ function validateNativeTablePayloadUnchecked(payload, {
       throw new Error(`Native ${expectedName} payload lacks one render barrier per tick.`);
     }
   }
-  if (entryId === 'octane') {
+  if (octane) {
     const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
     if (transport.kind !== 'octane-root.flushTransport' || transport.acknowledged !== true) {
       throw new Error('Octane Native table payload lacks a flushTransport acknowledgement.');
@@ -297,6 +298,7 @@ function validateNativeTablePayloadUnchecked(payload, {
 
 function validateNativeStartupPayloadUnchecked(payload, {
   entryId,
+  octane = entryId === 'octane',
   expectedRows,
   renderGraceFrames = RENDER_GRACE_FRAMES,
 } = {}) {
@@ -324,7 +326,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
       `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
     );
   }
-  if (entryId === 'octane') {
+  if (octane) {
     assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
     if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
       throw new Error('Octane startup transport acknowledgement is outside the render interval.');
@@ -1050,6 +1052,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       : 'native-tap';
     return validateNativeTablePayload(observed, {
       entryId: currentEntryId,
+      octane: currentEntryIsOctane,
       expectedName,
       expectedSource,
     });
@@ -1199,6 +1202,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       if (startup != null) {
         validateNativeStartupPayload(startup, {
           entryId: currentEntryId,
+          octane: currentEntryIsOctane,
           expectedRows: currentRows,
         });
         if (!Number.isFinite(openTime) || startup.moduleStartMs < openTime) {

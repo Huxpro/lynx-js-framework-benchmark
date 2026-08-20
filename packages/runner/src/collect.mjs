@@ -1035,6 +1035,24 @@ const selectNativeLabRuns = (runs, labEntries) => {
   return selected;
 };
 
+const selectWebLabRuns = (runs, labEntries) => {
+  const selected = [];
+  for (const entry of labEntries.filter((candidate) => candidate.webLab?.enabled === true)) {
+    let current = null;
+    for (const candidate of runs) {
+      const complete = assertCompleteLabWebRun(candidate.run, entry);
+      if (complete == null) continue;
+      const time = candidate.run.meta.generatedAt ?? candidate.file;
+      const currentTime = current?.run.meta.generatedAt ?? current?.file;
+      if (!current || time > currentTime || (time === currentTime && candidate.file > current.file)) {
+        current = { ...candidate, complete };
+      }
+    }
+    if (current) selected.push({ entry, ...current });
+  }
+  return selected;
+};
+
 export function collectRuns({
   log = console.log,
   root = repoRoot(),
@@ -1215,6 +1233,7 @@ export function collectRuns({
   const comparisonCohort = comparisonRun.run.meta.receipt?.comparabilityCohort ?? null;
   for (const entryId of labIds) {
     const labEntry = entryById.get(entryId);
+    if (labEntry?.webLab?.enabled === true) continue;
     let source = null;
     for (const candidate of runs) {
       const candidateCohort = candidate.run.meta.receipt?.comparabilityCohort ?? null;
@@ -1222,8 +1241,6 @@ export function collectRuns({
       if (!candidate.run.records.some((r) =>
         r.entry === entryId && r.harness === 'web'
         && isBenchmarkRecord(r) && isRankingEligible(r))) continue;
-      if (labEntry?.webLab?.enabled === true
-        && assertCompleteLabWebRun(candidate.run, labEntry) == null) continue;
       if (isBetterLabRun(candidate, source, entryId)) source = candidate;
     }
     if (!source) continue;
@@ -1259,6 +1276,28 @@ export function collectRuns({
     }
   }
   comparison.labEstimates = labEstimates;
+
+  const webLabSources = selectWebLabRuns(
+    runs,
+    labIds.map((entryId) => entryById.get(entryId)).filter(Boolean),
+  );
+  for (const { entry, run } of webLabSources) {
+    assertCurrentEntryCommit(run, entry.id, entry, 'Web Lab');
+  }
+  const webLabRuns = webLabSources.map(({ entry, file, run, complete }) => ({
+    entryId: entry.id,
+    entryCommit: entry.provenance.commit,
+    contractVersion: complete.contract.version,
+    contractSha256: complete.contract.sha256,
+    expectedCellCount: complete.contract.expectedCellCount,
+    generatedAt: run.meta.generatedAt,
+    machineId: run.meta.machine.id,
+    environment: complete.records[0]?.environment ?? null,
+    sourceRunFile: file,
+    sourceRecordCount: complete.records.length,
+  }));
+  const webLabRecords = webLabSources.flatMap(({ file, run, complete }) =>
+    complete.records.map((record) => annotate(run, file, record, 'lab-entry')));
 
   const nativeLabSources = selectNativeLabRuns(
     runs,
@@ -1296,6 +1335,8 @@ export function collectRuns({
     comparison,
     comparisonRecords,
     labComparisonRecords,
+    webLabRuns,
+    webLabRecords,
     nativeLabRuns,
     nativeLabRecords,
     nativeObservations: nativeObservations.observations,
@@ -1319,6 +1360,6 @@ export function collectRuns({
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(out, null, 1));
-  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${nativeObservations.observations.length} isolated Native observations + ${labEstimates.length} calibrated Web Lab entries + ${nativeLabRuns.length} Native Lab runs → ${path.relative(root, outPath)}`);
+  log(`[collect] ${runsSeen} runs → ${out.records.length} merged records; comparison=${comparison.runFile} (${comparison.entryIds.length} web entries, ${nativeComparison?.entryIds.length ?? 0} native entries, ${comparison.recordCount} records) + ${nativeObservations.observations.length} isolated Native observations + ${labEstimates.length} calibrated Web Lab entries + ${webLabRuns.length} absolute Web Lab runs + ${nativeLabRuns.length} Native Lab runs → ${path.relative(root, outPath)}`);
   return out;
 }

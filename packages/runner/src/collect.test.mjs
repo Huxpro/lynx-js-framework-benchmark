@@ -289,6 +289,89 @@ test('collector admits only receipt-valid complete Native Lab checkpoints outsid
   }
 });
 
+test('collector publishes a complete Web Lab run only as absolute single-entry evidence', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-web-lab-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'featured-web.json', {
+      machineId: 'featured', score: 100, entries: ['react'], entryCommits: { react: 'react-new' },
+    });
+    const featured = nativeEntries(['react']);
+    const lab = {
+      id: 'octane-new-2026-08-20', framework: 'octane', tier: 'lab',
+      distDir: path.join(root, 'missing-octane-new'),
+      provenance: { commit: 'new-sha' },
+      webLab: { enabled: true, contract: LAB_WEB_CONTRACT_VERSION },
+    };
+    const contract = buildLabWebContract(lab);
+    const records = contract.cells.map((cell) => ({
+      ...cell,
+      harness: 'web',
+      environment: 'chromium-test',
+      samples: Array(cell.expectedReps).fill(1),
+      n: cell.expectedReps,
+      median: 1,
+      mean: 1,
+      std: 0,
+      min: 1,
+      max: 1,
+      p95: 1,
+      ci95: 0,
+      detail: null,
+      dnfCount: 0,
+      failures: [],
+    }));
+    const run = {
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-08-20T00:00:00Z',
+        completed: true,
+        completedAt: '2026-08-20T01:00:00Z',
+        machine: machine('web-lab'),
+        calibration: { probeVersion: 1, score: 200 },
+        comparisonScope: 'lab-entry-web',
+        entryCommits: { [lab.id]: lab.provenance.commit },
+        labWeb: {
+          entryId: lab.id,
+          entryCommit: lab.provenance.commit,
+          contractVersion: contract.version,
+          contractSha256: contract.sha256,
+          expectedCellCount: contract.expectedCellCount,
+        },
+      },
+      records,
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/web-lab.json'), JSON.stringify(run));
+
+    const out = collectRuns({
+      root, generatedAt: 'test', log: () => {},
+      entryTiers: entryTiers(['react'], [lab.id]),
+      entries: [...featured, lab],
+    });
+    assert.equal(out.comparisonRecords.some((record) => record.entry === lab.id), false);
+    assert.equal(out.labComparisonRecords.some((record) => record.entry === lab.id), false);
+    assert.equal(out.comparison.labEstimates.some((estimate) => estimate.entryId === lab.id), false);
+    assert.equal(out.webLabRecords.length, 35);
+    assert.deepEqual([...new Set(out.webLabRecords.map((record) => record.comparisonKind))], [
+      'lab-entry',
+    ]);
+    assert.deepEqual(out.webLabRuns, [{
+      entryId: lab.id,
+      entryCommit: lab.provenance.commit,
+      contractVersion: contract.version,
+      contractSha256: contract.sha256,
+      expectedCellCount: 35,
+      generatedAt: run.meta.generatedAt,
+      machineId: run.meta.machine.id,
+      environment: 'chromium-test',
+      sourceRunFile: 'web-lab.json',
+      sourceRecordCount: 35,
+    }]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collect keeps record calibration and charts one coherent broadest run', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });

@@ -195,7 +195,7 @@ class structure, same storm semantics.
 For an opted-in Lab entry, run the real Sandbox campaign without matrix overrides:
 
 ```sh
-pnpm bench run --harness native --lab-native --entry octane-new1 \
+pnpm bench run --harness native --lab-native --entry octane-new-2026-08-20 \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
@@ -207,7 +207,7 @@ lease POST, exact-serial ADB connect, receipt capture, and mandatory DELETE-then
 The corresponding formal Web campaign is similarly explicit:
 
 ```sh
-pnpm bench run --harness web --lab-web --entry octane-new1
+pnpm bench run --harness web --lab-web --entry octane-new-2026-08-20
 ```
 
 It covers every table scale through 30k plus all startup scales at fixed 7/3/5

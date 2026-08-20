@@ -45,6 +45,11 @@ export function buildLabWebContract(entry) {
     version: LAB_WEB_CONTRACT_VERSION,
     entryId: entry.id,
     entryCommit: entry.provenance?.commit ?? null,
+    entryBuild: {
+      patched: entry.provenance?.patched === true,
+      patchFile: entry.provenance?.patchFile ?? null,
+      sha256: entry.provenance?.sha256 ?? null,
+    },
     cells,
   };
   return {

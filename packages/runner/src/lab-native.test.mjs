@@ -120,4 +120,8 @@ test('collector accepts only a commit-matching complete single-entry Native Lab 
     ...run,
     meta: { ...run.meta, entryCommits: { [lab.id]: 'stale' } },
   }, lab), null);
+  assert.equal(assertCompleteLabNativeRun(run, {
+    ...lab,
+    provenance: { ...lab.provenance, patched: true, patchFile: 'entry.patch' },
+  }), null);
 });

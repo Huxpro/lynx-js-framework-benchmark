@@ -76,6 +76,11 @@ export function buildLabNativeContract(entry) {
     entryId: entry.id,
     entryIds: [entry.id],
     entryCommit: entry.provenance?.commit ?? null,
+    entryBuild: {
+      patched: entry.provenance?.patched === true,
+      patchFile: entry.provenance?.patchFile ?? null,
+      sha256: entry.provenance?.sha256 ?? null,
+    },
     cells,
   };
   return {

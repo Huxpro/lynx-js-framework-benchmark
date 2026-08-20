@@ -49,12 +49,12 @@ test('Sandbox Lab wrapper acquires one lease and releases it before disconnect o
     executable(adb, `printf 'adb:%s\n' "$*" >> '${events}'\nexit 0`);
     executable(pnpm, `printf 'pnpm:%s|%s|%s\n' "$*" "$LYNX_SANDBOX_SERIAL" "$LYNX_SANDBOX_LEASE_RECEIPT" >> '${events}'\nexit 7`);
     const address = server.address();
-    const result = await run(process.execPath, [script, 'octane-new1', evidence], {
+    const result = await run(process.execPath, [script, 'octane-new-2026-08-20', evidence], {
       env: {
         ...process.env,
         SANDBOX_BASE_URL: `http://127.0.0.1:${address.port}`,
         SANDBOX_ISSUER: 'benchmark@example.test',
-        SANDBOX_ISSUE_ID: 'octane-new1-test',
+        SANDBOX_ISSUE_ID: 'octane-new-2026-08-20-test',
         ADB_BIN: adb,
         PNPM_BIN: pnpm,
       },
@@ -63,16 +63,16 @@ test('Sandbox Lab wrapper acquires one lease and releases it before disconnect o
     const lines = fs.readFileSync(events, 'utf8').trim().split('\n');
     assert.equal(lines[0], 'adb:connect sandbox.example:4321');
     assert.equal(lines[1], 'adb:-s sandbox.example:4321 wait-for-device');
-    assert.match(lines[2], /^pnpm:bench run --harness native --lab-native --entry octane-new1/);
+    assert.match(lines[2], /^pnpm:bench run --harness native --lab-native --entry octane-new-2026-08-20/);
     assert.equal(lines[3], 'release');
     assert.equal(lines[4], 'adb:disconnect sandbox.example:4321');
     assert.equal(requests[0].method, 'POST');
     assert.equal(requests[0].headers['x-issuer'], 'benchmark@example.test');
-    assert.equal(requests[0].headers['x-issue-id'], 'octane-new1-test');
+    assert.equal(requests[0].headers['x-issue-id'], 'octane-new-2026-08-20-test');
     assert.equal(requests[1].method, 'DELETE');
     assert.equal(requests[1].url, '/pool/lease?serial=sandbox.example%3A4321');
     const receipt = JSON.parse(fs.readFileSync(path.join(evidence, 'lease-receipt.json'), 'utf8'));
-    assert.equal(receipt.issueId, 'octane-new1-test');
+    assert.equal(receipt.issueId, 'octane-new-2026-08-20-test');
     assert.equal(receipt.serial, 'sandbox.example:4321');
     assert.equal(JSON.parse(fs.readFileSync(path.join(evidence, 'outcome.json'), 'utf8')).runnerStatus, 7);
   } finally {
@@ -87,10 +87,17 @@ test('Sandbox Lab wrapper succeeds only after release and disconnect both succee
   const events = path.join(dir, 'events');
   const adb = path.join(dir, 'adb');
   const pnpm = path.join(dir, 'pnpm');
+  const targetReceipt = path.join(dir, 'target-receipt.json');
   const runFile = path.join(dir, 'complete-run.json');
+  let leaseBody = null;
   const server = http.createServer((request, response) => {
     if (request.method === 'POST') {
-      response.end(JSON.stringify({ acquired: 'sandbox.success:1234', expiredAt: Date.now() + 60_000 }));
+      let body = '';
+      request.on('data', (chunk) => { body += chunk; });
+      request.on('end', () => {
+        leaseBody = body;
+        response.end(JSON.stringify({ acquired: 'sandbox.success:1234', expiredAt: Date.now() + 60_000 }));
+      });
     } else {
       fs.appendFileSync(events, 'release\n');
       response.end('{}');
@@ -100,18 +107,21 @@ test('Sandbox Lab wrapper succeeds only after release and disconnect both succee
   try {
     executable(adb, `printf 'adb:%s\n' "$*" >> '${events}'\nexit 0`);
     fs.writeFileSync(runFile, JSON.stringify({ meta: { checkpointComplete: true } }));
+    fs.writeFileSync(targetReceipt, JSON.stringify({ serial: 'sandbox.success:1234' }));
     executable(pnpm, `printf 'pnpm:%s\n' "$*" >> '${events}'\nprintf '35 records → ${runFile}\n'\nexit 0`);
-    const result = await run(process.execPath, [script, 'octane-new2', evidence], {
+    const result = await run(process.execPath, [script, 'octane-new-2026-08-20', evidence], {
       env: {
         ...process.env,
         SANDBOX_BASE_URL: `http://127.0.0.1:${server.address().port}`,
         SANDBOX_ISSUER: 'benchmark@example.test',
-        SANDBOX_ISSUE_ID: 'octane-new2-test',
+        SANDBOX_ISSUE_ID: 'octane-new-2026-08-20-test',
+        SANDBOX_TARGET_LEASE_RECEIPT: targetReceipt,
         ADB_BIN: adb,
         PNPM_BIN: pnpm,
       },
     });
     assert.equal(result.status, 0, result.stderr);
+    assert.equal(leaseBody, JSON.stringify({ serial: 'sandbox.success:1234' }));
     assert.deepEqual(fs.readFileSync(events, 'utf8').trim().split('\n').slice(-2), [
       'release', 'adb:disconnect sandbox.success:1234',
     ]);
@@ -146,12 +156,12 @@ test('Sandbox Lab wrapper cleans up and fails closed on an exit-zero incomplete 
     fs.writeFileSync(runFile, JSON.stringify({ meta: { checkpointComplete: false } }));
     executable(adb, `printf 'adb:%s\n' "$*" >> '${events}'\nexit 0`);
     executable(pnpm, `printf '12 records → ${runFile}\n'\nexit 0`);
-    const result = await run(process.execPath, [script, 'octane-new1', evidence], {
+    const result = await run(process.execPath, [script, 'octane-new-2026-08-20', evidence], {
       env: {
         ...process.env,
         SANDBOX_BASE_URL: `http://127.0.0.1:${server.address().port}`,
         SANDBOX_ISSUER: 'benchmark@example.test',
-        SANDBOX_ISSUE_ID: 'octane-new1-partial',
+        SANDBOX_ISSUE_ID: 'octane-new-2026-08-20-partial',
         ADB_BIN: adb,
         PNPM_BIN: pnpm,
       },
@@ -183,7 +193,7 @@ test('Sandbox Lab wrapper performs no device action when lease acquisition fails
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
     executable(fake, `printf 'unexpected\n' >> '${events}'\nexit 0`);
-    const result = await run(process.execPath, [script, 'octane-new1', evidence], {
+    const result = await run(process.execPath, [script, 'octane-new-2026-08-20', evidence], {
       env: {
         ...process.env,
         SANDBOX_BASE_URL: `http://127.0.0.1:${server.address().port}`,
