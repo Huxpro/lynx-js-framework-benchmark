@@ -14,7 +14,8 @@ export function TimelineSlider({
     .find((cohort) => cohort.harness === 'web')?.entryIds.length ?? 0;
   const nativeEntries = snapshot.comparison.harnesses
     .find((cohort) => cohort.harness === 'native')?.entryIds.length ?? 0;
-  const historicalStormCaveat = snapshot.id !== 'current-main';
+  const excludedRecords = snapshot.records.filter((record) =>
+    record.comparabilityStatus === 'incomplete-work').length ?? 0;
   return (
     <section className="timeline" aria-label="Benchmark history">
       <div className="timeline-copy">
@@ -59,9 +60,9 @@ export function TimelineSlider({
       <div className="timeline-meta">
         <span>{webEntries} Web entries</span>
         <span>{nativeEntries || 'no'} Native entries</span>
-        {historicalStormCaveat && (
+        {excludedRecords > 0 && (
           <span className="timeline-warning">
-            historical Octane storm runs emitted fewer than 30 sequential transport commits
+            {excludedRecords} incomplete-work storm records retained for audit, excluded from rankings
           </span>
         )}
       </div>

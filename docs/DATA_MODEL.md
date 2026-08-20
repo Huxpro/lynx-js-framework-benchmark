@@ -13,13 +13,17 @@ These are the only files/fields that require an update when their real-world inp
 `results/runs/*.json` is the immutable observation log:
 
 - run identity and environment: `schemaVersion`, `meta.generatedAt`, machine, Chromium,
-  calibration probe, CLI arguments, and entry commits;
+  calibration probe, CLI arguments, and entry commits. Prospective runs also retain a receipt for
+  benchmark-repository commit/dirty digest, runtime lockfile versions and integrities, browser
+  version, workload-contract hashes, every entry bundle hash, and sampling policy;
 - record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
   phase, timeout, trigger mode, message, and observed device state);
-- per-repetition wire endpoint observations: `detailSamples`.
+- per-repetition wire endpoint observations: `detailSamples`;
+- sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
+  incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
@@ -43,6 +47,11 @@ Everything else is derived, including:
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
+- comparability/work classification. Incomplete or unverified work and prospective
+  sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
+  the archive and exact timeline snapshots, but site data selectors and collector comparison
+  cohorts keep them out of ranked views. Prospective Lab estimates must match the selected Web
+  cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged across leases
   or included in cross-entry rankings;

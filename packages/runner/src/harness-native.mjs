@@ -187,6 +187,8 @@ export async function runNativeMatrix({
             detailSamples,
             dnfCount,
             failures,
+            attemptedCount: reps,
+            acceptedCount: samples.length,
           }));
           for (const [name, extra] of extras) {
             records.push(makeRecord({
@@ -201,6 +203,8 @@ export async function runNativeMatrix({
               unit: extra.unit ?? 'count',
               stat: summarize(extra.values),
               samples: extra.values,
+              attemptedCount: reps,
+              acceptedCount: extra.values.length,
             }));
           }
           log(`  ${entry.id} ${kase.name}@${scale}: ${stat ? `${stat.median.toFixed(1)}ms (n=${stat.n})` : 'no samples'}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
@@ -284,6 +288,8 @@ export async function runNativeMatrix({
             detailSamples: observation.details,
             dnfCount,
             failures,
+            attemptedCount: startupReps,
+            acceptedCount: observation.values.length,
           }));
         }
         await onProgress(records);
