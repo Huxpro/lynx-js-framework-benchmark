@@ -29,11 +29,18 @@ test('Native overview leads with the at-a-glance table and ends with coverage ap
   assert.ok(glance < coverage, 'at-a-glance table must precede the Native coverage appendix');
 });
 
-test('Native empty snapshots keep coverage after available observations', () => {
+test('Native empty snapshots lead with at-a-glance and end with the coverage appendix', () => {
   const emptyState = source.slice(
     source.indexOf("harness === 'native' && !nativeHasData"),
     source.indexOf("page === 'overview'"),
   );
+  const glance = emptyState.indexOf('<HeatGrid');
+  const observations = emptyState.indexOf('<NativeObservations');
+  const coverage = emptyState.indexOf('<NativeCoverage');
 
-  assert.ok(emptyState.indexOf('<NativeObservations') < emptyState.indexOf('<NativeCoverage'));
+  assert.notEqual(glance, -1);
+  assert.notEqual(observations, -1);
+  assert.notEqual(coverage, -1);
+  assert.ok(glance < observations, 'at-a-glance table must lead the Native empty state');
+  assert.ok(observations < coverage, 'coverage contract must remain the final Native appendix');
 });

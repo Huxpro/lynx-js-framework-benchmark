@@ -64,7 +64,7 @@ function AppContent({
   onSnapshotChange: (index: number) => void;
 }) {
   const [theme, toggleTheme] = useTheme();
-  const { select, workloadScales } = useBenchmarkData();
+  const { select, snapshot, workloadScales } = useBenchmarkData();
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
@@ -89,6 +89,32 @@ function AppContent({
 
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
+    if (harness === 'native') {
+      const seen = new Set<string>();
+      for (const cell of snapshot.nativeCoverage.cells) {
+        const key = `${cell.suite}:${cell.workload}:${cell.scale}:${cell.metric}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const startupBoundary = {
+          fcp: 'FCP',
+          settled: 'settled',
+          octaneCommitAck: 'commit ACK',
+          octaneSecondFrame: 'second frame',
+        }[cell.metric] ?? cell.metric;
+        const label = cell.suite === 'startup'
+          ? `startup ${startupBoundary} @${scaleLabel(cell.scale)}`
+          : `${cell.workload} @${scaleLabel(cell.scale)}`;
+        rows.push({
+          key,
+          label,
+          suite: cell.suite,
+          workload: cell.workload,
+          scale: cell.scale,
+          metric: cell.metric,
+        });
+      }
+      return rows;
+    }
     for (const w of ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
       for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
@@ -102,7 +128,7 @@ function AppContent({
       }
     }
     return rows;
-  }, [harness, select, workloadScales]);
+  }, [harness, select, snapshot.nativeCoverage.cells, workloadScales]);
 
   const tableOps = (scales: number[]) =>
     ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
@@ -140,11 +166,20 @@ function AppContent({
 
       {harness === 'native' && !nativeHasData ? (
         <>
+          <h1>How fast is each framework on Lynx?</h1>
+          <p className="subtitle">
+            No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
+            matrix keeps every contracted cell visible without turning archived observations into
+            rankings.
+          </p>
+          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
+          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
           <div className="empty-state">
             <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
             <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
-              The ledger below distinguishes work that was never scheduled from evidenced DNF,
-              proven unsupported capability, incompatible archived runs, and derivation defects.
+              Any archive-only observations follow. The appendix at the end distinguishes work
+              that was never scheduled from evidenced DNF, proven unsupported capability,
+              incompatible archived runs, and derivation defects.
             </p>
           </div>
           <NativeObservations theme={theme} />
