@@ -170,13 +170,6 @@ function AppContent({
         index={snapshotIndex}
         onChange={onSnapshotChange}
       />
-      <HistoryRanking
-        harness={harness}
-        onHarnessChange={changeHarness}
-        theme={theme}
-        snapshotIndex={snapshotIndex}
-        onSnapshotChange={onSnapshotChange}
-      />
 
       {harness === 'native' && !nativeHasData ? (
         <>
@@ -332,6 +325,14 @@ function AppContent({
           <MethodPage />
         </>
       )}
+
+      <HistoryRanking
+        harness={harness}
+        onHarnessChange={changeHarness}
+        theme={theme}
+        snapshotIndex={snapshotIndex}
+        onSnapshotChange={onSnapshotChange}
+      />
 
       <footer className="note" style={{ marginTop: '3rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
         <a href="https://github.com/Huxpro/lynx-js-framework-benchmark" target="_blank" rel="noreferrer">
