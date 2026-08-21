@@ -172,7 +172,7 @@ had a documented weakness, the fix is noted.
   approximating render work) run in the same headless browser. Higher = faster machine.
 - Web default comparisons use records from one physical run. Native checkpoints combine only when
   they share the exact stable physical-device cohort, environment, harness configuration, campaign,
-  ranked-entry matrix contract, immutable input receipt, and recursive connector toolchain receipt. Each
+  210-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
   checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
   its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
   prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made
@@ -201,16 +201,6 @@ had a documented weakness, the fix is noted.
   the same policy is in the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
   calibration or an outlier filter.
 
-- Native Lab campaigns are formal single-entry observations by default. They require an
-  immutable manifest commit, one official Sandbox lease, and the complete
-  `native-lab-entry-v1` matrix (27 table latency cells at 5 reps plus 8 Octane startup metric
-  cells at 3 reps). Checkpoint writes preserve completed cells, including structured DNF evidence,
-  but collector publication occurs only when all 35 metric identities and boundaries match the
-  contract. A diagnostic subset or stale-commit run remains source evidence and is never
-  materialized as a Native Lab result.
-  A manifest with `ranking.enabled` is also scheduled in the full same-device Native ranking
-  campaign; it is publishable there only when the entire expanded contract is complete.
-
 ## Harness separation
 
 - `harness: "web"` — Lynx for Web in headless Chromium. Measures architectural behavior
@@ -221,5 +211,5 @@ had a documented weakness, the fix is noted.
   performance entries, while Octane's commit-ACK/second-frame observations remain isolated and
   are not labelled FCP. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
   `--jitless`, jsdom, or extrapolated value is published as Native.
-- Ordinary historical/experimental Octane Lab variants remain opt-in observations. A dated,
-  immutable variant may join both rankings only through the explicit `ranking.enabled` contract.
+- The published Native Octane entry is upstream `main` only. Historical/experimental Octane Lab
+  variants remain opt-in Web history and are not run in the Native cohort.

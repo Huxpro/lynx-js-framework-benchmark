@@ -54,15 +54,6 @@ import {
   NATIVE_TABLE_SCALES,
   resolveNativeRunMatrix,
 } from './run-matrix.mjs';
-import {
-  assertCompleteLabNativeRun,
-  resolveNativeEntrySelection,
-} from './lab-native.mjs';
-import {
-  assertCompleteLabWebRun,
-  labWebMatrixOptions,
-  resolveLabWebEntry,
-} from './lab-web.mjs';
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -89,16 +80,12 @@ const sha256Json = (value) => crypto.createHash('sha256')
 async function cmdRun(args) {
   const harness = args.harness ?? 'web';
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
-  if (args['lab-web'] && harness !== 'web') throw new Error('--lab-web requires --harness web.');
-  if (args['lab-native'] && harness !== 'native') {
-    throw new Error('--lab-native requires --harness native.');
-  }
 
-  const allEntries = discoverEntries();
-  const requestedEntryIds = list(args.entry);
-  let entries = discoverEntries({ only: requestedEntryIds });
+  let entries = discoverEntries({ only: list(args.entry) });
+  if (harness === 'native' && args.entry == null) {
+    entries = entries.filter((entry) => (entry.tier ?? 'featured') !== 'lab');
+  }
   if (entries.length === 0) throw new Error('no entries matched');
-  const labWeb = resolveLabWebEntry(allEntries, requestedEntryIds, Boolean(args['lab-web']));
   const caseNames = list(args.case);
   const cases = caseNames
     ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
@@ -109,20 +96,6 @@ async function cmdRun(args) {
     if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
       throw new Error('Native run requires --adapter <module.mjs>.');
     }
-    const selection = resolveNativeEntrySelection(allEntries, {
-      requestedEntryIds,
-      labNative: Boolean(args['lab-native']),
-    });
-    entries = selection.entries;
-    if (selection.contract && (
-      args.case || args.scale || args.suite || args['startup-scale']
-      || args.reps || args['startup-reps'] || args.quick
-    )) {
-      throw new Error(
-        '--lab-native is a complete-matrix campaign; do not pass --case, --scale, --suite, '
-        + '--startup-scale, --reps, --startup-reps, or --quick.',
-      );
-    }
     const {
       cases: nativeCases,
       suites: nativeSuites,
@@ -132,9 +105,8 @@ async function cmdRun(args) {
       startupReps,
     } = resolveNativeRunMatrix(args);
     const root = repoRoot();
-    const rankedIds = allEntries
-      .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
-        || entry.ranking?.enabled === true)
+    const featuredIds = discoverEntries()
+      .filter((entry) => (entry.tier ?? 'featured') !== 'lab')
       .map((entry) => entry.id)
       .sort();
     const selectedIds = entries.map((entry) => entry.id).sort();
@@ -145,14 +117,14 @@ async function cmdRun(args) {
       || nativeCases.length !== TABLE_CASES.length
       || scales.length !== NATIVE_TABLE_SCALES.length
       || startupScales.length !== NATIVE_STARTUP_SCALES.length
-      || (!selection.contract && JSON.stringify(selectedIds) !== JSON.stringify(rankedIds))
+      || JSON.stringify(selectedIds) !== JSON.stringify(featuredIds)
     ) {
       throw new Error(
-        'Native publishable campaigns must run every ranked entry and the complete table/startup '
+        'Native publishable campaigns must run every featured entry and the complete table/startup '
         + 'matrix; use unit tests or a separate diagnostic tool for partial probes.',
       );
     }
-    const matrixContract = selection.contract ?? buildNativeMatrixContract(entries);
+    const matrixContract = buildNativeMatrixContract(entries);
     const connectorPackageTrees = resolveConnectorPackageTrees({
       fromPath: path.resolve(args.adapter),
     });
@@ -274,9 +246,7 @@ async function cmdRun(args) {
         const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
         outPath = path.join(root, 'results/runs', `${stamp}-${machine.id}-native${label}.json`);
       }
-      const nativeCoverage = classifyNativeCoverage({
-        entries, contract: matrixContract, sourceRecords: records,
-      });
+      const nativeCoverage = classifyNativeCoverage({ entries, sourceRecords: records });
       if (complete) assertNativeCoverage(nativeCoverage);
       const run = {
         schemaVersion: SCHEMA_VERSION,
@@ -289,14 +259,6 @@ async function cmdRun(args) {
           argv: process.argv.slice(2),
           checkpoint: true,
           checkpointComplete: complete,
-          comparisonScope: selection.comparisonScope,
-          labNative: selection.contract == null ? null : {
-            contractVersion: selection.contract.version,
-            contractSha256: selection.contract.sha256,
-            expectedCellCount: selection.contract.expectedCellCount,
-            entryId: selection.contract.entryId,
-            entryCommit: selection.contract.entryCommit,
-          },
           deviceCohort,
           leaseChain,
           cellLeaseIds,
@@ -308,6 +270,7 @@ async function cmdRun(args) {
           entryCommits: Object.fromEntries(
             entries.map((e) => [e.id, e.provenance?.commit ?? null]),
           ),
+          receipt,
         },
         nativeCoverage,
         records,
@@ -358,40 +321,16 @@ async function cmdRun(args) {
       );
     }
     persist({ records: native.records, machine: native.machine }, { complete: true });
-    if (selection.contract) {
-      const completedRun = JSON.parse(fs.readFileSync(outPath, 'utf8'));
-      if (assertCompleteLabNativeRun(completedRun, entries[0]) == null) {
-        throw new Error(
-          `Lab Native checkpoint did not satisfy ${selection.contract.version} `
-          + `(${selection.contract.expectedCellCount} exact cells).`,
-        );
-      }
-    }
     console.log(`[run:native] ${records.length} records → ${path.relative(root, outPath)}`);
     if (!args['no-collect']) collectRuns();
     return;
   }
-  if (labWeb && (
-    args.case || args.scale || args.suite || args.reps
-    || args['storm-reps'] || args['startup-reps'] || args.quick
-  )) {
-    throw new Error(
-      '--lab-web is a complete-matrix campaign; do not pass --case, --scale, --suite, '
-      + '--reps, --storm-reps, --startup-reps, or --quick.',
-    );
-  }
   const quick = Boolean(args.quick);
-  const labWebMatrix = labWeb ? labWebMatrixOptions(labWeb.contract) : null;
   const scales = numList(args.scale)
-    ?? labWebMatrix?.scales
     ?? (quick ? [1000] : [1000, 10000]);
-  const reps = args.reps ? Number(args.reps) : labWebMatrix?.reps ?? (quick ? 3 : 7);
-  const stormReps = args['storm-reps']
-    ? Number(args['storm-reps'])
-    : labWebMatrix?.stormReps ?? (quick ? 1 : 3);
-  const startupReps = args['startup-reps']
-    ? Number(args['startup-reps'])
-    : labWebMatrix?.startupReps ?? (quick ? 2 : 5);
+  const reps = args.reps ? Number(args.reps) : quick ? 3 : 7;
+  const stormReps = args['storm-reps'] ? Number(args['storm-reps']) : quick ? 1 : 3;
+  const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
 
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
   console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
@@ -436,16 +375,6 @@ async function cmdRun(args) {
       chromium: executablePath,
       browser: { name: 'chromium', version: browserVersion, executablePath },
       argv: process.argv.slice(2),
-      completed: true,
-      completedAt: new Date().toISOString(),
-      comparisonScope: labWeb ? 'lab-entry-web' : 'featured-cohort',
-      labWeb: labWeb == null ? null : {
-        entryId: labWeb.contract.entryId,
-        entryCommit: labWeb.contract.entryCommit,
-        contractVersion: labWeb.contract.version,
-        contractSha256: labWeb.contract.sha256,
-        expectedCellCount: labWeb.contract.expectedCellCount,
-      },
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),
       ),
@@ -453,12 +382,6 @@ async function cmdRun(args) {
     },
     records,
   };
-  if (labWeb && assertCompleteLabWebRun(run, labWeb.entry) == null) {
-    throw new Error(
-      `Lab Web run did not satisfy ${labWeb.contract.version} `
-      + `(${labWeb.contract.expectedCellCount} required cells).`,
-    );
-  }
   const root = repoRoot();
   const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const outPath = path.join(root, 'results/runs', `${stamp}-${machine.id}${label}.json`);

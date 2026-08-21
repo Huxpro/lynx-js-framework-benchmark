@@ -16,8 +16,6 @@ interface BenchmarkData {
   one: (filter: RecordFilter) => BenchRecord | null;
   workloadScales: (filter: Omit<RecordFilter, 'scale'>) => number[];
   selectNativeObservations: (filter: RecordFilter) => BenchRecord[];
-  selectWebLab: (filter: RecordFilter) => BenchRecord[];
-  selectNativeLab: (filter: RecordFilter) => BenchRecord[];
 }
 
 const BenchmarkDataContext = createContext<BenchmarkData | null>(null);
@@ -37,8 +35,6 @@ export function BenchmarkDataProvider({
     workloadScales: (filter) => workloadScalesFrom(snapshot.records, filter),
     selectNativeObservations: (filter) =>
       filterRecords(snapshot.nativeObservationRecords, filter),
-    selectWebLab: (filter) => filterRecords(snapshot.webLabRecords, filter),
-    selectNativeLab: (filter) => filterRecords(snapshot.nativeLabRecords, filter),
   }), [snapshot]);
   return (
     <BenchmarkDataContext.Provider value={value}>

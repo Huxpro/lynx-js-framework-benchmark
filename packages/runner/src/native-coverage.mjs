@@ -33,12 +33,11 @@ export function nativeCellKey(cell) {
 }
 
 export function buildNativeMatrixContract(entries) {
-  const ranked = entries
-    .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
-      || entry.ranking?.enabled === true)
+  const featured = entries
+    .filter((entry) => (entry.tier ?? 'featured') !== 'lab')
     .sort((a, b) => a.id.localeCompare(b.id));
   const cells = [];
-  for (const entry of ranked) {
+  for (const entry of featured) {
     for (const kase of TABLE_CASES) {
       for (const scale of kase.scales) {
         cells.push({
@@ -66,10 +65,10 @@ export function buildNativeMatrixContract(entries) {
   }
   const payload = {
     version: NATIVE_MATRIX_CONTRACT_VERSION,
-    entryIds: ranked.map((entry) => entry.id),
+    entryIds: featured.map((entry) => entry.id),
     cells,
   };
-  const expectedCount = ranked.length * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY;
+  const expectedCount = featured.length * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY;
   if (cells.length !== expectedCount) {
     throw new Error(
       `Native matrix definition drifted to ${cells.length} cells; expected ${expectedCount}.`,
@@ -140,16 +139,15 @@ function compactRecord(record) {
 
 export function classifyNativeCoverage({
   entries,
-  contract = null,
   sourceRecords = [],
   publishedRecords = sourceRecords,
   archiveRecords = [],
 }) {
-  const resolvedContract = contract ?? buildNativeMatrixContract(entries);
+  const contract = buildNativeMatrixContract(entries);
   const source = recordsByCell(sourceRecords);
   const published = recordsByCell(publishedRecords);
   const archive = recordsByCell(archiveRecords);
-  const cells = resolvedContract.cells.map((expected) => {
+  const cells = contract.cells.map((expected) => {
     const key = nativeCellKey(expected);
     const matches = source.get(key) ?? [];
     const publishedMatches = published.get(key) ?? [];
@@ -197,10 +195,10 @@ export function classifyNativeCoverage({
       .map((status) => [status, cells.filter((cell) => cell.status === status).length]),
   );
   return {
-    version: resolvedContract.version,
-    contractSha256: resolvedContract.sha256,
-    expectedCellCount: resolvedContract.expectedCellCount,
-    entryIds: resolvedContract.entryIds,
+    version: contract.version,
+    contractSha256: contract.sha256,
+    expectedCellCount: contract.expectedCellCount,
+    entryIds: contract.entryIds,
     summary,
     cells,
   };

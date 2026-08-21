@@ -99,17 +99,6 @@ export function stormCommitGuard(kase, wire) {
   };
 }
 
-export function webTimeoutFailure({ rep, phase, timeoutMs, error = null, evidence = null }) {
-  return {
-    rep,
-    category: 'timeout',
-    phase,
-    timeoutMs,
-    ...(error == null ? {} : { message: String(error) }),
-    ...(evidence == null ? {} : { evidence }),
-  };
-}
-
 async function gc(page) {
   await page.evaluate(() => globalThis.gc?.());
 }
@@ -254,7 +243,6 @@ export async function runTableSuite({
       kase._scale = scale;
       const samples = { latency: [], btsCpu: [], mtsCpu: [], wire: [] };
       let dnfCount = 0;
-      const failures = [];
       for (let rep = 0; rep < reps; rep++) {
         if (rep === 0 || RESET_EACH_SAMPLE.has(kase.name)) {
           if (RESET_EACH_SAMPLE.has(kase.name) && kase.pre !== 'empty') {
@@ -286,9 +274,6 @@ export async function runTableSuite({
         } catch (e) {
           if (String(e).includes('timeout')) {
             dnfCount += 1;
-            failures.push(webTimeoutFailure({
-              rep, phase: 'table', timeoutMs: kase.timeoutMs ?? 120000, error: e,
-            }));
             log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}: ${String(e).slice(0, 120)}`);
           } else {
             throw e;
@@ -297,7 +282,7 @@ export async function runTableSuite({
         await settle(page);
       }
       records.push(...emitOpRecords({
-        entry, kase, scale, samples, dnfCount, failures, attemptedCount: reps,
+        entry, kase, scale, samples, dnfCount, attemptedCount: reps,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -419,9 +404,6 @@ async function runStormCases({
         } catch (e) {
           if (String(e).includes('timeout')) {
             dnfCount += 1;
-            failures.push(webTimeoutFailure({
-              rep, phase: 'table', timeoutMs: kase.timeoutMs ?? 240000, error: e,
-            }));
             log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}`);
           } else {
             throw e;
@@ -519,7 +501,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
     const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
     const samples = { fcp: [], settled: [], btsCpu: [], mtsCpu: [], wireToMts: [], wireToBts: [] };
     let dnfCount = 0;
-    const failures = [];
     for (let rep = 0; rep < reps; rep++) {
       const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
       try {
@@ -547,12 +528,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         const wire = await wireSnapshot(page);
         if (result.dnf || result.fcp == null) {
           dnfCount += 1;
-          failures.push(webTimeoutFailure({
-            rep,
-            phase: 'startup',
-            timeoutMs: kase.timeoutMs,
-            evidence: { finalCount: result.finalCount ?? null },
-          }));
           log(`  [dnf] ${entry.id} startup@${scale} rep${rep} (count=${result.finalCount})`);
         } else {
           samples.fcp.push(result.fcp);
@@ -575,7 +550,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       dnfCount,
       attemptedCount: reps,
       acceptedCount: samples.fcp.length,
-      failures,
     }));
     records.push(makeRecord({
       ...base,
@@ -586,7 +560,6 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       dnfCount,
       attemptedCount: reps,
       acceptedCount: samples.settled.length,
-      failures,
     }));
     if (samples.mtsCpu.length) {
       records.push(makeRecord({

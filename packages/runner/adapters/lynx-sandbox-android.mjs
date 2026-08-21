@@ -218,7 +218,6 @@ function expectedStormTicks(name) {
 
 function validateNativeTablePayloadUnchecked(payload, {
   entryId,
-  octane = entryId === 'octane',
   expectedName,
   expectedSource,
   renderGraceFrames = RENDER_GRACE_FRAMES,
@@ -270,7 +269,7 @@ function validateNativeTablePayloadUnchecked(payload, {
       throw new Error(`Native ${expectedName} payload lacks one render barrier per tick.`);
     }
   }
-  if (octane) {
+  if (entryId === 'octane') {
     const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
     if (transport.kind !== 'octane-root.flushTransport' || transport.acknowledged !== true) {
       throw new Error('Octane Native table payload lacks a flushTransport acknowledgement.');
@@ -298,7 +297,6 @@ function validateNativeTablePayloadUnchecked(payload, {
 
 function validateNativeStartupPayloadUnchecked(payload, {
   entryId,
-  octane = entryId === 'octane',
   expectedRows,
   renderGraceFrames = RENDER_GRACE_FRAMES,
 } = {}) {
@@ -326,7 +324,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
       `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
     );
   }
-  if (octane) {
+  if (entryId === 'octane') {
     assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
     if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
       throw new Error('Octane startup transport acknowledgement is outside the render interval.');
@@ -359,9 +357,7 @@ export function isNativeProducerProtocolError(error) {
   return error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR;
 }
 
-export const isOctaneEntry = (entry) => entry?.framework === 'octane' || entry === 'octane';
-
-const startupMetricContracts = (entry, octane = isOctaneEntry(entry)) => octane
+const startupMetricContracts = (entryId) => entryId === 'octane'
   ? [
       {
         name: 'octaneCommitAck',
@@ -398,7 +394,7 @@ export function nativeProducerProtocolDnf(error, { suite, entry, kase, scale, ro
   return {
     dnf: true,
     failure,
-    metricContracts: suite === 'startup' ? startupMetricContracts(entry) : undefined,
+    metricContracts: suite === 'startup' ? startupMetricContracts(entryId) : undefined,
   };
 }
 
@@ -434,7 +430,7 @@ export function nativeTransportFailureDnf(
     scale: suite === 'startup' ? rows : scale,
     phase: suite,
     stage,
-    triggerMode: isOctaneEntry(entry) ? OCTANE_TRIGGER_MODE : 'tap',
+    triggerMode: entryId === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
     message: String(error),
     capabilityScope: 'cell',
     evidence: {
@@ -445,7 +441,7 @@ export function nativeTransportFailureDnf(
   return {
     dnf: true,
     failure,
-    metricContracts: suite === 'startup' ? startupMetricContracts(entry) : undefined,
+    metricContracts: suite === 'startup' ? startupMetricContracts(entryId) : undefined,
   };
 }
 
@@ -529,8 +525,6 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   let session = null;
   let pageCount = 0;
   let currentEntryId = null;
-  let currentEntry = null;
-  let currentEntryIsOctane = false;
   let currentRows = null;
   let currentOpenTime = null;
   let lastObserved = null;
@@ -1047,12 +1041,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     timingEvents = [];
     await trigger();
     const observed = await waitForTiming(expectedName, timeoutMs);
-    const expectedSource = currentEntryIsOctane && OCTANE_TRIGGER_MODE === 'driver'
+    const expectedSource = currentEntryId === 'octane' && OCTANE_TRIGGER_MODE === 'driver'
       ? 'devtool-driver'
       : 'native-tap';
     return validateNativeTablePayload(observed, {
       entryId: currentEntryId,
-      octane: currentEntryIsOctane,
       expectedName,
       expectedSource,
     });
@@ -1101,18 +1094,18 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   }
 
   async function createRows(scale, timeoutMs = LONG_WORKLOAD_TIMEOUT_MS) {
-    const trigger = currentEntryIsOctane && OCTANE_TRIGGER_MODE === 'driver'
+    const trigger = currentEntryId === 'octane' && OCTANE_TRIGGER_MODE === 'driver'
       ? () => evaluateOctaneDriver('create', scale)
       : () => tapText(CREATE_BUTTON[scale]);
     const observed = await measuredTap('create', trigger, timeoutMs);
     assertPostState({ name: 'create' }, scale, observed);
   }
 
-  const timeoutForTable = (kase) => currentEntryIsOctane
+  const timeoutForTable = (kase) => currentEntryId === 'octane'
     ? LONG_WORKLOAD_TIMEOUT_MS
     : DEFAULT_TIMEOUT_MS;
 
-  const timeoutForStartup = () => currentEntryIsOctane
+  const timeoutForStartup = () => currentEntryId === 'octane'
     ? LONG_WORKLOAD_TIMEOUT_MS
     : DEFAULT_TIMEOUT_MS;
 
@@ -1123,7 +1116,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     let nextStartupPollAt = 0;
     let pipelineEntry = null;
     while (Date.now() < deadline) {
-      const result = !currentEntryIsOctane
+      const result = currentEntryId !== 'octane'
         ? await cdp(
           'Performance.getAllPerformanceEntries',
           {},
@@ -1150,7 +1143,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         }
         pipelineEntry = entry;
       }
-      const timingInfo = currentEntryIsOctane
+      const timingInfo = currentEntryId === 'octane'
         ? null
         : await cdp(
           'Performance.getAllTimingInfo',
@@ -1188,12 +1181,12 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           ? JSON.parse(startupResult.result.value)
           : null;
       }
-      const openTime = currentEntryIsOctane
+      const openTime = currentEntryId === 'octane'
         ? currentOpenTime
         : timingInfo?.extra_timing?.open_time ?? currentOpenTime;
       if (
         process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1'
-        && currentEntryIsOctane
+        && currentEntryId === 'octane'
         && Date.now() >= nextFrameDebugAt
       ) {
         nextFrameDebugAt = Date.now() + 1000;
@@ -1202,7 +1195,6 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       if (startup != null) {
         validateNativeStartupPayload(startup, {
           entryId: currentEntryId,
-          octane: currentEntryIsOctane,
           expectedRows: currentRows,
         });
         if (!Number.isFinite(openTime) || startup.moduleStartMs < openTime) {
@@ -1211,7 +1203,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         if (process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1') {
           log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup })}`);
         }
-        if (currentEntryIsOctane) {
+        if (currentEntryId === 'octane') {
           return { kind: 'octane-commit-fallback', openTime, timingInfo, startup };
         }
         if (pipelineEntry != null) {
@@ -1253,7 +1245,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     },
 
     startupUnsupportedContracts(entry) {
-      return startupMetricContracts(entry);
+      return startupMetricContracts(entry.id);
     },
 
     async recoverTransient(error) {
@@ -1326,8 +1318,6 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         cellGeometry.clear();
       }
       currentEntryId = entry.id;
-      currentEntry = entry;
-      currentEntryIsOctane = isOctaneEntry(entry);
       currentRows = rows;
       startupPayloadLogged = false;
       lastObserved = null;
@@ -1371,14 +1361,14 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       });
       pageCount++;
       await startConsoleStream();
-      if (currentEntryIsOctane && suite !== 'startup') await waitForOctaneReady();
+      if (entry.id === 'octane' && suite !== 'startup') await waitForOctaneReady();
       log(`  [sandbox] ${entry.id} rows-${rows} session=${session.session_id}`);
     },
 
     async driveCase(kase, scale) {
       let phase = 'operation';
       try {
-        if ((!currentEntryIsOctane || OCTANE_TRIGGER_MODE === 'tap') && kase.trigger.button) {
+        if ((currentEntryId !== 'octane' || OCTANE_TRIGGER_MODE === 'tap') && kase.trigger.button) {
           await ensureButtonPoint(kase.trigger.button(scale));
         }
         if (kase.pre !== 'empty') {
@@ -1386,7 +1376,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           await createRows(scale, timeoutForTable(kase));
         }
         if (kase.pre === 'rows+preselect') {
-          const preselect = currentEntryIsOctane && OCTANE_TRIGGER_MODE === 'driver'
+          const preselect = currentEntryId === 'octane' && OCTANE_TRIGGER_MODE === 'driver'
             ? () => evaluateOctaneDriver('select', 5)
             : () => tapCell('col-label', 5);
           const preselected = await measuredTap('select', preselect, DEFAULT_TIMEOUT_MS);
@@ -1397,7 +1387,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
 
         const expectedName = timingName(kase);
         phase = 'operation';
-        const trigger = currentEntryIsOctane
+        const trigger = currentEntryId === 'octane'
           ? octaneTrigger(kase, scale)
           : kase.trigger.button
             ? () => tapText(kase.trigger.button(scale))
@@ -1410,7 +1400,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         assertPostState(kase, scale, lastObserved);
       } catch (error) {
         const producerDnf = nativeProducerProtocolDnf(error, {
-          suite: 'table', entry: currentEntry, kase, scale,
+          suite: 'table', entry: currentEntryId, kase, scale,
         });
         if (producerDnf != null) {
           unsupportedTableCells.set(
@@ -1421,7 +1411,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           return;
         }
         if (String(error).includes('timeout')) {
-          const evidence = currentEntryIsOctane ? await octaneTimeoutEvidence() : null;
+          const evidence = currentEntryId === 'octane' ? await octaneTimeoutEvidence() : null;
           const timeoutMs = timeoutForTable(kase);
           const failure = {
             category: 'timeout',
@@ -1430,7 +1420,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
             scale,
             timeoutMs,
             phase,
-            triggerMode: currentEntryIsOctane ? OCTANE_TRIGGER_MODE : 'tap',
+            triggerMode: currentEntryId === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
             message: String(error),
             evidence,
           };
@@ -1497,7 +1487,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         };
       } catch (error) {
         const producerDnf = nativeProducerProtocolDnf(error, {
-          suite: 'startup', entry: currentEntry, rows: currentRows,
+          suite: 'startup', entry: currentEntryId, rows: currentRows,
         });
         if (producerDnf != null) {
           unsupportedStartupCells.set(
@@ -1528,7 +1518,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           return {
             dnf: true,
             failure,
-            metricContracts: startupMetricContracts(currentEntryId, currentEntryIsOctane),
+            metricContracts: startupMetricContracts(currentEntryId),
           };
         }
         throw error;

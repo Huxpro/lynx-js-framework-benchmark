@@ -42,7 +42,7 @@ export interface BenchRecord {
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'lab-entry' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
   comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
@@ -175,34 +175,6 @@ export interface NativeObservation {
   sourceRecordCount: number;
 }
 
-export interface NativeLabRun {
-  entryId: string;
-  entryCommit: string;
-  contractVersion: 'native-lab-entry-v1';
-  contractSha256: string;
-  expectedCellCount: number;
-  generatedAt: string;
-  machineId: string;
-  deviceCohortId: string;
-  leaseChainSha256: string;
-  environment: string;
-  sourceRunFile: string;
-  sourceRecordCount: number;
-}
-
-export interface WebLabRun {
-  entryId: string;
-  entryCommit: string;
-  contractVersion: 'web-lab-entry-v1';
-  contractSha256: string;
-  expectedCellCount: number;
-  generatedAt: string;
-  machineId: string;
-  environment: string;
-  sourceRunFile: string;
-  sourceRecordCount: number;
-}
-
 export interface TimelineSnapshot {
   id: string;
   label: string;
@@ -215,11 +187,6 @@ export interface TimelineSnapshot {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
-  labComparisonRecords: BenchRecord[];
-  webLabRuns: WebLabRun[];
-  webLabRecords: BenchRecord[];
-  nativeLabRuns: NativeLabRun[];
-  nativeLabRecords: BenchRecord[];
 }
 
 export interface HistoryTransportEvidence {
@@ -290,11 +257,8 @@ export interface EntryMeta {
   /** featured = default public view; lab = author-development variants
    * (versions/PRs/permutations), hidden until Lab mode is on. */
   tier?: 'featured' | 'lab';
-  ranking?: { enabled: true };
   color: string;
   presentation: { order: number; colorLight: string; colorDark: string };
-  nativeLab?: { enabled: true; contract: 'native-lab-entry-v1' };
-  webLab?: { enabled: true; contract: 'web-lab-entry-v1' };
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
 }
 
@@ -307,10 +271,6 @@ const collected = latest as unknown as {
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   history: BenchmarkHistory;
-  webLabRuns: WebLabRun[];
-  webLabRecords: BenchRecord[];
-  nativeLabRuns: NativeLabRun[];
-  nativeLabRecords: BenchRecord[];
 };
 export const BENCHMARK_HISTORY = collected.history;
 const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
@@ -371,11 +331,6 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     nativeObservations: [],
     nativeObservationRecords: [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
-    labComparisonRecords: checkpoint.current ? collected.labComparisonRecords : [],
-    webLabRuns: checkpoint.current ? collected.webLabRuns : [],
-    webLabRecords: checkpoint.current ? collected.webLabRecords : [],
-    nativeLabRuns: checkpoint.current ? collected.nativeLabRuns : [],
-    nativeLabRecords: checkpoint.current ? collected.nativeLabRecords : [],
   };
 });
 
@@ -396,9 +351,6 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
     }));
 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
-export const RANKED_LAB_IDS = ENTRIES
-  .filter((e) => e.tier === 'lab' && e.ranking?.enabled === true)
-  .map((e) => e.id);
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 

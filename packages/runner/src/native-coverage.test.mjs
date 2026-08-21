@@ -24,7 +24,6 @@ import {
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
 import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
-import { buildLabNativeContract } from './lab-native.mjs';
 
 const ENTRIES = [
   { id: 'octane', framework: 'octane' },
@@ -69,20 +68,6 @@ test('featured Native contract is exactly six entries by 35 cells and covers eve
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, contract.entryIds.length);
 });
 
-test('Native ranking contract includes an opted-in Lab entry and excludes ordinary Lab entries', () => {
-  const rankedLab = {
-    id: 'octane-new-2026-08-20', framework: 'octane', tier: 'lab',
-    ranking: { enabled: true },
-  };
-  const ordinaryLab = { id: 'experiment', framework: 'octane', tier: 'lab' };
-  const contract = buildNativeMatrixContract([...ENTRIES, rankedLab, ordinaryLab]);
-  assert.equal(contract.expectedCellCount, 245);
-  assert.deepEqual(contract.entryIds, [
-    'octane', 'octane-new-2026-08-20', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom',
-    'vue-vdom-ifr-et',
-  ]);
-});
-
 test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupported, and derivation bugs', () => {
   const contract = buildNativeMatrixContract(ENTRIES);
   const measured = recordFor(contract.cells[0]);
@@ -106,21 +91,6 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
   });
   assert.deepEqual(complete.summary, { measured: 210 });
   assert.doesNotThrow(() => assertNativeCoverage(complete));
-});
-
-test('Native coverage accepts an explicit single-entry Lab contract without filtering it out', () => {
-  const entry = {
-    id: 'octane-new1', framework: 'octane', tier: 'lab',
-    nativeLab: { enabled: true, contract: 'native-lab-entry-v1' },
-    provenance: { commit: '1'.repeat(40) },
-  };
-  const contract = buildLabNativeContract(entry);
-  const records = contract.cells.map((cell) => recordFor(cell));
-  const coverage = classifyNativeCoverage({ entries: [entry], contract, sourceRecords: records });
-  assert.equal(coverage.expectedCellCount, 35);
-  assert.deepEqual(coverage.entryIds, ['octane-new1']);
-  assert.deepEqual(coverage.summary, { measured: 35 });
-  assert.doesNotThrow(() => assertNativeCoverage(coverage));
 });
 
 test('Native defaults schedule the full table/startup matrix and reject silent scale loss', () => {

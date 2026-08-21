@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workloads';
 
-import { stormCommitGuard, webTimeoutFailure } from './harness-web.mjs';
+import { stormCommitGuard } from './harness-web.mjs';
 
 const wire = (toMtsMessages, toBtsMessages) => ({
   toMts: { messages: toMtsMessages, bytes: 0, byName: {} },
@@ -27,19 +27,4 @@ test('storm guard accepts at least one message per sequential tick in both direc
     wire(STORM_UPDATE_TICKS, STORM_UPDATE_TICKS),
   ), null);
   assert.equal(stormCommitGuard({ name: 'select' }, wire(1, 1)), null);
-});
-
-test('Web timeout evidence retains repetition, phase, ceiling, and observation', () => {
-  assert.deepEqual(webTimeoutFailure({
-    rep: 2,
-    phase: 'startup',
-    timeoutMs: 240000,
-    evidence: { finalCount: 17 },
-  }), {
-    rep: 2,
-    category: 'timeout',
-    phase: 'startup',
-    timeoutMs: 240000,
-    evidence: { finalCount: 17 },
-  });
 });

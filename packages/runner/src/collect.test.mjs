@@ -14,9 +14,7 @@ import {
   connectorPackageTreesSha256,
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
-import { buildNativeMatrixContract, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
-import { LAB_NATIVE_CONTRACT_VERSION, buildLabNativeContract } from './lab-native.mjs';
-import { LAB_WEB_CONTRACT_VERSION, buildLabWebContract } from './lab-web.mjs';
+import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   appendNativeMethodRevision,
@@ -131,9 +129,8 @@ function nativeCampaignMeta(entries, {
   connectorPackageTreesSha256 = connectorPackageTrees?.sha256,
   deviceCohort: suppliedDeviceCohort = null,
   cellLeaseIds: suppliedCellLeaseIds = null,
-  matrixContract: suppliedContract = null,
 } = {}) {
-  const contract = suppliedContract ?? buildNativeMatrixContract(entries);
+  const contract = buildNativeMatrixContract(entries);
   const campaign = {
     version: NATIVE_SANDBOX_CAMPAIGN_VERSION,
     id: campaignId,
@@ -204,187 +201,6 @@ const entryTiers = (featured, lab = []) => new Map([
   ...featured.map((id) => [id, 'featured']),
   ...lab.map((id) => [id, 'lab']),
 ]);
-
-test('collector admits only receipt-valid complete Native Lab checkpoints outside featured data', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-native-lab-'));
-  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
-  try {
-    writeRun(root, 'featured-web.json', {
-      machineId: 'web', score: 100, entries: ['react'], entryCommits: { react: 'react-new' },
-    });
-    const featured = nativeEntries(['react']);
-    const lab = {
-      id: 'octane-new1', framework: 'octane', tier: 'lab',
-      distDir: path.join(root, 'missing-octane-new1'),
-      provenance: { commit: 'new1-sha' },
-      nativeLab: { enabled: true, contract: LAB_NATIVE_CONTRACT_VERSION },
-    };
-    const contract = buildLabNativeContract(lab);
-    const records = contract.cells.map((cell) => ({
-      ...cell, harness: 'native', environment: 'native-lab-device',
-      samples: Array(cell.expectedReps).fill(1), n: cell.expectedReps,
-      median: 1, mean: 1, std: 0, min: 1, max: 1, p95: 1, ci95: 0,
-      detail: null, dnfCount: 0, failures: [],
-    }));
-    const writeLab = (file, generatedAt, sourceRecords, mutate = () => {}) => {
-      const meta = nativeCampaignMeta([lab], {
-        generatedAt, records: sourceRecords, matrixContract: contract,
-        campaignId: 'octane-new1-campaign', inputReceiptSha256: 'lab-input',
-        environment: 'native-lab-device',
-      });
-      Object.assign(meta, {
-        comparisonScope: 'lab-entry',
-        labNative: {
-          contractVersion: contract.version, contractSha256: contract.sha256,
-          expectedCellCount: contract.expectedCellCount,
-          entryId: lab.id, entryCommit: lab.provenance.commit,
-        },
-      });
-      const run = {
-        schemaVersion: 2, meta,
-        nativeCoverage: classifyNativeCoverage({
-          entries: [lab], contract, sourceRecords,
-        }),
-        records: sourceRecords,
-      };
-      mutate(run);
-      fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify(run));
-      return run;
-    };
-    const valid = writeLab('native-lab-valid.json', '2026-01-02T00:00:00Z', records);
-    writeLab('native-lab-newer-partial.json', '2026-01-03T00:00:00Z', records.slice(1));
-    writeLab('native-lab-newer-stale.json', '2026-01-04T00:00:00Z', records, (run) => {
-      run.meta.entryCommits[lab.id] = 'stale-sha';
-      run.meta.labNative.entryCommit = 'stale-sha';
-    });
-    writeLab('native-lab-newer-invalid-identity.json', '2026-01-05T00:00:00Z', records, (run) => {
-      delete run.meta.cellLeaseIds[nativeCellKey(records[0])];
-    });
-    writeLab('native-lab-newer-forged-ledger.json', '2026-01-06T00:00:00Z', records, (run) => {
-      run.nativeCoverage.summary = { measured: 34, unscheduled: 1 };
-    });
-
-    const out = collectRuns({
-      root, generatedAt: 'test', log: () => {},
-      entryTiers: entryTiers(['react'], [lab.id]),
-      entries: [...featured, lab],
-    });
-    assert.equal(out.comparisonRecords.some((record) => record.entry === lab.id), false);
-    assert.deepEqual(out.nativeCoverage.summary, { unscheduled: 35 });
-    assert.equal(out.nativeLabRecords.length, 35);
-    assert.deepEqual([...new Set(out.nativeLabRecords.map((record) => record.runFile))], [
-      'native-lab-valid.json',
-    ]);
-    assert.deepEqual(out.nativeLabRuns, [{
-      entryId: lab.id, entryCommit: lab.provenance.commit,
-      contractVersion: contract.version, contractSha256: contract.sha256,
-      expectedCellCount: 35, generatedAt: valid.meta.generatedAt,
-      machineId: valid.meta.machine.id, deviceCohortId: valid.meta.deviceCohort.id,
-      leaseChainSha256: valid.meta.leaseChain.sha256,
-      environment: 'native-lab-device', sourceRunFile: 'native-lab-valid.json',
-      sourceRecordCount: 35,
-    }]);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test('collector ranks an explicitly opted-in complete Web Lab campaign', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-web-lab-'));
-  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
-  try {
-    writeRun(root, 'featured-web.json', {
-      machineId: 'featured', score: 100, entries: ['react'], entryCommits: { react: 'react-new' },
-    });
-    const featured = nativeEntries(['react']);
-    const lab = {
-      id: 'octane-new-2026-08-20', framework: 'octane', tier: 'lab',
-      distDir: path.join(root, 'missing-octane-new'),
-      provenance: { commit: 'new-sha' },
-      ranking: { enabled: true },
-      webLab: { enabled: true, contract: LAB_WEB_CONTRACT_VERSION },
-    };
-    const contract = buildLabWebContract(lab);
-    const sampleRecord = (cell, value = 1) => ({
-      ...cell, harness: 'web', environment: 'chromium-test',
-      samples: Array(cell.expectedReps).fill(value), n: cell.expectedReps,
-      median: value, mean: value, std: 0, min: value, max: value, p95: value, ci95: 0,
-      detail: null, dnfCount: 0, failures: [],
-    });
-    const records = contract.cells.flatMap((cell) => {
-      const base = sampleRecord(cell);
-      if (!['updateStorm', 'selectStorm'].includes(cell.workload)) return [base];
-      const ticks = cell.workload === 'updateStorm' ? 50 : 30;
-      return [
-        base,
-        sampleRecord({ ...cell, metric: 'wireToMtsMsgs', unit: 'messages' }, ticks),
-        sampleRecord({ ...cell, metric: 'wireToBtsMsgs', unit: 'messages' }, ticks),
-      ];
-    });
-    const run = {
-      schemaVersion: 2,
-      meta: {
-        generatedAt: '2026-08-20T00:00:00Z',
-        completed: true,
-        completedAt: '2026-08-20T01:00:00Z',
-        machine: machine('web-lab'),
-        calibration: { probeVersion: 1, score: 200 },
-        comparisonScope: 'lab-entry-web',
-        entryCommits: { [lab.id]: lab.provenance.commit },
-        labWeb: {
-          entryId: lab.id,
-          entryCommit: lab.provenance.commit,
-          contractVersion: contract.version,
-          contractSha256: contract.sha256,
-          expectedCellCount: contract.expectedCellCount,
-        },
-      },
-      records,
-    };
-    fs.writeFileSync(path.join(root, 'results/runs/web-lab.json'), JSON.stringify(run));
-
-    const out = collectRuns({
-      root, generatedAt: 'test', log: () => {},
-      entryTiers: entryTiers(['react'], [lab.id]),
-      entries: [...featured, lab],
-    });
-    assert.equal(out.comparisonRecords.some((record) => record.entry === lab.id), false);
-    const ranked = out.labComparisonRecords.filter((record) =>
-      record.entry === lab.id && record.unit === 'ms');
-    assert.equal(ranked.length, contract.expectedCellCount);
-    assert.equal(ranked.every((record) => record.comparisonKind === 'calibrated-estimate'), true);
-    assert.equal(ranked.every((record) => record.median === 2), true);
-    assert.deepEqual(out.comparison.labEstimates.find((estimate) => estimate.entryId === lab.id), {
-      entryId: lab.id,
-      sourceRunFile: 'web-lab.json',
-      sourceGeneratedAt: run.meta.generatedAt,
-      sourceMachineId: run.meta.machine.id,
-      sourceCalibration: run.meta.calibration,
-      targetCalibration: { probeVersion: 1, score: 100 },
-      calibrationRatio: 2,
-      sourceRecordCount: records.length,
-      recordCount: records.length,
-    });
-    assert.equal(out.webLabRecords.length, records.length);
-    assert.deepEqual([...new Set(out.webLabRecords.map((record) => record.comparisonKind))], [
-      'lab-entry',
-    ]);
-    assert.deepEqual(out.webLabRuns, [{
-      entryId: lab.id,
-      entryCommit: lab.provenance.commit,
-      contractVersion: contract.version,
-      contractSha256: contract.sha256,
-      expectedCellCount: 35,
-      generatedAt: run.meta.generatedAt,
-      machineId: run.meta.machine.id,
-      environment: 'chromium-test',
-      sourceRunFile: 'web-lab.json',
-      sourceRecordCount: records.length,
-    }]);
-  } finally {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
 
 test('collect keeps record calibration and charts one coherent broadest run', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
@@ -497,13 +313,7 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       machineId: 'web', score: 100, entries: ['react', 'vue'],
       entryCommits: { react: 'react-new', vue: 'vue-new' },
     });
-    const rankedLab = {
-      id: 'octane-new-2026-08-20', framework: 'octane', tier: 'lab',
-      ranking: { enabled: true },
-      distDir: path.join(root, 'missing-octane-new'),
-      provenance: { commit: 'octane-new-sha' },
-    };
-    const entries = [...nativeEntries(['react', 'vue']), rankedLab];
+    const entries = nativeEntries(['react', 'vue']);
     fs.writeFileSync(path.join(root, 'results/runs/native-legacy-stale.json'), JSON.stringify({
       schemaVersion: 2,
       meta: {
@@ -572,11 +382,11 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       root,
       generatedAt: 'test',
       log: () => {},
-      entryTiers: entryTiers(['react', 'vue'], [rankedLab.id]),
+      entryTiers: entryTiers(['react', 'vue']),
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 105);
+    assert.equal(native.length, 70);
     assert.deepEqual(
       [...new Set(native.map((candidate) => candidate.machineId))],
       [validMeta.deviceCohort.id],
@@ -591,10 +401,10 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       out.nativeObservationRecords.some(({ runFile }) => runFile === 'native-v1-incomplete.json'),
       false,
     );
-    assert.deepEqual(out.comparison.harnesses[1].entryIds, [rankedLab.id, 'react', 'vue']);
+    assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, ['native-campaign.json']);
     assert.equal(native.some(({ runFile }) => runFile.includes('connector')), false);
-    assert.deepEqual(out.nativeCoverage.summary, { measured: 105 });
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 70 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

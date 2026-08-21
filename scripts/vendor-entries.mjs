@@ -8,8 +8,6 @@
 //   OCTANE_HUX2_BUILD an optional Octane S3 checkout with the same autoRows builds
 //   OCTANE_DOM_BUILD an optional octanejs/octane PR #693 checkout with the same builds
 //   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
-//   OCTANE_NEW_BUILD an optional dated new-lynx snapshot checkout
-//   OCTANE_NEW_PATCH the exact app-only Native instrumentation patch applied to that checkout
 //
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
@@ -30,8 +28,6 @@ const OCTANE_HUX1_BUILD = process.env.OCTANE_HUX1_BUILD ?? null;
 const OCTANE_HUX2_BUILD = process.env.OCTANE_HUX2_BUILD ?? null;
 const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
 const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
-const OCTANE_NEW_BUILD = process.env.OCTANE_NEW_BUILD ?? null;
-const OCTANE_NEW_PATCH = process.env.OCTANE_NEW_PATCH ?? null;
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
@@ -50,7 +46,6 @@ const PRESENTATION = {
   'octane-hux1': { order: 101, colorLight: '#9f3c0d', colorDark: '#ffaf87' },
   'octane-hux2': { order: 102, colorLight: '#702a08', colorDark: '#ffc09f' },
   'octane-dom': { order: 103, colorLight: '#4f1d05', colorDark: '#ffd6bf' },
-  'octane-new-2026-08-20': { order: 104, colorLight: '#7c3aed', colorDark: '#a78bfa' },
 };
 
 const sha256 = (file) =>
@@ -70,10 +65,7 @@ const gitInfo = (dir) => ({
     .toString().trim().length > 0,
 });
 
-function vendor({
-  id, label, framework, frameworkVersion, config, tags, tier = 'lab', color, source, ref,
-  buildCommand, cells, nativeLab = null, webLab = null, ranking = null,
-}) {
+function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', color, source, ref, buildCommand, cells }) {
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
@@ -104,9 +96,6 @@ function vendor({
     tier,
     color,
     presentation: PRESENTATION[id] ?? { order: 999, colorLight: color, colorDark: color },
-    ...(ranking == null ? {} : { ranking }),
-    ...(nativeLab == null ? {} : { nativeLab }),
-    ...(webLab == null ? {} : { webLab }),
     kind: 'vendored',
     provenance: {
       source: source.url,
@@ -122,83 +111,6 @@ function vendor({
   };
   fs.writeFileSync(path.join(dir, 'entry.json'), JSON.stringify(manifest, null, 2));
   console.log(`[vendor] ${id}: ${Object.keys(checks).length} bundles`);
-}
-
-function vendorNewLynxSnapshot(id, label, buildDir, patchFile) {
-  if (!wants(id)) return;
-  if (!buildDir || !fs.existsSync(path.join(buildDir, 'benchmarks/lynx-table/app/dist'))) {
-    console.log(`[vendor] ${id} skipped (set OCTANE_NEW_BUILD to a built checkout)`);
-    return;
-  }
-  const sourceGit = gitInfo(buildDir);
-  const expectedPaths = [
-    'benchmarks/lynx-table/app/src/App.lynx.tsrx',
-    'benchmarks/lynx-table/app/src/app.css',
-    'benchmarks/lynx-table/app/src/index.ts',
-    'packages/lynx/src/core/transport.ts',
-    'packages/lynx/src/main-thread.ts',
-  ];
-  const statusPaths = execFileSync(
-    'git',
-    ['status', '--porcelain', '--', 'packages', 'benchmarks', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
-    { cwd: buildDir },
-  ).toString().trimEnd().split('\n').filter(Boolean).map((line) => line.slice(3)).sort();
-  const resolvedPatch = patchFile == null || !fs.existsSync(patchFile)
-    ? null
-    : fs.realpathSync(path.resolve(patchFile));
-  const patchRoot = path.join(root, 'entries', '_patches');
-  if (
-    !sourceGit.dirty
-    || resolvedPatch == null
-    || path.dirname(resolvedPatch) !== patchRoot
-    || JSON.stringify(statusPaths) !== JSON.stringify(expectedPaths)
-  ) {
-    throw new Error(`${id}: frozen new-lynx must contain only the audited Native compatibility patch`);
-  }
-  const actualPatch = execFileSync(
-    'git', [
-      'diff', '--no-color', '--unified=0', '--',
-      'benchmarks/lynx-table/app/src',
-      'packages/lynx/src/core/transport.ts',
-      'packages/lynx/src/main-thread.ts',
-    ],
-    { cwd: buildDir },
-  ).toString();
-  if (actualPatch !== fs.readFileSync(resolvedPatch, 'utf8')) {
-    throw new Error(`${id}: applied Native compatibility patch does not match ${path.basename(resolvedPatch)}`);
-  }
-  const version = JSON.parse(
-    fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
-  ).version;
-  vendor({
-    id,
-    tier: 'lab',
-    label,
-    framework: 'octane',
-    frameworkVersion: version,
-    config: `.tsrx, keyed @for; Huxpro/octane new-lynx immutable snapshot ${sourceGit.commit.slice(0, 12)}`,
-    tags: ['optimized', 'snapshot'],
-    color: '#7c3aed',
-    source: {
-      url: 'https://github.com/Huxpro/octane',
-      commit: sourceGit.commit,
-      dirty: true,
-      patchName: path.basename(resolvedPatch),
-    },
-    ref: 'new-lynx',
-    buildCommand: 'node scripts/build-octane-upstream.mjs <clean-new-lynx-checkout>',
-    nativeLab: { enabled: true, contract: 'native-lab-entry-v1' },
-    webLab: { enabled: true, contract: 'web-lab-entry-v1' },
-    ranking: { enabled: true },
-    cells: AUTOROWS.map((rows) => ({
-      rows,
-      from: path.join(
-        buildDir,
-        'benchmarks/lynx-table/app',
-        rows === 0 ? 'dist' : `dist-rows${rows}`,
-      ),
-    })),
-  });
 }
 
 // -- capture patches applied to the source checkouts -------------------------
@@ -527,12 +439,5 @@ if (
 } else if (wants('octane-prior')) {
   console.log('[vendor] octane-prior skipped (set OCTANE_PRIOR_BUILD to a built checkout)');
 }
-
-vendorNewLynxSnapshot(
-  'octane-new-2026-08-20',
-  'Octane (new-2026-08-20)',
-  OCTANE_NEW_BUILD,
-  OCTANE_NEW_PATCH,
-);
 
 console.log('[vendor] done');

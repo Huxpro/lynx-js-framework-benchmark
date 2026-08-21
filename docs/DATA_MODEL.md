@@ -16,16 +16,12 @@ These are the only files/fields that require an update when their real-world inp
   calibration probe, CLI arguments, and entry commits. Prospective runs also retain a receipt for
   benchmark-repository commit/dirty digest, runtime lockfile versions and integrities, browser
   version, workload-contract hashes, every entry bundle hash, and sampling policy;
-- Native campaign identity: versioned ranked-entry matrix hash, immutable input-receipt and connector
+- Native campaign identity: versioned 210-cell matrix hash, immutable input-receipt and connector
   tree hashes, stable device-cohort identity, ordered structured lease-receipt chain, harness
   configuration, and the complete runtime policy;
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- formal Native Lab identity: `meta.comparisonScope=lab-entry`, the single entry commit,
-  contract version/hash, and expected cell count;
-- formal Web Lab identity: `meta.comparisonScope=lab-entry-web` and the corresponding immutable
-  `web-lab-entry-v1` contract metadata;
 - record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
@@ -64,7 +60,7 @@ Everything else is derived, including:
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an
   explicitly validated lease chain or included in cross-entry rankings;
-- the Native ranked-entry coverage classification and totals. Each cell is derived as measured,
+- the Native 210-cell coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
 - the automatic exact-source history index. Every valid run has a source audit row; a Web checkpoint
@@ -76,10 +72,6 @@ Everything else is derived, including:
 - rank-over-time points. A point exists only inside its exact eligible cohort. Missing cells, DNF,
   isolated observations, incompatible cohorts, and historical storms without enough transport
   evidence remain explicit gaps and are never carried forward, interpolated, or cross-ranked;
-- accepted Native Lab run descriptors and records. These are derived only from one source run
-  whose immutable entry commit and exact 35-cell contract match the current manifest and whose
-  `checkpointComplete` flag, coverage ledger, receipts, and lease chain pass the Native campaign
-  protocol; incomplete checkpoints stay in the source archive but produce no Lab view;
 - `results/latest.json` in its entirety (a checked-in materialized cache);
 - entry lists, available scales/cases, rankings, baselines, ratios, interactive scores, geomeans,
   trend exponents, plot domains, bar widths, totals, sorting, and every table shown by the site.
