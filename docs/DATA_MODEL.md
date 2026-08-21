@@ -16,7 +16,7 @@ These are the only files/fields that require an update when their real-world inp
   calibration probe, CLI arguments, and entry commits. Prospective runs also retain a receipt for
   benchmark-repository commit/dirty digest, runtime lockfile versions and integrities, browser
   version, workload-contract hashes, every entry bundle hash, and sampling policy;
-- Native campaign identity: versioned 210-cell matrix hash, immutable input-receipt and connector
+- Native campaign identity: versioned ranked-entry matrix hash, immutable input-receipt and connector
   tree hashes, stable device-cohort identity, ordered structured lease-receipt chain, harness
   configuration, and the complete runtime policy;
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
@@ -65,7 +65,7 @@ Everything else is derived, including:
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an
   explicitly validated lease chain or included in cross-entry rankings;
-- the Native 210-cell coverage classification and totals. Each cell is derived as measured,
+- the Native ranked-entry coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
 - the automatic exact-source history index. Every valid run has a source audit row; Web checkpoints

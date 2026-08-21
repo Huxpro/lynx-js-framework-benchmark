@@ -117,15 +117,17 @@ export function resolveNativeEntrySelection(allEntries, {
       });
 
   if (!labNative) {
-    const selected = requested ?? allEntries.filter((entry) => entry.tier !== 'lab');
-    const labs = selected.filter((entry) => entry.tier === 'lab');
+    const selected = requested ?? allEntries.filter((entry) => entry.tier !== 'lab'
+      || entry.ranking?.enabled === true);
+    const labs = selected.filter((entry) => entry.tier === 'lab'
+      && entry.ranking?.enabled !== true);
     if (labs.length > 0) {
       throw new Error(
         `Native Lab entries (${labs.map((entry) => entry.id).join(', ')}) require `
         + `--lab-native and an explicit single --entry.`,
       );
     }
-    return { entries: selected, comparisonScope: 'featured-cohort', contract: null };
+    return { entries: selected, comparisonScope: 'ranking-cohort', contract: null };
   }
 
   if (requested == null || requested.length !== 1) {

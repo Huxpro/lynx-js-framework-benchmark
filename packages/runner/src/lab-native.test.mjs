@@ -19,6 +19,7 @@ const lab = {
   provenance: { commit: 'abc123' },
   nativeLab: { enabled: true, contract: LAB_NATIVE_CONTRACT_VERSION },
 };
+const rankedLab = { ...lab, ranking: { enabled: true } };
 
 test('Native defaults to featured and rejects implicit Lab execution', () => {
   assert.deepEqual(
@@ -29,6 +30,12 @@ test('Native defaults to featured and rejects implicit Lab execution', () => {
     () => resolveNativeEntrySelection([featured, lab], { requestedEntryIds: [lab.id] }),
     /require --lab-native/,
   );
+});
+
+test('Native ranking cohort includes only explicitly ranked Lab entries', () => {
+  const selected = resolveNativeEntrySelection([featured, rankedLab]);
+  assert.deepEqual(selected.entries.map((entry) => entry.id), ['octane', 'octane-new1']);
+  assert.equal(selected.comparisonScope, 'ranking-cohort');
 });
 
 test('Lab Native requires one explicit opted-in entry and resolves the full contract', () => {

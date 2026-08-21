@@ -14,7 +14,13 @@ import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
 import { TimelineSlider } from './components/TimelineSlider';
 import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
-import { ENTRIES, FEATURED_IDS, TIMELINE_SNAPSHOTS, TimelineSnapshot } from './data';
+import {
+  ENTRIES,
+  FEATURED_IDS,
+  RANKED_LAB_IDS,
+  TIMELINE_SNAPSHOTS,
+  TimelineSnapshot,
+} from './data';
 import { useTheme } from './hooks';
 
 // Sharable comparison state: ?entries=a,b,c picks an exact featured set.
@@ -23,7 +29,10 @@ function initialSelection(): Set<string> {
   const allowed = params.get('lab') === '1' ? ENTRIES.map((entry) => entry.id) : FEATURED_IDS;
   const ids = params.get('entries')?.split(',').map((s) => s.trim())
     .filter((id) => allowed.includes(id));
-  return new Set(ids?.length ? ids : FEATURED_IDS);
+  const defaults = params.get('lab') === '1'
+    ? [...FEATURED_IDS, ...RANKED_LAB_IDS]
+    : FEATURED_IDS;
+  return new Set(ids?.length ? ids : defaults);
 }
 
 function syncUrl(selected: Set<string>, labMode: boolean) {
@@ -99,7 +108,7 @@ function AppContent({
     const next = !labMode;
     setSelected((current) => {
       const filtered = next
-        ? current
+        ? new Set([...current, ...RANKED_LAB_IDS])
         : new Set([...current].filter((id) => FEATURED_IDS.includes(id)));
       syncUrl(filtered, next);
       return filtered;
@@ -131,9 +140,7 @@ function AppContent({
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
 
   const nativeHasData = select({ harness: 'native' }).length > 0;
-  const chartSelection = harness === 'native'
-    ? new Set([...selected].filter((id) => FEATURED_IDS.includes(id)))
-    : selected;
+  const chartSelection = selected;
 
   return (
     <div className="page">

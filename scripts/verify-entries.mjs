@@ -41,6 +41,13 @@ for (const id of ids) {
     }
   }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
+  if (manifest.ranking != null) {
+    if (manifest.tier !== 'lab') fail(`${id}: ranking is only valid for tier=lab`);
+    if (manifest.ranking.enabled !== true) fail(`${id}: ranking.enabled must be true`);
+    if (manifest.webLab?.enabled !== true || manifest.nativeLab?.enabled !== true) {
+      fail(`${id}: ranked Lab entries require complete Web and Native Lab contracts`);
+    }
+  }
   if (manifest.nativeLab != null) {
     if (manifest.tier !== 'lab') fail(`${id}: nativeLab is only valid for tier=lab`);
     if (manifest.nativeLab.enabled !== true) fail(`${id}: nativeLab.enabled must be true`);

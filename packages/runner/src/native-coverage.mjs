@@ -33,11 +33,12 @@ export function nativeCellKey(cell) {
 }
 
 export function buildNativeMatrixContract(entries) {
-  const featured = entries
-    .filter((entry) => (entry.tier ?? 'featured') !== 'lab')
+  const ranked = entries
+    .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
+      || entry.ranking?.enabled === true)
     .sort((a, b) => a.id.localeCompare(b.id));
   const cells = [];
-  for (const entry of featured) {
+  for (const entry of ranked) {
     for (const kase of TABLE_CASES) {
       for (const scale of kase.scales) {
         cells.push({
@@ -65,10 +66,10 @@ export function buildNativeMatrixContract(entries) {
   }
   const payload = {
     version: NATIVE_MATRIX_CONTRACT_VERSION,
-    entryIds: featured.map((entry) => entry.id),
+    entryIds: ranked.map((entry) => entry.id),
     cells,
   };
-  const expectedCount = featured.length * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY;
+  const expectedCount = ranked.length * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY;
   if (cells.length !== expectedCount) {
     throw new Error(
       `Native matrix definition drifted to ${cells.length} cells; expected ${expectedCount}.`,

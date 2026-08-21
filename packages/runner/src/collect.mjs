@@ -1078,6 +1078,10 @@ export function collectRuns({
   const entryById = new Map(currentEntries.map((entry) => [entry.id, entry]));
   const staticByEntry = new Map(currentEntries.map((entry) => [entry.id, bundleRecords(entry)]));
   const featuredIds = new Set([...resolvedTiers].filter(([, tier]) => tier !== 'lab').map(([id]) => id));
+  const nativeRankedIds = new Set(currentEntries
+    .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
+      || entry.ranking?.enabled === true)
+    .map((entry) => entry.id));
   const labIds = [...resolvedTiers].filter(([, tier]) => tier === 'lab').map(([id]) => id);
 
   for (const file of runFiles) {
@@ -1143,7 +1147,7 @@ export function collectRuns({
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
-    selectNativeCohort(runs, featuredIds, entryById);
+    selectNativeCohort(runs, nativeRankedIds, entryById);
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
       ({
@@ -1157,7 +1161,7 @@ export function collectRuns({
       })))
     : [];
   const nativeCoverage = classifyNativeCoverage({
-    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+    entries: [...nativeRankedIds].map((id) => entryById.get(id)).filter(Boolean),
     sourceRecords: nativeSourceRecords,
     publishedRecords: nativeSourceRecords,
     archiveRecords: [...merged.values()].filter((record) => record.harness === 'native'),
@@ -1181,7 +1185,7 @@ export function collectRuns({
   comparisonRecords.push(...nativeSourceRecords);
   const nativeObservations = selectNativeObservations(
     runs,
-    featuredIds,
+    nativeRankedIds,
     entryById,
     nativeCohort,
     nativeArchiveOnlyFiles,
@@ -1233,11 +1237,16 @@ export function collectRuns({
   const comparisonCohort = comparisonRun.run.meta.receipt?.comparabilityCohort ?? null;
   for (const entryId of labIds) {
     const labEntry = entryById.get(entryId);
-    if (labEntry?.webLab?.enabled === true) continue;
+    const rankedWebLab = labEntry?.webLab?.enabled === true
+      && labEntry?.ranking?.enabled === true;
+    if (labEntry?.webLab?.enabled === true && !rankedWebLab) continue;
     let source = null;
     for (const candidate of runs) {
       const candidateCohort = candidate.run.meta.receipt?.comparabilityCohort ?? null;
-      if (candidateCohort !== comparisonCohort) continue;
+      const completeWebLab = rankedWebLab
+        ? assertCompleteLabWebRun(candidate.run, labEntry)
+        : null;
+      if (candidateCohort !== comparisonCohort && completeWebLab == null) continue;
       if (!candidate.run.records.some((r) =>
         r.entry === entryId && r.harness === 'web'
         && isBenchmarkRecord(r) && isRankingEligible(r))) continue;

@@ -290,6 +290,7 @@ export interface EntryMeta {
   /** featured = default public view; lab = author-development variants
    * (versions/PRs/permutations), hidden until Lab mode is on. */
   tier?: 'featured' | 'lab';
+  ranking?: { enabled: true };
   color: string;
   presentation: { order: number; colorLight: string; colorDark: string };
   nativeLab?: { enabled: true; contract: 'native-lab-entry-v1' };
@@ -395,6 +396,9 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
     }));
 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
+export const RANKED_LAB_IDS = ENTRIES
+  .filter((e) => e.tier === 'lab' && e.ranking?.enabled === true)
+  .map((e) => e.id);
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 

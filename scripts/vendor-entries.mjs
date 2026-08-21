@@ -72,7 +72,7 @@ const gitInfo = (dir) => ({
 
 function vendor({
   id, label, framework, frameworkVersion, config, tags, tier = 'lab', color, source, ref,
-  buildCommand, cells, nativeLab = null, webLab = null,
+  buildCommand, cells, nativeLab = null, webLab = null, ranking = null,
 }) {
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
@@ -104,6 +104,7 @@ function vendor({
     tier,
     color,
     presentation: PRESENTATION[id] ?? { order: 999, colorLight: color, colorDark: color },
+    ...(ranking == null ? {} : { ranking }),
     ...(nativeLab == null ? {} : { nativeLab }),
     ...(webLab == null ? {} : { webLab }),
     kind: 'vendored',
@@ -188,6 +189,7 @@ function vendorNewLynxSnapshot(id, label, buildDir, patchFile) {
     buildCommand: 'node scripts/build-octane-upstream.mjs <clean-new-lynx-checkout>',
     nativeLab: { enabled: true, contract: 'native-lab-entry-v1' },
     webLab: { enabled: true, contract: 'web-lab-entry-v1' },
+    ranking: { enabled: true },
     cells: AUTOROWS.map((rows) => ({
       rows,
       from: path.join(

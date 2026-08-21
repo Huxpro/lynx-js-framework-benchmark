@@ -289,7 +289,7 @@ test('collector admits only receipt-valid complete Native Lab checkpoints outsid
   }
 });
 
-test('collector publishes a complete Web Lab run only as absolute single-entry evidence', () => {
+test('collector ranks an explicitly opted-in complete Web Lab campaign', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-web-lab-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
   try {
@@ -301,26 +301,26 @@ test('collector publishes a complete Web Lab run only as absolute single-entry e
       id: 'octane-new-2026-08-20', framework: 'octane', tier: 'lab',
       distDir: path.join(root, 'missing-octane-new'),
       provenance: { commit: 'new-sha' },
+      ranking: { enabled: true },
       webLab: { enabled: true, contract: LAB_WEB_CONTRACT_VERSION },
     };
     const contract = buildLabWebContract(lab);
-    const records = contract.cells.map((cell) => ({
-      ...cell,
-      harness: 'web',
-      environment: 'chromium-test',
-      samples: Array(cell.expectedReps).fill(1),
-      n: cell.expectedReps,
-      median: 1,
-      mean: 1,
-      std: 0,
-      min: 1,
-      max: 1,
-      p95: 1,
-      ci95: 0,
-      detail: null,
-      dnfCount: 0,
-      failures: [],
-    }));
+    const sampleRecord = (cell, value = 1) => ({
+      ...cell, harness: 'web', environment: 'chromium-test',
+      samples: Array(cell.expectedReps).fill(value), n: cell.expectedReps,
+      median: value, mean: value, std: 0, min: value, max: value, p95: value, ci95: 0,
+      detail: null, dnfCount: 0, failures: [],
+    });
+    const records = contract.cells.flatMap((cell) => {
+      const base = sampleRecord(cell);
+      if (!['updateStorm', 'selectStorm'].includes(cell.workload)) return [base];
+      const ticks = cell.workload === 'updateStorm' ? 50 : 30;
+      return [
+        base,
+        sampleRecord({ ...cell, metric: 'wireToMtsMsgs', unit: 'messages' }, ticks),
+        sampleRecord({ ...cell, metric: 'wireToBtsMsgs', unit: 'messages' }, ticks),
+      ];
+    });
     const run = {
       schemaVersion: 2,
       meta: {
@@ -349,9 +349,23 @@ test('collector publishes a complete Web Lab run only as absolute single-entry e
       entries: [...featured, lab],
     });
     assert.equal(out.comparisonRecords.some((record) => record.entry === lab.id), false);
-    assert.equal(out.labComparisonRecords.some((record) => record.entry === lab.id), false);
-    assert.equal(out.comparison.labEstimates.some((estimate) => estimate.entryId === lab.id), false);
-    assert.equal(out.webLabRecords.length, 35);
+    const ranked = out.labComparisonRecords.filter((record) =>
+      record.entry === lab.id && record.unit === 'ms');
+    assert.equal(ranked.length, contract.expectedCellCount);
+    assert.equal(ranked.every((record) => record.comparisonKind === 'calibrated-estimate'), true);
+    assert.equal(ranked.every((record) => record.median === 2), true);
+    assert.deepEqual(out.comparison.labEstimates.find((estimate) => estimate.entryId === lab.id), {
+      entryId: lab.id,
+      sourceRunFile: 'web-lab.json',
+      sourceGeneratedAt: run.meta.generatedAt,
+      sourceMachineId: run.meta.machine.id,
+      sourceCalibration: run.meta.calibration,
+      targetCalibration: { probeVersion: 1, score: 100 },
+      calibrationRatio: 2,
+      sourceRecordCount: records.length,
+      recordCount: records.length,
+    });
+    assert.equal(out.webLabRecords.length, records.length);
     assert.deepEqual([...new Set(out.webLabRecords.map((record) => record.comparisonKind))], [
       'lab-entry',
     ]);
@@ -365,7 +379,7 @@ test('collector publishes a complete Web Lab run only as absolute single-entry e
       machineId: run.meta.machine.id,
       environment: 'chromium-test',
       sourceRunFile: 'web-lab.json',
-      sourceRecordCount: 35,
+      sourceRecordCount: records.length,
     }]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -483,7 +497,13 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       machineId: 'web', score: 100, entries: ['react', 'vue'],
       entryCommits: { react: 'react-new', vue: 'vue-new' },
     });
-    const entries = nativeEntries(['react', 'vue']);
+    const rankedLab = {
+      id: 'octane-new-2026-08-20', framework: 'octane', tier: 'lab',
+      ranking: { enabled: true },
+      distDir: path.join(root, 'missing-octane-new'),
+      provenance: { commit: 'octane-new-sha' },
+    };
+    const entries = [...nativeEntries(['react', 'vue']), rankedLab];
     fs.writeFileSync(path.join(root, 'results/runs/native-legacy-stale.json'), JSON.stringify({
       schemaVersion: 2,
       meta: {
@@ -552,11 +572,11 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       root,
       generatedAt: 'test',
       log: () => {},
-      entryTiers: entryTiers(['react', 'vue']),
+      entryTiers: entryTiers(['react', 'vue'], [rankedLab.id]),
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 70);
+    assert.equal(native.length, 105);
     assert.deepEqual(
       [...new Set(native.map((candidate) => candidate.machineId))],
       [validMeta.deviceCohort.id],
@@ -571,10 +591,10 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       out.nativeObservationRecords.some(({ runFile }) => runFile === 'native-v1-incomplete.json'),
       false,
     );
-    assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
+    assert.deepEqual(out.comparison.harnesses[1].entryIds, [rankedLab.id, 'react', 'vue']);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, ['native-campaign.json']);
     assert.equal(native.some(({ runFile }) => runFile.includes('connector')), false);
-    assert.deepEqual(out.nativeCoverage.summary, { measured: 70 });
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 105 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

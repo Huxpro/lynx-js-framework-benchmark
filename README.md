@@ -91,7 +91,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 210-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign, ranked-entry matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -166,11 +166,11 @@ are never ranked as FCP. See
 - **`native`:** real `main.lynx.bundle` execution in LynxExplorer. The checked-in Sandbox
   adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
   entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
-  harness. Native and Web numbers are never mixed in one chart. The published featured cohort
-  uses ReactLynx, four Vue-Lynx configs, and upstream Octane only. A Lab manifest may opt into
+  harness. Native and Web numbers are never mixed in one chart. The published ranking cohort
+  uses every featured entry plus any Lab manifest with `ranking.enabled: true`. A Lab manifest may opt into
   the separate `native-lab-entry-v1` contract: one explicit immutable-commit entry, all 35
-  Native cells, 5 table reps and 3 startup reps. Those results are shown only as absolute Lab
-  observations and never enter the featured cohort, rankings, heatmaps, geomeans, or ratios.
+  Native cells, 5 table reps and 3 startup reps. Ordinary Lab results remain absolute observations;
+  an explicitly ranked Lab entry instead joins the complete same-device cohort.
 
 ## Adding an entry
 
@@ -192,6 +192,10 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
 
+`ranking: { "enabled": true }` is a narrow, fail-closed opt-in. It requires both complete Lab
+contracts. Web records join Lab-mode rankings through the recorded preflight calibration; Native
+records join only after every ranked entry completes one exact device/method/input cohort.
+
 For an opted-in Lab entry, run the real Sandbox campaign without matrix overrides:
 
 ```sh
@@ -204,6 +208,7 @@ pnpm bench run --harness native --lab-native --entry octane-new-2026-08-20 \
 formal Lab campaign. The run source carries the entry commit and contract hash.
 For official Sandbox execution, `scripts/run-sandbox-lab.mjs` wraps that command with a fresh
 lease POST, exact-serial ADB connect, receipt capture, and mandatory DELETE-then-disconnect cleanup.
+Use `ranking-cohort` in place of the entry ID to run every ranked entry together.
 The corresponding formal Web campaign is similarly explicit:
 
 ```sh

@@ -188,14 +188,15 @@ now runs real Native Engine bundles:
   workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
-mode switch. A publishable Native campaign schedules the full six-entry 210-cell contract. Since
+mode switch. A publishable Native campaign schedules 35 cells for every ranked entry: all featured
+entries plus Lab entries explicitly marked `ranking.enabled`. Since
 the honest per-cell timeout can exceed one Sandbox lease's capacity, a campaign may continue over
 multiple official leases of the same physical device. Each acquisition supplies `serial`,
 `issueId`, and `expiredAt`; the raw serial is equality-checked and replaced in metadata by its
 SHA-256. A stable device cohort hashes that serial digest together with hardware/environment,
 campaign, matrix, input, connector toolchain, and harness method, while the ordered lease chain
 preserves every per-lease receipt. The reusable ADB serial or a lease ID alone is never sufficient
-identity. Native Octane is upstream-only; Lab variants are not scheduled.
+identity. Ordinary Lab variants are not scheduled in this cohort.
 
 The CLI atomically checkpoints after every cell and stops before lease expiry with
 `checkpointComplete: false`. `--resume` accepts only an incomplete v2 checkpoint, validates the
@@ -225,7 +226,7 @@ calibration output, `latest.json`, and every site score/visual are derived.
   subsets; publishable Native runs require the full matrix. Machine fingerprint + calibration
   score are embedded. Native files are atomically rewritten after every completed cell; the
   `meta.checkpoint` marker, `checkpointComplete`, stable device cohort, ordered lease chain,
-  per-cell lease attribution, and 210-cell coverage ledger identify this resumable format.
+  per-cell lease attribution, and ranked-entry coverage ledger identify this resumable format.
 - `bench preflight` (also auto-run before `run`) executes a fixed, versioned CPU probe in the
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
@@ -244,9 +245,10 @@ calibration output, `latest.json`, and every site score/visual are derived.
   `ms` fields are scaled by source-score / comparison-score and marked `calibrated-estimate`;
   heap, wire, bundle, and count fields remain `historical`. Calibration cannot correct memory
   hierarchy or core-count differences.
-- A formal `web-lab-entry-v1` run is instead emitted as `webLabRuns` and `webLabRecords`: one
-  complete immutable-commit, single-entry campaign shown only as absolute observations. It never
-  enters featured rankings, heatmaps, geomeans, calibrated estimates, or cross-entry ratios.
+- A formal `web-lab-entry-v1` run is emitted as `webLabRuns` and `webLabRecords`: one complete
+  immutable-commit campaign preserving absolute observations. When its manifest also sets
+  `ranking.enabled`, its comparable records additionally enter Lab-mode charts through the same
+  explicit preflight calibration path; otherwise it remains observation-only.
 - A Lab manifest can separately opt into Native with
   `nativeLab: { enabled: true, contract: "native-lab-entry-v1" }`. The Native CLI then requires
   `--lab-native --entry <one-id>` and derives its matrix from the contract: 27 table cells plus
@@ -254,6 +256,8 @@ calibration output, `latest.json`, and every site score/visual are derived.
   exactly those 35 cells, no other entry, a matching contract hash, and the manifest commit. It
   emits `nativeLabRuns` and `nativeLabRecords`, intentionally disjoint from featured
   `comparisonRecords` and isolated featured `nativeObservationRecords`.
+  A `ranking.enabled` Lab entry additionally belongs to the full Native ranking contract and can
+  enter `comparisonRecords` only with every other ranked entry in one exact device cohort.
   The paired `web-lab-entry-v1` contract likewise requires one explicit immutable Lab entry,
   every table scale through 30k, all four startup scales, and fixed 7/3/5 repetitions. Its
   latency/FCP/settled cells are a required coverage floor; Web CPU/wire/bundle records remain

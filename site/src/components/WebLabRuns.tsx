@@ -39,9 +39,9 @@ export function WebLabRuns({ theme }: { theme: 'light' | 'dark' }) {
       <div className="observation-kicker">Web Lab Entry</div>
       <h2 id="web-lab-title">Complete single-entry Chromium campaigns</h2>
       <p>
-        Each sheet is one immutable-commit, 35-cell Web campaign. These are absolute Lab
-        observations: they never enter featured heatmaps, geomeans, fastest rankings, calibrated
-        estimates, or cross-entry ratios.
+        Each sheet is one immutable-commit, 35-cell Web campaign. Ranked Lab entries also feed the
+        comparison charts through the recorded preflight calibration; this sheet preserves their
+        unscaled absolute observations.
       </p>
       {snapshot.webLabRuns.map((run) => {
         const records = selectWebLab({ entry: run.entryId, harness: 'web' });
@@ -66,7 +66,11 @@ export function WebLabRuns({ theme }: { theme: 'light' | 'dark' }) {
                   Immutable commit <code>{run.entryCommit.slice(0, 12)}</code> · complete {run.expectedCellCount}-cell contract
                 </div>
               </div>
-              <div className="observation-stamp">Lab · not ranked</div>
+              <div className="observation-stamp">
+                {snapshot.comparison.labEstimates.some((estimate) => estimate.entryId === run.entryId)
+                  ? 'Lab · ranked (calibrated)'
+                  : 'Lab · not ranked'}
+              </div>
             </header>
             <div className="observation-grid">
               <CellList title="table @1k" rows={tableRows(1000)} />

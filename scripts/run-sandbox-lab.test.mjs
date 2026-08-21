@@ -215,3 +215,41 @@ test('Sandbox Lab wrapper performs no device action when lease acquisition fails
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('Sandbox wrapper runs the complete ranking cohort without single-entry Lab flags', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sandbox-ranking-'));
+  const evidence = path.join(dir, 'evidence');
+  const events = path.join(dir, 'events');
+  const adb = path.join(dir, 'adb');
+  const pnpm = path.join(dir, 'pnpm');
+  const runFile = path.join(dir, 'complete-run.json');
+  const server = http.createServer((request, response) => {
+    if (request.method === 'POST') {
+      response.end(JSON.stringify({ acquired: 'sandbox.ranking:1234', expiredAt: Date.now() + 60_000 }));
+    } else response.end('{}');
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  try {
+    fs.writeFileSync(runFile, JSON.stringify({ meta: { checkpointComplete: true } }));
+    executable(adb, 'exit 0');
+    executable(pnpm, `printf '%s\n' "$*" >> '${events}'\nprintf '245 records → ${runFile}\n'\nexit 0`);
+    const result = await run(process.execPath, [script, 'ranking-cohort', evidence], {
+      env: {
+        ...process.env,
+        SANDBOX_BASE_URL: `http://127.0.0.1:${server.address().port}`,
+        SANDBOX_ISSUER: 'benchmark@example.test',
+        SANDBOX_ISSUE_ID: 'ranking-test',
+        ADB_BIN: adb,
+        PNPM_BIN: pnpm,
+      },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      fs.readFileSync(events, 'utf8').trim(),
+      'bench run --harness native --adapter packages/runner/adapters/lynx-sandbox-android.mjs',
+    );
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

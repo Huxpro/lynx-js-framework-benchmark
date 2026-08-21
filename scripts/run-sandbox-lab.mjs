@@ -6,7 +6,8 @@ import path from 'node:path';
 function usage() {
   throw new Error(
     'usage: node scripts/run-sandbox-lab.mjs <entry-id> <evidence-dir> '
-    + '(requires SANDBOX_ISSUER and SANDBOX_ISSUE_ID)',
+    + '(use entry-id "ranking-cohort" for every ranked entry; '
+    + 'requires SANDBOX_ISSUER and SANDBOX_ISSUE_ID)',
   );
 }
 
@@ -33,8 +34,10 @@ function command(binary, args, { env = process.env } = {}) {
 
 const [entryId, evidenceInput, ...extra] = process.argv.slice(2);
 if (!entryId || !evidenceInput || extra.length > 0) usage();
-if (!/^octane-new-\d{4}-\d{2}-\d{2}$/.test(entryId)) {
-  throw new Error('Sandbox Lab runner only accepts a dated octane-new-YYYY-MM-DD entry.');
+if (entryId !== 'ranking-cohort' && !/^octane-new-\d{4}-\d{2}-\d{2}$/.test(entryId)) {
+  throw new Error(
+    'Sandbox runner accepts "ranking-cohort" or a dated octane-new-YYYY-MM-DD entry.',
+  );
 }
 const issuer = required(process.env.SANDBOX_ISSUER, 'SANDBOX_ISSUER');
 const issueId = required(process.env.SANDBOX_ISSUE_ID, 'SANDBOX_ISSUE_ID');
@@ -112,7 +115,8 @@ try {
     LYNX_SANDBOX_LEASE_RECEIPT: receiptPath,
   };
   const runnerArgs = [
-    'bench', 'run', '--harness', 'native', '--lab-native', '--entry', entryId,
+    'bench', 'run', '--harness', 'native',
+    ...(entryId === 'ranking-cohort' ? [] : ['--lab-native', '--entry', entryId]),
     '--adapter', 'packages/runner/adapters/lynx-sandbox-android.mjs',
     ...(resumeCheckpoint == null ? [] : ['--resume', resumeCheckpoint]),
   ];

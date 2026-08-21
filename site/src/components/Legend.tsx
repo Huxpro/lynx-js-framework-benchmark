@@ -13,7 +13,8 @@ export function Legend({
   labMode: boolean;
   harness: string;
 }) {
-  const visible = ENTRIES.filter((e) => e.tier !== 'lab' || (labMode && harness === 'web'));
+  const visible = ENTRIES.filter((e) => e.tier !== 'lab'
+    || (labMode && (harness === 'web' || e.ranking?.enabled === true)));
   return (
     <div className="legend" role="group" aria-label="Entries">
       {visible.map((e) => (

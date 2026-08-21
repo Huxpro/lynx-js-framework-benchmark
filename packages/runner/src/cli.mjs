@@ -132,8 +132,9 @@ async function cmdRun(args) {
       startupReps,
     } = resolveNativeRunMatrix(args);
     const root = repoRoot();
-    const featuredIds = allEntries
-      .filter((entry) => (entry.tier ?? 'featured') !== 'lab')
+    const rankedIds = allEntries
+      .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
+        || entry.ranking?.enabled === true)
       .map((entry) => entry.id)
       .sort();
     const selectedIds = entries.map((entry) => entry.id).sort();
@@ -144,10 +145,10 @@ async function cmdRun(args) {
       || nativeCases.length !== TABLE_CASES.length
       || scales.length !== NATIVE_TABLE_SCALES.length
       || startupScales.length !== NATIVE_STARTUP_SCALES.length
-      || (!selection.contract && JSON.stringify(selectedIds) !== JSON.stringify(featuredIds))
+      || (!selection.contract && JSON.stringify(selectedIds) !== JSON.stringify(rankedIds))
     ) {
       throw new Error(
-        'Native publishable campaigns must run every featured entry and the complete table/startup '
+        'Native publishable campaigns must run every ranked entry and the complete table/startup '
         + 'matrix; use unit tests or a separate diagnostic tool for partial probes.',
       );
     }

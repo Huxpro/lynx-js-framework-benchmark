@@ -39,9 +39,9 @@ export function NativeLabRuns({ theme }: { theme: 'light' | 'dark' }) {
       <div className="observation-kicker">Native Lab Entry</div>
       <h2 id="native-lab-title">Complete single-entry Sandbox campaigns</h2>
       <p>
-        Each sheet is one immutable-commit, 35-cell Native campaign. These are absolute Lab
-        observations: they never enter the featured cohort, heatmaps, geomeans, fastest rankings,
-        or cross-entry ratios.
+        Each sheet is one immutable-commit, 35-cell Native campaign preserving absolute Lab
+        observations. A ranked Lab entry appears in comparison charts only from a separate,
+        complete same-device campaign containing every ranked entry.
       </p>
       {snapshot.nativeLabRuns.map((run) => {
         const records = selectNativeLab({ entry: run.entryId, harness: 'native' });
@@ -62,7 +62,12 @@ export function NativeLabRuns({ theme }: { theme: 'light' | 'dark' }) {
                   Immutable commit <code>{run.entryCommit.slice(0, 12)}</code> · complete {run.expectedCellCount}-cell contract
                 </div>
               </div>
-              <div className="observation-stamp">Lab · not ranked</div>
+              <div className="observation-stamp">
+                {snapshot.comparison.harnesses.find((cohort) => cohort.harness === 'native')
+                  ?.entryIds.includes(run.entryId)
+                  ? 'Lab · ranked (same device)'
+                  : 'Lab · not ranked'}
+              </div>
             </header>
             <div className="observation-grid">
               <CellList title="table @1k" rows={tableRows(1000)} />

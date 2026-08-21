@@ -82,6 +82,7 @@ test('new-lynx vendor freezes a clean commit with both Lab contracts and eight b
     assert.equal(manifest.provenance.patchFile, 'entries/_patches/octane-new-2026-08-20-bench.patch');
     assert.deepEqual(manifest.webLab, { enabled: true, contract: 'web-lab-entry-v1' });
     assert.deepEqual(manifest.nativeLab, { enabled: true, contract: 'native-lab-entry-v1' });
+    assert.deepEqual(manifest.ranking, { enabled: true });
     assert.equal(Object.keys(manifest.provenance.sha256).length, 8);
 
     fs.writeFileSync(path.join(build, 'packages/octane/dirty'), 'dirty');

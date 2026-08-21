@@ -82,10 +82,10 @@ export function MethodPage() {
           them into the default ranking. A current featured entry measured under another Native
           lease may appear in a separate absolute-observation panel with its machine and source run
           visible; those records never enter rankings, heatmaps, geomeans, or cross-framework
-          ratios. The campaign ID hashes the full 210-cell schedule, immutable bundle/source
+          ratios. The campaign ID hashes the full ranked-entry schedule, immutable bundle/source
           receipt, retry policy, timeouts, Explorer lifecycle/reconnect cadence, render grace, and
-          thermal gate. Opt-in Lab
-          variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
+          thermal gate. Ranked Lab entries join Native only inside that exact complete cohort.
+          Opt-in Lab variants marked <b>≈ calibrated</b> come from one complete Web run per entry;
           millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
           and count fields cannot be CPU-calibrated and remain explicitly historical values.
         </div>
