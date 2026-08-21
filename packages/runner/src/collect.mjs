@@ -790,6 +790,10 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
   const sources = [];
   const checkpoints = [];
   const nativeGroups = new Map();
+  const expectedWebCells = new Map([...featuredIds].map((entry) => [entry, new Set(
+    current.records.filter((record) => record.harness === 'web'
+      && record.entry === entry && isBenchmarkRecord(record)).map(cellKey),
+  )]));
 
   for (const candidate of runs) {
     const { file, run } = candidate;
@@ -803,7 +807,12 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
     })());
     const webEntries = new Set(web.map((record) => publicHistoryEntry(run, record))
       .filter((entry) => featuredIds.has(entry)));
-    const webCohort = web.length > 0 && webEntries.size >= 2;
+    const webCells = new Map([...featuredIds].map((entry) => [entry, new Set(
+      webPublic.filter((record) => publicHistoryEntry(run, record) === entry).map(cellKey),
+    )]));
+    const webCohort = expectedWebCells.size >= 2
+      && [...expectedWebCells].every(([entry, expected]) =>
+        expected.size > 0 && [...expected].every((key) => webCells.get(entry).has(key)));
     const hasUpstreamOctane = web.some((record) => publicHistoryEntry(run, record) === 'octane');
     const sourceIndex = sources.length;
     const sourceHistoryRecords = [];
@@ -814,15 +823,13 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
         historyRecord(run, file, record, webCohort ? 'same-run' : 'isolated-observation',
           cohortId)));
       const currentMainRecords = sourceHistoryRecords.filter((record) => record.entry === 'octane');
-      if (currentMainRecords.length) {
+      if (currentMainRecords.length && webCohort) {
         const generatedAt = run.meta.generatedAt;
         checkpoints.push({
           id: historyId(generatedAt, [file]),
           generatedAt,
           label: new Date(generatedAt).toISOString(),
-          description: webCohort
-            ? `Exact Web cohort from ${file}.`
-            : `Exact Octane observation from ${file}; no cross-framework rank is inferred.`,
+          description: `Exact complete Web cohort from ${file}.`,
           octaneCommit: currentMainRecords[0].entryCommit,
           activeRecordIndexes: sourceHistoryRecords.map((_, index) => records.length + index),
           sourceIndexes: [sourceIndex],

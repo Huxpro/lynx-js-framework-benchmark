@@ -1347,13 +1347,17 @@ test('history audits every run and restores exact-source upstream Octane checkpo
   assert.equal(anomaly.sourceEntry, 'octane-main');
   assert.equal(anomaly.rankEligible, true);
 
-  const aug8Observation = out.history.checkpoints.find((checkpoint) =>
-    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
-    )));
-  assert.ok(aug8Observation);
-  assert.equal(aug8Observation.harnesses[0].rankEligible, false);
-  assert.equal(aug8Observation.harnesses[0].entryIds.length, 1);
+  const incompleteFiles = [
+    '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
+    '2026-08-11T13-06-38-65160668d8d9-verify-featured-select10k.json',
+  ];
+  for (const file of incompleteFiles) {
+    assert.equal(out.history.checkpoints.some((checkpoint) =>
+      checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(file))), false);
+    const source = out.history.sources.find((candidate) => candidate.runFile === file);
+    assert.ok(source);
+    assert.equal(source.rankEligible, false);
+  }
 
   const native = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
