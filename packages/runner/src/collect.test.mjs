@@ -1129,7 +1129,7 @@ test('collector rejects prospective sampling mismatches and preserves complete s
   }
 });
 
-test('history audits every run and restores exact-source upstream Octane checkpoints', () => {
+test('history audits every run but publishes only complete current featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
   assert.equal(out.history.sources.length, out.sources.runFiles.length);
@@ -1138,24 +1138,16 @@ test('history audits every run and restores exact-source upstream Octane checkpo
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.ok(out.history.checkpoints.length > 4);
+  assert.equal(out.history.checkpoints.length, 3);
 
-  const aug10 = out.history.checkpoints.find((checkpoint) =>
-    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json',
-    )));
-  assert.ok(aug10);
-  assert.equal(aug10.octaneCommit, 'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
-  assert.deepEqual(aug10.harnesses[0].entryIds, [
-    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
-  ]);
-  assert.equal(aug10.harnesses[0].rankEligible, true);
-  const aug10Records = aug10.activeRecordIndexes.map((index) => out.history.records[index]);
-  const anomaly = aug10Records.find((record) => record.entry === 'octane'
-    && record.workload === 'create' && record.scale === 1000 && record.metric === 'latency');
-  assert.equal(anomaly.median, 373.5050001144409);
-  assert.equal(anomaly.sourceEntry, 'octane-main');
-  assert.equal(anomaly.rankEligible, true);
+  const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
+  assert.equal(out.history.checkpoints.some((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File))), false);
+  const aug10Source = out.history.sources.find((source) => source.runFile === aug10File);
+  assert.ok(aug10Source);
+  assert.equal(aug10Source.entryCommits['octane-main'],
+    'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
+  assert.equal(aug10Source.rankEligible, false);
 
   const incompleteFiles = [
     '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
@@ -1182,34 +1174,29 @@ test('history audits every run and restores exact-source upstream Octane checkpo
     ))), false);
 });
 
-test('history preserves storm evidence but excludes incomplete transport from ranks', () => {
+test('history omits incomplete storm matrices and ranks the complete current cohort', () => {
   const out = collectRuns({ root: repoRoot(), log: () => {} });
-  const aug12 = out.history.checkpoints.find((checkpoint) =>
-    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-12T18-02-55-65160668d8d9-upstream-main-6079a680-featured.json',
-    )));
-  const record = aug12.activeRecordIndexes.map((index) => out.history.records[index])
-    .find((candidate) => candidate.entry === 'octane'
-      && candidate.workload === 'selectStorm'
-      && candidate.scale === 1000
-      && candidate.metric === 'latency');
-  assert.equal(record.median, 34.44500017166138);
-  assert.equal(record.rankEligible, false);
-  assert.equal(record.transport.issue, 'incomplete-storm-transport');
-  assert.equal(record.transport.expectedSequentialCommits, 30);
-  assert.ok(record.transport.toMtsMessages < 30);
-  assert.ok(record.transport.toBtsMessages < 30);
+  const aug12File = '2026-08-12T18-02-55-65160668d8d9-upstream-main-6079a680-featured.json';
+  assert.equal(out.history.checkpoints.some((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug12File))), false);
+  const aug12Source = out.history.sources.find((source) => source.runFile === aug12File);
+  assert.ok(aug12Source);
+  assert.equal(aug12Source.rankEligible, false);
 
   const current = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json',
+      '2026-08-21T22-32-38-65160668d8d9-octane-new-2026-08-21-block-web.json',
     )));
   const currentRecord = current.activeRecordIndexes.map((index) => out.history.records[index])
-    .find((candidate) => candidate.entry === 'octane'
+    .find((candidate) => candidate.entry === 'octane-new-2026-08-21'
       && candidate.harness === 'web'
       && candidate.workload === 'selectStorm'
       && candidate.scale === 1000
       && candidate.metric === 'latency');
-  assert.equal(currentRecord.median, 590.6499996185303);
+  assert.equal(currentRecord.median, 33.704999923706055);
   assert.equal(currentRecord.rankEligible, true);
+  assert.equal(currentRecord.transport.issue, null);
+  assert.equal(currentRecord.transport.expectedSequentialCommits, 30);
+  assert.ok(currentRecord.transport.toMtsMessages >= 30);
+  assert.ok(currentRecord.transport.toBtsMessages >= 30);
 });

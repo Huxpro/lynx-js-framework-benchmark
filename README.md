@@ -190,6 +190,13 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
 
+The dated `Octane (new-YYYY-MM-DD)` entry is featured, not Lab. It freezes
+`Huxpro/octane:new-lynx`, reads only upstream `dist-block[-rowsN]` bundles produced with
+`pluginOctane({ core: 'block' })`, and joins Web rankings only through a complete same-run featured
+cohort. Its one-file workload patch serializes storm commits so the neutral 50/30-publication
+contract remains true for the Block core. See
+[the dated block-core campaign](docs/NEW_LYNX_SNAPSHOT_CAMPAIGN.md).
+
 ## Repository layout
 
 ```
