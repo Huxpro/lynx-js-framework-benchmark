@@ -69,7 +69,7 @@ export function NativeCoverage() {
     <section className="native-coverage" aria-labelledby="native-coverage-title">
       <div className="coverage-heading">
         <div>
-          <div className="observation-kicker">Native coverage contract</div>
+          <div className="observation-kicker">Appendix · Native coverage contract</div>
           <h2 id="native-coverage-title">{coverage.expectedCellCount} cells, none implicit</h2>
         </div>
         <code>{coverage.version}</code>

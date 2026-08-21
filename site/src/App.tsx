@@ -180,8 +180,8 @@ function AppContent({
               proven unsupported capability, incompatible archived runs, and derivation defects.
             </p>
           </div>
-          <NativeCoverage />
           <NativeObservations theme={theme} />
+          <NativeCoverage />
         </>
       ) : page === 'overview' ? (
         <>
@@ -200,7 +200,6 @@ function AppContent({
             labMode={labMode}
             harness={harness}
           />
-          {harness === 'native' && <NativeCoverage />}
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={chartSelection} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           {harness === 'web' && labMode && <WebLabRuns theme={theme} />}
@@ -276,6 +275,7 @@ function AppContent({
               />
             );
           })}
+          {harness === 'native' && <NativeCoverage />}
         </>
       ) : page === 'scale' ? (
         <>
