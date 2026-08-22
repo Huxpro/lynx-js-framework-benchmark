@@ -41,6 +41,7 @@ manifest `entry.json`:
   "frameworkVersion": "…",
   "config": "vdom baseline",               // human description of flags
   "tags": ["baseline"],                    // baseline | optimized | reference
+  "harnesses": ["web", "native"],       // optional; omitted means both
   "color": "#42b883",
   "kind": "vendored" | "built",
   // kind=vendored: dist/ is committed, provenance is mandatory:
@@ -64,7 +65,9 @@ discover entries by scanning `entries/*/entry.json`. Vendored entries carry sha2
 a stale or tampered bundle is detectable (a gap PR #1's manifest had).
 
 Both bundle flavors are kept: `main.web.bundle` feeds the web harness; `main.lynx.bundle` is
-preserved so a native-engine harness can consume the same entries (see Harnesses).
+preserved so a native-engine harness can consume Native-eligible entries (see Harnesses).
+`tier` controls public visibility, while `harnesses` independently controls which complete
+comparison matrix the entry joins.
 
 ### Workload contract
 

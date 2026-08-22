@@ -1,15 +1,17 @@
-import { ENTRIES, entryColor } from '../data';
+import { ENTRIES, entryColor, entrySupportsHarness } from '../data';
 
 export function Legend({
+  harness,
   theme,
   selected,
   onToggle,
 }: {
+  harness: string;
   theme: 'light' | 'dark';
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
-  const visible = ENTRIES.filter((e) => e.tier !== 'lab');
+  const visible = ENTRIES.filter((e) => e.tier !== 'lab' && entrySupportsHarness(e, harness));
   return (
     <div className="legend" role="group" aria-label="Entries">
       {visible.map((e) => (

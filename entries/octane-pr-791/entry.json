@@ -1,0 +1,47 @@
+{
+  "id": "octane-pr-791",
+  "label": "Octane (PR #791)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.41",
+  "config": ".tsrx, keyed @for; octanejs/octane PR #791 universal memo repair 715e4979d41c",
+  "tags": [
+    "optimized",
+    "snapshot",
+    "pr"
+  ],
+  "tier": "featured",
+  "harnesses": [
+    "web",
+    "native"
+  ],
+  "color": "#2563eb",
+  "presentation": {
+    "order": 1.25,
+    "colorLight": "#2563eb",
+    "colorDark": "#60a5fa"
+  },
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "pull/791/head",
+    "commit": "715e4979d41c4326814b3355be5f261f7a137f21",
+    "patched": true,
+    "patchFile": "entries/_patches/octane-bench.patch",
+    "buildCommand": "node scripts/build-octane-upstream.mjs <octane-pr-791-checkout>",
+    "builtAt": "2026-08-19T15:36:15+01:00",
+    "sha256": {
+      "rows-0/main.web.bundle": "79be1d434518746f097145daa8e8e873e010119e73dfa542a1d4a20ba388ba1e",
+      "rows-0/main.lynx.bundle": "2be68d0149dc02537aef87d7e8767c3f2907eabc05c87a0b6c55330f7e07f61f",
+      "rows-1000/main.web.bundle": "5c7b0a3788157c02557bb2e27b152dd80d5be99d0fdc610f81f58f9748c22cde",
+      "rows-1000/main.lynx.bundle": "bb08d273b8d8701143b0c78e470cf178b5b5130e5f4bbea7eb3f6c035f18209d",
+      "rows-10000/main.web.bundle": "04e5624eaf7ba232ae7e743074bea3ff97bc96916e7f58d136bd2aed792c8d0c",
+      "rows-10000/main.lynx.bundle": "b07685f01b5cbd26f493229a8766c649c4a6282282759ab01c5e0fb8d2cd7ee8",
+      "rows-30000/main.web.bundle": "f693a9650b42201af9a482bd0c9d4f59c34971e7f54e8ca85d2dee7a5c49239e",
+      "rows-30000/main.lynx.bundle": "dd4be76e9fa50ae6fe1c09ba3f6770954158855a28485f8c75370ab43f854f33"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

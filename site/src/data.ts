@@ -257,6 +257,8 @@ export interface EntryMeta {
   /** featured = default public view; lab = author-development variants
    * (versions/PRs/permutations), hidden until Lab mode is on. */
   tier?: 'featured' | 'lab';
+  /** Harnesses this public entry is eligible to run in. Omitted means both. */
+  harnesses?: ('web' | 'native')[];
   color: string;
   presentation: { order: number; colorLight: string; colorDark: string };
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
@@ -353,6 +355,10 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
 export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
+
+export function entrySupportsHarness(entry: EntryMeta, harness: string): boolean {
+  return entry.harnesses == null || entry.harnesses.includes(harness as 'web' | 'native');
+}
 
 export function entryColor(id: string, theme: 'light' | 'dark'): string {
   const e = ENTRY_BY_ID.get(id);

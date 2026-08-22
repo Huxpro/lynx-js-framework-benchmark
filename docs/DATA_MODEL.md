@@ -55,18 +55,19 @@ Everything else is derived, including:
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
 - comparability/work classification. Incomplete or unverified work and prospective
   sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
-  the archive and exact timeline snapshots, but site data selectors and collector comparison
-  cohorts keep them out of ranked views. Prospective Lab estimates must match the selected Web
-  cohort exactly;
+  the source archive and audit index, but do not become Dataset Time Machine checkpoints or enter
+  ranked views. Prospective Lab estimates must match the selected Web cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an
   explicitly validated lease chain or included in cross-entry rankings;
 - the Native 210-cell coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
-- the automatic exact-source history index. Every valid run has a source audit row; Web checkpoints
-  are one physical run and Native checkpoints rank only within an exact validated campaign, device,
-  environment, lease-chain, and method identity. Upstream-main `octane-main` observations map to the stable
+- the automatic exact-source history index. Every valid run has a source audit row; a Web checkpoint
+  additionally requires one unscoped physical run covering a complete, balanced matrix for its own
+  eligible featured entry set. Entries introduced by later runs do not invalidate that checkpoint. Native
+  checkpoints rank only within an exact validated campaign, device, environment, lease-chain, and
+  method identity. Upstream-main `octane-main` observations map to the stable
   public `octane` identity without losing their source ID or commit. Records are materialized once
   and checkpoints reference them by index, so finer history does not duplicate full snapshots;
 - rank-over-time points. A point exists only inside its exact eligible cohort. Missing cells, DNF,

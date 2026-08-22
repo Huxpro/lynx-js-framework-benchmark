@@ -12,7 +12,13 @@ import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
 import { TimelineSlider } from './components/TimelineSlider';
 import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
-import { ENTRIES, FEATURED_IDS, TIMELINE_SNAPSHOTS } from './data';
+import {
+  ENTRIES,
+  ENTRY_BY_ID,
+  FEATURED_IDS,
+  TIMELINE_SNAPSHOTS,
+  entrySupportsHarness,
+} from './data';
 import { useTheme } from './hooks';
 
 // Sharable comparison state: ?entries=a,b,c picks an exact featured set.
@@ -64,11 +70,15 @@ function AppContent({
   onSnapshotChange: (index: number) => void;
 }) {
   const [theme, toggleTheme] = useTheme();
-  const { select, workloadScales } = useBenchmarkData();
+  const { select, snapshot, workloadScales } = useBenchmarkData();
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
   const [selected, setSelected] = useState<Set<string>>(initialSelection);
+  const activeSelected = useMemo(() => new Set([...selected].filter((id) => {
+    const entry = ENTRY_BY_ID.get(id);
+    return entry != null && entrySupportsHarness(entry, harness);
+  })), [harness, selected]);
   const changeHarness = (next: string) => {
     setHarness(next);
     const params = new URLSearchParams(location.search);
@@ -89,6 +99,32 @@ function AppContent({
 
   const heatRows = useMemo(() => {
     const rows: { key: string; label: string; suite: string; workload: string; scale: number; metric: string }[] = [];
+    if (harness === 'native') {
+      const seen = new Set<string>();
+      for (const cell of snapshot.nativeCoverage.cells) {
+        const key = `${cell.suite}:${cell.workload}:${cell.scale}:${cell.metric}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const startupBoundary = {
+          fcp: 'FCP',
+          settled: 'settled',
+          octaneCommitAck: 'commit ACK',
+          octaneSecondFrame: 'second frame',
+        }[cell.metric] ?? cell.metric;
+        const label = cell.suite === 'startup'
+          ? `startup ${startupBoundary} @${scaleLabel(cell.scale)}`
+          : `${cell.workload} @${scaleLabel(cell.scale)}`;
+        rows.push({
+          key,
+          label,
+          suite: cell.suite,
+          workload: cell.workload,
+          scale: cell.scale,
+          metric: cell.metric,
+        });
+      }
+      return rows;
+    }
     for (const w of ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
       for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
@@ -102,7 +138,7 @@ function AppContent({
       }
     }
     return rows;
-  }, [harness, select, workloadScales]);
+  }, [harness, select, snapshot.nativeCoverage.cells, workloadScales]);
 
   const tableOps = (scales: number[]) =>
     ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
@@ -137,25 +173,27 @@ function AppContent({
         index={snapshotIndex}
         onChange={onSnapshotChange}
       />
-      <HistoryRanking
-        harness={harness}
-        onHarnessChange={changeHarness}
-        theme={theme}
-        snapshotIndex={snapshotIndex}
-        onSnapshotChange={onSnapshotChange}
-      />
 
       {harness === 'native' && !nativeHasData ? (
         <>
+          <h1>How fast is each framework on Lynx?</h1>
+          <p className="subtitle">
+            No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
+            matrix keeps every contracted cell visible without turning archived observations into
+            rankings.
+          </p>
+          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
           <div className="empty-state">
             <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
             <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
-              The ledger below distinguishes work that was never scheduled from evidenced DNF,
-              proven unsupported capability, incompatible archived runs, and derivation defects.
+              Any archive-only observations follow. The appendix at the end distinguishes work
+              that was never scheduled from evidenced DNF, proven unsupported capability,
+              incompatible archived runs, and derivation defects.
             </p>
           </div>
-          <NativeCoverage />
           <NativeObservations theme={theme} />
+          <NativeCoverage />
         </>
       ) : page === 'overview' ? (
         <>
@@ -167,9 +205,8 @@ function AppContent({
             Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
             any card's data table for exact numbers.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
-          {harness === 'native' && <NativeCoverage />}
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={selected} />
+          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
             title="interactive @1k"
@@ -180,7 +217,7 @@ function AppContent({
             ops={tableOps([1000])}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={activeSelected}
           />
           <RankedBars
             title="interactive @10k"
@@ -191,7 +228,7 @@ function AppContent({
             ops={tableOps([10000])}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={activeSelected}
           />
           <RankedBars
             title="storms"
@@ -204,7 +241,7 @@ function AppContent({
                 .map((s) => ({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, workload: w, scale: s })))}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={activeSelected}
           />
           <RankedBars
             title="startup (first contentful paint)"
@@ -218,7 +255,7 @@ function AppContent({
             }))}
             harness={harness}
             theme={theme}
-            selected={selected}
+            selected={activeSelected}
           />
           {harness === 'native' && ['octaneCommitAck', 'octaneSecondFrame'].map((metric) => {
             const metricRecords = select({ suite: 'startup', harness, workload: 'startup', metric });
@@ -238,10 +275,11 @@ function AppContent({
                 }))}
                 harness={harness}
                 theme={theme}
-                selected={selected}
+                selected={activeSelected}
               />
             );
           })}
+          {harness === 'native' && <NativeCoverage />}
         </>
       ) : page === 'scale' ? (
         <>
@@ -251,10 +289,10 @@ function AppContent({
             log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing;
             0 ≈ scale-independent).
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
-          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={selected} />}
+          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={activeSelected} />}
           {trendSpecsForHarness(harness).map((spec) => (
-            <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={selected} />
+            <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={activeSelected} />
           ))}
         </>
       ) : page === 'threads' ? (
@@ -266,8 +304,8 @@ function AppContent({
             here it's split apart: per-realm CPU, bytes and messages in each direction, and which
             rpc endpoints carried them.
           </p>
-          <Legend theme={theme} selected={selected} onToggle={toggleEntry} />
-          <ThreadsPage harness={harness} theme={theme} selected={selected} />
+          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+          <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
         </>
       ) : (
         <>
@@ -279,6 +317,14 @@ function AppContent({
           <MethodPage />
         </>
       )}
+
+      <HistoryRanking
+        harness={harness}
+        onHarnessChange={changeHarness}
+        theme={theme}
+        snapshotIndex={snapshotIndex}
+        onSnapshotChange={onSnapshotChange}
+      />
 
       <footer className="note" style={{ marginTop: '3rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
         <a href="https://github.com/Huxpro/lynx-js-framework-benchmark" target="_blank" rel="noreferrer">

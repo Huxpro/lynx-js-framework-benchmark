@@ -211,5 +211,6 @@ had a documented weakness, the fix is noted.
   performance entries, while Octane's commit-ACK/second-frame observations remain isolated and
   are not labelled FCP. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
   `--jitless`, jsdom, or extrapolated value is published as Native.
-- The published Native Octane entry is upstream `main` only. Historical/experimental Octane Lab
-  variants remain opt-in Web history and are not run in the Native cohort.
+- The published Native Octane entries are upstream `main` and the separately identified PR #791
+  snapshot. The dated block-core `new-lynx` snapshot is explicitly Web-only, and historical
+  Octane Lab variants remain opt-in Web history rather than entering the Native cohort.

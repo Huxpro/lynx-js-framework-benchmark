@@ -36,8 +36,8 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all six featured entries,
-27 table cells per entry, and two startup metrics at 0/1k/10k/30k (210 contract cells total; five
+Native has no partial publish mode: omitting entry/case/scale flags runs all seven Native-eligible
+featured entries, 27 table cells per entry, and two startup metrics at 0/1k/10k/30k (245 contract cells total; five
 table and three startup repetitions). Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
@@ -167,7 +167,8 @@ are never ranked as FCP. See
   adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
   entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
   harness. Native and Web numbers are never mixed in one chart. The published featured cohort
-  uses ReactLynx, four Vue-Lynx configs, and upstream Octane only; Octane Lab variants are not
+  uses ReactLynx, four Vue-Lynx configs, upstream Octane, and the PR #791 Octane snapshot.
+  The dated block-core `new-lynx` snapshot is explicitly Web-only; Octane Lab variants are not
   run on Native.
 
 ## Adding an entry
@@ -189,6 +190,13 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 `scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
+
+The dated `Octane (new-YYYY-MM-DD)` entry is featured, not Lab. It freezes
+`Huxpro/octane:new-lynx`, reads only upstream `dist-block[-rowsN]` bundles produced with
+`pluginOctane({ core: 'block' })`, and joins Web rankings only through a complete same-run featured
+cohort. Its one-file workload patch serializes storm commits so the neutral 50/30-publication
+contract remains true for the Block core. See
+[the dated block-core campaign](docs/NEW_LYNX_SNAPSHOT_CAMPAIGN.md).
 
 ## Repository layout
 

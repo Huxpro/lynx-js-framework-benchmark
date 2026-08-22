@@ -156,10 +156,15 @@ export function HeatGrid({
         </table>
       </div>
       <div className="note" style={{ marginTop: '0.5rem' }}>
-        Each cell is that entry's median relative to the {activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`},
-        per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers;
-        the geomean is recomputed over {geo.rowCount} rows with complete data for every selected entry.
-        Per-case cards below carry the full data tables.
+        {geo.rowCount === 0 ? (
+          <>No row has complete data for every selected entry in this snapshot. Blank cells remain
+            visible, but are excluded from ratios, geomeans, and rankings.</>
+        ) : (
+          <>Each cell is that entry's median relative to the {activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`},
+            per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers;
+            the geomean is recomputed over {geo.rowCount} rows with complete data for every selected entry.
+            Per-case cards below carry the full data tables.</>
+        )}
       </div>
       {tipNode}
     </div>
