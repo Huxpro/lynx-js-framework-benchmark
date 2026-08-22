@@ -42,5 +42,6 @@ pnpm bench run --harness web \
   --label octane-new-2026-08-21-block-web
 ```
 
-The collector admits this run only if it covers the complete current featured matrix. Native is a
-separate later campaign and is not inferred from the Web result.
+The collector admits this run only if it covers one complete, balanced featured matrix from that
+source run. A future featured entry does not retroactively invalidate an older complete cohort.
+Native is a separate later campaign and is not inferred from the Web result.

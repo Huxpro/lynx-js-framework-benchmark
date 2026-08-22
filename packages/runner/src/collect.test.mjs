@@ -1129,7 +1129,106 @@ test('collector rejects prospective sampling mismatches and preserves complete s
   }
 });
 
-test('history audits every run but publishes only complete current featured matrices', () => {
+test('prospective one-shot memory observations do not require repetition accounting', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-memory-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const measured = (entry) => ({
+      ...record(entry), attemptedCount: 1, acceptedCount: 1,
+    });
+    const memoryAfterClear = (entry) => ({
+      ...record(entry, 'memoryAfterClear'),
+      metric: 'heapMtsAfterClear',
+      boundary: 'gc-heap-after-clearing-10k-rows',
+      unit: 'bytes',
+      samples: null,
+      value: 1024,
+      n: 1,
+      median: 1024,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/complete.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('memory-machine'),
+        calibration: { probeVersion: 1, score: 100 },
+        receipt: { comparabilityCohort: 'sha256:memory-cohort' },
+        entryCommits: { octane: 'octane-sha', react: 'react-sha' },
+      },
+      records: [
+        measured('octane'), memoryAfterClear('octane'),
+        measured('react'), memoryAfterClear('react'),
+      ],
+    }));
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['octane', 'react']),
+    });
+    const memory = out.records.filter(({ workload }) => workload === 'memoryAfterClear');
+    assert.equal(memory.length, 2);
+    assert.equal(memory.every(({ comparabilityStatus }) => comparabilityStatus === 'comparable'), true);
+    assert.equal(memory.every(({ rankingEligible }) => rankingEligible), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('history keeps a complete past entry set without requiring future featured entries', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-history-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  const writeHistoryRun = (file, generatedAt, records) => {
+    fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt,
+        machine: machine('history-machine'),
+        calibration: { probeVersion: 1, score: 100 },
+        entryCommits: Object.fromEntries(
+          [...new Set(records.map(({ entry }) => entry))].map((entry) => [entry, `${entry}-sha`]),
+        ),
+      },
+      records,
+    }));
+  };
+  try {
+    writeHistoryRun('past-complete.json', '2026-01-01T00:00:00Z', [
+      record('octane'), record('octane', 'select'),
+      record('react'), record('react', 'select'),
+    ]);
+    writeHistoryRun('past-incomplete.json', '2026-01-02T00:00:00Z', [
+      record('octane'), record('octane', 'select'),
+      record('react'),
+    ]);
+    writeHistoryRun('current.json', '2026-01-03T00:00:00Z', [
+      record('octane'), record('octane', 'select'),
+      record('react'), record('react', 'select'),
+      record('octane-new'), record('octane-new', 'select'),
+    ]);
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['octane', 'react', 'octane-new']),
+    });
+    const checkpointFiles = out.history.checkpoints.flatMap((checkpoint) =>
+      checkpoint.harnesses.flatMap(({ sourceRunFiles }) => sourceRunFiles));
+    assert.ok(checkpointFiles.includes('past-complete.json'));
+    assert.equal(checkpointFiles.includes('past-incomplete.json'), false);
+    const past = out.history.checkpoints.find((checkpoint) =>
+      checkpoint.harnesses.some(({ sourceRunFiles }) =>
+        sourceRunFiles.includes('past-complete.json')));
+    assert.deepEqual(past.harnesses[0].entryIds, ['octane', 'react']);
+    assert.equal(past.harnesses[0].rankEligible, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('history audits every run but publishes only complete source-defined featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
   assert.equal(out.history.sources.length, out.sources.runFiles.length);
@@ -1138,7 +1237,7 @@ test('history audits every run but publishes only complete current featured matr
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.equal(out.history.checkpoints.length, 3);
+  assert.equal(out.history.checkpoints.length, 4);
 
   const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
   assert.equal(out.history.checkpoints.some((checkpoint) =>
@@ -1148,6 +1247,16 @@ test('history audits every run but publishes only complete current featured matr
   assert.equal(aug10Source.entryCommits['octane-main'],
     'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
   assert.equal(aug10Source.rankEligible, false);
+  assert.equal(aug10Source.reason, 'incomplete Web matrix for this run\'s eligible entry set');
+
+  const aug16File = '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json';
+  const aug16 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug16File)));
+  assert.ok(aug16);
+  assert.deepEqual(aug16.harnesses[0].entryIds, [
+    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+  ]);
+  assert.equal(aug16.harnesses[0].rankEligible, true);
 
   const incompleteFiles = [
     '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
@@ -1160,6 +1269,11 @@ test('history audits every run but publishes only complete current featured matr
     assert.ok(source);
     assert.equal(source.rankEligible, false);
   }
+  assert.equal(
+    out.history.sources.find(({ runFile }) =>
+      runFile === '2026-08-11T13-06-38-65160668d8d9-verify-featured-select10k.json').reason,
+    'partial Web run; explicit suite, case, or scale selection',
+  );
 
   const native = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(

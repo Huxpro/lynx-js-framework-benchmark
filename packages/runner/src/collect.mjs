@@ -87,7 +87,12 @@ function stormWorkClassification(records, record) {
 }
 
 function samplingProblems(run, record) {
-  if (!run.meta.receipt || !isBenchmarkRecord(record) || record.workload === 'memory') return [];
+  if (
+    !run.meta.receipt
+    || !isBenchmarkRecord(record)
+    || record.workload === 'memory'
+    || record.workload === 'memoryAfterClear'
+  ) return [];
   const problems = [];
   const sourceCount = Array.isArray(record.samples)
     ? record.samples.length
@@ -672,6 +677,9 @@ const historySourceSummary = ({ file, run }, recordCount, entryIds, rankEligible
   reason,
 });
 
+const requestsFullWebMatrix = (run) => !['--suite', '--case', '--scale'].some((option) =>
+  run.meta.argv?.some((argument) => argument === option || argument.startsWith(`${option}=`)));
+
 /* Superseded by the exact-source history index below.
 const buildTimelineSnapshots = ({ runs, featuredIds, featuredEntries, current }) => {
   const byFile = new Map(runs.map((candidate) => [candidate.file, candidate]));
@@ -788,10 +796,6 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
   const sources = [];
   const checkpoints = [];
   const nativeGroups = new Map();
-  const expectedWebCells = new Map([...featuredIds].map((entry) => [entry, new Set(
-    current.records.filter((record) => record.harness === 'web'
-      && record.entry === entry && isBenchmarkRecord(record)).map(cellKey),
-  )]));
 
   for (const candidate of runs) {
     const { file, run } = candidate;
@@ -803,14 +807,21 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
       const entry = publicHistoryEntry(run, record);
       return featuredIds.has(entry);
     })());
-    const webEntries = new Set(web.map((record) => publicHistoryEntry(run, record))
+    const webPublicBenchmark = webPublic.filter(isBenchmarkRecord);
+    const webEntries = new Set(webPublicBenchmark.map((record) => publicHistoryEntry(run, record))
       .filter((entry) => featuredIds.has(entry)));
     const webCells = new Map([...featuredIds].map((entry) => [entry, new Set(
-      webPublic.filter((record) => publicHistoryEntry(run, record) === entry).map(cellKey),
+      webPublicBenchmark.filter((record) => publicHistoryEntry(run, record) === entry).map(cellKey),
     )]));
-    const webCohort = expectedWebCells.size >= 2
-      && [...expectedWebCells].every(([entry, expected]) =>
-        expected.size > 0 && [...expected].every((key) => webCells.get(entry).has(key)));
+    const matrixCells = new Set([...webEntries].flatMap((entry) => [...webCells.get(entry)]));
+    const balancedMatrix = matrixCells.size > 0 && [...webEntries].every((entry) => {
+      const cells = webCells.get(entry);
+      return cells.size === matrixCells.size && [...matrixCells].every((key) => cells.has(key));
+    });
+    const webCohort = webEntries.size >= 2
+      && requestsFullWebMatrix(run)
+      && balancedMatrix
+      && webPublicBenchmark.every(isRankingEligible);
     const hasUpstreamOctane = web.some((record) => publicHistoryEntry(run, record) === 'octane');
     const sourceIndex = sources.length;
     const sourceHistoryRecords = [];
@@ -861,7 +872,13 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
       webCohort,
       webPublic.length === 0
         ? (native.length ? 'native run; evaluated with its exact machine/environment cohort' : 'no featured benchmark observations')
-        : webCohort ? 'exact same-run Web cohort' : 'exact observation only; fewer than two eligible entries',
+        : webCohort
+          ? 'exact same-run Web cohort'
+          : webEntries.size < 2
+            ? 'exact observation only; fewer than two eligible entries'
+            : !requestsFullWebMatrix(run)
+              ? 'partial Web run; explicit suite, case, or scale selection'
+              : 'incomplete Web matrix for this run\'s eligible entry set',
     ));
   }
 

@@ -64,7 +64,8 @@ Everything else is derived, including:
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
 - the automatic exact-source history index. Every valid run has a source audit row; a Web checkpoint
-  additionally requires one physical run covering the complete current featured matrix. Native
+  additionally requires one unscoped physical run covering a complete, balanced matrix for its own
+  eligible featured entry set. Entries introduced by later runs do not invalidate that checkpoint. Native
   checkpoints rank only within an exact validated campaign, device, environment, lease-chain, and
   method identity. Upstream-main `octane-main` observations map to the stable
   public `octane` identity without losing their source ID or commit. Records are materialized once
