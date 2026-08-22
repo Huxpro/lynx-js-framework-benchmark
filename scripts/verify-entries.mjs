@@ -10,6 +10,7 @@ const entriesDir = path.join(root, 'entries');
 
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab']);
+const HARNESSES = new Set(['web', 'native']);
 
 let failures = 0;
 const fail = (msg) => {
@@ -30,6 +31,12 @@ for (const id of ids) {
   }
   if (manifest.id !== id) fail(`${id}: manifest id mismatch (${manifest.id})`);
   if (!TIERS.has(manifest.tier)) fail(`${id}: invalid tier "${manifest.tier}"`);
+  if (manifest.harnesses != null && (
+    !Array.isArray(manifest.harnesses)
+    || manifest.harnesses.length === 0
+    || new Set(manifest.harnesses).size !== manifest.harnesses.length
+    || manifest.harnesses.some((harness) => !HARNESSES.has(harness))
+  )) fail(`${id}: invalid harnesses ${JSON.stringify(manifest.harnesses)}`);
   if (!/^#[\da-f]{6}$/i.test(manifest.color ?? '')) fail(`${id}: invalid color "${manifest.color}"`);
   if (!Number.isFinite(manifest.presentation?.order)) fail(`${id}: invalid presentation.order`);
   for (const key of ['colorLight', 'colorDark']) {
@@ -57,6 +64,16 @@ for (const id of ids) {
     }
     if (manifest.webLab != null || manifest.nativeLab != null || manifest.ranking != null) {
       fail(`${id}: dated new-lynx entry must not use Lab contracts`);
+    }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+      fail(`${id}: dated new-lynx entry must be explicitly Web-only`);
+    }
+  }
+  if (id === 'octane-pr-791') {
+    if (manifest.tier !== 'featured') fail(`${id}: PR #791 entry must be featured`);
+    if (manifest.provenance.ref !== 'pull/791/head') fail(`${id}: provenance.ref must be pull/791/head`);
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
+      fail(`${id}: PR #791 entry must participate in both harnesses`);
     }
   }
   if (manifest.provenance?.patched && manifest.provenance?.patchFile) {

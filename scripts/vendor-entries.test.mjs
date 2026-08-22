@@ -78,6 +78,7 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
     ));
     assert.equal(manifest.label, 'Octane (new-2026-08-22)');
     assert.equal(manifest.tier, 'featured');
+    assert.deepEqual(manifest.harnesses, ['web']);
     assert.equal(manifest.provenance.commit, commit);
     assert.equal(manifest.provenance.ref, 'new-lynx');
     assert.equal(manifest.provenance.patched, true);
@@ -111,6 +112,85 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
     );
     assert.notEqual(dirty.status, 0);
     assert.match(dirty.stderr, /must contain only the audited block-storm patch/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('PR #791 vendor adds a separate featured Web and Native entry', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-octane-pr-791-'));
+  const repo = path.join(dir, 'benchmark');
+  const build = path.join(dir, 'octane');
+  try {
+    fs.mkdirSync(path.join(repo, 'scripts'), { recursive: true });
+    fs.copyFileSync(sourceScript, path.join(repo, 'scripts/vendor-entries.mjs'));
+    fs.mkdirSync(path.join(build, 'packages/octane'), { recursive: true });
+    fs.writeFileSync(
+      path.join(build, 'packages/octane/package.json'),
+      JSON.stringify({ version: '0.1.41' }),
+    );
+    for (const rows of [0, 1000, 10000, 30000]) {
+      const output = path.join(
+        build,
+        'benchmarks/lynx-table/app',
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
+      );
+      fs.mkdirSync(output, { recursive: true });
+      fs.writeFileSync(path.join(output, 'main.web.bundle'), `pr-web-${rows}`);
+      fs.writeFileSync(path.join(output, 'main.lynx.bundle'), `pr-lynx-${rows}`);
+    }
+    const patchedPaths = [
+      'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+      'benchmarks/lynx-table/app/src/app.css',
+      'benchmarks/lynx-table/app/src/index.ts',
+      'packages/lynx/src/core/transport.ts',
+      'packages/lynx/src/main-thread.ts',
+    ];
+    for (const relative of patchedPaths) {
+      const file = path.join(build, relative);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, 'baseline\n');
+    }
+    git(build, 'init', '-b', 'pr-791');
+    git(build, 'config', 'user.name', 'Vendor Test');
+    git(build, 'config', 'user.email', 'vendor@example.test');
+    git(build, 'add', '.');
+    git(build, 'commit', '-m', 'PR snapshot');
+    const commit = git(build, 'rev-parse', 'HEAD');
+    for (const relative of patchedPaths) {
+      fs.appendFileSync(path.join(build, relative), 'instrumented\n');
+    }
+    const patchDir = path.join(repo, 'entries/_patches');
+    fs.mkdirSync(patchDir, { recursive: true });
+    const patchFile = path.join(patchDir, 'octane-pr-791-bench.patch');
+    fs.writeFileSync(patchFile, execFileSync(
+      'git',
+      ['diff', '--no-color', '--unified=0', '--', ...patchedPaths],
+      { cwd: build },
+    ));
+
+    const vendored = spawnSync(process.execPath, [path.join(repo, 'scripts/vendor-entries.mjs')], {
+      cwd: repo,
+      env: {
+        ...process.env,
+        VENDOR_ONLY: 'octane-pr-791',
+        OCTANE_PR_791_BUILD: build,
+        OCTANE_PR_791_PATCH: patchFile,
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(vendored.status, 0, vendored.stderr);
+    const manifest = JSON.parse(fs.readFileSync(
+      path.join(repo, 'entries/octane-pr-791/entry.json'),
+      'utf8',
+    ));
+    assert.equal(manifest.label, 'Octane (PR #791)');
+    assert.equal(manifest.tier, 'featured');
+    assert.deepEqual(manifest.harnesses, ['web', 'native']);
+    assert.equal(manifest.provenance.commit, commit);
+    assert.equal(manifest.provenance.ref, 'pull/791/head');
+    assert.equal(manifest.provenance.patched, true);
+    assert.equal(Object.keys(manifest.provenance.sha256).length, 8);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

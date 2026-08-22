@@ -32,6 +32,10 @@ export function discoverEntries({ only = null, root = repoRoot() } = {}) {
   return out;
 }
 
+export function entrySupportsHarness(entry, harness) {
+  return entry?.harnesses == null || entry.harnesses.includes(harness);
+}
+
 /** Bundle path for a given autoRows scale; null when that variant is absent. */
 export function bundleFor(entry, { rows = 0, flavor = 'web' } = {}) {
   const rel = path.join(`rows-${rows}`, `main.${flavor}.bundle`);

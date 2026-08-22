@@ -36,8 +36,8 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all six featured entries,
-27 table cells per entry, and two startup metrics at 0/1k/10k/30k (210 contract cells total; five
+Native has no partial publish mode: omitting entry/case/scale flags runs all seven Native-eligible
+featured entries, 27 table cells per entry, and two startup metrics at 0/1k/10k/30k (245 contract cells total; five
 table and three startup repetitions). Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
@@ -167,7 +167,8 @@ are never ranked as FCP. See
   adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
   entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
   harness. Native and Web numbers are never mixed in one chart. The published featured cohort
-  uses ReactLynx, four Vue-Lynx configs, and upstream Octane only; Octane Lab variants are not
+  uses ReactLynx, four Vue-Lynx configs, upstream Octane, and the PR #791 Octane snapshot.
+  The dated block-core `new-lynx` snapshot is explicitly Web-only; Octane Lab variants are not
   run on Native.
 
 ## Adding an entry

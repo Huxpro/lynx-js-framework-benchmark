@@ -549,7 +549,7 @@ test('collector combines split checkpoints only inside one exact Native campaign
   }
 });
 
-test('collector keeps same-serial forked lease chains archive-only', () => {
+test('collector drops incomplete same-serial forked lease chains from the dataset', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-forked-chain-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
   try {
@@ -587,8 +587,8 @@ test('collector keeps same-serial forked lease chains archive-only', () => {
     assert.equal(out.comparisonRecords.some(({ harness }) => harness === 'native'), false);
     assert.equal(out.nativeObservationRecords.some(({ runFile }) =>
       runFile === 'native-left.json' || runFile === 'native-right.json'), false);
-    assert.equal(out.records.some(({ runFile }) => runFile === 'native-left.json'), true);
-    assert.equal(out.records.some(({ runFile }) => runFile === 'native-right.json'), true);
+    assert.equal(out.records.some(({ runFile }) => runFile === 'native-left.json'), false);
+    assert.equal(out.records.some(({ runFile }) => runFile === 'native-right.json'), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -1237,7 +1237,11 @@ test('history audits every run but publishes only complete source-defined featur
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.equal(out.history.checkpoints.length, 6);
+  const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
+    (cohort) => cohort.harness === 'web',
+  );
+  assert.equal(currentWeb.entryIds.length, 8);
+  assert.equal(currentWeb.entryIds.includes('octane-pr-791'), true);
 
   const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
   assert.equal(out.history.checkpoints.some((checkpoint) =>

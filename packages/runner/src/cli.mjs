@@ -14,7 +14,7 @@ import crypto from 'node:crypto';
 import { TABLE_CASES } from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 
-import { discoverEntries, repoRoot } from './entries.mjs';
+import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
 import { runNativeHarness } from './harness-native.mjs';
 import { bundleRecords } from './bundles.mjs';
@@ -83,7 +83,8 @@ async function cmdRun(args) {
 
   let entries = discoverEntries({ only: list(args.entry) });
   if (harness === 'native' && args.entry == null) {
-    entries = entries.filter((entry) => (entry.tier ?? 'featured') !== 'lab');
+    entries = entries.filter((entry) => (entry.tier ?? 'featured') !== 'lab'
+      && entrySupportsHarness(entry, 'native'));
   }
   if (entries.length === 0) throw new Error('no entries matched');
   const caseNames = list(args.case);
@@ -106,7 +107,8 @@ async function cmdRun(args) {
     } = resolveNativeRunMatrix(args);
     const root = repoRoot();
     const featuredIds = discoverEntries()
-      .filter((entry) => (entry.tier ?? 'featured') !== 'lab')
+      .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
+        && entrySupportsHarness(entry, 'native'))
       .map((entry) => entry.id)
       .sort();
     const selectedIds = entries.map((entry) => entry.id).sort();
@@ -270,7 +272,6 @@ async function cmdRun(args) {
           entryCommits: Object.fromEntries(
             entries.map((e) => [e.id, e.provenance?.commit ?? null]),
           ),
-          receipt,
         },
         nativeCoverage,
         records,

@@ -27,6 +27,8 @@ import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } fr
 
 const ENTRIES = [
   { id: 'octane', framework: 'octane' },
+  { id: 'octane-pr-791', framework: 'octane', harnesses: ['web', 'native'] },
+  { id: 'octane-new-2026-08-22', framework: 'octane', harnesses: ['web'] },
   { id: 'react', framework: 'reactlynx' },
   { id: 'vue-vapor', framework: 'vue-lynx' },
   { id: 'vue-vapor-ifr', framework: 'vue-lynx' },
@@ -54,12 +56,14 @@ function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   };
 }
 
-test('featured Native contract is exactly six entries by 35 cells and covers every suite scale', () => {
+test('featured Native contract is exactly seven eligible entries by 35 cells', () => {
   const contract = buildNativeMatrixContract([...ENTRIES].reverse());
   assert.equal(contract.expectedCellCount, NATIVE_FEATURED_MATRIX_CELL_COUNT);
-  assert.equal(contract.cells.length, 210);
-  assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 6);
-  for (const entry of ENTRIES) {
+  assert.equal(contract.cells.length, 245);
+  assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 7);
+  assert.equal(contract.entryIds.includes('octane-new-2026-08-22'), false);
+  for (const entry of ENTRIES.filter((candidate) => candidate.harnesses?.includes('web') !== true
+    || candidate.harnesses.includes('native'))) {
     const cells = contract.cells.filter((cell) => cell.entry === entry.id);
     assert.equal(cells.length, NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
     assert.equal(cells.filter((cell) => cell.suite === 'table').length, 27);
@@ -82,14 +86,14 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
   assert.equal(coverage.cells[0].status, 'display-derivation-bug');
   assert.equal(coverage.cells[1].status, 'dnf');
   assert.equal(coverage.cells[2].status, 'unsupported');
-  assert.equal(coverage.summary.unscheduled, 207);
+  assert.equal(coverage.summary.unscheduled, 242);
   assert.throws(() => assertNativeCoverage(coverage), /incomplete or invalid/);
 
   const complete = classifyNativeCoverage({
     entries: ENTRIES,
     sourceRecords: contract.cells.map((cell) => recordFor(cell)),
   });
-  assert.deepEqual(complete.summary, { measured: 210 });
+  assert.deepEqual(complete.summary, { measured: 245 });
   assert.doesNotThrow(() => assertNativeCoverage(complete));
 });
 

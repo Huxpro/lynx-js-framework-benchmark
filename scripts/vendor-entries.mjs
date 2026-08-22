@@ -10,6 +10,8 @@
 //   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
 //   OCTANE_NEW_BUILD an optional clean new-lynx checkout built with BENCH_CORE=block
 //   OCTANE_NEW_PATCH the exact block-storm workload patch applied to that checkout
+//   OCTANE_PR_791_BUILD an optional octanejs/octane PR #791 checkout
+//   OCTANE_PR_791_PATCH the exact benchmark instrumentation patch applied to that checkout
 //
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
@@ -32,6 +34,9 @@ const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
 const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
 const OCTANE_NEW_BUILD = process.env.OCTANE_NEW_BUILD ?? null;
 const OCTANE_NEW_PATCH = process.env.OCTANE_NEW_PATCH ?? null;
+const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
+const OCTANE_PR_791_PATCH = process.env.OCTANE_PR_791_PATCH
+  ?? path.join(root, 'entries/_patches/octane-bench.patch');
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
@@ -42,6 +47,7 @@ const wants = (id) => ONLY.size === 0 || ONLY.has(id);
 const PRESENTATION = {
   react: { order: 0, colorLight: '#2a78d6', colorDark: '#3987e5' },
   octane: { order: 1, colorLight: '#eb6834', colorDark: '#d95926' },
+  'octane-pr-791': { order: 1.25, colorLight: '#2563eb', colorDark: '#60a5fa' },
   'octane-new-2026-08-22': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
   'vue-vdom': { order: 2, colorLight: '#1baf7a', colorDark: '#199e70' },
   'vue-vdom-ifr-et': { order: 3, colorLight: '#eda100', colorDark: '#c98500' },
@@ -70,7 +76,7 @@ const gitInfo = (dir) => ({
     .toString().trim().length > 0,
 });
 
-function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', color, source, ref, buildCommand, cells }) {
+function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells }) {
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
@@ -99,6 +105,7 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
     config,
     tags,
     tier,
+    ...(harnesses == null ? {} : { harnesses }),
     color,
     presentation: PRESENTATION[id] ?? { order: 999, colorLight: color, colorDark: color },
     kind: 'vendored',
@@ -117,6 +124,76 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
   };
   fs.writeFileSync(path.join(dir, 'entry.json'), JSON.stringify(manifest, null, 2));
   console.log(`[vendor] ${id}: ${Object.keys(checks).length} bundles`);
+}
+
+function vendorOctanePr791(buildDir, patchFile) {
+  const id = 'octane-pr-791';
+  if (!wants(id)) return;
+  const appDir = path.join(buildDir ?? '', 'benchmarks/lynx-table/app');
+  if (!buildDir || !fs.existsSync(path.join(appDir, 'dist'))) {
+    console.log(`[vendor] ${id} skipped (set OCTANE_PR_791_BUILD to the built PR checkout)`);
+    return;
+  }
+  const sourceGit = gitInfo(buildDir);
+  const resolvedPatch = patchFile == null || !fs.existsSync(patchFile)
+    ? null
+    : fs.realpathSync(path.resolve(patchFile));
+  const patchRoot = path.join(root, 'entries', '_patches');
+  const expectedPaths = [
+    'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+    'benchmarks/lynx-table/app/src/app.css',
+    'benchmarks/lynx-table/app/src/index.ts',
+    'packages/lynx/src/core/transport.ts',
+    'packages/lynx/src/main-thread.ts',
+  ];
+  const changedPaths = execFileSync(
+    'git',
+    ['status', '--porcelain', '--', 'packages', 'benchmarks', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
+    { cwd: buildDir },
+  ).toString().trimEnd().split('\n').filter(Boolean).map((line) => line.slice(3)).sort();
+  if (
+    !sourceGit.dirty
+    || resolvedPatch == null
+    || path.dirname(resolvedPatch) !== patchRoot
+    || JSON.stringify(changedPaths) !== JSON.stringify(expectedPaths)
+  ) {
+    throw new Error(`${id}: checkout must contain only the audited benchmark instrumentation patch`);
+  }
+  const actualPatch = execFileSync(
+    'git',
+    ['diff', '--no-color', '--unified=0', '--', ...expectedPaths],
+    { cwd: buildDir, maxBuffer: 64 * 1024 * 1024 },
+  ).toString();
+  if (actualPatch !== fs.readFileSync(resolvedPatch, 'utf8')) {
+    throw new Error(`${id}: applied benchmark patch does not match ${path.basename(resolvedPatch)}`);
+  }
+  const version = JSON.parse(
+    fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id,
+    tier: 'featured',
+    harnesses: ['web', 'native'],
+    label: 'Octane (PR #791)',
+    framework: 'octane',
+    frameworkVersion: version,
+    config: `.tsrx, keyed @for; octanejs/octane PR #791 universal memo repair ${sourceGit.commit.slice(0, 12)}`,
+    tags: ['optimized', 'snapshot', 'pr'],
+    color: '#2563eb',
+    source: {
+      url: 'https://github.com/octanejs/octane',
+      commit: sourceGit.commit,
+      dirty: true,
+      patchName: path.basename(resolvedPatch),
+      builtAt: sourceDate(buildDir),
+    },
+    ref: 'pull/791/head',
+    buildCommand: 'node scripts/build-octane-upstream.mjs <octane-pr-791-checkout>',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(appDir, rows === 0 ? 'dist' : `dist-rows${rows}`),
+    })),
+  });
 }
 
 function vendorNewLynxBlockSnapshot(id, label, buildDir, patchFile) {
@@ -160,6 +237,7 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir, patchFile) {
   vendor({
     id,
     tier: 'featured',
+    harnesses: ['web'],
     label,
     framework: 'octane',
     frameworkVersion: version,
@@ -516,5 +594,7 @@ vendorNewLynxBlockSnapshot(
   OCTANE_NEW_BUILD,
   OCTANE_NEW_PATCH,
 );
+
+vendorOctanePr791(OCTANE_PR_791_BUILD, OCTANE_PR_791_PATCH);
 
 console.log('[vendor] done');

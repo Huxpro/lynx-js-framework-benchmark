@@ -15,7 +15,7 @@ import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workl
 
 import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
-import { discoverEntries, repoRoot } from './entries.mjs';
+import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
@@ -791,7 +791,7 @@ const buildTimelineSnapshots = ({ runs, featuredIds, featuredEntries, current })
       nativeCoverage,
     });
 */
-const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
+const buildHistory = ({ runs, featuredIds, nativeFeaturedIds, featuredEntries, current }) => {
   const records = [];
   const sources = [];
   const checkpoints = [];
@@ -867,7 +867,7 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
     sources.push(historySourceSummary(
       candidate,
       sourceHistoryRecords.length + native.filter((record) =>
-        featuredIds.has(publicHistoryEntry(run, record))).length,
+        nativeFeaturedIds.has(publicHistoryEntry(run, record))).length,
       normalizedEntries,
       webCohort,
       webPublic.length === 0
@@ -893,12 +893,12 @@ const buildHistory = ({ runs, featuredIds, featuredEntries, current }) => {
         && item.environment === environment
         && isPublishableRecord(candidate.run, item));
       const entryIds = new Set(candidateRecords.map((record) =>
-        publicHistoryEntry(candidate.run, record)).filter((entry) => featuredIds.has(entry)));
+        publicHistoryEntry(candidate.run, record)).filter((entry) => nativeFeaturedIds.has(entry)));
       if (!entryIds.has('octane')) continue;
       const activeRecordIndexes = [];
       for (const record of candidateRecords) {
         const entry = publicHistoryEntry(candidate.run, record);
-        if (!featuredIds.has(entry)) continue;
+        if (!nativeFeaturedIds.has(entry)) continue;
         const history = historyRecord(
           candidate.run, candidate.file, record,
           'exact-native-campaign',
@@ -1036,6 +1036,7 @@ export function collectRuns({
   const machines = {};
   const merged = new Map();
   const runs = [];
+  const incompleteCheckpointFiles = new Set();
   let comparisonRun = null;
   let latestSourceGeneratedAt = null;
   let runsSeen = 0;
@@ -1046,6 +1047,8 @@ export function collectRuns({
   const entryById = new Map(currentEntries.map((entry) => [entry.id, entry]));
   const staticByEntry = new Map(currentEntries.map((entry) => [entry.id, bundleRecords(entry)]));
   const featuredIds = new Set([...resolvedTiers].filter(([, tier]) => tier !== 'lab').map(([id]) => id));
+  const nativeFeaturedIds = new Set([...featuredIds].filter((id) =>
+    entrySupportsHarness(entryById.get(id), 'native')));
   const labIds = [...resolvedTiers].filter(([, tier]) => tier === 'lab').map(([id]) => id);
 
   for (const file of runFiles) {
@@ -1054,13 +1057,12 @@ export function collectRuns({
       log(`[collect] skip ${file}: schemaVersion ${rawRun.schemaVersion} != ${SCHEMA_VERSION}`);
       continue;
     }
-    if (
-      rawRun.meta?.checkpoint === true
-      && rawRun.meta?.checkpointComplete !== true
-      && rawRun.meta?.campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION
-    ) {
-      log(`[collect] archive-only ${file}: incomplete legacy Native checkpoint`);
-      continue;
+    if (rawRun.meta?.checkpoint === true && rawRun.meta?.checkpointComplete !== true) {
+      if (rawRun.meta?.campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION) {
+        log(`[collect] skip ${file}: incomplete legacy Native checkpoint`);
+        continue;
+      }
+      incompleteCheckpointFiles.add(file);
     }
     const run = normalizeRun(rawRun, file);
     runs.push({ file, run });
@@ -1111,7 +1113,13 @@ export function collectRuns({
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
-    selectNativeCohort(runs, featuredIds, entryById);
+    selectNativeCohort(runs, nativeFeaturedIds, entryById);
+  const selectedNativeFiles = new Set(nativeCohort == null ? []
+    : [...nativeCohort.entries.values()].flatMap((entry) =>
+      [...entry.cells.values()].map((source) => source.file)));
+  const retainedRuns = runs.filter(({ file }) =>
+    !incompleteCheckpointFiles.has(file) || selectedNativeFiles.has(file));
+  const retainedRunFiles = new Set(retainedRuns.map(({ file }) => file));
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
       ({
@@ -1125,10 +1133,11 @@ export function collectRuns({
       })))
     : [];
   const nativeCoverage = classifyNativeCoverage({
-    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+    entries: [...nativeFeaturedIds].map((id) => entryById.get(id)).filter(Boolean),
     sourceRecords: nativeSourceRecords,
     publishedRecords: nativeSourceRecords,
-    archiveRecords: [...merged.values()].filter((record) => record.harness === 'native'),
+    archiveRecords: [...merged.values()].filter((record) => record.harness === 'native'
+      && retainedRunFiles.has(record.runFile)),
   });
   if (nativeCohort) assertNativeCoverage(nativeCoverage);
   if (nativeCohort) {
@@ -1148,8 +1157,8 @@ export function collectRuns({
   }
   comparisonRecords.push(...nativeSourceRecords);
   const nativeObservations = selectNativeObservations(
-    runs,
-    featuredIds,
+    retainedRuns,
+    nativeFeaturedIds,
     entryById,
     nativeCohort,
     nativeArchiveOnlyFiles,
@@ -1248,11 +1257,12 @@ export function collectRuns({
     schemaVersion: SCHEMA_VERSION,
     generatedAt: generatedAt ?? latestSourceGeneratedAt,
     sources: {
-      runFiles: runs.map(({ file }) => file),
+      runFiles: retainedRuns.map(({ file }) => file),
       entryIds: currentEntries.map((entry) => entry.id),
     },
     machines,
-    records: [...merged.values(), ...archiveStaticRecords],
+    records: [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile))
+      .concat(archiveStaticRecords),
     comparison,
     comparisonRecords,
     labComparisonRecords,
@@ -1261,9 +1271,10 @@ export function collectRuns({
     nativeCoverage,
   };
   out.history = buildHistory({
-    runs,
+    runs: retainedRuns,
     featuredIds,
-    featuredEntries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+    nativeFeaturedIds,
+    featuredEntries: [...nativeFeaturedIds].map((id) => entryById.get(id)).filter(Boolean),
     current: {
       generatedAt: out.generatedAt,
       octaneCommit: entryById.get('octane')?.provenance?.commit ?? null,
