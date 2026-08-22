@@ -42,7 +42,7 @@ const wants = (id) => ONLY.size === 0 || ONLY.has(id);
 const PRESENTATION = {
   react: { order: 0, colorLight: '#2a78d6', colorDark: '#3987e5' },
   octane: { order: 1, colorLight: '#eb6834', colorDark: '#d95926' },
-  'octane-new-2026-08-21': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
+  'octane-new-2026-08-22': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
   'vue-vdom': { order: 2, colorLight: '#1baf7a', colorDark: '#199e70' },
   'vue-vdom-ifr-et': { order: 3, colorLight: '#eda100', colorDark: '#c98500' },
   'vue-vapor': { order: 4, colorLight: '#e87ba4', colorDark: '#d55181' },
@@ -511,8 +511,8 @@ if (
 }
 
 vendorNewLynxBlockSnapshot(
-  'octane-new-2026-08-21',
-  'Octane (new-2026-08-21)',
+  'octane-new-2026-08-22',
+  'Octane (new-2026-08-22)',
   OCTANE_NEW_BUILD,
   OCTANE_NEW_PATCH,
 );

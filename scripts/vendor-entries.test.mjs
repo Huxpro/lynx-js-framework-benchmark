@@ -50,7 +50,7 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
     fs.appendFileSync(patchedSource, 'await-commit\n');
     const patchDir = path.join(repo, 'entries/_patches');
     fs.mkdirSync(patchDir, { recursive: true });
-    const patchFile = path.join(patchDir, 'octane-new-2026-08-21-block-storm.patch');
+    const patchFile = path.join(patchDir, 'octane-new-2026-08-22-block-storm.patch');
     fs.writeFileSync(patchFile, execFileSync(
       'git',
       ['diff', '--no-color', '--unified=0', '--', 'benchmarks/lynx-table/app/src/block-program.ts'],
@@ -64,7 +64,7 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
         cwd: repo,
         env: {
           ...process.env,
-          VENDOR_ONLY: 'octane-new-2026-08-21',
+          VENDOR_ONLY: 'octane-new-2026-08-22',
           OCTANE_NEW_BUILD: build,
           OCTANE_NEW_PATCH: patchFile,
         },
@@ -73,17 +73,17 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
     );
     assert.equal(vendored.status, 0, vendored.stderr);
     const manifest = JSON.parse(fs.readFileSync(
-      path.join(repo, 'entries/octane-new-2026-08-21/entry.json'),
+      path.join(repo, 'entries/octane-new-2026-08-22/entry.json'),
       'utf8',
     ));
-    assert.equal(manifest.label, 'Octane (new-2026-08-21)');
+    assert.equal(manifest.label, 'Octane (new-2026-08-22)');
     assert.equal(manifest.tier, 'featured');
     assert.equal(manifest.provenance.commit, commit);
     assert.equal(manifest.provenance.ref, 'new-lynx');
     assert.equal(manifest.provenance.patched, true);
     assert.equal(
       manifest.provenance.patchFile,
-      'entries/_patches/octane-new-2026-08-21-block-storm.patch',
+      'entries/_patches/octane-new-2026-08-22-block-storm.patch',
     );
     assert.deepEqual(manifest.provenance.buildEnv, {
       BENCH_CORE: 'block',
@@ -102,7 +102,7 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
         cwd: repo,
         env: {
           ...process.env,
-          VENDOR_ONLY: 'octane-new-2026-08-21',
+          VENDOR_ONLY: 'octane-new-2026-08-22',
           OCTANE_NEW_BUILD: build,
           OCTANE_NEW_PATCH: patchFile,
         },

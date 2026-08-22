@@ -1,7 +1,7 @@
 # Dated `new-lynx` block-core campaign
 
 This campaign publishes one immutable `Huxpro/octane:new-lynx` HEAD as a normal featured entry,
-for example `octane-new-2026-08-21` / `Octane (new-2026-08-21)`. It is not a Lab estimate or a
+for example `octane-new-2026-08-22` / `Octane (new-2026-08-22)`. It is not a Lab estimate or a
 single-entry Lab observation: its Web numbers enter rankings only through one complete physical
 run containing every featured entry.
 
@@ -25,9 +25,9 @@ universal-core `dist[-rowsN]` output cannot satisfy this entry.
 Vendor and verify:
 
 ```sh
-VENDOR_ONLY=octane-new-2026-08-21 \
+VENDOR_ONLY=octane-new-2026-08-22 \
   OCTANE_NEW_BUILD=<clean-new-lynx-checkout> \
-  OCTANE_NEW_PATCH=entries/_patches/octane-new-2026-08-21-block-storm.patch \
+  OCTANE_NEW_PATCH=entries/_patches/octane-new-2026-08-22-block-storm.patch \
   node scripts/vendor-entries.mjs
 node scripts/verify-entries.mjs
 ```
@@ -38,8 +38,8 @@ Run every featured entry together with the formal repetition counts:
 
 ```sh
 pnpm bench run --harness web \
-  --entry react,octane,octane-new-2026-08-21,vue-vdom,vue-vdom-ifr-et,vue-vapor,vue-vapor-ifr \
-  --label octane-new-2026-08-21-block-web
+  --entry react,octane,octane-new-2026-08-22,vue-vdom,vue-vdom-ifr-et,vue-vapor,vue-vapor-ifr \
+  --label octane-new-2026-08-22-block-web
 ```
 
 The collector admits this run only if it covers one complete, balanced featured matrix from that
