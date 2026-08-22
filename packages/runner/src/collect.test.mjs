@@ -1237,7 +1237,7 @@ test('history audits every run but publishes only complete source-defined featur
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.equal(out.history.checkpoints.length, 5);
+  assert.equal(out.history.checkpoints.length, 6);
 
   const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
   assert.equal(out.history.checkpoints.some((checkpoint) =>
@@ -1299,7 +1299,7 @@ test('history omits incomplete storm matrices and ranks the complete current coh
 
   const current = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-22T01-46-09-65160668d8d9-octane-new-2026-08-22-block-web.json',
+      '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
     )));
   const currentRecord = current.activeRecordIndexes.map((index) => out.history.records[index])
     .find((candidate) => candidate.entry === 'octane-new-2026-08-22'
@@ -1307,7 +1307,7 @@ test('history omits incomplete storm matrices and ranks the complete current coh
       && candidate.workload === 'selectStorm'
       && candidate.scale === 1000
       && candidate.metric === 'latency');
-  assert.equal(currentRecord.median, 49.30999994277954);
+  assert.equal(currentRecord.median, 22.610000133514404);
   assert.equal(currentRecord.rankEligible, true);
   assert.equal(currentRecord.transport.issue, null);
   assert.equal(currentRecord.transport.expectedSequentialCommits, 30);
