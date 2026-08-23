@@ -1247,8 +1247,10 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  assert.equal(currentWeb.entryIds.length, 8);
-  assert.equal(currentWeb.entryIds.includes('octane-pr-791'), true);
+  assert.equal(currentWeb.entryIds.length, 7);
+  assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
+  assert.equal(out.history.sources.some((source) =>
+    source.entryIds.includes('octane-pr-791')), true);
 
   const webCheckpointIds = out.history.checkpoints
     .filter((checkpoint) => checkpoint.harnesses.some((cohort) => cohort.harness === 'web'))
@@ -1257,6 +1259,15 @@ test('history audits every run but publishes only complete source-defined featur
     ...DATASET_CHECKPOINT_SPECS.map((checkpoint) => checkpoint.id),
     'current-main',
   ]);
+  assert.deepEqual(
+    out.history.checkpoints.map((checkpoint) => checkpoint.label),
+    [
+      'Aug 10 · first complete matrix',
+      'Aug 16 · calibrated baseline',
+      'Aug 22 · expanded source cohort',
+      'Current · standards-aligned black-box',
+    ],
+  );
   assert.equal(out.history.checkpoints.every((checkpoint) =>
     !Object.hasOwn(checkpoint, 'octaneCommit')), true);
   for (const checkpoint of out.history.checkpoints) {
@@ -1318,6 +1329,7 @@ test('history audits every run but publishes only complete source-defined featur
   assert.match(vueIfr.configuration.href, /vue-lynx-bench\.patch#L537-L550$/);
 
   const incompleteFiles = [
+    '2026-08-08T07-22-33-b0fcfd511132-full.json',
     '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
     '2026-08-11T13-06-38-65160668d8d9-verify-featured-select10k.json',
   ];

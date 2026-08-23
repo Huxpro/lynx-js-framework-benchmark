@@ -163,15 +163,16 @@ const HUX1_COMMITS = new Set([
 
 // Dataset history is editorially explicit. A complete run is necessary but no
 // longer sufficient to create a time-machine stop: otherwise retries and
-// one-entry additions turn into near-duplicate checkpoints and make Octane's
-// commit look like the timeline's identity. Each checkpoint below names one
-// coherent dataset and the framework identities that belonged to it.
+// one-entry additions turn into near-duplicate checkpoints. Stops represent a
+// material dataset change (first complete matrix, method/calibration contract,
+// public source cohort, or workload contract), never one framework's commit
+// history. Each checkpoint names one coherent dataset and its exact identities.
 export const DATASET_CHECKPOINT_SPECS = [
   {
     id: '2026-08-10-hux-attempts',
-    label: 'Aug 10 · Hux attempts',
-    description: 'Upstream Octane beside the Hux1 and Hux2 branch-head attempts; the shared '
-      + 'non-storm matrix is complete, while legacy storm rows stay source evidence because '
+    label: 'Aug 10 · first complete matrix',
+    description: 'The earliest complete shared Web matrix in the archive. It includes upstream '
+      + 'Octane beside the Hux1 and Hux2 attempts; legacy storm rows stay source evidence because '
       + 'they predate verified sequential-transport receipts.',
     webRunFile: '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json',
     excludedWorkloads: ['updateStorm', 'selectStorm'],
@@ -183,8 +184,8 @@ export const DATASET_CHECKPOINT_SPECS = [
   },
   {
     id: '2026-08-16-upstream-baseline',
-    label: 'Aug 16 · upstream baseline',
-    description: 'Six-framework Web baseline after the measurement calibration pass.',
+    label: 'Aug 16 · calibrated baseline',
+    description: 'Six-framework Web baseline after the measurement and calibration contract changed.',
     webRunFile: '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json',
     minimumBenchmarkCellCount: 100,
     entryIds: [
@@ -193,8 +194,9 @@ export const DATASET_CHECKPOINT_SPECS = [
   },
   {
     id: '2026-08-22-new-lynx',
-    label: 'Aug 22 · new-lynx',
-    description: 'Upstream Octane beside the dated Huxpro/new-lynx branch-head attempt.',
+    label: 'Aug 22 · expanded source cohort',
+    description: 'The public comparison cohort expanded to include the dated Huxpro/new-lynx '
+      + 'block-core source identity beside upstream Octane.',
     webRunFile: '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
     minimumBenchmarkCellCount: 100,
     entryIds: [
@@ -964,8 +966,9 @@ const buildHistory = ({
   checkpoints.push({
     id: 'current-main',
     generatedAt: current.generatedAt,
-    label: 'Current · clean black-box',
-    description: 'Current published Web and Native cohorts built from clean source identities.',
+    label: 'Current · standards-aligned black-box',
+    description: 'Current published Web and Native cohorts use clean source identities and the '
+      + 'standards-aligned black-box workload contract. Merged PR snapshots remain archive evidence.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
@@ -1066,7 +1069,7 @@ export function collectRuns({
     : []);
   const entryById = new Map(currentEntries.map((entry) => [entry.id, entry]));
   const staticByEntry = new Map(currentEntries.map((entry) => [entry.id, bundleRecords(entry)]));
-  const featuredIds = new Set([...resolvedTiers].filter(([, tier]) => tier !== 'lab').map(([id]) => id));
+  const featuredIds = new Set([...resolvedTiers].filter(([, tier]) => tier === 'featured').map(([id]) => id));
   const nativeFeaturedIds = new Set([...featuredIds].filter((id) =>
     entrySupportsHarness(entryById.get(id), 'native')));
   const labIds = [...resolvedTiers].filter(([, tier]) => tier === 'lab').map(([id]) => id);

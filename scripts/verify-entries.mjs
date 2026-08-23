@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
 
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
-const TIERS = new Set(['featured', 'lab']);
+const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
 
 let failures = 0;
@@ -71,8 +71,15 @@ for (const id of ids) {
     }
   }
   if (id === 'octane-pr-791') {
-    if (manifest.tier !== 'featured') fail(`${id}: PR #791 entry must be featured`);
+    if (manifest.tier !== 'archive') fail(`${id}: merged PR #791 entry must be archive evidence`);
+    if (manifest.supersededBy !== 'octane') fail(`${id}: merged PR #791 must be superseded by octane`);
     if (manifest.provenance.ref !== 'pull/791/head') fail(`${id}: provenance.ref must be pull/791/head`);
+    if (manifest.provenance.mergedInto !== '939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a') {
+      fail(`${id}: provenance.mergedInto must identify PR #791's upstream merge commit`);
+    }
+    if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
+      fail(`${id}: archived PR #791 evidence must use a clean source checkout`);
+    }
     if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
       fail(`${id}: PR #791 entry must be explicitly Web-only`);
     }

@@ -83,7 +83,7 @@ function requireCleanOctaneCheckout(id, dir) {
 
 function vendor({
   id, label, framework, frameworkVersion, config, historyChannel, configuration,
-  tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells,
+  supersededBy, tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells,
 }) {
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
@@ -113,6 +113,7 @@ function vendor({
     config,
     ...(historyChannel == null ? {} : { historyChannel }),
     ...(configuration == null ? {} : { configuration }),
+    ...(supersededBy == null ? {} : { supersededBy }),
     tags,
     tier,
     ...(harnesses == null ? {} : { harnesses }),
@@ -123,6 +124,7 @@ function vendor({
       source: source.url,
       ref,
       commit: source.commit,
+      ...(source.mergedInto == null ? {} : { mergedInto: source.mergedInto }),
       patched: source.dirty,
       patchFile: source.dirty ? `entries/_patches/${source.patchName}` : null,
       buildCommand,
@@ -150,18 +152,20 @@ function vendorOctanePr791(buildDir) {
   ).version;
   vendor({
     id,
-    tier: 'featured',
+    tier: 'archive',
     harnesses: ['web'],
     label: 'Octane (PR #791)',
     framework: 'octane',
     frameworkVersion: version,
-    config: `.tsrx, keyed @for; octanejs/octane PR #791 universal memo repair ${sourceGit.commit.slice(0, 12)}`,
-    historyChannel: 'upstream PR head at measurement time',
+    config: `.tsrx, keyed @for; merged upstream PR snapshot ${sourceGit.commit.slice(0, 12)}`,
+    historyChannel: 'merged upstream PR snapshot; archive evidence',
+    supersededBy: 'octane',
     tags: ['optimized', 'snapshot', 'pr'],
     color: '#2563eb',
     source: {
       url: 'https://github.com/octanejs/octane',
       commit: sourceGit.commit,
+      mergedInto: '939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a',
       dirty: false,
       builtAt: sourceDate(buildDir),
     },

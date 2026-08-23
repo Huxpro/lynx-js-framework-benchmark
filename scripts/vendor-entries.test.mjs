@@ -102,7 +102,7 @@ test('new-lynx vendor publishes a clean featured Web-only block-core snapshot', 
   }
 });
 
-test('PR #791 vendor adds a clean featured Web-only entry', () => {
+test('PR #791 vendor keeps a clean Web-only archive entry', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-octane-pr-791-'));
   const repo = path.join(dir, 'benchmark');
   const build = path.join(dir, 'octane');
@@ -157,10 +157,12 @@ test('PR #791 vendor adds a clean featured Web-only entry', () => {
       'utf8',
     ));
     assert.equal(manifest.label, 'Octane (PR #791)');
-    assert.equal(manifest.tier, 'featured');
+    assert.equal(manifest.tier, 'archive');
+    assert.equal(manifest.supersededBy, 'octane');
     assert.deepEqual(manifest.harnesses, ['web']);
     assert.equal(manifest.provenance.commit, commit);
     assert.equal(manifest.provenance.ref, 'pull/791/head');
+    assert.equal(manifest.provenance.mergedInto, '939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a');
     assert.equal(manifest.provenance.patched, false);
     assert.equal(manifest.provenance.patchFile, null);
     assert.equal(Object.keys(manifest.provenance.sha256).length, 8);
