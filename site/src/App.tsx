@@ -4,7 +4,7 @@ import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { HistoryRanking } from './components/HistoryRanking';
-import { MethodPage } from './components/Method';
+import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
@@ -42,14 +42,7 @@ function syncUrl(selected: Set<string>, defaultIds: string[]) {
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
-type Page = 'overview' | 'scale' | 'threads' | 'method';
-
-const PAGES: { key: Page; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'scale', label: 'Scale' },
-  { key: 'threads', label: 'Threads' },
-  { key: 'method', label: 'Method' },
-];
+type Page = 'overview' | 'scale';
 
 const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 
@@ -163,49 +156,52 @@ function AppContent({
     <div className="page">
       <header className="site-header">
         <div className="site-title"><span className="lynx">Lynx</span> JS Framework Benchmark</div>
-        <nav className="site-nav" aria-label="Pages">
-          {PAGES.map((p) => (
-            <button key={p.key} aria-current={page === p.key} onClick={() => setPage(p.key)}>{p.label}</button>
-          ))}
-        </nav>
-        <div className="harness-switch" role="group" aria-label="Harness">
-          {['web', 'native'].map((h) => (
-            <button key={h} aria-pressed={harness === h} onClick={() => changeHarness(h)}>
-              {h === 'web' ? 'Lynx for Web' : 'Native engine'}
-            </button>
-          ))}
-        </div>
-        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-          {theme === 'dark' ? '☀' : '☾'}
-        </button>
       </header>
       <TimelineSlider
         snapshots={TIMELINE_SNAPSHOTS}
         index={snapshotIndex}
         onChange={onSnapshotChange}
+        page={page}
+        onPageChange={setPage}
+        harness={harness}
+        onHarnessChange={changeHarness}
+        theme={theme}
+        onThemeToggle={toggleTheme}
       />
+      <MeasurementReceipt harness={harness} />
 
       {harness === 'native' && !nativeHasData ? (
-        <>
-          <h1>How fast is each framework on Lynx?</h1>
-          <p className="subtitle">
-            No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
-            matrix keeps every contracted cell visible without turning archived observations into
-            rankings.
-          </p>
-          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
-          <div className="empty-state">
-            <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
-            <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
-              Any archive-only observations follow. The appendix at the end distinguishes work
-              that was never scheduled from evidenced DNF, proven unsupported capability,
-              incompatible archived runs, and derivation defects.
+        page === 'overview' ? (
+          <>
+            <h1>How fast is each framework on Lynx?</h1>
+            <p className="subtitle">
+              No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
+              matrix keeps every contracted cell visible without turning archived observations into
+              rankings.
             </p>
-          </div>
-          <NativeObservations theme={theme} />
-          <NativeCoverage />
-        </>
+            <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+            <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
+            <div className="empty-state">
+              <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
+              <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
+                Any archive-only observations follow. The appendix at the end distinguishes work
+                that was never scheduled from evidenced DNF, proven unsupported capability,
+                incompatible archived runs, and derivation defects.
+              </p>
+            </div>
+            <NativeObservations theme={theme} />
+            <NativeCoverage />
+          </>
+        ) : (
+          <>
+            <h1>How does Native cost grow with scale?</h1>
+            <p className="subtitle">
+              This checkpoint has no complete Native cohort, so no cross-framework scale curve can
+              be published. Archived observations remain visible as evidence below.
+            </p>
+            <NativeObservations theme={theme} />
+          </>
+        )
       ) : page === 'overview' ? (
         <>
           <h1>How fast is each framework on Lynx?</h1>
@@ -290,9 +286,20 @@ function AppContent({
               />
             );
           })}
+          <section className="thread-section" aria-labelledby="thread-section-title">
+            <div className="section-heading">
+              <div className="section-kicker">Inside the operation</div>
+              <h2 id="thread-section-title">Thread &amp; transport</h2>
+              <p>
+                Wall time can hide where work runs. This environment-specific breakdown keeps CPU,
+                wire traffic, memory and bundle placement beside the headline ranking.
+              </p>
+            </div>
+            <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
+          </section>
           {harness === 'native' && <NativeCoverage />}
         </>
-      ) : page === 'scale' ? (
+      ) : (
         <>
           <h1>How does cost grow with scale?</h1>
           <p className="subtitle">
@@ -301,31 +308,10 @@ function AppContent({
             0 ≈ scale-independent).
           </p>
           <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={activeSelected} />}
+          <CostSpace harness={harness} theme={theme} selected={activeSelected} />
           {trendSpecsForHarness(harness).map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={activeSelected} />
           ))}
-        </>
-      ) : page === 'threads' ? (
-        <>
-          <h1>The dual-thread equation</h1>
-          <p className="subtitle">
-            Lynx runs frameworks on a background thread (BTS) and applies UI on the main thread
-            (MTS); everything between them crosses a serialized wire. Total time hides this —
-            here it's split apart: per-realm CPU, bytes and messages in each direction, and which
-            rpc endpoints carried them.
-          </p>
-          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
-        </>
-      ) : (
-        <>
-          <h1>Method</h1>
-          <p className="subtitle">
-            What is measured, how neutrality is enforced, and where these numbers may and may not
-            be compared.
-          </p>
-          <MethodPage />
         </>
       )}
 

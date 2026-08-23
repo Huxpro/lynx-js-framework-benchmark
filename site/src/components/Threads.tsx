@@ -15,6 +15,7 @@ import {
 import { useTooltip } from '../hooks';
 
 const THREAD_WORKLOADS = ['create', 'update10th', 'select', 'updateStorm', 'selectStorm'];
+const THREAD_METRICS = new Set(['btsCpu', 'mtsCpu', 'wireToMtsBytes', 'wireToBtsBytes']);
 const scaleLabel = (scale: number) => scale >= 1000 ? `${scale / 1000}k` : String(scale);
 const endpointDetailLabel = (kind: string | null | undefined) => kind === 'sample-nearest-median'
   ? 'sample nearest the median total'
@@ -220,19 +221,30 @@ export function ThreadsPage({
   const available = useMemo(
     () => THREAD_WORKLOADS.flatMap((workload) => [...new Set(
       select({ suite: 'table', harness, workload, metric: 'latency' }).map((record) => record.scale),
-    )].sort((a, b) => a - b).map((scale) => ({
-      key: `${workload}@${scale}`,
-      workload,
-      scale,
-      label: `${workload} @${scaleLabel(scale)}`,
-    }))),
+    )].sort((a, b) => a - b)
+      .filter((scale) => select({ suite: 'table', harness, workload, scale })
+        .some((record) => THREAD_METRICS.has(record.metric)))
+      .map((scale) => ({
+        key: `${workload}@${scale}`,
+        workload,
+        scale,
+        label: `${workload} @${scaleLabel(scale)}`,
+      }))),
     [harness, select],
   );
   const [caseKey, setCaseKey] = useState<string | null>(null);
   const active = available.find((c) => c.key === caseKey) ?? available[0];
 
   if (!active) {
-    return <div className="empty-state">No dual-thread data for this harness yet.</div>;
+    return (
+      <div className="empty-state compact-empty">
+        <b>No thread or transport samples for Lynx for {harness === 'web' ? 'Web' : 'Native'}.</b>
+        <span>
+          Headline latency remains valid; this checkpoint did not capture the per-realm CPU and
+          directional wire instruments needed for the breakdown.
+        </span>
+      </div>
+    );
   }
 
   return (
@@ -280,7 +292,7 @@ export function ThreadsPage({
       <div className="grid-2">
         <MemoryCard harness={harness} theme={theme} selected={selected} />
       </div>
-      <BundleSections theme={theme} selected={selected} />
+      <BundleSections harness={harness} theme={theme} selected={selected} />
     </>
   );
 }
@@ -416,15 +428,16 @@ function EndpointTable({
   );
 }
 
-function BundleSections({ theme, selected }: { theme: 'light' | 'dark'; selected: Set<string> }) {
+function BundleSections({ harness, theme, selected }: { harness: string; theme: 'light' | 'dark'; selected: Set<string> }) {
   const { one } = useBenchmarkData();
   const { setTip, onMove, tipNode } = useTooltip();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => ({
     id: e.id,
-    mts: one({ suite: 'bundle', entry: e.id, metric: 'mtsSectionGzip' })?.median ?? null,
-    bts: one({ suite: 'bundle', entry: e.id, metric: 'btsSectionGzip' })?.median ?? null,
-    whole: one({ suite: 'bundle', entry: e.id, metric: 'bundleWebGzip' })?.median ?? null,
+    mts: one({ suite: 'bundle', harness, entry: e.id, metric: 'mtsSectionGzip' })?.median ?? null,
+    bts: one({ suite: 'bundle', harness, entry: e.id, metric: 'btsSectionGzip' })?.median ?? null,
+    whole: one({ suite: 'bundle', harness, entry: e.id, metric: 'bundleWebGzip' })?.median ?? null,
   }));
+  if (!rows.some((row) => row.whole != null)) return null;
   const max = Math.max(1e-9, ...rows.map((r) => r.whole ?? 0)) * 1.08;
 
   return (

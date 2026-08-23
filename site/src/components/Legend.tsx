@@ -19,18 +19,31 @@ export function Legend({
     available.has(entry.id) && entrySupportsHarness(entry, harness));
   return (
     <div className="legend" role="group" aria-label="Entries">
-      {visible.map((e) => (
-        <button
-          key={e.id}
-          className="item"
-          aria-pressed={selected.has(e.id)}
-          onClick={() => onToggle(e.id)}
-          title={`${e.label} — ${e.config}${e.tier === 'lab' ? ` · calibrated historical Lab estimate (${e.provenance.ref} @ ${e.provenance.commit.slice(0, 8)})` : ''}`}
-        >
-          <span className="swatch" style={{ background: entryColor(e.id, theme) }} />
-          {e.label}
-        </button>
-      ))}
+      {visible.map((e) => {
+        const detailId = `entry-method-${harness}-${e.id}`;
+        return (
+          <div className="legend-entry" key={e.id}>
+            <button
+              className="item"
+              aria-pressed={selected.has(e.id)}
+              aria-describedby={detailId}
+              onClick={() => onToggle(e.id)}
+            >
+              <span className="swatch" style={{ background: entryColor(e.id, theme) }} />
+              {e.label}
+            </button>
+            <aside className="entry-method" id={detailId} role="tooltip">
+              <strong>{e.label}</strong>
+              <span>{e.framework} {e.frameworkVersion}</span>
+              <span>{e.config}</span>
+              {e.configuration && <span>{e.configuration.summary}</span>}
+              <a href={`${e.provenance.source}/commit/${e.provenance.commit}`} target="_blank" rel="noreferrer">
+                {e.provenance.source.replace('https://github.com/', '')} @ {e.provenance.commit.slice(0, 10)} ↗
+              </a>
+            </aside>
+          </div>
+        );
+      })}
     </div>
   );
 }
