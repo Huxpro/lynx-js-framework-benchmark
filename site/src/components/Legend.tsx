@@ -33,28 +33,35 @@ export function Legend({
             <button
               className="item"
               aria-pressed={selected.has(e.id)}
-              aria-controls={detailId}
               onClick={() => onToggle(e.id)}
             >
               <span className="swatch" style={{ background: entryColor(e.id, theme) }} />
               {e.label}
             </button>
-            <aside className="entry-method" id={detailId} aria-label={`${e.label} source and configuration`}>
-              <strong>{e.label}</strong>
-              {pointer?.channel && <span>{pointer.channel}</span>}
-              {config && <span>{config}</span>}
-              {configuration && <span>{configuration.summary}</span>}
-              <div className="entry-links">
-                <a className="external-link" href={href} target="_blank" rel="noreferrer">
-                  {version && <span>{version}</span>}<code>{commit.slice(0, 10)}</code><span aria-hidden="true">↗</span>
-                </a>
-                {configuration && (
-                  <a className="external-link" href={configuration.href} target="_blank" rel="noreferrer">
-                    config <span aria-hidden="true">↗</span>
+            <span className="entry-info">
+              <button
+                className="entry-info-trigger"
+                type="button"
+                aria-label={`Details for ${e.label}`}
+                aria-controls={detailId}
+              >i</button>
+              <aside className="entry-method" id={detailId} aria-label={`${e.label} source and configuration`}>
+                <strong>{e.label}</strong>
+                {pointer?.channel && <span>{pointer.channel}</span>}
+                {config && <span>{config}</span>}
+                {configuration && <span>{configuration.summary}</span>}
+                <div className="entry-links">
+                  <a className="external-link" href={href} target="_blank" rel="noreferrer">
+                    {version && <span>{version}</span>}<code>{commit.slice(0, 10)}</code><span aria-hidden="true">↗</span>
                   </a>
-                )}
-              </div>
-            </aside>
+                  {configuration && (
+                    <a className="external-link" href={configuration.href} target="_blank" rel="noreferrer">
+                      config <span aria-hidden="true">↗</span>
+                    </a>
+                  )}
+                </div>
+              </aside>
+            </span>
           </div>
         );
       })}

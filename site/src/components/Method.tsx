@@ -8,12 +8,20 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
   const boundary = harness === 'web'
     ? 'Interaction: in-page pointerdown → first frame whose composed-DOM predicate passes. Startup: view attach → first contentful paint.'
     : 'Interaction: real device input handler → second Native animation frame. Startup: pipeline open → FCP; renderer-only ACK/frame metrics stay separately named.';
+  const generatedAt = new Date(snapshot.generatedAt).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
 
   return (
     <details className="measurement-receipt">
       <summary>
         <span>Measurement receipt</span>
-        <span>{harness === 'web' ? 'Web' : 'Native'} · {cohort ? `${cohort.entryIds.length} comparable entries` : 'no publishable cohort'}</span>
+        <span className="receipt-context">
+          <code title={checkpoint?.description}>{checkpoint?.label ?? snapshot.label}</code>
+          {' · '}<time dateTime={snapshot.generatedAt}>{generatedAt}</time>
+          {' · '}{harness === 'web' ? 'Web' : 'Native'}
+          {' · '}{cohort ? `${cohort.entryIds.length} comparable entries` : 'no publishable cohort'}
+        </span>
       </summary>
       <div className="receipt-grid">
         <section>
@@ -49,8 +57,7 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
         </p>
       </div>
       <div className="receipt-foot">
-        exact checkpoint <code>{checkpoint?.id ?? snapshot.id}</code> · generated{' '}
-        <time dateTime={snapshot.generatedAt}>{new Date(snapshot.generatedAt).toLocaleString()}</time>
+        exact checkpoint <code>{checkpoint?.id ?? snapshot.id}</code>
       </div>
     </details>
   );

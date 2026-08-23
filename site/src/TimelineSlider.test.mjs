@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./components/TimelineSlider.tsx', import.meta.url), 'utf8');
 const legendSource = fs.readFileSync(new URL('./components/Legend.tsx', import.meta.url), 'utf8');
+const receiptSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
 const rankingSource = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
 const entry = (id) => JSON.parse(fs.readFileSync(
   new URL(`../../entries/${id}/entry.json`, import.meta.url),
@@ -24,6 +25,9 @@ test('framework hover cards own source links and exact plugin options', () => {
   assert.match(legendSource, /className="external-link"/);
   assert.match(legendSource, /href=\{configuration\.href\}/);
   assert.doesNotMatch(legendSource, /<a[^>]+className="item"/);
+  assert.doesNotMatch(legendSource, /<button\s+className="item"[^>]*aria-controls/);
+  assert.match(legendSource, /className="entry-info-trigger"/);
+  assert.match(legendSource, /aria-controls=\{detailId\}/);
 
   assert.equal(entry('vue-vdom').label, 'Vue');
   assert.equal(entry('vue-vdom-ifr-et').label, 'Vue +IFR');
@@ -45,11 +49,12 @@ test('sticky workspace owns view and environment navigation', () => {
   assert.doesNotMatch(source, /Native engine/);
 });
 
-test('sticky workspace contains only toolbar and one-line dataset slider', () => {
+test('sticky workspace gives its second row entirely to the dataset slider', () => {
   assert.match(source, /className="timeline-control"/);
-  assert.match(source, /dateLabel\(snapshot\.generatedAt, true\)/);
+  assert.doesNotMatch(source, /timeline-copy/);
   assert.doesNotMatch(source, /timeline-identities/);
   assert.doesNotMatch(source, /timeline-meta/);
+  assert.match(receiptSource, /checkpoint\?\.label/);
+  assert.match(receiptSource, /dateTime=\{snapshot\.generatedAt\}/);
   assert.match(legendSource, /className="entry-method"/);
-  assert.match(legendSource, /aria-controls=\{detailId\}/);
 });

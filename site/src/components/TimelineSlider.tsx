@@ -1,10 +1,8 @@
 import { BENCHMARK_HISTORY, TimelineSnapshot } from '../data';
 
-const dateLabel = (generatedAt: string, compact = false) => new Date(generatedAt).toLocaleString(
+const dateLabel = (generatedAt: string) => new Date(generatedAt).toLocaleString(
   undefined,
-  compact
-    ? { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
-    : { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' },
+  { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' },
 );
 
 export function TimelineSlider({
@@ -87,11 +85,6 @@ export function TimelineSlider({
             disabled={index === snapshots.length - 1}
             onClick={() => onChange(index + 1)}
           >→</button>
-        </div>
-        <div className="timeline-copy" title={checkpoint.description}>
-          <span className="timeline-eyebrow">Dataset</span>
-          <time dateTime={snapshot.generatedAt}>{dateLabel(snapshot.generatedAt, true)}</time>
-          <code>{checkpoint.label}</code>
         </div>
         </section>
       </div>

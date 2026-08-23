@@ -9,3 +9,16 @@ test('expanded exact-data tables scroll inside their card on narrow viewports', 
   assert.match(rule, /max-width\s*:\s*100%/);
   assert.match(rule, /overflow-x\s*:\s*auto/);
 });
+
+test('framework details do not share the selection button hover target', () => {
+  assert.match(css, /\.entry-info:hover \.entry-method/);
+  assert.match(css, /\.entry-info:focus-within \.entry-method/);
+  assert.doesNotMatch(css, /\.legend-entry:hover \.entry-method/);
+});
+
+test('dataset slider owns the full sticky second row', () => {
+  const timeline = css.match(/\.timeline\s*\{([^}]*)\}/)?.[1] ?? '';
+  const control = css.match(/\.timeline-control\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.doesNotMatch(timeline, /grid-template-columns/);
+  assert.match(control, /minmax\(0, 1fr\)/);
+});
