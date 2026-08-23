@@ -179,8 +179,7 @@ function AppContent({
               matrix keeps every contracted cell visible without turning archived observations into
               rankings.
             </p>
-            <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-            <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
+            <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
             <div className="empty-state">
               <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
               <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
@@ -212,8 +211,7 @@ function AppContent({
             Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
             any card's data table for exact numbers.
           </p>
-          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
+          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
             title="interactive @1k"

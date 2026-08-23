@@ -11,7 +11,7 @@ function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 }
 
-test('new-lynx vendor publishes a clean featured Web-only block-core snapshot', () => {
+test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-new-lynx-block-'));
   const repo = path.join(dir, 'benchmark');
   const build = path.join(dir, 'octane');
@@ -54,7 +54,7 @@ test('new-lynx vendor publishes a clean featured Web-only block-core snapshot', 
         cwd: repo,
         env: {
           ...process.env,
-          VENDOR_ONLY: 'octane-new-2026-08-22',
+          VENDOR_ONLY: 'octane-hux',
           OCTANE_NEW_BUILD: build,
         },
         encoding: 'utf8',
@@ -62,10 +62,11 @@ test('new-lynx vendor publishes a clean featured Web-only block-core snapshot', 
     );
     assert.equal(vendored.status, 0, vendored.stderr);
     const manifest = JSON.parse(fs.readFileSync(
-      path.join(repo, 'entries/octane-new-2026-08-22/entry.json'),
+      path.join(repo, 'entries/octane-hux/entry.json'),
       'utf8',
     ));
-    assert.equal(manifest.label, 'Octane (new-2026-08-22)');
+    assert.equal(manifest.id, 'octane-hux');
+    assert.equal(manifest.label, 'Octane (Hux)');
     assert.equal(manifest.tier, 'featured');
     assert.deepEqual(manifest.harnesses, ['web']);
     assert.equal(manifest.provenance.commit, commit);
@@ -89,7 +90,7 @@ test('new-lynx vendor publishes a clean featured Web-only block-core snapshot', 
         cwd: repo,
         env: {
           ...process.env,
-          VENDOR_ONLY: 'octane-new-2026-08-22',
+          VENDOR_ONLY: 'octane-hux',
           OCTANE_NEW_BUILD: build,
         },
         encoding: 'utf8',

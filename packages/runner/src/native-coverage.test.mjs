@@ -28,7 +28,7 @@ import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } fr
 const ENTRIES = [
   { id: 'octane', framework: 'octane', harnesses: ['web'] },
   { id: 'octane-pr-791', framework: 'octane', harnesses: ['web'] },
-  { id: 'octane-new-2026-08-22', framework: 'octane', harnesses: ['web'] },
+  { id: 'octane-hux', framework: 'octane', harnesses: ['web'] },
   { id: 'react', framework: 'reactlynx' },
   { id: 'vue-vapor', framework: 'vue-lynx' },
   { id: 'vue-vapor-ifr', framework: 'vue-lynx' },
@@ -62,7 +62,7 @@ test('featured Native contract is exactly five black-box eligible entries by 23 
   assert.equal(contract.expectedCellCount, NATIVE_FEATURED_MATRIX_CELL_COUNT);
   assert.equal(contract.cells.length, 115);
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 5);
-  assert.equal(contract.entryIds.includes('octane-new-2026-08-22'), false);
+  assert.equal(contract.entryIds.includes('octane-hux'), false);
   for (const entry of ENTRIES.filter((candidate) => candidate.harnesses?.includes('web') !== true
     || candidate.harnesses.includes('native'))) {
     const cells = contract.cells.filter((cell) => cell.entry === entry.id);

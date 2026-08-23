@@ -228,6 +228,7 @@ export interface HistoryIdentityPointer {
   ref: string | null;
   href: string | null;
   channel: string | null;
+  config: string | null;
   configuration: EntryConfiguration | null;
 }
 

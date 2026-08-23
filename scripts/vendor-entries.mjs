@@ -43,7 +43,7 @@ const PRESENTATION = {
   react: { order: 0, colorLight: '#2a78d6', colorDark: '#3987e5' },
   octane: { order: 1, colorLight: '#eb6834', colorDark: '#d95926' },
   'octane-pr-791': { order: 1.25, colorLight: '#2563eb', colorDark: '#60a5fa' },
-  'octane-new-2026-08-22': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
+  'octane-hux': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
   'vue-vdom': { order: 2, colorLight: '#1baf7a', colorDark: '#199e70' },
   'vue-vdom-ifr-et': { order: 3, colorLight: '#eda100', colorDark: '#c98500' },
   'vue-vapor': { order: 4, colorLight: '#e87ba4', colorDark: '#d55181' },
@@ -381,7 +381,8 @@ if (
   ).version;
   vendor({
     id: 'octane-hux1',
-    tier: 'lab',
+    tier: 'archive',
+    supersededBy: 'octane-hux',
     label: 'Octane (Hux1)',
     framework: 'octane',
     frameworkVersion: hux1Version,
@@ -427,7 +428,8 @@ if (
   ).version;
   vendor({
     id: 'octane-hux2',
-    tier: 'lab',
+    tier: 'archive',
+    supersededBy: 'octane-hux',
     label: 'Octane (Hux2)',
     framework: 'octane',
     frameworkVersion: hux2Version,
@@ -552,8 +554,8 @@ if (
 }
 
 vendorNewLynxBlockSnapshot(
-  'octane-new-2026-08-22',
-  'Octane (new-2026-08-22)',
+  'octane-hux',
+  'Octane (Hux)',
   OCTANE_NEW_BUILD,
 );
 

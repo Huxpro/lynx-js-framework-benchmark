@@ -7,6 +7,7 @@ import { useBenchmarkData } from '../data-context';
 import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
 import { completeRowGeomeans } from '../derive.mjs';
 import { useTooltip } from '../hooks';
+import { Legend } from './Legend';
 
 function tintFor(v: number): string {
   const t = Math.max(-1, Math.min(1, Math.log(v) / Math.log(4)));
@@ -29,11 +30,13 @@ export function HeatGrid({
   harness,
   theme,
   selected,
+  onToggle,
 }: {
   rows: RowSpec[];
   harness: string;
   theme: 'light' | 'dark';
   selected: Set<string>;
+  onToggle: (id: string) => void;
 }) {
   const { select } = useBenchmarkData();
   const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
@@ -67,7 +70,7 @@ export function HeatGrid({
 
   return (
     <div className="card" onMouseMove={onMove}>
-      <div className="controls-row">
+      <div className="controls-row glance-heading">
         <div className="card-title">All cases at a glance</div>
         <div className="seg" role="group" aria-label="Baseline">
           <button aria-pressed={activeMode === 'fastest'} onClick={() => setMode('fastest')}>vs fastest</button>
@@ -78,6 +81,7 @@ export function HeatGrid({
           ))}
         </div>
       </div>
+      <Legend harness={harness} theme={theme} selected={selected} onToggle={onToggle} />
       <div className="heat-scroll">
         <table className="heat">
           <thead>

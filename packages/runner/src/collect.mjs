@@ -172,13 +172,13 @@ export const DATASET_CHECKPOINT_SPECS = [
     id: '2026-08-10-hux-attempts',
     label: 'Aug 10 · first complete matrix',
     description: 'The earliest complete shared Web matrix in the archive. It includes upstream '
-      + 'Octane beside the Hux1 and Hux2 attempts; legacy storm rows stay source evidence because '
+      + 'Octane beside the faster Hux branch-head attempt; legacy storm rows stay source evidence because '
       + 'they predate verified sequential-transport receipts.',
     webRunFile: '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json',
     excludedWorkloads: ['updateStorm', 'selectStorm'],
     minimumBenchmarkCellCount: 90,
     entryIds: [
-      'octane', 'octane-hux1', 'octane-hux2', 'react',
+      'octane', 'octane-hux', 'react',
       'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
     ],
   },
@@ -200,7 +200,7 @@ export const DATASET_CHECKPOINT_SPECS = [
     webRunFile: '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
     minimumBenchmarkCellCount: 100,
     entryIds: [
-      'octane', 'octane-new-2026-08-22', 'react',
+      'octane', 'octane-hux', 'react',
       'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
     ],
   },
@@ -208,6 +208,7 @@ export const DATASET_CHECKPOINT_SPECS = [
 
 const normalizedEntryId = (run, entry) => {
   if (entry === 'octane-main') return 'octane-prior';
+  if (entry === 'octane-hux2' || entry === 'octane-new-2026-08-22') return 'octane-hux';
   if (entry === 'octane' && HUX1_COMMITS.has(run.meta.entryCommits?.octane)) {
     return 'octane-hux1';
   }
@@ -730,21 +731,24 @@ const identityPointers = (checkpointRecords, entryById) => {
   for (const record of checkpointRecords) {
     if (!isBenchmarkRecord(record) || pointers.has(record.entry)) continue;
     const entry = entryById.get(record.entry);
+    const sourceEntry = entryById.get(record.sourceEntry ?? record.entry) ?? entry;
     const commit = record.entryCommit ?? null;
-    const source = entry?.provenance?.source ?? null;
-    const manifestVersion = entry?.frameworkVersion ?? null;
+    const sourceMatchesCommit = sourceEntry?.provenance?.commit === commit;
+    const source = sourceEntry?.provenance?.source ?? null;
+    const manifestVersion = sourceEntry?.frameworkVersion ?? null;
     pointers.set(record.entry, {
       entryId: record.entry,
       sourceEntryId: record.sourceEntry ?? record.entry,
       label: entry?.label ?? record.entry,
       framework: entry?.framework ?? null,
-      version: entry?.provenance?.commit === commit ? manifestVersion : null,
+      version: sourceMatchesCommit ? manifestVersion : null,
       commit,
       source,
-      ref: entry?.provenance?.ref ?? null,
+      ref: sourceEntry?.provenance?.ref ?? null,
       href: source && commit ? `${source}/commit/${commit}` : source,
-      channel: entry?.historyChannel ?? null,
-      configuration: entry?.configuration ?? null,
+      channel: sourceEntry?.historyChannel ?? null,
+      config: sourceMatchesCommit ? (sourceEntry?.config ?? null) : null,
+      configuration: sourceMatchesCommit ? (sourceEntry?.configuration ?? null) : null,
     });
   }
   return [...pointers.values()];

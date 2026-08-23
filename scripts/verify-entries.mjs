@@ -53,21 +53,27 @@ for (const id of ids) {
       fail(`${id}: featured Octane entries must be explicitly Web-only`);
     }
   }
-  if (/^octane-new-\d{4}-\d{2}-\d{2}$/.test(id)) {
-    if (manifest.tier !== 'featured') fail(`${id}: dated new-lynx entry must be featured`);
+  if (id === 'octane-hux') {
+    if (manifest.label !== 'Octane (Hux)') fail(`${id}: public label must be Octane (Hux)`);
+    if (manifest.tier !== 'featured') fail(`${id}: Hux new-lynx entry must be featured`);
     if (manifest.provenance.ref !== 'new-lynx') fail(`${id}: provenance.ref must be new-lynx`);
     if (
       manifest.provenance.buildEnv?.BENCH_CORE !== 'block'
       || manifest.provenance.buildEnv?.BENCH_BLOCK_MODE !== 'scoped'
       || !String(manifest.provenance.buildCommand).includes('BENCH_CORE=block')
     ) {
-      fail(`${id}: dated new-lynx entry must prove the scoped block-core build`);
+      fail(`${id}: Hux new-lynx entry must prove the scoped block-core build`);
     }
     if (manifest.webLab != null || manifest.nativeLab != null || manifest.ranking != null) {
-      fail(`${id}: dated new-lynx entry must not use Lab contracts`);
+      fail(`${id}: Hux new-lynx entry must not use Lab contracts`);
     }
     if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
-      fail(`${id}: dated new-lynx entry must be explicitly Web-only`);
+      fail(`${id}: Hux new-lynx entry must be explicitly Web-only`);
+    }
+  }
+  if (id === 'octane-hux1' || id === 'octane-hux2') {
+    if (manifest.tier !== 'archive' || manifest.supersededBy !== 'octane-hux') {
+      fail(`${id}: historical Hux attempt must be archive evidence superseded by octane-hux`);
     }
   }
   if (id === 'octane-pr-791') {

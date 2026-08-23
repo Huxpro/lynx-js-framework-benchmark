@@ -1298,17 +1298,25 @@ test('history audits every run but publishes only complete source-defined featur
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File)));
   assert.ok(aug10);
   assert.deepEqual(aug10.harnesses[0].entryIds, [
-    'octane', 'octane-hux1', 'octane-hux2', 'react',
+    'octane', 'octane-hux', 'react',
     'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
   ]);
   assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').commit,
     'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
   assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').channel,
     'upstream HEAD at measurement time');
-  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux1').commit,
-    '4a53620fe811a016cb9966fab53ca181a89159c8');
-  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux2').commit,
+  assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux1'), false);
+  assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux2'), false);
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').commit,
     'e9d0fab6d0dde33a70c77be05f4d2e5372431fbf');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').sourceEntryId,
+    'octane-hux2');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').label,
+    'Octane (Hux)');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').version,
+    '0.1.31');
+  assert.match(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').config,
+    /S3 final stack/);
   const aug10Source = out.history.sources.find((source) => source.runFile === aug10File);
   assert.ok(aug10Source);
   assert.equal(aug10Source.entryCommits['octane-main'],
@@ -1373,7 +1381,7 @@ test('history omits incomplete storm matrices and ranks the complete current coh
       '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
     )));
   const currentRecord = current.activeRecordIndexes.map((index) => out.history.records[index])
-    .find((candidate) => candidate.entry === 'octane-new-2026-08-22'
+    .find((candidate) => candidate.entry === 'octane-hux'
       && candidate.harness === 'web'
       && candidate.workload === 'selectStorm'
       && candidate.scale === 1000
