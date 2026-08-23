@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
@@ -15,24 +15,23 @@ import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
 import {
   ENTRIES,
   ENTRY_BY_ID,
-  FEATURED_IDS,
   TIMELINE_SNAPSHOTS,
   entrySupportsHarness,
 } from './data';
 import { useTheme } from './hooks';
 
 // Sharable comparison state: ?entries=a,b,c picks an exact featured set.
-function initialSelection(): Set<string> {
+function initialSelection(defaultIds: string[]): Set<string> {
   const params = new URLSearchParams(location.search);
   const ids = params.get('entries')?.split(',').map((s) => s.trim())
-    .filter((id) => FEATURED_IDS.includes(id));
-  return new Set(ids?.length ? ids : FEATURED_IDS);
+    .filter((id) => defaultIds.includes(id));
+  return new Set(ids?.length ? ids : defaultIds);
 }
 
-function syncUrl(selected: Set<string>) {
+function syncUrl(selected: Set<string>, defaultIds: string[]) {
   const params = new URLSearchParams(location.search);
-  const isDefault = selected.size === FEATURED_IDS.length
-    && FEATURED_IDS.every((id) => selected.has(id));
+  const isDefault = selected.size === defaultIds.length
+    && defaultIds.every((id) => selected.has(id));
   if (isDefault) {
     params.delete('entries');
   } else {
@@ -74,11 +73,23 @@ function AppContent({
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
-  const [selected, setSelected] = useState<Set<string>>(initialSelection);
+  const cohortEntryIds = snapshot.comparison.harnesses
+    .find((cohort) => cohort.harness === harness)?.entryIds ?? [];
+  const cohortKey = `${snapshot.id}:${harness}`;
+  const previousCohort = useRef(cohortKey);
+  const [selected, setSelected] = useState<Set<string>>(() => initialSelection(cohortEntryIds));
+  const availableIds = useMemo(() => new Set(cohortEntryIds), [cohortEntryIds]);
+  useEffect(() => {
+    if (previousCohort.current === cohortKey) return;
+    const next = new Set(cohortEntryIds);
+    previousCohort.current = cohortKey;
+    setSelected(next);
+    syncUrl(next, cohortEntryIds);
+  }, [cohortEntryIds, cohortKey]);
   const activeSelected = useMemo(() => new Set([...selected].filter((id) => {
     const entry = ENTRY_BY_ID.get(id);
-    return entry != null && entrySupportsHarness(entry, harness);
-  })), [harness, selected]);
+    return availableIds.has(id) && entry != null && entrySupportsHarness(entry, harness);
+  })), [availableIds, harness, selected]);
   const changeHarness = (next: string) => {
     setHarness(next);
     const params = new URLSearchParams(location.search);
@@ -93,7 +104,7 @@ function AppContent({
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      syncUrl(next);
+      syncUrl(next, cohortEntryIds);
       return next;
     });
 

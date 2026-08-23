@@ -5,7 +5,6 @@ import {
   BENCHMARK_HISTORY,
   ENTRIES,
   entryColor,
-  FEATURED_IDS,
   fmtBytes,
   fmtCount,
   fmtMs,
@@ -13,7 +12,6 @@ import {
   HistoryRecord,
   historyRecordsForCheckpoint,
   shortLabel,
-  TIMELINE_SNAPSHOTS,
 } from '../data';
 import { rankHistoryCell } from '../derive.mjs';
 
@@ -59,6 +57,11 @@ interface RankedPoint {
   segment?: string;
 }
 
+const HISTORY_ENTRY_IDS = [...new Set(BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
+  checkpoint.harnesses.flatMap((cohort) => cohort.entryIds)))];
+const HISTORY_RANK_LIMIT = Math.max(1, ...BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
+  checkpoint.harnesses.map((cohort) => cohort.entryIds.length)));
+
 export function HistoryRanking({
   harness,
   onHarnessChange,
@@ -74,7 +77,7 @@ export function HistoryRanking({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const allRecords = BENCHMARK_HISTORY.records.filter((record) =>
-    record.harness === harness && FEATURED_IDS.includes(record.entry));
+    record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry));
   const workloads = [...new Set(allRecords.map((record) => record.workload))].sort((a, b) => {
     const preferred = ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm', 'memory', 'startup'];
     return preferred.indexOf(a) - preferred.indexOf(b) || a.localeCompare(b);
@@ -108,7 +111,7 @@ export function HistoryRanking({
         && record.workload === activeWorkload
         && record.scale === activeScale
         && record.metric === activeMetric) as HistoryRecord[];
-      const ranked = rankHistoryCell(FEATURED_IDS, records, cohort.rankEligible) as Array<{
+      const ranked = rankHistoryCell(cohort.entryIds, records, cohort.rankEligible) as Array<{
         entry: string; record: HistoryRecord | null; rank: number | null;
         status: RankedPoint['status'];
       }>;
@@ -118,13 +121,13 @@ export function HistoryRanking({
           ...point,
           label: shortLabel(point.entry),
           time: new Date(checkpoint.generatedAt),
-          plotRank: point.rank ?? FEATURED_IDS.length + 1,
+          plotRank: point.rank ?? HISTORY_RANK_LIMIT + 1,
           checkpoint,
           cohortIdentity,
         });
       }
     }
-    for (const entry of FEATURED_IDS) {
+    for (const entry of HISTORY_ENTRY_IDS) {
       let segment = 0;
       let previousIdentity: string | null = null;
       for (const point of out.filter((candidate) => candidate.entry === entry)) {
@@ -147,10 +150,10 @@ export function HistoryRanking({
   useEffect(() => {
     const node = ref.current;
     if (!node || activeScale == null || points.length === 0) return;
-    const ids = FEATURED_IDS;
+    const ids = HISTORY_ENTRY_IDS;
     const fg = theme === 'dark' ? '#b5b4ab' : '#5f5e57';
     const background = theme === 'dark' ? '#1d1f26' : '#ffffff';
-    const statusRank = FEATURED_IDS.length + 1;
+    const statusRank = HISTORY_RANK_LIMIT + 1;
     const title = (point: RankedPoint) => {
       const record = point.record;
       const status = point.status === 'ranked' ? `rank ${point.rank} of ${point.checkpoint.harnesses
@@ -244,7 +247,7 @@ export function HistoryRanking({
         </select></label>
       </div>
       <div className="history-legend" aria-label="Framework colors">
-        {ENTRIES.filter((entry) => FEATURED_IDS.includes(entry.id)).map((entry) => (
+        {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
           <span key={entry.id}><i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}</span>
         ))}
         <span className="history-status">○ observation · ● incomparable · red DNF · faint dot missing</span>

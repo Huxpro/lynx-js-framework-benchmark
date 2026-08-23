@@ -1,4 +1,5 @@
 import { ENTRIES, entryColor, entrySupportsHarness } from '../data';
+import { useBenchmarkData } from '../data-context';
 
 export function Legend({
   harness,
@@ -11,7 +12,11 @@ export function Legend({
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
-  const visible = ENTRIES.filter((e) => e.tier !== 'lab' && entrySupportsHarness(e, harness));
+  const { snapshot } = useBenchmarkData();
+  const available = new Set(snapshot.comparison.harnesses
+    .find((cohort) => cohort.harness === harness)?.entryIds ?? []);
+  const visible = ENTRIES.filter((entry) =>
+    available.has(entry.id) && entrySupportsHarness(entry, harness));
   return (
     <div className="legend" role="group" aria-label="Entries">
       {visible.map((e) => (

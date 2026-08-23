@@ -81,7 +81,10 @@ function requireCleanOctaneCheckout(id, dir) {
   return sourceGit;
 }
 
-function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells }) {
+function vendor({
+  id, label, framework, frameworkVersion, config, historyChannel, configuration,
+  tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells,
+}) {
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
@@ -108,6 +111,8 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
     framework,
     frameworkVersion,
     config,
+    ...(historyChannel == null ? {} : { historyChannel }),
+    ...(configuration == null ? {} : { configuration }),
     tags,
     tier,
     ...(harnesses == null ? {} : { harnesses }),
@@ -151,6 +156,7 @@ function vendorOctanePr791(buildDir) {
     framework: 'octane',
     frameworkVersion: version,
     config: `.tsrx, keyed @for; octanejs/octane PR #791 universal memo repair ${sourceGit.commit.slice(0, 12)}`,
+    historyChannel: 'upstream PR head at measurement time',
     tags: ['optimized', 'snapshot', 'pr'],
     color: '#2563eb',
     source: {
@@ -187,6 +193,7 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir) {
     framework: 'octane',
     frameworkVersion: version,
     config: `.tsrx, keyed @for; block core (scoped writes); Huxpro/octane new-lynx ${sourceGit.commit.slice(0, 12)}`,
+    historyChannel: 'Huxpro branch-head attempt',
     tags: ['optimized', 'snapshot', 'block-core'],
     color: '#7c3aed',
     source: {
@@ -263,7 +270,7 @@ vendor({
 vendor({
   id: 'vue-vdom',
   tier: 'featured',
-  label: 'Vue-Lynx VDOM',
+  label: 'Vue',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} / vue-lynx 0.4.2`,
   config: 'vdom, IFR off, ET off',
@@ -277,10 +284,14 @@ vendor({
 vendor({
   id: 'vue-vdom-ifr-et',
   tier: 'featured',
-  label: 'Vue-Lynx VDOM +IFR+ET',
+  label: 'Vue +IFR',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} / vue-lynx 0.4.2`,
   config: 'vdom, enableIFR + enableElementTemplates',
+  configuration: {
+    summary: 'pluginVueLynx({ optionsApi: false, enableIFR: true, enableElementTemplates: true })',
+    href: 'https://github.com/Huxpro/lynx-js-framework-benchmark/blob/e62f054/entries/_patches/vue-lynx-bench.patch#L537-L550',
+  },
   tags: ['optimized'],
   color: '#2f855a',
   source: vueSource,
@@ -291,7 +302,7 @@ vendor({
 vendor({
   id: 'vue-vapor',
   tier: 'featured',
-  label: 'Vue-Lynx Vapor',
+  label: 'Vue Vapor',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} vapor / vue-lynx 0.4.2`,
   config: 'vapor mode, IFR off',
@@ -305,10 +316,14 @@ vendor({
 vendor({
   id: 'vue-vapor-ifr',
   tier: 'featured',
-  label: 'Vue-Lynx Vapor +IFR',
+  label: 'Vue Vapor +IFR',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} vapor / vue-lynx 0.4.2`,
   config: 'vapor mode, enableIFR',
+  configuration: {
+    summary: 'pluginVueLynx({ optionsApi: false, vapor: true, enableIFR: true, enableElementTemplates: false })',
+    href: 'https://github.com/Huxpro/lynx-js-framework-benchmark/blob/e62f054/entries/_patches/vue-lynx-bench.patch#L307-L319',
+  },
   tags: ['optimized'],
   color: '#9d4b8f',
   source: vueSource,
@@ -329,6 +344,7 @@ vendor({
   framework: 'octane',
   frameworkVersion: octaneVersion,
   config: '.tsrx, keyed @for; latest upstream main',
+  historyChannel: 'upstream HEAD at measurement time',
   tags: ['optimized'],
   color: '#ff415a',
   source: octaneSource,
@@ -366,6 +382,7 @@ if (
     framework: 'octane',
     frameworkVersion: hux1Version,
     config: '.tsrx, keyed @for; hux perf stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
+    historyChannel: 'Huxpro branch-head attempt',
     tags: ['optimized'],
     color: '#9f3c0d',
     source: {
@@ -411,6 +428,7 @@ if (
     framework: 'octane',
     frameworkVersion: hux2Version,
     config: '.tsrx, keyed @for; S3 final stack (#25→#31→#32→#33), BTS materialization and retained-state diet',
+    historyChannel: 'Huxpro branch-head attempt',
     tags: ['optimized'],
     color: '#d63384',
     source: {

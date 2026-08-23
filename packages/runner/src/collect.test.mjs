@@ -7,7 +7,7 @@ import test from 'node:test';
 
 import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
 
-import { collectRuns } from './collect.mjs';
+import { collectRuns, DATASET_CHECKPOINT_SPECS } from './collect.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
   CONNECTOR_PACKAGE_TREES_PROTOCOL,
@@ -1213,6 +1213,13 @@ test('history keeps a complete past entry set without requiring future featured 
       generatedAt: 'test',
       log: () => {},
       entryTiers: entryTiers(['octane', 'react', 'octane-new']),
+      datasetCheckpoints: [{
+        id: 'past-complete',
+        label: 'Past complete',
+        description: 'A complete historical dataset.',
+        webRunFile: 'past-complete.json',
+        entryIds: ['octane', 'react'],
+      }],
     });
     const checkpointFiles = out.history.checkpoints.flatMap((checkpoint) =>
       checkpoint.harnesses.flatMap(({ sourceRunFiles }) => sourceRunFiles));
@@ -1243,15 +1250,60 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(currentWeb.entryIds.length, 8);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), true);
 
+  const webCheckpointIds = out.history.checkpoints
+    .filter((checkpoint) => checkpoint.harnesses.some((cohort) => cohort.harness === 'web'))
+    .map((checkpoint) => checkpoint.id);
+  assert.deepEqual(webCheckpointIds, [
+    ...DATASET_CHECKPOINT_SPECS.map((checkpoint) => checkpoint.id),
+    'current-main',
+  ]);
+  assert.equal(out.history.checkpoints.every((checkpoint) =>
+    !Object.hasOwn(checkpoint, 'octaneCommit')), true);
+  for (const checkpoint of out.history.checkpoints) {
+    const entryIds = new Set(checkpoint.harnesses.flatMap((cohort) => cohort.entryIds));
+    assert.deepEqual(
+      new Set(checkpoint.identityPointers.map((pointer) => pointer.entryId)),
+      entryIds,
+    );
+    assert.equal(checkpoint.identityPointers.every((pointer) =>
+      pointer.version != null || pointer.commit != null), true);
+    assert.equal(checkpoint.identityPointers.every((pointer) => pointer.href != null), true);
+    const records = checkpoint.activeRecordIndexes.map((index) => out.history.records[index]);
+    for (const cohort of checkpoint.harnesses) {
+      const cohortRecords = records.filter((record) => record.harness === cohort.harness
+        && record.environment === cohort.environment);
+      const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
+        .filter((record) => record.entry === entryId)
+        .map((record) => [
+          record.suite, record.environment, record.workload, record.scale,
+          record.metric, record.boundary, record.unit,
+        ].join('|'))));
+      for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
+    }
+  }
+
   const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
-  assert.equal(out.history.checkpoints.some((checkpoint) =>
-    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File))), false);
+  const aug10 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File)));
+  assert.ok(aug10);
+  assert.deepEqual(aug10.harnesses[0].entryIds, [
+    'octane', 'octane-hux1', 'octane-hux2', 'react',
+    'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+  ]);
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').commit,
+    'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').channel,
+    'upstream HEAD at measurement time');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux1').commit,
+    '4a53620fe811a016cb9966fab53ca181a89159c8');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux2').commit,
+    'e9d0fab6d0dde33a70c77be05f4d2e5372431fbf');
   const aug10Source = out.history.sources.find((source) => source.runFile === aug10File);
   assert.ok(aug10Source);
   assert.equal(aug10Source.entryCommits['octane-main'],
     'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
-  assert.equal(aug10Source.rankEligible, false);
-  assert.equal(aug10Source.reason, 'incomplete Web matrix for this run\'s eligible entry set');
+  assert.equal(aug10Source.rankEligible, true);
+  assert.equal(aug10Source.reason, 'selected dataset checkpoint 2026-08-10-hux-attempts');
 
   const aug16File = '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json';
   const aug16 = out.history.checkpoints.find((checkpoint) =>
@@ -1261,6 +1313,9 @@ test('history audits every run but publishes only complete source-defined featur
     'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
   ]);
   assert.equal(aug16.harnesses[0].rankEligible, true);
+  const vueIfr = aug16.identityPointers.find(({ entryId }) => entryId === 'vue-vdom-ifr-et');
+  assert.match(vueIfr.configuration.summary, /enableIFR: true/);
+  assert.match(vueIfr.configuration.href, /vue-lynx-bench\.patch#L537-L550$/);
 
   const incompleteFiles = [
     '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',

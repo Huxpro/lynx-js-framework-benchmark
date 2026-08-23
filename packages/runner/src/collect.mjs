@@ -161,6 +161,49 @@ const HUX1_COMMITS = new Set([
   '4a53620fe811a016cb9966fab53ca181a89159c8',
 ]);
 
+// Dataset history is editorially explicit. A complete run is necessary but no
+// longer sufficient to create a time-machine stop: otherwise retries and
+// one-entry additions turn into near-duplicate checkpoints and make Octane's
+// commit look like the timeline's identity. Each checkpoint below names one
+// coherent dataset and the framework identities that belonged to it.
+export const DATASET_CHECKPOINT_SPECS = [
+  {
+    id: '2026-08-10-hux-attempts',
+    label: 'Aug 10 · Hux attempts',
+    description: 'Upstream Octane beside the Hux1 and Hux2 branch-head attempts; the shared '
+      + 'non-storm matrix is complete, while legacy storm rows stay source evidence because '
+      + 'they predate verified sequential-transport receipts.',
+    webRunFile: '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json',
+    excludedWorkloads: ['updateStorm', 'selectStorm'],
+    minimumBenchmarkCellCount: 90,
+    entryIds: [
+      'octane', 'octane-hux1', 'octane-hux2', 'react',
+      'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
+    ],
+  },
+  {
+    id: '2026-08-16-upstream-baseline',
+    label: 'Aug 16 · upstream baseline',
+    description: 'Six-framework Web baseline after the measurement calibration pass.',
+    webRunFile: '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json',
+    minimumBenchmarkCellCount: 100,
+    entryIds: [
+      'octane', 'react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
+    ],
+  },
+  {
+    id: '2026-08-22-new-lynx',
+    label: 'Aug 22 · new-lynx',
+    description: 'Upstream Octane beside the dated Huxpro/new-lynx branch-head attempt.',
+    webRunFile: '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
+    minimumBenchmarkCellCount: 100,
+    entryIds: [
+      'octane', 'octane-new-2026-08-22', 'react',
+      'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
+    ],
+  },
+];
+
 const normalizedEntryId = (run, entry) => {
   if (entry === 'octane-main') return 'octane-prior';
   if (entry === 'octane' && HUX1_COMMITS.has(run.meta.entryCommits?.octane)) {
@@ -680,137 +723,87 @@ const historySourceSummary = ({ file, run }, recordCount, entryIds, rankEligible
 const requestsFullWebMatrix = (run) => !['--suite', '--case', '--scale'].some((option) =>
   run.meta.argv?.some((argument) => argument === option || argument.startsWith(`${option}=`)));
 
-/* Superseded by the exact-source history index below.
-const buildTimelineSnapshots = ({ runs, featuredIds, featuredEntries, current }) => {
-  const byFile = new Map(runs.map((candidate) => [candidate.file, candidate]));
-  const snapshots = [];
-  for (const spec of TIMELINE_SPECS) {
-    const web = byFile.get(spec.webRunFile);
-    if (!web) continue;
-    const webAuditSourceRecords = web.run.records
-      .filter((record) => featuredIds.has(record.entry) && isPublishableRecord(web.run, record));
-    const webRecords = webAuditSourceRecords
-      .map((record) => timelineRecord(web.run, web.file, record, 'same-run'));
-    const nativeSources = (spec.nativeRunFiles ?? []).map((file) => byFile.get(file)).filter(Boolean);
-    const nativeRecords = nativeSources.flatMap((source) => source.run.records
-      .filter((record) => featuredIds.has(record.entry)
-        && isBenchmarkRecord(record)
-        && isComparisonVisible(record)
-        && isPublishableRecord(source.run, record))
-      .map((record) => timelineRecord(source.run, source.file, record, 'same-machine')));
-    const observationSources = (spec.nativeObservationFiles ?? [])
-      .map((file) => byFile.get(file))
-      .filter(Boolean);
-    const nativeObservationRecords = observationSources.flatMap((source) => source.run.records
-      .filter((record) => record.entry === 'octane'
-        && isBenchmarkRecord(record)
-        && isComparisonVisible(record)
-        && isPublishableRecord(source.run, record))
-      .map((record) => timelineRecord(source.run, source.file, record, 'isolated-observation')));
-    const nativeObservationMachineIds = [...new Set(
-      nativeObservationRecords.map((record) => record.machineId),
-    )];
-    const nativeObservations = nativeObservationRecords.length === 0 ? [] : [{
-      entryId: 'octane',
-      harness: 'native',
-      environment: nativeObservationRecords[0].environment,
-      generatedAt: observationSources.reduce((latest, source) =>
-        latest == null || source.run.meta.generatedAt > latest
-          ? source.run.meta.generatedAt
-          : latest, null),
-      machineId: nativeObservationMachineIds.length === 1 ? nativeObservationMachineIds[0] : null,
-      sourceRunFile: observationSources.map((source) => source.file).join(', '),
-      sourceRecordCount: nativeObservationRecords.length,
-    }];
-    const sourceCandidates = [web, ...nativeSources, ...observationSources];
-    const snapshotMachines = Object.fromEntries(sourceCandidates.map((source) => [
-      source.run.meta.machine.id,
-      timelineMachine(source.run, source.file),
-    ]));
-    const nativeEntryIds = [...new Set(nativeRecords.map((record) => record.entry))].sort();
-    const webEntryIds = [...new Set(webRecords
-      .filter(isBenchmarkRecord)
-      .map((record) => record.entry))].sort();
-    const octaneCommit = web.run.meta.entryCommits?.octane
-      ?? web.run.meta.entryCommits?.['octane-main']
-      ?? null;
-    const generatedAt = sourceCandidates.reduce((latest, source) =>
-      latest == null || source.run.meta.generatedAt > latest
-        ? source.run.meta.generatedAt
-        : latest, null);
-    const nativeCoverage = classifyNativeCoverage({
-      entries: featuredEntries,
-      sourceRecords: nativeRecords,
-      publishedRecords: nativeRecords,
-      archiveRecords: nativeObservationRecords,
+const identityPointers = (checkpointRecords, entryById) => {
+  const pointers = new Map();
+  for (const record of checkpointRecords) {
+    if (!isBenchmarkRecord(record) || pointers.has(record.entry)) continue;
+    const entry = entryById.get(record.entry);
+    const commit = record.entryCommit ?? null;
+    const source = entry?.provenance?.source ?? null;
+    const manifestVersion = entry?.frameworkVersion ?? null;
+    pointers.set(record.entry, {
+      entryId: record.entry,
+      sourceEntryId: record.sourceEntry ?? record.entry,
+      label: entry?.label ?? record.entry,
+      framework: entry?.framework ?? null,
+      version: entry?.provenance?.commit === commit ? manifestVersion : null,
+      commit,
+      source,
+      ref: entry?.provenance?.ref ?? null,
+      href: source && commit ? `${source}/commit/${commit}` : source,
+      channel: entry?.historyChannel ?? null,
+      configuration: entry?.configuration ?? null,
     });
-    snapshots.push({
-      id: spec.id,
-      label: spec.label,
-      description: spec.description,
-      generatedAt,
-      octaneCommit,
-      records: [...webRecords, ...nativeRecords],
-      comparison: {
-        runFile: web.file,
-        generatedAt: web.run.meta.generatedAt,
-        machineId: web.run.meta.machine.id,
-        calibration: web.run.meta.calibration,
-        entryIds: webEntryIds,
-        sourceRecordCount: webRecords.filter(isBenchmarkRecord).length,
-        recordCount: webRecords.length + nativeRecords.length,
-        harnesses: [
-          {
-            harness: 'web',
-            environment: webRecords[0]?.environment ?? null,
-            generatedAt: web.run.meta.generatedAt,
-            machineId: web.run.meta.machine.id,
-            calibration: web.run.meta.calibration,
-            sourceRunFiles: [web.file],
-            entryIds: webEntryIds,
-            sourceRecordCount: webRecords.filter(isBenchmarkRecord).length,
-            recordCount: webRecords.length,
-          },
-          ...(nativeRecords.length ? [{
-            harness: 'native',
-            environment: nativeRecords[0].environment,
-            generatedAt,
-            machineId: nativeRecords[0].machineId,
-            calibration: null,
-            sourceRunFiles: nativeSources.map((source) => source.file),
-            entryIds: nativeEntryIds,
-            sourceRecordCount: nativeRecords.length,
-            recordCount: nativeRecords.length,
-          }] : []),
-        ],
-        labEstimates: [],
-      },
-      machines: snapshotMachines,
-      nativeObservations,
-      nativeObservationRecords,
-      nativeCoverage,
-    });
-*/
-const buildHistory = ({ runs, featuredIds, nativeFeaturedIds, featuredEntries, current }) => {
+  }
+  return [...pointers.values()];
+};
+
+const completeMatrixRecords = (candidateRecords, entryIds) => {
+  const ids = new Set(entryIds);
+  const eligible = candidateRecords.filter((record) =>
+    ids.has(record.entry) && isRankingEligible(record));
+  const cellsByEntry = [...ids].map((entry) => new Set(
+    eligible.filter((record) => record.entry === entry).map(cellKey),
+  ));
+  if (cellsByEntry.length === 0 || cellsByEntry.some((cells) => cells.size === 0)) return [];
+  const completeCells = cellsByEntry.slice(1).reduce((common, cells) => new Set(
+    [...common].filter((key) => cells.has(key)),
+  ), cellsByEntry[0]);
+  return eligible.filter((record) => completeCells.has(cellKey(record)));
+};
+
+const buildHistory = ({
+  runs, featuredIds, nativeFeaturedIds, featuredEntries, entries, checkpointSpecs, current,
+}) => {
   const records = [];
   const sources = [];
   const checkpoints = [];
   const nativeGroups = new Map();
+  const entryById = new Map(entries.map((entry) => [entry.id, entry]));
+  const checkpointByWebRun = new Map(
+    checkpointSpecs.map((checkpoint) => [checkpoint.webRunFile, checkpoint]),
+  );
 
   for (const candidate of runs) {
     const { file, run } = candidate;
+    const checkpointSpec = checkpointByWebRun.get(file) ?? null;
+    const checkpointEntryIds = new Set(checkpointSpec?.entryIds ?? featuredIds);
+    const excludedCheckpointWorkloads = new Set(checkpointSpec?.excludedWorkloads ?? []);
     const publishable = run.records.filter((record) => isPublishableRecord(run, record));
     const benchmark = publishable.filter(isBenchmarkRecord);
     const web = benchmark.filter((record) => record.harness === 'web');
     const native = benchmark.filter((record) => record.harness === 'native');
-    const webPublic = publishable.filter((record) => record.harness === 'web' && (() => {
+    const webPublicCandidates = publishable.filter((record) => record.harness === 'web' && (() => {
       const entry = publicHistoryEntry(run, record);
-      return featuredIds.has(entry);
+      return checkpointEntryIds.has(entry) && !excludedCheckpointWorkloads.has(record.workload);
     })());
+    const eligibleCellsByEntry = new Map([...checkpointEntryIds].map((entry) => [entry, new Set(
+      webPublicCandidates.filter((record) => publicHistoryEntry(run, record) === entry
+        && isRankingEligible(record)).map(cellKey),
+    )]));
+    const completeCheckpointCells = checkpointSpec == null
+      ? null
+      : [...eligibleCellsByEntry.values()].reduce((common, cells) => new Set(
+        [...common].filter((key) => cells.has(key)),
+      ));
+    const webPublic = completeCheckpointCells == null
+      ? webPublicCandidates
+      : webPublicCandidates.filter((record) =>
+        isRankingEligible(record) && completeCheckpointCells.has(cellKey(record)));
     const webPublicBenchmark = webPublic.filter(isBenchmarkRecord);
     const webEntries = new Set(webPublicBenchmark.map((record) => publicHistoryEntry(run, record))
-      .filter((entry) => featuredIds.has(entry)));
-    const webCells = new Map([...featuredIds].map((entry) => [entry, new Set(
+      .filter((entry) => checkpointEntryIds.has(entry)));
+    const webCells = new Map([...checkpointEntryIds].map((entry) => [entry, new Set(
       webPublicBenchmark.filter((record) => publicHistoryEntry(run, record) === entry).map(cellKey),
     )]));
     const matrixCells = new Set([...webEntries].flatMap((entry) => [...webCells.get(entry)]));
@@ -819,29 +812,38 @@ const buildHistory = ({ runs, featuredIds, nativeFeaturedIds, featuredEntries, c
       return cells.size === matrixCells.size && [...matrixCells].every((key) => cells.has(key));
     });
     const webCohort = webEntries.size >= 2
+      && webEntries.size === checkpointEntryIds.size
       && requestsFullWebMatrix(run)
       && balancedMatrix
+      && matrixCells.size >= (checkpointSpec?.minimumBenchmarkCellCount ?? 1)
       && webPublicBenchmark.every(isRankingEligible);
-    const hasUpstreamOctane = web.some((record) => publicHistoryEntry(run, record) === 'octane');
     const sourceIndex = sources.length;
     const sourceHistoryRecords = [];
 
-    if (hasUpstreamOctane) {
+    if (checkpointSpec) {
       const cohortId = `web:${run.meta.machine.id}:${file}`;
       sourceHistoryRecords.push(...webPublic.map((record) =>
         historyRecord(run, file, record, webCohort ? 'same-run' : 'isolated-observation',
           cohortId)));
-      const currentMainRecords = sourceHistoryRecords.filter((record) => record.entry === 'octane');
-      if (currentMainRecords.length && webCohort) {
+      if (!webCohort) {
+        const ineligible = webPublicBenchmark.filter((record) => !isRankingEligible(record));
+        throw new Error(
+          `configured dataset checkpoint ${checkpointSpec.id} is not a complete balanced Web cohort: `
+          + `${webEntries.size}/${checkpointEntryIds.size} entries, ${matrixCells.size} union cells, `
+          + `${balancedMatrix ? 'balanced' : 'unbalanced'}, ${ineligible.length} ineligible records, `
+          + `minimum ${checkpointSpec.minimumBenchmarkCellCount ?? 1} cells`,
+        );
+      }
+      if (sourceHistoryRecords.length) {
         const generatedAt = run.meta.generatedAt;
         checkpoints.push({
-          id: historyId(generatedAt, [file]),
+          id: checkpointSpec.id,
           generatedAt,
-          label: new Date(generatedAt).toISOString(),
-          description: `Exact complete Web cohort from ${file}.`,
-          octaneCommit: currentMainRecords[0].entryCommit,
+          label: checkpointSpec.label,
+          description: checkpointSpec.description,
           activeRecordIndexes: sourceHistoryRecords.map((_, index) => records.length + index),
           sourceIndexes: [sourceIndex],
+          identityPointers: identityPointers(sourceHistoryRecords, entryById),
           harnesses: [{
             harness: 'web',
             environment: webPublic[0].environment,
@@ -869,11 +871,13 @@ const buildHistory = ({ runs, featuredIds, nativeFeaturedIds, featuredEntries, c
       sourceHistoryRecords.length + native.filter((record) =>
         nativeFeaturedIds.has(publicHistoryEntry(run, record))).length,
       normalizedEntries,
-      webCohort,
+      checkpointSpec != null && webCohort,
       webPublic.length === 0
         ? (native.length ? 'native run; evaluated with its exact machine/environment cohort' : 'no featured benchmark observations')
-        : webCohort
-          ? 'exact same-run Web cohort'
+        : checkpointSpec != null && webCohort
+          ? `selected dataset checkpoint ${checkpointSpec.id}`
+          : webCohort
+            ? 'complete Web cohort retained as source evidence; not a selected dataset checkpoint'
           : webEntries.size < 2
             ? 'exact observation only; fewer than two eligible entries'
             : !requestsFullWebMatrix(run)
@@ -913,27 +917,28 @@ const buildHistory = ({ runs, featuredIds, nativeFeaturedIds, featuredEntries, c
         publishedRecords: rankEligible ? candidateRecords : [],
         archiveRecords: rankEligible ? [] : candidateRecords,
       });
-      checkpoints.push({
-        id: historyId(candidate.run.meta.generatedAt, [candidate.file]),
-        generatedAt: candidate.run.meta.generatedAt,
-        label: new Date(candidate.run.meta.generatedAt).toISOString(),
-        description: rankEligible
-          ? `Exact complete Native campaign checkpoint from ${candidate.file}.`
-          : `Exact Native Octane observation; this checkpoint is incomplete or has no peer entry.`,
-        octaneCommit: activeRecordIndexes.map((index) => records[index])
-          .find((record) => record.entry === 'octane')?.entryCommit ?? null,
-        activeRecordIndexes,
-        sourceIndexes: [sourceIndex],
-        nativeCoverage,
-        harnesses: [{
-          harness: 'native',
-          environment,
-          machineId: identity.deviceCohort.id,
-          sourceRunFiles: [candidate.file],
-          entryIds: [...entryIds].sort(),
-          rankEligible,
-        }],
-      });
+      if (rankEligible) {
+        checkpoints.push({
+          id: historyId(candidate.run.meta.generatedAt, [candidate.file]),
+          generatedAt: candidate.run.meta.generatedAt,
+          label: `Native · ${new Date(candidate.run.meta.generatedAt).toISOString()}`,
+          description: `Exact complete Native campaign checkpoint from ${candidate.file}.`,
+          activeRecordIndexes,
+          sourceIndexes: [sourceIndex],
+          identityPointers: identityPointers(
+            activeRecordIndexes.map((index) => records[index]), entryById,
+          ),
+          nativeCoverage,
+          harnesses: [{
+            harness: 'native',
+            environment,
+            machineId: identity.deviceCohort.id,
+            sourceRunFiles: [candidate.file],
+            entryIds: [...entryIds].sort(),
+            rankEligible: true,
+          }],
+        });
+      }
       const source = sources[sourceIndex];
       source.rankEligible ||= rankEligible;
       source.reason = source.rankEligible
@@ -942,15 +947,29 @@ const buildHistory = ({ runs, featuredIds, nativeFeaturedIds, featuredEntries, c
     }
   }
 
+  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) =>
+    completeMatrixRecords(
+      current.records.filter((record) => record.harness === cohort.harness
+        && record.environment === cohort.environment),
+      cohort.entryIds,
+    ).map((record) => ({
+      ...record,
+      cohortId: `current:${cohort.harness}:${cohort.machineId}`,
+      rankEligible: true,
+    })));
+  const currentActiveRecordIndexes = currentHistoryRecords.map(
+    (_, index) => records.length + index,
+  );
+  records.push(...currentHistoryRecords);
   checkpoints.push({
     id: 'current-main',
     generatedAt: current.generatedAt,
-    label: 'Current',
-    description: 'Current published Web and Native comparison cohorts.',
-    octaneCommit: current.octaneCommit,
+    label: 'Current · clean black-box',
+    description: 'Current published Web and Native cohorts built from clean source identities.',
     current: true,
     nativeCoverage: current.nativeCoverage,
-    activeRecordIndexes: [],
+    activeRecordIndexes: currentActiveRecordIndexes,
+    identityPointers: identityPointers(currentHistoryRecords, entryById),
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
       .map((record) => sources.findIndex((source) => source.runFile === record.runFile))
       .filter((index) => index >= 0))],
@@ -1027,6 +1046,7 @@ export function collectRuns({
   generatedAt = null,
   entryTiers = null,
   entries = null,
+  datasetCheckpoints = DATASET_CHECKPOINT_SPECS,
 } = {}) {
   const runsDir = path.join(root, 'results/runs');
   const outPath = path.join(root, 'results/latest.json');
@@ -1275,9 +1295,10 @@ export function collectRuns({
     featuredIds,
     nativeFeaturedIds,
     featuredEntries: [...nativeFeaturedIds].map((id) => entryById.get(id)).filter(Boolean),
+    entries: currentEntries,
+    checkpointSpecs: datasetCheckpoints,
     current: {
       generatedAt: out.generatedAt,
-      octaneCommit: entryById.get('octane')?.provenance?.commit ?? null,
       records: comparisonRecords,
       comparison,
       machines,

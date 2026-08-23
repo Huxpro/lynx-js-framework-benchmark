@@ -191,14 +191,29 @@ export function MethodPage() {
                 <tr key={e.id}>
                   <td style={{ textAlign: 'left' }}>{e.label}</td>
                   <td style={{ textAlign: 'left' }}>{e.framework} {e.frameworkVersion}</td>
-                  <td style={{ textAlign: 'left' }}>{e.config}</td>
+                  <td style={{ textAlign: 'left' }}>
+                    {e.configuration ? (
+                      <a
+                        href={e.configuration.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={e.configuration.summary}
+                      >{e.config} · exact plugin options ↗</a>
+                    ) : e.config}
+                  </td>
                   <td style={{ textAlign: 'left' }}>
                     <a href={e.provenance.source} target="_blank" rel="noreferrer">
                       {e.provenance.source.replace('https://github.com/', '')}
                     </a>{' '}
                     @ {e.provenance.ref}
                   </td>
-                  <td style={{ textAlign: 'left' }}>{e.provenance.commit.slice(0, 10)}</td>
+                  <td style={{ textAlign: 'left' }}>
+                    <a
+                      href={`${e.provenance.source}/commit/${e.provenance.commit}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >{e.provenance.commit.slice(0, 10)}</a>
+                  </td>
                 </tr>
               ))}
             </tbody>

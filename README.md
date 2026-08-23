@@ -192,6 +192,12 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
 
+**Dataset Time Machine.** The slider is a short editorial list of meaningful checkpoints, not an
+Octane-commit timeline. Every checkpoint links each framework identity to its recorded commit or
+version; Octane normally points to upstream HEAD at measurement time, while Hux1/Hux2 and dated
+`new-lynx` entries are preserved as Huxpro branch-head attempts. Checkpoints publish only complete
+shared matrices. Vue +IFR pointers also expose and link the exact `pluginVueLynx` options.
+
 The dated `Octane (new-YYYY-MM-DD)` entry is featured, not Lab. It freezes
 `Huxpro/octane:new-lynx`, reads only upstream `dist-block[-rowsN]` bundles produced with
 `pluginOctane({ core: 'block' })`, and joins Web rankings only through a complete same-run featured

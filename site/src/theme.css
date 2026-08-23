@@ -179,6 +179,53 @@ a { color: inherit; }
   accent-color: var(--accent);
   cursor: ew-resize;
 }
+.timeline-identities {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+  padding-top: 0.32rem;
+  border-top: 1px solid var(--border);
+}
+.timeline-identity {
+  display: inline-flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.38rem;
+  background: var(--surface-0);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.62rem;
+}
+.timeline-identity > a:first-child,
+.timeline-identity > span:first-child {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.18rem 0.38rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.timeline-identity > a:first-child:hover,
+.timeline-identity > a:first-child:focus-visible,
+.timeline-config:hover,
+.timeline-config:focus-visible {
+  color: var(--text-primary);
+  background: var(--surface-2);
+}
+.timeline-identity b { color: var(--text-primary); white-space: nowrap; }
+.timeline-identity code { color: var(--text-muted); white-space: nowrap; }
+.timeline-config {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.18rem 0.38rem;
+  border-left: 1px solid var(--border);
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
 .timeline-meta {
   grid-column: 1 / -1;
   display: flex;
@@ -187,7 +234,6 @@ a { color: inherit; }
   color: var(--text-muted);
   font-family: ui-monospace, Menlo, monospace;
   font-size: 0.66rem;
-  border-top: 1px solid var(--border);
   padding-top: 0.32rem;
 }
 .timeline-warning { color: var(--bad); }
@@ -636,8 +682,14 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .timeline-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
   .timeline-eyebrow { white-space: nowrap; }
   .timeline-title { font-size: 0.78rem; justify-content: flex-end; }
-  .timeline-title code { display: none; }
+  .timeline-title code { font-size: 0.64rem; }
   .timeline-control { overflow: hidden; }
+  .timeline-identities {
+    grid-column: 1;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
   .timeline-meta { grid-column: 1; }
   .timeline-meta span:nth-child(2), .timeline-meta span:nth-child(3) { display: none; }
   .history-heading { grid-template-columns: 1fr; }

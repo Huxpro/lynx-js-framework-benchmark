@@ -63,12 +63,17 @@ Everything else is derived, including:
 - the Native 115-cell coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
-- the automatic exact-source history index. Every valid run has a source audit row; a Web checkpoint
-  additionally requires one unscoped physical run covering a complete, balanced matrix for its own
-  eligible featured entry set. Entries introduced by later runs do not invalidate that checkpoint. Native
+- the editorial exact-source history index. Every valid run has a source audit row, but only the
+  small explicit checkpoint list becomes Dataset Time Machine stops. A Web checkpoint additionally
+  requires one unscoped physical run and publishes only the complete intersection of eligible cells
+  across its declared entry identities; framework-specific and incomparable cells remain source
+  evidence instead of producing an incomplete matrix. Entries introduced by later runs do not
+  invalidate that checkpoint. Native
   checkpoints rank only within an exact validated campaign, device, environment, lease-chain, and
-  method identity. Upstream-main `octane-main` observations map to the stable
-  public `octane` identity without losing their source ID or commit. Records are materialized once
+  method identity. Each checkpoint carries a linked commit or version pointer for every framework.
+  Upstream-main `octane-main` observations map to the stable public `octane` identity without losing
+  their source ID or commit; Hux1, Hux2, and dated `new-lynx` identities remain explicit Huxpro
+  branch-head attempts. Records are materialized once
   and checkpoints reference them by index, so finer history does not duplicate full snapshots;
 - rank-over-time points. A point exists only inside its exact eligible cohort. Missing cells, DNF,
   isolated observations, incompatible cohorts, and historical storms without enough transport

@@ -138,6 +138,7 @@ export function RankedBars({
 
   const scaleMax = Math.max(1e-9, ...view.rows.map((r) => r.value as number)) * 1.08;
   const refValue = activeOp === 'overall' ? 1 : null;
+  if (ops.length === 0) return null;
 
   return (
     <figure className="card" role="group" aria-label={title} style={{ margin: '1rem 0' }} onMouseMove={onMove}>

@@ -147,12 +147,16 @@ had a documented weakness, the fix is noted.
   capability evidence; absence or one timeout is not capability proof.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
   audit rejected a global score; we follow).
-- The site time slider is generated from every defensible exact-source checkpoint rather than four
-  handpicked dates or a moving archive cutoff. Web positions are one physical run; Native positions
+- The site time slider uses a small editorial list of meaningful exact-source checkpoints rather
+  than treating every complete retry—or one framework's commit—as a timeline identity. Every valid
+  run remains in the source audit. Web positions are one physical run and expose the complete cell
+  intersection shared by their declared framework identities; Native positions
   combine incremental source runs only inside one unchanged machine/lease/environment/method
-  identity. Octane always means the upstream-main source recorded by that checkpoint, even when
-  older files called it `octane-main`; the original source ID, file, commit, and missing cells stay
-  visible. Rank-over-time never carries a value forward or ranks an isolated observation.
+  identity. Every framework identity shows a linked version or commit pointer. Octane normally means
+  the upstream HEAD recorded by that checkpoint, even when older files called it `octane-main`;
+  Hux1, Hux2, and dated `new-lynx` entries are labelled as Huxpro branch-head attempts. The original
+  source ID, file, and commit remain visible. Rank-over-time never carries a value forward or ranks
+  an isolated observation.
   Historical storm values need special care: the Aug 11/12 and
   Aug 15 Octane runs recorded only 6–8 BTS→MTS and 14–17 MTS→BTS messages for a nominal
   30-tick select storm, while the later patched audit run recorded 60 and 92. The benchmark app's
