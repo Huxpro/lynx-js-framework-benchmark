@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { TABLE_CASES } from '@lynx-bench/shared/workloads';
+import { tableCasesForHarness } from '@lynx-bench/shared/workloads';
 
 import {
   CONNECTOR_PACKAGE_NAMES,
@@ -35,6 +35,7 @@ const ENTRIES = [
   { id: 'vue-vdom', framework: 'vue-lynx' },
   { id: 'vue-vdom-ifr-et', framework: 'vue-lynx' },
 ];
+const NATIVE_TABLE_CASES = tableCasesForHarness('native');
 
 function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   const failure = unsupported
@@ -100,7 +101,10 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
 test('Native defaults schedule the full table/startup matrix and reject silent scale loss', () => {
   const matrix = resolveNativeRunMatrix();
   assert.deepEqual(matrix.suites, ['table', 'startup']);
-  assert.deepEqual(matrix.cases.map(({ name }) => name), TABLE_CASES.map(({ name }) => name));
+  assert.deepEqual(
+    matrix.cases.map(({ name }) => name),
+    NATIVE_TABLE_CASES.map(({ name }) => name),
+  );
   assert.deepEqual(matrix.scales, [1000, 3000, 5000, 10000, 20000, 30000]);
   assert.deepEqual(matrix.scales, NATIVE_TABLE_SCALES);
   assert.deepEqual(matrix.startupScales, [0, 1000, 10000, 30000]);

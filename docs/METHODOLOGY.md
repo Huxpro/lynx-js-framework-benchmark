@@ -46,6 +46,11 @@ had a documented weakness, the fix is noted.
 - Update/select storms are archived experiments, not featured workload cases. Existing apps differ
   in whether intermediate ticks must commit or may coalesce to the same final state; until one
   framework-neutral contract exists, storm values do not enter current runs or rankings.
+- Web carries both selection states explicitly: `selectInitial@1k` starts from 1,000 unselected
+  rows and matches js-framework-benchmark's select workload; `select@1k/@10k` moves an existing
+  selection and remains a steady-state Lynx extension. Likewise, Web `clear` covers the standard
+  1k workload and the existing 10k scale/memory extension. These Web parity additions do not
+  change the published Native matrix.
 
 ## Dual-thread metrics
 

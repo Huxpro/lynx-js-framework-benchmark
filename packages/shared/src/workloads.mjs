@@ -62,6 +62,18 @@ export const TABLE_CASES = [
     defaultScales: [1000, 10000],
   },
   {
+    // Web js-framework-benchmark parity: select a row from an unselected 1k
+    // table. Keep the existing `select` case below as the steady-state Lynx
+    // extension, where moving selection changes both the old and new rows.
+    name: 'selectInitial',
+    pre: 'rows',
+    trigger: { cell: { rowIndex: 1, cls: 'col-label' } },
+    predicate: () => ({ type: 'dangerAt', index: 1 }),
+    scales: [1000],
+    defaultScales: [1000],
+    harnesses: ['web'],
+  },
+  {
     name: 'select',
     pre: 'rows+preselect',
     trigger: { cell: { rowIndex: 1, cls: 'col-label' } },
@@ -90,8 +102,11 @@ export const TABLE_CASES = [
     pre: 'rows',
     trigger: { button: () => 'Clear' },
     predicate: () => ({ type: 'rowCount', value: 0 }),
-    scales: [10000],
-    defaultScales: [10000],
+    // 1k is the Web js-framework-benchmark workload; 10k is the existing
+    // Lynx scale/memory extension. Native retains its published 10k contract.
+    scales: [1000, 10000],
+    defaultScales: [1000, 10000],
+    nativeScales: [10000],
   },
 ];
 
@@ -137,4 +152,15 @@ export function tableCase(name) {
   const c = [...TABLE_CASES, ...EXPERIMENTAL_STORM_CASES].find((c) => c.name === name);
   if (!c) throw new Error(`unknown table case: ${name}`);
   return c;
+}
+
+/** Resolve the shared table contract for one harness without mutating it. */
+export function tableCasesForHarness(harness) {
+  return TABLE_CASES.flatMap((kase) => {
+    if (kase.harnesses != null && !kase.harnesses.includes(harness)) return [];
+    const scales = harness === 'native' && kase.nativeScales != null
+      ? kase.nativeScales
+      : kase.scales;
+    return scales.length === 0 ? [] : [{ ...kase, scales: [...scales] }];
+  });
 }
