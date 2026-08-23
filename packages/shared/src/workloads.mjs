@@ -93,6 +93,12 @@ export const TABLE_CASES = [
     scales: [10000],
     defaultScales: [10000],
   },
+];
+
+// Archived experiment definitions. These are intentionally excluded from the
+// featured matrix: the current entry apps do not share one black-box scheduling
+// contract for each intermediate tick, so their storm timings are not rankings.
+export const EXPERIMENTAL_STORM_CASES = [
   {
     name: 'updateStorm',
     pre: 'rows',
@@ -128,7 +134,7 @@ export const STARTUP_CASES = [
 ];
 
 export function tableCase(name) {
-  const c = TABLE_CASES.find((c) => c.name === name);
+  const c = [...TABLE_CASES, ...EXPERIMENTAL_STORM_CASES].find((c) => c.name === name);
   if (!c) throw new Error(`unknown table case: ${name}`);
   return c;
 }

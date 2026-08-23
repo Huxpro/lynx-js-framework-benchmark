@@ -386,7 +386,7 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 70);
+    assert.equal(native.length, 46);
     assert.deepEqual(
       [...new Set(native.map((candidate) => candidate.machineId))],
       [validMeta.deviceCohort.id],
@@ -404,7 +404,7 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
     assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, ['native-campaign.json']);
     assert.equal(native.some(({ runFile }) => runFile.includes('connector')), false);
-    assert.deepEqual(out.nativeCoverage.summary, { measured: 70 });
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 46 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -470,7 +470,7 @@ test('legacy Native runs remain archive-only and are selected separately per ent
     assert.equal(out.nativeObservationRecords.every((record) =>
       record.comparisonKind === 'isolated-observation'), true);
     assert.equal(out.nativeCoverage.summary['invalid-incomparable'], 4);
-    assert.equal(out.nativeCoverage.summary.unscheduled, 101);
+    assert.equal(out.nativeCoverage.summary.unscheduled, 65);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -532,7 +532,7 @@ test('collector combines split checkpoints only inside one exact Native campaign
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 35);
+    assert.equal(native.length, 23);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, [
       'native-startup.json', 'native-table.json',
     ]);
@@ -543,7 +543,7 @@ test('collector combines split checkpoints only inside one exact Native campaign
     assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
     assert.equal(native.some((candidate) => candidate.runFile === 'native-driver-diagnostic.json'), false);
     assert.equal(native.some((candidate) => candidate.runFile === 'native-wrong-receipt.json'), false);
-    assert.deepEqual(out.nativeCoverage.summary, { measured: 35 });
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 23 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -643,10 +643,10 @@ test('collector publishes only completely attributed Native method-revision chai
       });
       const nativeHarness = out.comparison.harnesses.find(({ harness }) => harness === 'native');
       if (invalid === null) {
-        assert.equal(nativeHarness.recordCount, 35);
+        assert.equal(nativeHarness.recordCount, 23);
         assert.equal(nativeHarness.methodRevisionChain.sha256, methodRevisionChain.sha256);
         const native = out.comparisonRecords.filter(({ harness }) => harness === 'native');
-        assert.equal(native.length, 35);
+        assert.equal(native.length, 23);
         assert.deepEqual(
           new Set(native.map(({ methodRevisionId }) => methodRevisionId)),
           new Set([baseRevision.id, currentRevision.id]),

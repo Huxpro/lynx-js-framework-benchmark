@@ -76,4 +76,6 @@ and accepted counts. The collector derives explicit comparability classification
 unverified storm work and malformed prospective sampling remain in the archive and exact timeline
 snapshots, but are excluded from `comparisonRecords`, Lab rankings, ratios, and geomeans. Complete
 legacy storms remain labelled as legacy because their old runs cannot be assigned current
-provenance retroactively. The existing fail-closed `incomplete-storm-transport` guard is unchanged.
+provenance retroactively. This audit describes the superseded patched experiment. Featured runs
+now exclude storms entirely and vendor clean Octane checkouts, so neither the per-tick barrier nor
+the `incomplete-storm-transport` guard can affect current rankings.

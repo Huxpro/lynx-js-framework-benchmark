@@ -45,16 +45,17 @@ for (const id of ids) {
     }
   }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
+  if (manifest.tier === 'featured' && manifest.framework === 'octane') {
+    if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
+      fail(`${id}: featured Octane entries must use an unpatched source checkout`);
+    }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+      fail(`${id}: featured Octane entries must be explicitly Web-only`);
+    }
+  }
   if (/^octane-new-\d{4}-\d{2}-\d{2}$/.test(id)) {
     if (manifest.tier !== 'featured') fail(`${id}: dated new-lynx entry must be featured`);
     if (manifest.provenance.ref !== 'new-lynx') fail(`${id}: provenance.ref must be new-lynx`);
-    if (
-      manifest.provenance.patched !== true
-      || manifest.provenance.patchFile
-        !== `entries/_patches/${id}-block-storm.patch`
-    ) {
-      fail(`${id}: dated new-lynx entry must use its audited block-storm patch`);
-    }
     if (
       manifest.provenance.buildEnv?.BENCH_CORE !== 'block'
       || manifest.provenance.buildEnv?.BENCH_BLOCK_MODE !== 'scoped'
@@ -72,8 +73,8 @@ for (const id of ids) {
   if (id === 'octane-pr-791') {
     if (manifest.tier !== 'featured') fail(`${id}: PR #791 entry must be featured`);
     if (manifest.provenance.ref !== 'pull/791/head') fail(`${id}: provenance.ref must be pull/791/head`);
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
-      fail(`${id}: PR #791 entry must participate in both harnesses`);
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+      fail(`${id}: PR #791 entry must be explicitly Web-only`);
     }
   }
   if (manifest.provenance?.patched && manifest.provenance?.patchFile) {

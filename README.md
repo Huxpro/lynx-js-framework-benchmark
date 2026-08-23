@@ -91,7 +91,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 210-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign, 115-cell matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -136,7 +136,7 @@ reproducible instead of being lost with the process. Each cell names the lease t
 and every receipt remains in the ordered chain. Split checkpoints combine only when one receipt
 chain is an exact prefix of the other; same-serial forks remain archive-only. Known transport exhaustion and producer-protocol
 failures are retained as structured DNF evidence; unknown adapter/programming errors still abort.
-Each checkpoint carries a `native-featured-matrix-v1` coverage ledger. It distinguishes measured,
+Each checkpoint carries a `native-featured-black-box-matrix-v2` coverage ledger. It distinguishes measured,
 measured-with-DNF, DNF, capability-proven unsupported, unscheduled, incompatible cohort, and
 display/derivation defects. A completed campaign may contain measured, DNF, or proven unsupported
 cells, but never an unscheduled or invalid cell. Bundles are served from immutable byte snapshots;

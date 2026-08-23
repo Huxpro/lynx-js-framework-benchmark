@@ -26,8 +26,8 @@ import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './nat
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
 
 const ENTRIES = [
-  { id: 'octane', framework: 'octane' },
-  { id: 'octane-pr-791', framework: 'octane', harnesses: ['web', 'native'] },
+  { id: 'octane', framework: 'octane', harnesses: ['web'] },
+  { id: 'octane-pr-791', framework: 'octane', harnesses: ['web'] },
   { id: 'octane-new-2026-08-22', framework: 'octane', harnesses: ['web'] },
   { id: 'react', framework: 'reactlynx' },
   { id: 'vue-vapor', framework: 'vue-lynx' },
@@ -56,17 +56,17 @@ function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   };
 }
 
-test('featured Native contract is exactly seven eligible entries by 35 cells', () => {
+test('featured Native contract is exactly five black-box eligible entries by 23 cells', () => {
   const contract = buildNativeMatrixContract([...ENTRIES].reverse());
   assert.equal(contract.expectedCellCount, NATIVE_FEATURED_MATRIX_CELL_COUNT);
-  assert.equal(contract.cells.length, 245);
-  assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 7);
+  assert.equal(contract.cells.length, 115);
+  assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 5);
   assert.equal(contract.entryIds.includes('octane-new-2026-08-22'), false);
   for (const entry of ENTRIES.filter((candidate) => candidate.harnesses?.includes('web') !== true
     || candidate.harnesses.includes('native'))) {
     const cells = contract.cells.filter((cell) => cell.entry === entry.id);
     assert.equal(cells.length, NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
-    assert.equal(cells.filter((cell) => cell.suite === 'table').length, 27);
+    assert.equal(cells.filter((cell) => cell.suite === 'table').length, 15);
     assert.equal(cells.filter((cell) => cell.suite === 'startup').length, 8);
   }
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, contract.entryIds.length);
@@ -86,14 +86,14 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
   assert.equal(coverage.cells[0].status, 'display-derivation-bug');
   assert.equal(coverage.cells[1].status, 'dnf');
   assert.equal(coverage.cells[2].status, 'unsupported');
-  assert.equal(coverage.summary.unscheduled, 242);
+  assert.equal(coverage.summary.unscheduled, 112);
   assert.throws(() => assertNativeCoverage(coverage), /incomplete or invalid/);
 
   const complete = classifyNativeCoverage({
     entries: ENTRIES,
     sourceRecords: contract.cells.map((cell) => recordFor(cell)),
   });
-  assert.deepEqual(complete.summary, { measured: 245 });
+  assert.deepEqual(complete.summary, { measured: 115 });
   assert.doesNotThrow(() => assertNativeCoverage(complete));
 });
 

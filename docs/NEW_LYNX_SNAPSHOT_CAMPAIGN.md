@@ -9,8 +9,7 @@ run containing every featured entry.
 
 1. Resolve `refs/heads/new-lynx` from the remote and record its full SHA.
 2. Check out that SHA detached.
-3. Apply the checked-in one-file block-storm patch. It waits for each `context.commit()` before
-   scheduling the next tick, preserving the neutral contract's 50/30 complete publications.
+3. Require a clean checkout. Benchmark app and framework-runtime patches are forbidden.
 4. Build the scoped-write Block core for every auto-row bundle:
 
    ```sh
@@ -27,7 +26,6 @@ Vendor and verify:
 ```sh
 VENDOR_ONLY=octane-new-2026-08-22 \
   OCTANE_NEW_BUILD=<clean-new-lynx-checkout> \
-  OCTANE_NEW_PATCH=entries/_patches/octane-new-2026-08-22-block-storm.patch \
   node scripts/vendor-entries.mjs
 node scripts/verify-entries.mjs
 ```
@@ -44,4 +42,5 @@ pnpm bench run --harness web \
 
 The collector admits this run only if it covers one complete, balanced featured matrix from that
 source run. A future featured entry does not retroactively invalidate an older complete cohort.
-Native is a separate later campaign and is not inferred from the Web result.
+Storm experiments are excluded until all entries share one black-box scheduling contract. The
+snapshot is explicitly Web-only; Native is not inferred from the Web result.

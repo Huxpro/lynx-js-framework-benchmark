@@ -455,7 +455,7 @@ test('a startup timeout at scale 0 does not suppress later startup scales', asyn
   );
 });
 
-test('startup producers cannot silently change an entry metric contract', async () => {
+test('startup producers use one framework-neutral metric contract', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-contract-'));
   const { entry, snapshots } = fakeEntry(dir, { id: 'octane', framework: 'octane' });
   const adapter = mockAdapter({
@@ -463,7 +463,7 @@ test('startup producers cannot silently change an entry metric contract', async 
     collect: [],
     startup: [{ fcpMs: 1, settledMs: 2 }],
   });
-  await assert.rejects(() => runNativeMatrix({
+  const records = await runNativeMatrix({
     adapter,
     entries: [entry],
     cases: [],
@@ -471,7 +471,8 @@ test('startup producers cannot silently change an entry metric contract', async 
     startupScales: [0],
     startupReps: 1,
     bundleSnapshots: snapshots,
-  }), /invalid metric set/);
+  });
+  assert.deepEqual(records.map(({ metric }) => metric), ['fcp', 'settled']);
 });
 
 test('adapter modules are validated against the documented contract', async () => {
