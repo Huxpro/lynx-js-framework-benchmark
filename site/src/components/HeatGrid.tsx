@@ -249,6 +249,11 @@ export function HeatGrid({
               {conclusionRows.map((scoreRow, scoreIndex) => {
                 const isPinned = pinnedScore === scoreRow.key;
                 const displayedValues = rebaseEntryScores(ids, scoreRow.values, activeMode);
+                const comparableValues = [...displayedValues.values()]
+                  .filter((value): value is number => value != null && Number.isFinite(value) && value > 0);
+                const fastestValue = activeMode === 'fastest' && comparableValues.length > 0
+                  ? Math.min(...comparableValues)
+                  : null;
                 const startsGroup = scoreIndex === 0
                   || conclusionRows[scoreIndex - 1]?.group !== scoreRow.group;
                 const inputCount = text(
@@ -319,10 +324,11 @@ export function HeatGrid({
                       {ids.map((id) => {
                         const value = displayedValues.get(id);
                         const isRef = activeMode !== 'fastest' && id === activeMode && value != null;
+                        const isFastest = fastestValue != null && value === fastestValue;
                         return (
                           <td
                             key={id}
-                            className={isRef ? 'ref' : value == null ? 'null' : 'data'}
+                            className={isRef ? 'ref' : value == null ? 'null' : `data${isFastest ? ' fastest' : ''}`}
                             style={value == null ? undefined : isRef ? { fontWeight: 700 } : {
                               background: tintFor(value),
                               fontWeight: 700,

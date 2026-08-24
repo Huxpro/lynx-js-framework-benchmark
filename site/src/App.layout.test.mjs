@@ -115,7 +115,9 @@ test('at-a-glance conclusions lead with startup FCP and reuse the three interact
   assert.match(heatGridSource, /const conclusionRows =/);
   assert.match(heatGridSource, /rebaseEntryScores\(ids, scoreRow\.values, activeMode\)/);
   assert.match(heatGridSource, /formula score ÷.*formula score/);
-  assert.match(heatGridSource, /className=\{isRef \? 'ref' : value == null \? 'null' : 'data'\}/);
+  assert.match(heatGridSource, /const fastestValue = activeMode === 'fastest'/);
+  assert.match(heatGridSource, /const isFastest = fastestValue != null && value === fastestValue/);
+  assert.match(heatGridSource, /`data\$\{isFastest \? ' fastest' : ''\}`/);
 });
 
 test('at-a-glance equations expose pointer, keyboard, and pinned row tracing', () => {
