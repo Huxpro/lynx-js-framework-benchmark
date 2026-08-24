@@ -6,6 +6,7 @@ import {
 } from '../data';
 import { useBenchmarkData } from '../data-context';
 import { localizedWorkload, useI18n } from '../i18n';
+import { ResponsiveCopy } from './ResponsiveCopy';
 
 const TABLE_GROUPS = [
   {
@@ -70,12 +71,12 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
     <section className="native-observations" aria-labelledby="native-observations-title">
       <div className="observation-kicker">{text('Archive-only device evidence', '仅供归档的设备证据')}</div>
       <h2 id="native-observations-title">{text('Native entries outside the selected campaign', '所选 campaign 之外的 Native 条目')}</h2>
-      <p>
+      <ResponsiveCopy className="section-copy">
         {text(
           'These measurements are real, but their machine, lease, method, campaign, or immutable input receipt differs from the selected cohort (or predates explicit identity). They are shown as absolute evidence and never enter heatmaps, geomeans, rankings, or ratios.',
           '这些测量是真实的，但其 machine、lease、method、campaign 或不可变输入凭据与所选 cohort 不同（或早于明确身份规则）。它们只作为绝对证据展示，绝不进入热图、几何平均、排名或比率。',
         )}
-      </p>
+      </ResponsiveCopy>
       {snapshot.nativeObservations.map((observation) => {
         const records = selectNativeObservations({
           harness: 'native',

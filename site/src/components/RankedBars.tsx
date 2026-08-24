@@ -16,6 +16,7 @@ import { completeEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 import { useI18n } from '../i18n';
 import { coverageCellLabel } from './NativeCoverage';
+import { ResponsiveCopy } from './ResponsiveCopy';
 
 interface OpSpec {
   key: string; // workload@scale
@@ -194,7 +195,7 @@ export function RankedBars({
     <figure className="card" role="group" aria-label={title} style={{ margin: '1rem 0' }} onMouseMove={onMove}>
       <figcaption>
         <div className="card-title">{title}</div>
-        <div className="card-desc">{description}</div>
+        <ResponsiveCopy className="card-desc">{description}</ResponsiveCopy>
       </figcaption>
       {hasScoreModes && scoreModes && (
         <div

@@ -7,6 +7,7 @@ import { completeEntryScores } from '../derive.mjs';
 import { useElementWidth, useTooltip } from '../hooks';
 import { localizedWorkload, useI18n } from '../i18n';
 import { INTERACTION_SCORE_SCALES, INTERACTION_WORKLOADS } from '../interaction-score';
+import { ResponsiveCopy } from './ResponsiveCopy';
 
 interface CompositePoint {
   entry: string;
@@ -186,12 +187,12 @@ export function InteractionScaleComposite({
     <figure className="card interaction-scale-composite" role="group" aria-label={text('Interaction composite by scale', '按规模展示交互复合值')}>
       <figcaption>
         <div className="card-title">{text('interaction composite — relative score vs rows', '交互复合值——相对得分与行数')}</div>
-        <div className="card-desc">
+        <ResponsiveCopy className="card-desc">
           {text(
             "The same complete operation set at every scale, normalized per operation to that scale's fastest entry and combined with an equal-weight geometric mean. This shows whether relative competitiveness changes with N; it is intentionally distinct from the upstream score, whose fixed formula mixes 1k cases with create 10k.",
             '每个规模都使用同一组完整操作；逐操作相对该规模最快项归一化，再等权取几何平均。它展示相对竞争力是否随 N 改变；这与上游得分有意区分，因为上游固定公式混合了 1k case 和 create 10k。',
           )}
-        </div>
+        </ResponsiveCopy>
       </figcaption>
       <div className="controls-row">
         <button

@@ -9,6 +9,7 @@ import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
+import { ResponsiveCopy } from './components/ResponsiveCopy';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
 import { TimelineSlider } from './components/TimelineSlider';
@@ -259,12 +260,12 @@ function AppContent({
         page === 'overview' ? (
           <>
             <h1>{text('How fast is each framework on Lynx?', '各框架在 Lynx 上有多快？')}</h1>
-            <p className="subtitle">
+            <ResponsiveCopy className="subtitle">
               {text(
                 'No complete Native comparison cohort is publishable for this snapshot. The at-a-glance matrix keeps every contracted cell visible without turning archived observations into rankings.',
                 '此快照没有可发布的完整 Native 对比 cohort。概览矩阵仍展示合约中的每个单元，但不会把归档观察值转成排名。',
               )}
-            </p>
+            </ResponsiveCopy>
             <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
             <div className="empty-state">
               <p><b>{text('No publishable Native comparison cohort for this snapshot.', '此快照没有可发布的 Native 对比 cohort。')}</b></p>
@@ -281,19 +282,19 @@ function AppContent({
         ) : (
           <>
             <h1>{text('How does Native cost grow with scale?', 'Native 成本如何随规模增长？')}</h1>
-            <p className="subtitle">
+            <ResponsiveCopy className="subtitle">
               {text(
                 'This checkpoint has no complete Native cohort, so no cross-framework scale curve can be published. Archived observations remain visible as evidence below.',
                 '此节点没有完整 Native cohort，因此无法发布跨框架规模曲线。归档观察值仍在下方作为证据展示。',
               )}
-            </p>
+            </ResponsiveCopy>
             <NativeObservations theme={theme} />
           </>
         )
       ) : page === 'overview' ? (
         <>
           <h1>{text('How fast is each framework on Lynx?', '各框架在 Lynx 上有多快？')}</h1>
-          <p className="subtitle">
+          <ResponsiveCopy className="subtitle">
             {text('The same table app, one instrument. ', '相同的表格应用，同一套测量工具。')}{harness === 'web'
               ? text('Headless Chromium running Lynx for Web; input is measured to the composed-DOM result.', '无头 Chromium 运行 Lynx for Web；从输入测量到 composed DOM 结果。')
               : text('Lynx Native Engine on an Android 10 Sandbox device; input-handler time is measured to the second native frame.', 'Android 10 Sandbox 设备运行 Lynx Native Engine；从输入处理器测量到第二个原生帧。')}{' '}
@@ -301,7 +302,7 @@ function AppContent({
               'Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open any card\'s data table for exact numbers.',
               '结果取中位数，越低越好；DNF 会明确标出。可选择条目、悬停任意图形，并展开卡片数据表查看精确值。',
             )}
-          </p>
+          </ResponsiveCopy>
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
@@ -372,12 +373,12 @@ function AppContent({
             <div className="section-heading">
               <div className="section-kicker">{text('Inside the operation', '操作内部')}</div>
               <h2 id="thread-section-title">{text('Thread & transport', '线程与传输')}</h2>
-              <p>
+              <ResponsiveCopy className="section-copy">
                 {text(
                   'Wall time can hide where work runs. This environment-specific breakdown keeps CPU, wire traffic, memory and bundle placement beside the headline ranking.',
                   '墙钟时间可能掩盖工作实际运行的位置。按环境拆分 CPU、wire traffic、内存和 bundle 分布，并与核心排名并列展示。',
                 )}
-              </p>
+              </ResponsiveCopy>
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
           </section>
@@ -386,12 +387,12 @@ function AppContent({
       ) : (
         <>
           <h1>{text('How does cost grow with scale?', '成本如何随规模增长？')}</h1>
-          <p className="subtitle">
+          <ResponsiveCopy className="subtitle">
             {text(
               'The unified-matrix lineage: each case across row scales, linear for absolute gaps and log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing; 0 ≈ scale-independent).',
               '统一矩阵的规模轨迹：每个 case 跨行数观察；线性坐标展示绝对差距，log–log 展示增长形态。α 是拟合出的规模指数（1 = 随 N 线性增长；低于 1 = 成本被摊薄；0 ≈ 与规模无关）。',
             )}
-          </p>
+          </ResponsiveCopy>
           <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           <InteractionScaleComposite harness={harness} theme={theme} selected={activeSelected} />
           <CostSpace harness={harness} theme={theme} selected={activeSelected} />

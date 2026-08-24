@@ -9,6 +9,7 @@ import { ENTRIES, entryColor, shortLabel } from '../data';
 import { slopeFit } from '../derive.mjs';
 import { useElementWidth } from '../hooks';
 import { useI18n } from '../i18n';
+import { ResponsiveCopy } from './ResponsiveCopy';
 
 interface TrendSpec {
   title: string;
@@ -166,7 +167,7 @@ export function ScaleTrend({
     <figure className="card" role="group" aria-label={copy?.title ?? spec.title}>
       <figcaption>
         <div className="card-title">{copy?.title ?? spec.title}</div>
-        <div className="card-desc">{copy?.desc ?? spec.desc}</div>
+        <ResponsiveCopy className="card-desc">{copy?.desc ?? spec.desc}</ResponsiveCopy>
       </figcaption>
       <div className="controls-row">
         <div className="seg" role="group" aria-label={text('Axis scale', '坐标轴尺度')}>

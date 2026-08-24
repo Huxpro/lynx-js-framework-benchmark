@@ -8,6 +8,7 @@ const hooks = fs.readFileSync(new URL('./hooks.tsx', import.meta.url), 'utf8');
 const costSpace = fs.readFileSync(new URL('./components/CostSpace.tsx', import.meta.url), 'utf8');
 const scaleTrends = fs.readFileSync(new URL('./components/ScaleTrends.tsx', import.meta.url), 'utf8');
 const scaleComposite = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
+const responsiveCopy = fs.readFileSync(new URL('./components/ResponsiveCopy.tsx', import.meta.url), 'utf8');
 
 test('expanded exact-data tables scroll inside their card on narrow viewports', () => {
   const rule = css.match(/details\.data-table\s*\{([^}]*)\}/)?.[1] ?? '';
@@ -63,6 +64,35 @@ test('interaction formula and detail tabs each stay on one horizontally browsabl
   assert.match(details, /flex-wrap\s*:\s*nowrap/);
   assert.match(details, /overflow-x\s*:\s*auto/);
   assert.doesNotMatch(formulaButton, /border-radius/);
+});
+
+test('all case rails browse horizontally instead of wrapping into extra rows', () => {
+  const chips = css.match(/\.chips\s*\{([^}]*)\}/)?.[1] ?? '';
+  const chip = css.match(/\.chips \.chip\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(chips, /flex-wrap\s*:\s*nowrap/);
+  assert.match(chips, /overflow-x\s*:\s*auto/);
+  assert.match(chip, /flex\s*:\s*0 0 auto/);
+  assert.match(chip, /white-space\s*:\s*nowrap/);
+});
+
+test('heat matrix preserves readable labels and delegates narrow width to scrolling', () => {
+  const scroll = css.match(/\.heat-scroll\s*\{([^}]*)\}/)?.[1] ?? '';
+  const table = css.match(/table\.heat\s*\{([^}]*)\}/)?.[1] ?? '';
+  const column = css.match(/table\.heat th\.colhead\s*\{([^}]*)\}/)?.[1] ?? '';
+  const row = css.match(/table\.heat \.rowhead\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(scroll, /overflow-x\s*:\s*auto/);
+  assert.match(table, /width\s*:\s*max-content/);
+  assert.match(column, /white-space\s*:\s*nowrap/);
+  assert.match(row, /white-space\s*:\s*nowrap/);
+});
+
+test('compact prose uses native progressive disclosure without hiding primary results', () => {
+  assert.match(responsiveCopy, /useMediaQuery\('\(max-width: 48rem\)'\)/);
+  assert.match(responsiveCopy, /<details className=/);
+  assert.match(responsiveCopy, /<summary>/);
+  assert.match(responsiveCopy, /if \(!compact\) return/);
+  assert.match(css, /--leading-copy\s*:\s*1\.62/);
+  assert.match(css, /\.responsive-copy-body\s*\{/);
 });
 
 test('ranking series fade as a group while the hovered line is emphasized', () => {

@@ -27,6 +27,7 @@ import {
   useI18n,
 } from '../i18n';
 import { INTERACTION_WORKLOADS, JS_FRAMEWORK_SCORE_OPS } from '../interaction-score';
+import { ResponsiveCopy } from './ResponsiveCopy';
 
 const param = (name: string) => new URLSearchParams(location.search).get(name);
 
@@ -574,12 +575,12 @@ export function HistoryRanking({
         <div>
           <div className="history-kicker">{text('Exact-source history', '精确来源历史')}</div>
           <h2 id="history-ranking-title">{text('Rank by dataset', '按 dataset 排名')}</h2>
-          <p>
+          <ResponsiveCopy className="history-copy">
             {text(
               "Each node is one retained dataset. Solid lines share one comparison cohort; dashed bridges preserve the framework story across a cohort or formula-set change. Composite history omits a missing cell for every entry together, then recomputes over that dataset's largest complete common matrix. Single measurement exposes the raw case, scale, and metric.",
               '每个节点代表一个保留的 dataset。实线表示共享同一对比 cohort；跨 cohort 或公式集合变化时用虚线保留框架演进脉络。复合历史会对所有条目共同省略缺失单元，再基于该 dataset 最大的完整公共矩阵重新计算。单项测量则展示原始 case、规模和指标。',
             )}
-          </p>
+          </ResponsiveCopy>
         </div>
       </div>
       <div className="history-browser" aria-label={text('Browse ranking configuration', '浏览排名配置')}>

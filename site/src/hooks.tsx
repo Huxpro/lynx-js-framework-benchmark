@@ -27,6 +27,21 @@ export function useElementWidth<T extends HTMLElement>(ref: RefObject<T | null>)
   return width;
 }
 
+/** Keeps responsive disclosure behavior aligned with the same content-driven
+ * breakpoint used by the stylesheet. */
+export function useMediaQuery(query: string): boolean {
+  const read = () => typeof matchMedia === 'function' && matchMedia(query).matches;
+  const [matches, setMatches] = useState(read);
+  useEffect(() => {
+    const media = matchMedia(query);
+    const update = () => setMatches(media.matches);
+    media.addEventListener('change', update);
+    update();
+    return () => media.removeEventListener('change', update);
+  }, [query]);
+  return matches;
+}
+
 export function useTheme(): ['light' | 'dark', () => void] {
   const get = (): 'light' | 'dark' => {
     const stamped = document.documentElement.dataset.theme;
