@@ -1188,11 +1188,34 @@ table.heat .score-summary-row td,
 table.heat .score-summary-row th { transition: background 140ms ease-out, color 140ms ease-out; }
 table.heat .score-summary-row.is-active .rowhead { color: var(--text-primary); }
 table.heat .score-summary-row.is-active td { outline: 1px solid var(--accent); outline-offset: -1px; }
-table.heat .score-summary-row.starts-score-group th,
-table.heat .score-summary-row.starts-score-group td { box-shadow: inset 0 2px var(--border); }
+table.heat .score-summary-divider th,
+table.heat .score-summary-divider td {
+  height: 0;
+  min-width: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+table.heat .score-summary-divider-head { overflow: visible; }
+.score-summary-divider-head span {
+  position: absolute;
+  top: 0;
+  left: 0.38rem;
+  z-index: 2;
+  padding: 0 0.3rem;
+  background: var(--surface-1);
+  color: var(--accent);
+  font-size: 0.58rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
 .score-summary-trigger {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 0.42rem;
   width: 100%;
@@ -1207,18 +1230,6 @@ table.heat .score-summary-row.starts-score-group td { box-shadow: inset 0 2px va
   white-space: nowrap;
   cursor: pointer;
 }
-.score-summary-row:not(.starts-score-group) .score-summary-trigger {
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-.score-summary-row:not(.starts-score-group) .score-summary-group { display: none; }
-.score-summary-group {
-  color: var(--accent);
-  font-size: 0.61rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
 .score-summary-label { min-width: 0; overflow-wrap: normal; }
 .score-summary-count {
   color: var(--text-muted);
@@ -1226,7 +1237,6 @@ table.heat .score-summary-row.starts-score-group td { box-shadow: inset 0 2px va
   font-weight: 550;
   white-space: nowrap;
 }
-.score-summary-count-compact { display: none; }
 .score-summary-trigger[aria-pressed='true'] .score-summary-count { color: var(--accent); }
 
 /* details table */
@@ -1346,28 +1356,14 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
     overflow-wrap: anywhere;
     word-break: normal;
   }
-  .score-summary-trigger { white-space: normal; }
-  table.heat .score-summary-row .rowhead { overflow-wrap: normal; }
-  .score-summary-row.starts-score-group .score-summary-trigger {
-    grid-template-areas:
-      'group count'
-      'label label';
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.06rem 0.4rem;
-  }
-  .score-summary-row.starts-score-group .score-summary-group { grid-area: group; }
-  .score-summary-row.starts-score-group .score-summary-label { grid-area: label; }
-  .score-summary-row.starts-score-group .score-summary-count { grid-area: count; }
-  .score-summary-row:not(.starts-score-group) .score-summary-trigger {
+  .score-summary-trigger {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.02rem;
+    white-space: normal;
   }
-  .score-summary-row:not(.starts-score-group) .score-summary-label { white-space: nowrap; }
-  .score-summary-row:not(.starts-score-group) .score-summary-count { justify-self: start; }
+  table.heat .score-summary-row .rowhead { overflow-wrap: normal; }
+  .score-summary-row:not(.score-group-lead) .score-summary-label { white-space: nowrap; }
   .score-summary-label { line-height: 1.24; }
-  .score-summary-count { align-self: baseline; justify-self: end; }
-  .score-summary-count-long { display: none; }
-  .score-summary-count-compact { display: inline; }
+  .score-summary-count { display: none; }
 }
 
 .provenance td, .provenance th { font-size: 0.8rem; }

@@ -101,17 +101,15 @@ test('conclusion rows keep ordinary table density and release fixed labels on na
 
   assert.match(trigger, /min-height\s*:\s*0/);
   assert.match(trigger, /padding\s*:\s*0/);
-  assert.match(css, /\.score-summary-row\.starts-score-group/);
-  assert.match(css, /\.score-summary-row:not\(\.starts-score-group\) \.score-summary-group\s*\{\s*display: none/);
+  assert.match(css, /table\.heat \.score-summary-divider th/);
+  assert.match(css, /\.score-summary-divider-head span\s*\{/);
+  assert.match(css, /transform\s*:\s*translateY\(-50%\)/);
   assert.match(compact, /table\.heat \.rowhead/);
   assert.match(compact, /white-space\s*:\s*normal/);
   assert.match(compact, /overflow-wrap\s*:\s*anywhere/);
-  assert.match(compact, /'group count'\s*\n\s*'label label'/);
   assert.match(compact, /table\.heat \.score-summary-row \.rowhead\s*\{\s*overflow-wrap: normal/);
-  assert.match(compact, /\.score-summary-row:not\(\.starts-score-group\) \.score-summary-trigger\s*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(compact, /\.score-summary-row:not\(\.starts-score-group\) \.score-summary-label\s*\{\s*white-space: nowrap/);
-  assert.match(compact, /\.score-summary-count-long\s*\{\s*display: none/);
-  assert.match(compact, /\.score-summary-count-compact\s*\{\s*display: inline/);
+  assert.match(compact, /\.score-summary-row:not\(\.score-group-lead\) \.score-summary-label\s*\{\s*white-space: nowrap/);
+  assert.match(compact, /\.score-summary-count\s*\{\s*display: none/);
 });
 
 test('compact prose uses native progressive disclosure without hiding primary results', () => {

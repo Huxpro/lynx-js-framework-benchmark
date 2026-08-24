@@ -1,7 +1,7 @@
 // "Every case at a glance": rows = workload@scale, columns = entries, cell =
 // × vs baseline (selectable entry) or vs the row's fastest. Log-scaled
 // diverging tint saturating at 4× either way; the numeral stays legible.
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
@@ -250,66 +250,80 @@ export function HeatGrid({
                 const isPinned = pinnedScore === scoreRow.key;
                 const startsGroup = scoreIndex === 0
                   || conclusionRows[scoreIndex - 1]?.group !== scoreRow.group;
+                const inputCount = text(
+                  `${scoreRow.cellCount} input rows`,
+                  `${scoreRow.cellCount} 个输入行`,
+                );
                 const showEquation = () => {
                   setPreviewScore(scoreRow.key);
-                  setTip(scoreRow.equation);
+                  setTip({
+                    ...scoreRow.equation,
+                    lines: [inputCount, ...scoreRow.equation.lines],
+                  });
                 };
                 const clearPreview = () => {
                   setPreviewScore(null);
                   setTip(null);
                 };
                 return (
-                  <tr
-                    key={scoreRow.key}
-                    className={`score-summary-row${startsGroup ? ' starts-score-group' : ''}${activeScore === scoreRow.key ? ' is-active' : ''}`}
-                    onPointerEnter={showEquation}
-                    onPointerLeave={(event) => {
-                      if (!event.currentTarget.contains(document.activeElement)) clearPreview();
-                    }}
-                    onFocus={showEquation}
-                    onBlur={(event) => {
-                      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) clearPreview();
-                    }}
-                  >
-                    <th className="rowhead">
-                      <button
-                        type="button"
-                        className="score-summary-trigger"
-                        aria-pressed={isPinned}
-                        aria-label={`${scoreRow.groupLabel}: ${scoreRow.equation.head}. ${scoreRow.equation.lines.join(' ')}`}
-                        onClick={() => setPinnedScore((current) => current === scoreRow.key ? null : scoreRow.key)}
-                        onFocus={(event) => {
-                          const rect = event.currentTarget.getBoundingClientRect();
-                          requestAnimationFrame(() => place({
-                            clientX: rect.left + rect.width / 2,
-                            clientY: rect.bottom,
-                          }));
-                        }}
-                      >
-                        <span className="score-summary-group">{scoreRow.groupLabel}</span>
-                        <span className="score-summary-label">{scoreRow.label}</span>
-                        <span className="score-summary-count" aria-hidden="true">
-                          <span className="score-summary-count-long">{text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}</span>
-                          <span className="score-summary-count-compact">n={scoreRow.cellCount}</span>
-                        </span>
-                      </button>
-                    </th>
-                    {ids.map((id) => {
-                      const value = scoreRow.values.get(id);
-                      return (
-                        <td
-                          key={id}
-                          className="data"
-                          style={{
-                            ...(value == null ? {} : { background: tintFor(value) }),
-                            fontWeight: 700,
+                  <Fragment key={scoreRow.key}>
+                    {startsGroup && (
+                      <tr className="score-summary-divider" aria-hidden="true">
+                        <th className="rowhead score-summary-divider-head">
+                          <span>{scoreRow.groupLabel}</span>
+                        </th>
+                        <td colSpan={ids.length} />
+                      </tr>
+                    )}
+                    <tr
+                      className={`score-summary-row${startsGroup ? ' score-group-lead' : ''}${activeScore === scoreRow.key ? ' is-active' : ''}`}
+                      onPointerEnter={showEquation}
+                      onPointerLeave={(event) => {
+                        if (!event.currentTarget.contains(document.activeElement)) clearPreview();
+                      }}
+                      onFocus={showEquation}
+                      onBlur={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) clearPreview();
+                      }}
+                    >
+                      <th className="rowhead">
+                        <button
+                          type="button"
+                          className="score-summary-trigger"
+                          aria-pressed={isPinned}
+                          aria-label={`${scoreRow.groupLabel}: ${scoreRow.equation.head}. ${inputCount}. ${scoreRow.equation.lines.join(' ')}`}
+                          onClick={() => setPinnedScore((current) => current === scoreRow.key ? null : scoreRow.key)}
+                          onFocus={(event) => {
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            requestAnimationFrame(() => place({
+                              clientX: rect.left + rect.width / 2,
+                              clientY: rect.bottom,
+                            }));
                           }}
                         >
-                          {value == null ? '—' : fmtX(value)}
-                        </td>
-                      );
-                    })}
-                  </tr>
+                          <span className="score-summary-label">{scoreRow.label}</span>
+                          <span className="score-summary-count" aria-hidden="true">
+                            {text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}
+                          </span>
+                        </button>
+                      </th>
+                      {ids.map((id) => {
+                        const value = scoreRow.values.get(id);
+                        return (
+                          <td
+                            key={id}
+                            className="data"
+                            style={{
+                              ...(value == null ? {} : { background: tintFor(value) }),
+                              fontWeight: 700,
+                            }}
+                          >
+                            {value == null ? '—' : fmtX(value)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </Fragment>
                 );
               })}
             </tfoot>
