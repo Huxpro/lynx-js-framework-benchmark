@@ -35,6 +35,18 @@ export function completeEntryScores(ids, cells, weights = cells.map(() => 1)) {
   };
 }
 
+/** Re-express complete formula scores relative to one selected entry. The
+ * formula's complete input matrix stays unchanged; only its display baseline
+ * changes. A missing baseline makes the whole comparison unavailable. */
+export function rebaseEntryScores(ids, scores, baselineId) {
+  if (baselineId === 'fastest') return new Map(scores);
+  const baseline = scores.get(baselineId);
+  return new Map(ids.map((id) => {
+    const value = scores.get(id);
+    return [id, valid(value) && valid(baseline) ? value / baseline : null];
+  }));
+}
+
 export function slopeFit(points) {
   const pts = points.filter(([x, y]) => x > 0 && y > 0)
     .map(([x, y]) => [Math.log10(x), Math.log10(y)]);

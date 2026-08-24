@@ -10,6 +10,11 @@ export function completeEntryScores(ids: string[], cells: DerivedCell[], weights
   missing: string[];
   cellCount: number;
 };
+export function rebaseEntryScores(
+  ids: string[],
+  scores: ReadonlyMap<string, number | null>,
+  baselineId: 'fastest' | string,
+): Map<string, number | null>;
 export function slopeFit(points: [number, number][]): number | null;
 export function rankHistoryCell(
   entryIds: string[],

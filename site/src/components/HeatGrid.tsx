@@ -5,7 +5,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
-import { completeEntryScores } from '../derive.mjs';
+import { completeEntryScores, rebaseEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 import { useI18n } from '../i18n';
 import { Legend } from './Legend';
@@ -248,17 +248,31 @@ export function HeatGrid({
             <tfoot>
               {conclusionRows.map((scoreRow, scoreIndex) => {
                 const isPinned = pinnedScore === scoreRow.key;
+                const displayedValues = rebaseEntryScores(ids, scoreRow.values, activeMode);
+                const comparableValues = [...displayedValues.values()]
+                  .filter((value): value is number => value != null && Number.isFinite(value) && value > 0);
+                const fastestValue = activeMode === 'fastest' && comparableValues.length > 0
+                  ? Math.min(...comparableValues)
+                  : null;
                 const startsGroup = scoreIndex === 0
                   || conclusionRows[scoreIndex - 1]?.group !== scoreRow.group;
                 const inputCount = text(
                   `${scoreRow.cellCount} input rows`,
                   `${scoreRow.cellCount} 个输入行`,
                 );
+                const baselineEquationLine = activeMode === 'fastest' ? null : text(
+                  `Display baseline: formula score ÷ ${shortLabel(activeMode)} formula score; ${shortLabel(activeMode)} = 1.00×`,
+                  `显示基线：公式得分 ÷ ${shortLabel(activeMode)} 的公式得分；${shortLabel(activeMode)} = 1.00×`,
+                );
                 const showEquation = () => {
                   setPreviewScore(scoreRow.key);
                   setTip({
                     ...scoreRow.equation,
-                    lines: [inputCount, ...scoreRow.equation.lines],
+                    lines: [
+                      inputCount,
+                      ...(baselineEquationLine == null ? [] : [baselineEquationLine]),
+                      ...scoreRow.equation.lines,
+                    ],
                   });
                 };
                 const clearPreview = () => {
@@ -291,7 +305,7 @@ export function HeatGrid({
                           type="button"
                           className="score-summary-trigger"
                           aria-pressed={isPinned}
-                          aria-label={`${scoreRow.groupLabel}: ${scoreRow.equation.head}. ${inputCount}. ${scoreRow.equation.lines.join(' ')}`}
+                          aria-label={`${scoreRow.groupLabel}: ${scoreRow.equation.head}. ${inputCount}. ${baselineEquationLine == null ? '' : `${baselineEquationLine}. `}${scoreRow.equation.lines.join(' ')}`}
                           onClick={() => setPinnedScore((current) => current === scoreRow.key ? null : scoreRow.key)}
                           onFocus={(event) => {
                             const rect = event.currentTarget.getBoundingClientRect();
@@ -308,13 +322,15 @@ export function HeatGrid({
                         </button>
                       </th>
                       {ids.map((id) => {
-                        const value = scoreRow.values.get(id);
+                        const value = displayedValues.get(id);
+                        const isRef = activeMode !== 'fastest' && id === activeMode && value != null;
+                        const isFastest = fastestValue != null && value === fastestValue;
                         return (
                           <td
                             key={id}
-                            className="data"
-                            style={{
-                              ...(value == null ? {} : { background: tintFor(value) }),
+                            className={isRef ? 'ref' : value == null ? 'null' : `data${isFastest ? ' fastest' : ''}`}
+                            style={value == null ? undefined : isRef ? { fontWeight: 700 } : {
+                              background: tintFor(value),
                               fontWeight: 700,
                             }}
                           >
@@ -338,8 +354,8 @@ export function HeatGrid({
           )}</>
         ) : (
           <>{text(
-            `Each case cell is relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}. Conclusions are grouped into startup FCP and three interaction formulas; every input is normalized to its row's fastest selected entry. Hover or focus a conclusion to trace its inputs; click to pin, then click elsewhere or press Escape to clear. Incomplete entries receive no score.`,
-            `每个 case 单元都相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}显示。结论分为启动 FCP 与三种交互公式；每项输入都归一化到该行已选条目中的最快项。悬停或聚焦结论可追踪输入；点击可固定，再点击其他区域或按 Escape 即可清除。数据不完整的条目不生成得分。`,
+            `Each case cell is relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}. Conclusions are grouped into startup FCP and three interaction formulas. ${activeMode === 'fastest' ? "They show the published formula values, with every input normalized to its row's fastest selected entry." : `Their complete formula scores are rebased to ${shortLabel(activeMode)}, so that entry is 1.00×.`} Hover or focus a conclusion to trace its inputs; click to pin, then click elsewhere or press Escape to clear. Incomplete entries receive no score.`,
+            `每个 case 单元都相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}显示。结论分为启动 FCP 与三种交互公式。${activeMode === 'fastest' ? '此时显示正式公式值，每项输入都归一化到该行已选条目中的最快项。' : `完整公式得分会换基到 ${shortLabel(activeMode)}，因此该条目显示为 1.00×。`}悬停或聚焦结论可追踪输入；点击可固定，再点击其他区域或按 Escape 即可清除。数据不完整的条目不生成得分。`,
           )}</>
         )}
       </div>
