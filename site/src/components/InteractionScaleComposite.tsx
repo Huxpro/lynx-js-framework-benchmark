@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, fmtX, shortLabel } from '../data';
 import { completeEntryScores } from '../derive.mjs';
-import { useTooltip } from '../hooks';
+import { useElementWidth, useTooltip } from '../hooks';
 import { localizedWorkload, useI18n } from '../i18n';
 import { INTERACTION_SCORE_SCALES, INTERACTION_WORKLOADS } from '../interaction-score';
 
@@ -27,6 +27,7 @@ export function InteractionScaleComposite({
   const { locale, text } = useI18n();
   const { select, workloadScales } = useBenchmarkData();
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
   const { setTip, onMove, place, tipNode } = useTooltip();
   const ids = useMemo(
     () => ENTRIES.map((entry) => entry.id).filter((id) => selected.has(id)),
@@ -81,11 +82,13 @@ export function InteractionScaleComposite({
     const fg = theme === 'dark' ? '#b5b4ab' : '#5f5e57';
     const background = theme === 'dark' ? '#1d1f26' : '#ffffff';
     const max = Math.max(...data.map((point) => point.value));
+    const width = Math.max(320, plotWidth || node.clientWidth || 760);
+    const compact = width < 620;
     const plot = Plot.plot({
-      width: Math.max(760, node.clientWidth || 760),
-      height: 350,
-      marginLeft: 56,
-      marginRight: 120,
+      width,
+      height: compact ? 320 : 350,
+      marginLeft: compact ? 48 : 56,
+      marginRight: compact ? 16 : 120,
       marginBottom: 48,
       style: { background: 'transparent', color: fg, fontSize: '12px' },
       x: {
@@ -117,8 +120,8 @@ export function InteractionScaleComposite({
           className: 'scale-composite-series scale-composite-point',
         }),
         Plot.text(data, Plot.selectLast({
-          x: 'scale', y: 'value', z: 'entry', text: (point: CompositePoint) => `${point.label}  ${fmtX(point.value)}`,
-          fill: 'entry', dx: 8, textAnchor: 'start', fontWeight: 650, fontSize: 11,
+          x: 'scale', y: 'value', z: 'entry', text: (point: CompositePoint) => compact ? fmtX(point.value) : `${point.label}  ${fmtX(point.value)}`,
+          fill: 'entry', dx: compact ? -7 : 8, textAnchor: compact ? 'end' : 'start', fontWeight: 650, fontSize: 11,
           className: 'scale-composite-series scale-composite-label',
         })),
         Plot.tip(data, Plot.pointer({
@@ -167,7 +170,7 @@ export function InteractionScaleComposite({
       controller.abort();
       plot.remove();
     };
-  }, [commonWorkloads.length, data, ids, scales, text, theme]);
+  }, [commonWorkloads.length, data, ids, plotWidth, scales, text, theme]);
 
   const equation = {
     head: text('Scale-comparable interaction composite', '可跨规模比较的交互复合值'),

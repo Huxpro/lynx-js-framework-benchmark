@@ -1,4 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+
+/** Tracks a visualization container instead of assuming its width at mount.
+ * Plot still receives a concrete pixel width, while page and card resizing stay
+ * responsive without scaling SVG text or strokes. */
+export function useElementWidth<T extends HTMLElement>(ref: RefObject<T | null>): number {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    let frame = 0;
+    const update = () => {
+      const next = Math.round(node.getBoundingClientRect().width);
+      setWidth((current) => current === next ? current : next);
+    };
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    });
+    observer.observe(node);
+    update();
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [ref]);
+  return width;
+}
 
 export function useTheme(): ['light' | 'dark', () => void] {
   const get = (): 'light' | 'dark' => {

@@ -19,7 +19,7 @@ import {
   rankHistoryAggregate,
   rankHistoryCell,
 } from '../derive.mjs';
-import { useTooltip } from '../hooks';
+import { useElementWidth, useTooltip } from '../hooks';
 import {
   localizedCheckpoint,
   localizedWorkload,
@@ -208,6 +208,7 @@ export function HistoryRanking({
 }) {
   const { locale, text } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
   const allRecords = useMemo(() => BENCHMARK_HISTORY.records.filter((record) =>
     record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry)), [harness]);
@@ -432,7 +433,7 @@ export function HistoryRanking({
           : record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : checkpointCopy.description,
       ].filter(Boolean).join('\n');
     };
-    const width = Math.max(760, node.clientWidth || 760);
+    const width = Math.max(760, plotWidth || node.clientWidth || 760);
     const plot = Plot.plot({
       width,
       height: 390,
@@ -552,7 +553,7 @@ export function HistoryRanking({
       plot.remove();
     };
   }, [points, rankedPoints, observations, incomparable, dnfs, missing, transitions, selectedPoints,
-    selectedCheckpoint, snapshotIndex, activeScale, harness, locale, text, theme]);
+    selectedCheckpoint, snapshotIndex, activeScale, harness, locale, plotWidth, text, theme]);
 
   const changeRankView = (value: string) => {
     const next = value === CELL_VIEW ? CELL_VIEW : SCORE_VIEW;

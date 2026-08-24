@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, shortLabel } from '../data';
+import { useElementWidth } from '../hooks';
 import { useI18n } from '../i18n';
 
 export function CostSpace({
@@ -20,6 +21,7 @@ export function CostSpace({
   const { text } = useI18n();
   const { one, workloadScales } = useBenchmarkData();
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
   const scales = useMemo(
     () => workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })
       .filter((value) => value > 0),
@@ -52,7 +54,7 @@ export function CostSpace({
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
     const fg = theme === 'dark' ? '#b5b4ab' : '#5f5e57';
     const plot = Plot.plot({
-      width: Math.min(640, Math.max(420, node.clientWidth || 600)),
+      width: Math.max(420, plotWidth || node.clientWidth || 600),
       height: 360,
       marginLeft: 56,
       marginBottom: 44,
@@ -81,7 +83,7 @@ export function CostSpace({
     });
     node.replaceChildren(plot);
     return () => plot.remove();
-  }, [data, theme, selected, activeScale, text]);
+  }, [data, theme, selected, activeScale, plotWidth, text]);
 
   return (
     <figure className="card" role="group" aria-label={text('Cost space', '成本空间')}>

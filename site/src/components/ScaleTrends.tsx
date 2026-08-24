@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, shortLabel } from '../data';
 import { slopeFit } from '../derive.mjs';
+import { useElementWidth } from '../hooks';
 import { useI18n } from '../i18n';
 
 interface TrendSpec {
@@ -69,6 +70,7 @@ export function ScaleTrend({
   const copy = locale === 'zh-CN' ? TREND_ZH[spec.title] : null;
   const [scaleMode, setScaleMode] = useState<'linear' | 'log'>('linear');
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
 
   const data = useMemo(() => {
     const out: { entry: string; label: string; scale: number; value: number }[] = [];
@@ -119,7 +121,7 @@ export function ScaleTrend({
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
     const fg = theme === 'dark' ? '#b5b4ab' : '#5f5e57';
     const plot = Plot.plot({
-      width: Math.min(680, Math.max(420, node.clientWidth || 640)),
+      width: Math.max(420, plotWidth || node.clientWidth || 640),
       height: 340,
       marginLeft: 56,
       marginRight: 110,
@@ -158,7 +160,7 @@ export function ScaleTrend({
     });
     node.replaceChildren(plot);
     return () => plot.remove();
-  }, [data, scaleMode, theme, selected, spec, text]);
+  }, [data, scaleMode, theme, selected, spec, plotWidth, text]);
 
   return (
     <figure className="card" role="group" aria-label={copy?.title ?? spec.title}>

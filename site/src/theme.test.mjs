@@ -3,6 +3,11 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const css = fs.readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const hooks = fs.readFileSync(new URL('./hooks.tsx', import.meta.url), 'utf8');
+const costSpace = fs.readFileSync(new URL('./components/CostSpace.tsx', import.meta.url), 'utf8');
+const scaleTrends = fs.readFileSync(new URL('./components/ScaleTrends.tsx', import.meta.url), 'utf8');
+const scaleComposite = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 
 test('expanded exact-data tables scroll inside their card on narrow viewports', () => {
   const rule = css.match(/details\.data-table\s*\{([^}]*)\}/)?.[1] ?? '';
@@ -81,4 +86,37 @@ test('visualization appendices stay compact until their audited table is opened'
   assert.match(css, /\.appendix-table-scroll\s*\{/);
   assert.match(css, /max-height\s*:\s*30rem/);
   assert.match(css, /overflow\s*:\s*auto/);
+});
+
+test('page and prose measures use the wide data workspace without losing readable line length', () => {
+  const page = css.match(/\.page\s*\{([^}]*)\}/)?.[1] ?? '';
+  const subtitle = css.match(/\.subtitle\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(css, /--page-max\s*:\s*92rem/);
+  assert.match(css, /--page-gutter\s*:\s*clamp\(/);
+  assert.match(css, /--measure-lead\s*:\s*104ch/);
+  assert.match(page, /width\s*:\s*min\(100%, var\(--page-max\)\)/);
+  assert.match(page, /safe-area-inset-left/);
+  assert.match(subtitle, /max-width\s*:\s*min\(100%, var\(--measure-lead\)\)/);
+  assert.doesNotMatch(css, /\.subtitle[^}]*62ch/);
+});
+
+test('narrow components adapt locally and cannot force page-level overflow', () => {
+  const grid = css.match(/(?:^|\n)\.grid-2\s*\{([^}]*)\}/)?.[1] ?? '';
+  const segment = css.match(/\.seg\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(css, /@container \(max-width: 38rem\)/);
+  assert.match(grid, /minmax\(min\(100%, 22rem\), 1fr\)/);
+  assert.match(segment, /max-width\s*:\s*100%/);
+  assert.match(segment, /overflow-x\s*:\s*auto/);
+  assert.doesNotMatch(css, /body\s*\{[^}]*font-size\s*:\s*14px/);
+  assert.match(html, /viewport-fit=cover/);
+});
+
+test('plots observe their containers instead of staying capped at desktop widths', () => {
+  assert.match(hooks, /new ResizeObserver/);
+  assert.match(costSpace, /useElementWidth\(ref\)/);
+  assert.match(scaleTrends, /useElementWidth\(ref\)/);
+  assert.match(scaleComposite, /const compact = width < 620/);
+  assert.match(scaleComposite, /marginRight: compact \? 16 : 120/);
+  assert.doesNotMatch(costSpace, /Math\.min\(640/);
+  assert.doesNotMatch(scaleTrends, /Math\.min\(680/);
 });
