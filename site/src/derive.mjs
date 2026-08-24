@@ -83,3 +83,55 @@ export function rankHistoryCell(entryIds, records, cohortEligible = true) {
     return { entry, record, rank: status === 'ranked' ? ranks.get(entry) ?? null : null, status };
   });
 }
+
+/** Rank a complete matrix of cells without pretending it is one raw record.
+ * Each cell is normalized to its fastest eligible entry, then the per-entry
+ * score is the unweighted geometric mean of those ratios. */
+export function rankHistoryAggregate(entryIds, cells, cohortEligible = true) {
+  const recordsByCell = cells.map((cell) => ({
+    key: cell.key,
+    byEntry: new Map(cell.records.map((record) => [record.entry, record])),
+  }));
+  const recordsFor = (entry) => recordsByCell.map((cell) => cell.byEntry.get(entry) ?? null);
+  const completeIds = entryIds.filter((entry) => {
+    const records = recordsFor(entry);
+    return records.length > 0
+      && records.every((record) => record?.rankEligible !== false && valid(record?.median));
+  });
+  const score = completeEntryScores(completeIds, recordsByCell.map((cell) => ({
+    key: cell.key,
+    values: Object.fromEntries(completeIds.map((entry) => [entry, cell.byEntry.get(entry)?.median])),
+  })));
+  const scoreByEntry = new Map(score.scores.map(({ id, value }) => [id, value]));
+  const ranked = cohortEligible && completeIds.length >= 2
+    ? score.scores.slice().sort((a, b) => a.value - b.value || a.id.localeCompare(b.id))
+    : [];
+  const ranks = new Map();
+  let priorValue = null;
+  let priorRank = 0;
+  ranked.forEach(({ id, value }, index) => {
+    const rank = priorValue === value ? priorRank : index + 1;
+    ranks.set(id, rank);
+    priorValue = value;
+    priorRank = rank;
+  });
+
+  return entryIds.map((entry) => {
+    const records = recordsFor(entry);
+    const present = records.filter(Boolean);
+    let status = 'ranked';
+    if (present.length !== records.length || records.length === 0) status = 'missing';
+    else if (!cohortEligible || completeIds.length < 2) status = 'observation';
+    else if (records.some((record) => record.dnfCount > 0 && !valid(record.median))) status = 'dnf';
+    else if (records.some((record) => record.rankEligible === false)) status = 'incomparable';
+    else if (!records.every((record) => valid(record.median))) status = 'missing';
+    return {
+      entry,
+      records: present,
+      value: status === 'ranked' ? scoreByEntry.get(entry) ?? null : null,
+      rank: status === 'ranked' ? ranks.get(entry) ?? null : null,
+      status,
+      cellCount: cells.length,
+    };
+  });
+}

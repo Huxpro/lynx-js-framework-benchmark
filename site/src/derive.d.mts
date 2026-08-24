@@ -24,3 +24,20 @@ export function rankHistoryCell(
   rank: number | null;
   status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
 }>;
+export function rankHistoryAggregate<T extends {
+  entry: string;
+  median: number | null;
+  rankEligible?: boolean;
+  dnfCount: number;
+}>(
+  entryIds: string[],
+  cells: Array<{ key: string; records: T[] }>,
+  cohortEligible?: boolean,
+): Array<{
+  entry: string;
+  records: T[];
+  value: number | null;
+  rank: number | null;
+  status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
+  cellCount: number;
+}>;

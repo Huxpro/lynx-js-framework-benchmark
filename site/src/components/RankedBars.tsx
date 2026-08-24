@@ -1,7 +1,7 @@
 // Per-suite card: operation chips, ranked bars (absolute for one op, geomean
 // ×-vs-fastest for "overall"), and the exact-number table (the relief channel).
 // Visual language follows octanejs.dev/benchmarks; implementation is ours.
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import {
@@ -44,7 +44,7 @@ export function RankedBars({
   unitFmt = fmtMs,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   suite: string;
   metric?: string;
   ops: OpSpec[];
@@ -109,7 +109,7 @@ export function RankedBars({
         }),
         fmt: fmtX,
         scoreOps: score.cellCount,
-        caption: `geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
+        caption: `unweighted geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
       };
     }
     const spec = ops.find((o) => o.key === activeOp)!;

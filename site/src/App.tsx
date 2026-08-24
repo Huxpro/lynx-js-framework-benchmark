@@ -20,6 +20,17 @@ import {
 } from './data';
 import { useTheme } from './hooks';
 
+const KrausestBenchmarkLink = () => (
+  <a
+    className="external-link benchmark-source-link"
+    href="https://github.com/krausest/js-framework-benchmark"
+    target="_blank"
+    rel="noreferrer"
+  >
+    krausest/js-framework-benchmark <span aria-hidden="true">↗</span>
+  </a>
+);
+
 // Sharable comparison state: ?entries=a,b,c picks an exact featured set.
 function initialSelection(defaultIds: string[]): Set<string> {
   const params = new URLSearchParams(location.search);
@@ -145,7 +156,7 @@ function AppContent({
   }, [harness, select, snapshot.nativeCoverage.cells, workloadScales]);
 
   const tableOps = (scales: number[]) =>
-    ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
+    ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
       workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
         .filter((s) => scales.includes(s))
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
@@ -216,8 +227,8 @@ function AppContent({
           <RankedBars
             title="interactive @1k"
             description={harness === 'web'
-              ? 'krausest-style table ops on 1,000 rows: tap → all mutations visible in the composed DOM.'
-              : 'krausest-style table ops on 1,000 rows: native input handler → second native animation frame.'}
+              ? <>Table operations adapted from <KrausestBenchmarkLink />: tap → all mutations visible in the composed DOM. “Overall” is this lab's unweighted complete-matrix geomean, not krausest's weighted score.</>
+              : <>Table operations adapted from <KrausestBenchmarkLink />: native input handler → second native animation frame. “Overall” is this lab's unweighted complete-matrix geomean.</>}
             suite="table"
             ops={tableOps([1000])}
             harness={harness}
@@ -227,8 +238,8 @@ function AppContent({
           <RankedBars
             title="interactive @10k"
             description={harness === 'web'
-              ? 'the same ops at 10,000 rows — where wire cost and reconciliation strategy separate.'
-              : 'the same native operations at 10,000 rows; input/session timeouts remain visible as DNF.'}
+              ? <>The same <KrausestBenchmarkLink />-style operations at 10,000 rows — where wire cost and reconciliation strategy separate.</>
+              : <>The same <KrausestBenchmarkLink />-style Native operations at 10,000 rows; input/session timeouts remain visible as DNF.</>}
             suite="table"
             ops={tableOps([10000])}
             harness={harness}

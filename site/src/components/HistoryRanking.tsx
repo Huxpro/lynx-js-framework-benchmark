@@ -8,12 +8,13 @@ import {
   fmtBytes,
   fmtCount,
   fmtMs,
+  fmtX,
   HistoryCheckpoint,
   HistoryRecord,
   historyRecordsForCheckpoint,
   shortLabel,
 } from '../data';
-import { rankHistoryCell } from '../derive.mjs';
+import { rankHistoryAggregate, rankHistoryCell } from '../derive.mjs';
 
 const param = (name: string) => new URLSearchParams(location.search).get(name);
 
@@ -35,6 +36,7 @@ function formatValue(record: HistoryRecord | null): string {
 
 function metricLabel(metric: string): string {
   const labels: Record<string, string> = {
+    score: 'relative geomean',
     latency: 'wall latency', fcp: 'first contentful paint', settled: 'settled',
     btsCpu: 'BTS CPU', mtsCpu: 'MTS CPU', wireToMtsBytes: 'BTS→MTS bytes',
     wireToBtsBytes: 'MTS→BTS bytes', wireToMtsMsgs: 'BTS→MTS messages',
@@ -52,9 +54,19 @@ interface RankedPoint {
   plotRank: number;
   status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
   record: HistoryRecord | null;
+  aggregateRecords?: HistoryRecord[];
+  aggregateValue?: number | null;
+  aggregateCellCount?: number;
   checkpoint: HistoryCheckpoint;
   cohortIdentity: string;
   segment?: string;
+}
+
+function formatPointValue(point: RankedPoint): string {
+  if (point.aggregateCellCount != null) {
+    return point.aggregateValue == null ? 'incomplete matrix' : fmtX(point.aggregateValue);
+  }
+  return formatValue(point.record);
 }
 
 interface CohortTransition {
@@ -113,6 +125,7 @@ function ChoiceRail({
 
 function workloadLabel(workload: string): string {
   const labels: Record<string, string> = {
+    interactive: 'interactive score',
     append1k: 'append 1k',
     update10th: 'update every 10th',
     updateStorm: 'update storm',
@@ -129,6 +142,11 @@ const HISTORY_RANK_LIMIT = Math.max(1, ...BENCHMARK_HISTORY.checkpoints.flatMap(
 const DATASET_IDS = BENCHMARK_HISTORY.checkpoints.map((checkpoint) => checkpoint.id);
 const DATASET_BY_ID = new Map(BENCHMARK_HISTORY.checkpoints.map((checkpoint) =>
   [checkpoint.id, checkpoint]));
+const INTERACTIVE_CASE = 'interactive';
+const INTERACTIVE_WORKLOADS = [
+  'create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear',
+];
+const INTERACTIVE_SCALES = [1000, 10000];
 const datasetAxisLabel = (id: string) => {
   const label = DATASET_BY_ID.get(id)?.label ?? id;
   return label.includes(' · ') ? label.slice(label.indexOf(' · ') + 3) : label;
@@ -149,22 +167,28 @@ export function HistoryRanking({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
-  const allRecords = BENCHMARK_HISTORY.records.filter((record) =>
-    record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry));
-  const workloads = [...new Set(allRecords.map((record) => record.workload))].sort((a, b) => {
+  const allRecords = useMemo(() => BENCHMARK_HISTORY.records.filter((record) =>
+    record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry)), [harness]);
+  const rawWorkloads = [...new Set(allRecords.map((record) => record.workload))].sort((a, b) => {
     const preferred = ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm', 'memory', 'startup'];
     return preferred.indexOf(a) - preferred.indexOf(b) || a.localeCompare(b);
   });
+  const workloads = [INTERACTIVE_CASE, ...rawWorkloads];
   const [workload, setWorkload] = useState(() => param('historyCase') ?? 'create');
   const activeWorkload = workloads.includes(workload) ? workload : (workloads[0] ?? 'create');
-  const metrics = [...new Set(allRecords.filter((record) => record.workload === activeWorkload)
+  const isInteractive = activeWorkload === INTERACTIVE_CASE;
+  const metrics = isInteractive ? ['score'] : [...new Set(allRecords
+    .filter((record) => record.workload === activeWorkload)
     .map((record) => record.metric))].sort((a, b) =>
     (a === 'latency' ? -1 : b === 'latency' ? 1 : a.localeCompare(b)));
   const [metric, setMetric] = useState(() => param('historyMetric') ?? 'latency');
   const activeMetric = metrics.includes(metric) ? metric : (metrics[0] ?? 'latency');
-  const scales = [...new Set(allRecords.filter((record) =>
-    record.workload === activeWorkload && record.metric === activeMetric).map((record) => record.scale))]
-    .sort((a, b) => a - b);
+  const scales = isInteractive
+    ? INTERACTIVE_SCALES.filter((candidate) => allRecords.some((record) =>
+      record.scale === candidate && INTERACTIVE_WORKLOADS.includes(record.workload)
+      && record.metric === 'latency'))
+    : [...new Set(allRecords.filter((record) => record.workload === activeWorkload
+      && record.metric === activeMetric).map((record) => record.scale))].sort((a, b) => a - b);
   const [scale, setScale] = useState(() => Number(param('historyScale') ?? 1000));
   const activeScale = scales.includes(scale) ? scale : (scales.includes(1000) ? 1000 : scales[0]);
 
@@ -179,15 +203,31 @@ export function HistoryRanking({
     for (const [index, checkpoint] of BENCHMARK_HISTORY.checkpoints.entries()) {
       const cohort = checkpoint.harnesses.find((candidate) => candidate.harness === harness);
       if (!cohort) continue;
-      const records = historyRecordsForCheckpoint(checkpoint).filter((record) =>
-        record.harness === harness
-        && record.workload === activeWorkload
-        && record.scale === activeScale
-        && record.metric === activeMetric) as HistoryRecord[];
-      const ranked = rankHistoryCell(cohort.entryIds, records, cohort.rankEligible) as Array<{
-        entry: string; record: HistoryRecord | null; rank: number | null;
-        status: RankedPoint['status'];
-      }>;
+      const checkpointRecords = historyRecordsForCheckpoint(checkpoint)
+        .filter((record) => record.harness === harness) as HistoryRecord[];
+      const aggregateWorkloads = INTERACTIVE_WORKLOADS.filter((candidate) => allRecords.some((record) =>
+        record.workload === candidate && record.scale === activeScale && record.metric === 'latency'));
+      const ranked = isInteractive
+        ? rankHistoryAggregate(cohort.entryIds, aggregateWorkloads.map((candidate) => ({
+          key: `${candidate}@${activeScale}`,
+          records: checkpointRecords.filter((record) => record.workload === candidate
+            && record.scale === activeScale && record.metric === 'latency'),
+        })), cohort.rankEligible).map((point) => ({
+          entry: point.entry,
+          record: null,
+          aggregateRecords: point.records,
+          aggregateValue: point.value,
+          aggregateCellCount: point.cellCount,
+          rank: point.rank,
+          status: point.status,
+        }))
+        : rankHistoryCell(cohort.entryIds, checkpointRecords.filter((record) =>
+          record.workload === activeWorkload
+          && record.scale === activeScale
+          && record.metric === activeMetric), cohort.rankEligible) as Array<{
+          entry: string; record: HistoryRecord | null; rank: number | null;
+          status: RankedPoint['status'];
+        }>;
       const cohortIdentity = [cohort.machineId, cohort.environment, ...cohort.entryIds].join('|');
       for (const point of ranked) {
         out.push({
@@ -210,7 +250,7 @@ export function HistoryRanking({
       }
     }
     return out;
-  }, [harness, activeWorkload, activeScale, activeMetric]);
+  }, [harness, activeWorkload, activeScale, activeMetric, allRecords, isInteractive]);
 
   const selectedCheckpoint = BENCHMARK_HISTORY.checkpoints[snapshotIndex];
   const selectedPoints = points.filter((point) => point.checkpoint.id === selectedCheckpoint.id);
@@ -258,9 +298,11 @@ export function HistoryRanking({
             : point.status === 'dnf' ? 'not ranked — DNF' : 'not run in this exact cohort';
       return [
         point.label,
-        `${status}  ·  ${formatValue(record)}`,
+        `${status}  ·  ${formatPointValue(point)}`,
         datasetAxisLabel(point.checkpoint.id),
-        record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : point.checkpoint.description,
+        point.aggregateCellCount != null
+          ? `${point.aggregateCellCount} complete operations  ·  unweighted geometric mean`
+          : record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : point.checkpoint.description,
       ].filter(Boolean).join('\n');
     };
     const width = Math.max(760, node.clientWidth || 760);
@@ -320,7 +362,7 @@ export function HistoryRanking({
         Plot.text(selectedPoints.filter((point) => point.status === 'ranked'), {
           x: 'dataset',
           y: 'rank',
-          text: (point: RankedPoint) => `${point.label}  ${formatValue(point.record)}`,
+          text: (point: RankedPoint) => `${point.label}  ${formatPointValue(point)}`,
           dx: snapshotIndex >= DATASET_IDS.length - 2 ? -12 : 12,
           textAnchor: snapshotIndex >= DATASET_IDS.length - 2 ? 'end' : 'start',
           fill: 'entry',
@@ -395,7 +437,12 @@ export function HistoryRanking({
         <div>
           <div className="history-kicker">Exact-source history</div>
           <h2 id="history-ranking-title">Rank by dataset</h2>
-          <p>Each node is one retained dataset. Solid lines share one comparison cohort; dashed bridges preserve the framework story across a cohort change.</p>
+          <p>
+            Each node is one retained dataset. Solid lines share one comparison cohort; dashed
+            bridges preserve the framework story across a cohort change. Interactive score is this
+            lab's unweighted geomean over a complete table-operation matrix, not krausest's weighted
+            overall score.
+          </p>
         </div>
       </div>
       <div className="history-browser" aria-label="Browse ranking configuration">
@@ -458,8 +505,14 @@ export function HistoryRanking({
                 <tr key={`${point.checkpoint.id}:${point.entry}`}>
                   <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{point.checkpoint.label}</button></td>
                   <td>{point.label}</td><td>{point.rank == null ? point.status : `#${point.rank}`}</td>
-                  <td>{formatValue(point.record)}</td>
-                  <td><code>{point.record?.runFile ?? point.checkpoint.description}</code>{point.record?.entryCommit ? ` @ ${point.record.entryCommit.slice(0, 12)}` : ''}</td>
+                  <td>{formatPointValue(point)}</td>
+                  <td><code>{point.record?.runFile
+                    ?? point.aggregateRecords?.[0]?.runFile
+                    ?? point.checkpoint.description}</code>{point.record?.entryCommit
+                    ? ` @ ${point.record.entryCommit.slice(0, 12)}`
+                    : point.aggregateRecords?.[0]?.entryCommit
+                      ? ` @ ${point.aggregateRecords[0].entryCommit.slice(0, 12)} · ${point.aggregateCellCount} cells`
+                      : ''}</td>
                 </tr>
               ))}
             </tbody>

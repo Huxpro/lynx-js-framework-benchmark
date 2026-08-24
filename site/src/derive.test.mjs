@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { completeEntryScores, completeRowGeomeans, rankHistoryCell, slopeFit } from './derive.mjs';
+import {
+  completeEntryScores,
+  completeRowGeomeans,
+  rankHistoryAggregate,
+  rankHistoryCell,
+  slopeFit,
+} from './derive.mjs';
 
 test('interactive scores exclude entries with stale/incomplete matrices', () => {
   const result = completeEntryScores(['a', 'b', 'partial'], [
@@ -55,4 +61,28 @@ test('history ranks only exact eligible cohort values and preserves every missin
   );
   assert.equal(rankHistoryCell(['fast'], records, false)[0].status, 'observation');
   assert.equal(rankHistoryCell(['fast', 'absent'], records)[0].status, 'observation');
+});
+
+test('history interactive rank uses one complete unweighted operation matrix', () => {
+  const create = [
+    { entry: 'a', median: 10, dnfCount: 0, rankEligible: true },
+    { entry: 'b', median: 20, dnfCount: 0, rankEligible: true },
+    { entry: 'partial', median: 5, dnfCount: 0, rankEligible: true },
+  ];
+  const select = [
+    { entry: 'a', median: 4, dnfCount: 0, rankEligible: true },
+    { entry: 'b', median: 2, dnfCount: 0, rankEligible: true },
+  ];
+  const result = rankHistoryAggregate(['a', 'b', 'partial'], [
+    { key: 'create@1000', records: create },
+    { key: 'select@1000', records: select },
+  ]);
+
+  assert.equal(result[0].rank, 1);
+  assert.equal(result[1].rank, 1);
+  assert.ok(Math.abs(result[0].value - Math.sqrt(2)) < 1e-12);
+  assert.ok(Math.abs(result[1].value - Math.sqrt(2)) < 1e-12);
+  assert.equal(result[2].status, 'missing');
+  assert.equal(result[2].rank, null);
+  assert.equal(result[0].cellCount, 2);
 });
