@@ -11,6 +11,8 @@ export function TimelineSlider({
   onHarnessChange,
   theme,
   onThemeToggle,
+  heatPalette,
+  onHeatPaletteToggle,
 }: {
   snapshots: TimelineSnapshot[];
   index: number;
@@ -21,6 +23,8 @@ export function TimelineSlider({
   onHarnessChange: (harness: string) => void;
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
+  heatPalette: 'standard' | 'colorblind';
+  onHeatPaletteToggle: () => void;
 }) {
   const { locale, text, date, toggleLocale } = useI18n();
   const snapshot = snapshots[index];
@@ -56,20 +60,36 @@ export function TimelineSlider({
               ))}
             </div>
           </div>
-          <button
-            className="locale-toggle"
-            type="button"
-            onClick={toggleLocale}
-            aria-label={locale === 'en' ? '切换到中文' : 'Switch to English'}
-            title={locale === 'en' ? '切换到中文' : 'Switch to English'}
-          >
-            <span className={locale === 'en' ? 'is-active' : ''}>EN</span>
-            <i aria-hidden="true">/</i>
-            <span className={locale === 'zh-CN' ? 'is-active' : ''}>中</span>
-          </button>
-          <button className="theme-toggle" type="button" onClick={onThemeToggle} aria-label={text('Toggle theme', '切换主题')}>
-            {theme === 'dark' ? '☀' : '☾'}
-          </button>
+          <div className="workspace-preferences">
+            <button
+              className="palette-toggle"
+              type="button"
+              aria-pressed={heatPalette === 'colorblind'}
+              onClick={onHeatPaletteToggle}
+              aria-label={heatPalette === 'colorblind'
+                ? text('Use green–red heatmap', '使用绿—红热图')
+                : text('Use color-blind-safe blue–orange heatmap', '使用色盲友好的蓝—橙热图')}
+              title={heatPalette === 'colorblind'
+                ? text('Color-blind mode: blue–orange', '色盲模式：蓝—橙')
+                : text('Standard mode: green–red', '标准模式：绿—红')}
+            >
+              <span className="palette-pair" aria-hidden="true"><i /><i /></span>
+            </button>
+            <button
+              className="locale-toggle"
+              type="button"
+              onClick={toggleLocale}
+              aria-label={locale === 'en' ? '切换到中文' : 'Switch to English'}
+              title={locale === 'en' ? '切换到中文' : 'Switch to English'}
+            >
+              <span className={locale === 'en' ? 'is-active' : ''}>EN</span>
+              <i aria-hidden="true">/</i>
+              <span className={locale === 'zh-CN' ? 'is-active' : ''}>中</span>
+            </button>
+            <button className="theme-toggle" type="button" onClick={onThemeToggle} aria-label={text('Toggle theme', '切换主题')}>
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+          </div>
         </div>
         <section className="timeline" aria-label={text('Dataset time machine', '数据集时光机')}>
         <div className="timeline-control">

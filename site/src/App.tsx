@@ -20,7 +20,7 @@ import {
   TIMELINE_SNAPSHOTS,
   entrySupportsHarness,
 } from './data';
-import { useTheme } from './hooks';
+import { useHeatPalette, useTheme } from './hooks';
 import { localizedWorkload, useI18n } from './i18n';
 import {
   INTERACTION_WORKLOADS,
@@ -82,6 +82,7 @@ function AppContent({
 }) {
   const { locale, text } = useI18n();
   const [theme, toggleTheme] = useTheme();
+  const [heatPalette, toggleHeatPalette] = useHeatPalette();
   const { select, snapshot, workloadScales } = useBenchmarkData();
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>(() =>
@@ -253,6 +254,8 @@ function AppContent({
         onHarnessChange={changeHarness}
         theme={theme}
         onThemeToggle={toggleTheme}
+        heatPalette={heatPalette}
+        onHeatPaletteToggle={toggleHeatPalette}
       />
       <MeasurementReceipt harness={harness} />
 

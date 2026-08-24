@@ -11,6 +11,10 @@
       if (saved === 'dark' || saved === 'light') {
         document.documentElement.dataset.theme = saved;
       }
+      const heatPalette = localStorage.getItem('heat-palette');
+      if (heatPalette === 'colorblind') {
+        document.documentElement.dataset.heatPalette = heatPalette;
+      }
     </script>
   </head>
   <body>
