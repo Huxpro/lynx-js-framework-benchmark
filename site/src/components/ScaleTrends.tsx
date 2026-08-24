@@ -23,7 +23,7 @@ interface TrendSpec {
 const TREND_ZH: Record<string, { title: string; desc: string }> = {
   'startup — first contentful paint vs rows': {
     title: '启动——首次内容绘制与行数',
-    desc: 'view attach → 首个包含表格内容的帧，bundle 首屏预渲染 N 行。这里体现 IFR 的差异：主线程首帧与后台 hydration。',
+    desc: '本地/缓存 bundle：view attach → 首个包含表格内容的帧，首屏预渲染 N 行。不包含生产网络传输；主要反映解析/求值、框架初始化、首次创建与绘制随规模的变化。',
   },
   'startup — settled vs rows': {
     title: '启动——稳定时间与行数',
@@ -210,7 +210,7 @@ export function ScaleTrend({
 const COMMON_TREND_SPECS: TrendSpec[] = [
   {
     title: 'startup — first contentful paint vs rows',
-    desc: 'view attach → first frame with table content, on bundles whose first screen pre-renders N rows. The IFR story lives here: main-thread first frame vs background hydration.',
+    desc: 'Local/cached bundle: view attach → first frame with table content, with N rows pre-rendered. Production network transfer is excluded; the curve is parse/eval, framework boot, initial create and paint as scale grows.',
     suite: 'startup', workload: 'startup', metric: 'fcp', unit: 'ms',
   },
   {

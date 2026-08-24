@@ -9,8 +9,8 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
   const checkpointCopy = checkpoint ? localizedCheckpoint(checkpoint, locale) : null;
   const cohort = snapshot.comparison.harnesses.find((candidate) => candidate.harness === harness);
   const boundary = harness === 'web'
-    ? text('Interaction: in-page pointerdown → first frame whose composed-DOM predicate passes. Startup: view attach → first contentful paint.', '交互：页面内 pointerdown → composed DOM 条件首次通过的帧。启动：view attach → 首次内容绘制。')
-    : text('Interaction: real device input handler → second Native animation frame. Startup: pipeline open → FCP; renderer-only ACK/frame metrics stay separately named.', '交互：真实设备输入处理器 → 第二个 Native 动画帧。启动：pipeline open → FCP；仅渲染器的 ACK/帧指标会独立命名。');
+    ? text('Interaction: in-page pointerdown → first frame whose composed-DOM predicate passes. Startup: view attach → first frame with benchmark content; this is a workload-defined content boundary, not cold browser-navigation FCP.', '交互：页面内 pointerdown → composed DOM 条件首次通过的帧。启动：view attach → 首个包含 benchmark 内容的帧；这是 workload 定义的内容边界，不是浏览器冷导航 FCP。')
+    : text('Interaction: real device input handler → second Native animation frame. Startup: pipeline open → producer FCP; renderer-only ACK/frame metrics stay separately named.', '交互：真实设备输入处理器 → 第二个 Native 动画帧。启动：pipeline open → producer FCP；仅渲染器的 ACK/帧指标会独立命名。');
   const generatedAt = date(snapshot.generatedAt, {
     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
@@ -46,6 +46,31 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
               'Identical table contract and seeded rows; medians are derived from raw repetitions. Web and Native stay separate comparison domains.',
               '使用相同的表格合约和固定种子行；中位数由原始重复测量派生。Web 与 Native 始终是独立的比较域。',
             )}
+          </p>
+        </section>
+        <section>
+          <h3>{text('What startup isolates', '启动指标隔离了什么')}</h3>
+          <p>
+            {text(
+              'Framework artifacts are prebuilt and served locally. Production DNS, TLS, CDN and bandwidth are outside the timing; bundle parse/eval, framework initialization, initial content creation and paint remain inside. Thread attribution is reported separately.',
+              '框架产物已预构建并在本地提供。生产环境的 DNS、TLS、CDN 与带宽不在计时内；bundle 解析/求值、框架初始化、首批内容创建与绘制仍在计时内。线程归属会另行展示。',
+            )}
+          </p>
+        </section>
+        <section>
+          <h3>{text('Benchmark context', 'Benchmark 背景')}</h3>
+          <p>
+            {locale === 'zh-CN' ? <>
+              <a className="external-link" href="https://github.com/krausest/js-framework-benchmark#about-the-benchmarks" target="_blank" rel="noreferrer">js-framework-benchmark <span aria-hidden="true">↗</span></a>
+              {' '}把 page load 之后的九项 CPU 交互与启动/体积分开；当前 active size suite 保留 first paint，但 FCP 实验已停用。需要标准 navigation → FCP 时，
+              <a className="external-link" href="https://github.com/google/tachometer#first-contentful-paint-fcp" target="_blank" rel="noreferrer">Tachometer <span aria-hidden="true">↗</span></a>
+              {' '}和 <a className="external-link" href="https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint" target="_blank" rel="noreferrer">Lighthouse <span aria-hidden="true">↗</span></a> 会直接读取浏览器 Paint Timing。
+            </> : <>
+              <a className="external-link" href="https://github.com/krausest/js-framework-benchmark#about-the-benchmarks" target="_blank" rel="noreferrer">js-framework-benchmark <span aria-hidden="true">↗</span></a>
+              {' '}separates its nine post-load CPU interactions from startup/size; its active size suite retains first paint while the FCP experiment is disabled. For standard navigation → FCP,
+              {' '}<a className="external-link" href="https://github.com/google/tachometer#first-contentful-paint-fcp" target="_blank" rel="noreferrer">Tachometer <span aria-hidden="true">↗</span></a>
+              {' '}and <a className="external-link" href="https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint" target="_blank" rel="noreferrer">Lighthouse <span aria-hidden="true">↗</span></a> read browser Paint Timing directly.
+            </>}
           </p>
         </section>
         <section>

@@ -336,8 +336,14 @@ function AppContent({
           <RankedBars
             title={text('startup (first contentful paint)', '启动（首次内容绘制）')}
             description={harness === 'web'
-              ? text('view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration.', 'view attach → 首次表格内容，首屏预渲染 N 行。支持 IFR 的配置会在 hydration 前由主线程完成绘制。')
-              : text('native pipeline open → first contentful paint. Entries without a pipeline performance entry are absent rather than replaced by another boundary.', 'native pipeline open → 首次内容绘制。缺少 pipeline performance entry 的条目直接留空，不会用其他边界替代。')}
+              ? text(
+                'Local/cached startup: view attach → first frame with benchmark content, with N rows pre-rendered on the first screen. Production network transfer is outside this comparison; the signal is bundle parse/eval, framework boot, initial create and paint. Bundle gzip remains a separate shipping-cost metric.',
+                '本地/缓存启动：view attach → 首个包含 benchmark 内容的帧，首屏预渲染 N 行。这里不比较生产网络传输；信号主要来自 bundle 解析/求值、框架初始化、首次创建与绘制。bundle gzip 仍作为独立的交付成本指标。',
+              )
+              : text(
+                'Local/preloaded startup: native pipeline open → first contentful paint. Production network transfer is outside this comparison. Entries without a pipeline performance entry are absent rather than replaced by another boundary.',
+                '本地/预加载启动：Native pipeline open → 首次内容绘制。这里不比较生产网络传输。缺少 pipeline performance entry 的条目直接留空，不会用其他边界替代。',
+              )}
             suite="startup"
             metric="fcp"
             ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' }).map((s) => ({

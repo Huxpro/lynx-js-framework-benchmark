@@ -8,6 +8,9 @@ const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', 
 const scaleCompositeSource = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const interactionScoreSource = fs.readFileSync(new URL('./interaction-score.ts', import.meta.url), 'utf8');
 const heatGridSource = fs.readFileSync(new URL('./components/HeatGrid.tsx', import.meta.url), 'utf8');
+const costSpaceSource = fs.readFileSync(new URL('./components/CostSpace.tsx', import.meta.url), 'utf8');
+const methodSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
+const scaleTrendsSource = fs.readFileSync(new URL('./components/ScaleTrends.tsx', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -131,4 +134,17 @@ test('Scale leads with one scale-comparable interaction composite instead of mis
   assert.match(scaleCompositeSource, /commonWorkloads\.length < 2/);
   assert.match(scaleCompositeSource, /no aggregate is drawn/);
   assert.match(scaleCompositeSource, /className="formula-explainer"/);
+});
+
+test('startup FCP states its local bundle and non-network boundary everywhere it is interpreted', () => {
+  assert.match(source, /Local\/cached startup: view attach/);
+  assert.match(source, /Production network transfer is outside this comparison/);
+  assert.match(source, /bundle parse\/eval, framework boot, initial create and paint/);
+  assert.match(costSpaceSource, /x-axis is a separate shipping-cost proxy/);
+  assert.match(costSpaceSource, /production network transfer is not inside FCP/);
+  assert.match(scaleTrendsSource, /Local\/cached bundle: view attach/);
+  assert.match(methodSource, /workload-defined content boundary, not cold browser-navigation FCP/);
+  assert.match(methodSource, /DNS, TLS, CDN and bandwidth are outside the timing/);
+  assert.match(methodSource, /github\.com\/google\/tachometer#first-contentful-paint-fcp/);
+  assert.match(methodSource, /developer\.chrome\.com\/docs\/lighthouse\/performance\/first-contentful-paint/);
 });

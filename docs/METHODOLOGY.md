@@ -73,6 +73,15 @@ Chrome trace duration and applies case-specific CPU throttling (4× for update/s
 the framework-neutral Lynx for Web boundary: input `pointerdown` until the composed-DOM predicate
 is true. The label therefore says `js-framework weighted score`, not `official js-framework-benchmark score`.
 
+Startup FCP is intentionally not folded into that score. The upstream weighted score is a composite
+of the nine post-load CPU operations. Upstream separately retains `first paint` in its active size
+suite; its experimental `first-contentful-paint` entry was added in November 2023 and disabled in
+the Chrome 120 result update after the published experiment reported the same timestamp as
+`first paint` for every entry. This repository's startup workload is materially different: the
+first visible benchmark content is N pre-rendered rows, so local/cached startup distinguishes bundle
+parse/eval, framework initialization, initial create, and paint. It remains a separate startup
+metric rather than silently changing the upstream interaction formula.
+
 ## Dual-thread metrics
 
 - **Wire**: on Lynx for Web, every BTS↔MTS message crosses one `MessageChannel` driven by

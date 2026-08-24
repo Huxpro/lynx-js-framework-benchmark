@@ -92,8 +92,8 @@ export function CostSpace({
         <div className="card-title">{text('cost space — what you ship vs what you get', '成本空间——交付体积与启动表现')}</div>
         <ResponsiveCopy className="card-desc">
           {text(
-            "This environment's bundle size (gzip) against startup FCP at N pre-rendered rows. The lower-left corner dominates: less code, faster first paint. Paying bytes that don't buy startup moves an entry right without moving it down.",
-            '对比此环境的 bundle 体积（gzip）与预渲染 N 行时的启动 FCP。左下角占优：代码更少、首次绘制更快。若增加的字节没有换来更快启动，条目只会右移而不会下移。',
+            "This environment's bundle size (gzip) against local/cached startup FCP at N pre-rendered rows. The x-axis is a separate shipping-cost proxy: production network transfer is not inside FCP. The lower-left corner dominates—less code to parse/evaluate/create, faster first paint.",
+            '对比此环境的 bundle 体积（gzip）与预渲染 N 行时的本地/缓存启动 FCP。横轴是独立的交付成本代理：FCP 不包含生产网络传输。左下角占优——需要解析、求值和创建的代码更少，首次绘制更快。',
           )}
         </ResponsiveCopy>
       </figcaption>
