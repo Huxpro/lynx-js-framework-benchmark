@@ -1018,6 +1018,22 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
 .plot-figure svg { max-width: 100%; height: auto; }
 
 .controls-row { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; align-items: center; margin: 0.6rem 0; }
+.formula-explainer {
+  border: 0;
+  border-bottom: 2px solid var(--accent);
+  background: transparent;
+  color: var(--text-primary);
+  padding: 0.25rem 0.08rem 0.2rem;
+  font: 650 0.72rem ui-monospace, Menlo, monospace;
+  cursor: help;
+}
+.formula-explainer span { color: var(--text-muted); font-size: 0.62rem; vertical-align: super; }
+.formula-explainer:hover,
+.formula-explainer:focus-visible { background: var(--surface-2); outline: none; }
+.scale-composite-series .is-series-muted { opacity: 0.12; }
+.scale-composite-line .is-series-focus { stroke-width: 3.25px; }
+.scale-composite-point .is-series-focus { stroke-width: 3px; }
+.interaction-scale-composite .plot-figure svg { max-width: none; }
 .seg {
   display: inline-flex;
   border: 1px solid var(--border);

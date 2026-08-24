@@ -66,6 +66,15 @@ test('ranking series fade as a group while the hovered line is emphasized', () =
   assert.match(css, /\.history-legend button\.is-series-muted/);
 });
 
+test('scale composite uses the same line-focus language and a flat formula trigger', () => {
+  const trigger = css.match(/\.formula-explainer\s*\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(css, /\.scale-composite-series \.is-series-muted\s*\{\s*opacity: 0\.12/);
+  assert.match(css, /\.scale-composite-line \.is-series-focus\s*\{\s*stroke-width: 3\.25px/);
+  assert.match(css, /\.interaction-scale-composite \.plot-figure svg\s*\{\s*max-width: none/);
+  assert.match(trigger, /border\s*:\s*0/);
+  assert.doesNotMatch(trigger, /border-radius/);
+});
+
 test('visualization appendices stay compact until their audited table is opened', () => {
   assert.match(css, /\.visualization-appendix\s*\{/);
   assert.match(css, /\.visualization-appendix > summary\s*\{/);

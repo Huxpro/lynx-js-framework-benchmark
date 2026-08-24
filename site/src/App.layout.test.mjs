@@ -5,6 +5,7 @@ import test from 'node:test';
 const source = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
 const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import.meta.url), 'utf8');
 const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', import.meta.url), 'utf8');
+const scaleCompositeSource = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const interactionScoreSource = fs.readFileSync(new URL('./interaction-score.ts', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
@@ -93,4 +94,21 @@ test('interaction workloads share one module with three formula modes and one de
   assert.match(rankedBarsSource, /showEquation\(mode\)/);
   assert.match(rankedBarsSource, /onFocus=\{\(event\) =>/);
   assert.match(rankedBarsSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
+});
+
+test('Scale leads with one scale-comparable interaction composite instead of misusing the upstream mixed-scale score', () => {
+  const composite = source.indexOf('<InteractionScaleComposite');
+  const costSpace = source.indexOf('<CostSpace', composite);
+
+  assert.notEqual(composite, -1);
+  assert.ok(composite < costSpace, 'the interaction composite should lead the Scale diagrams');
+  assert.match(scaleCompositeSource, /same complete operation set at every scale/i);
+  assert.match(scaleCompositeSource, /completeEntryScores\(ids, cells\)/);
+  assert.match(scaleCompositeSource, /equal-weight geometric mean/);
+  assert.match(scaleCompositeSource, /distinct from the upstream score/);
+  assert.match(scaleCompositeSource, /mixes fixed 1k and 10k cases/);
+  assert.match(scaleCompositeSource, /commonWorkloads\.length/);
+  assert.match(scaleCompositeSource, /commonWorkloads\.length < 2/);
+  assert.match(scaleCompositeSource, /no aggregate is drawn/);
+  assert.match(scaleCompositeSource, /className="formula-explainer"/);
 });

@@ -4,6 +4,7 @@ import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { HistoryRanking } from './components/HistoryRanking';
+import { InteractionScaleComposite } from './components/InteractionScaleComposite';
 import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
@@ -362,6 +363,7 @@ function AppContent({
             0 ≈ scale-independent).
           </p>
           <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+          <InteractionScaleComposite harness={harness} theme={theme} selected={activeSelected} />
           <CostSpace harness={harness} theme={theme} selected={activeSelected} />
           {trendSpecsForHarness(harness).map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={activeSelected} />
