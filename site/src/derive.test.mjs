@@ -6,6 +6,7 @@ import {
   completeHistoryAggregateCells,
   rankHistoryAggregate,
   rankHistoryCell,
+  rebaseEntryScores,
   slopeFit,
   weightedGeomean,
 } from './derive.mjs';
@@ -32,6 +33,23 @@ test('weighted scores use one strict complete matrix and the supplied formula we
   assert.ok(Math.abs(result.scores[0].value - Math.pow(4, 0.25)) < 1e-12);
   assert.ok(Math.abs(result.scores[1].value - Math.pow(8, 0.25)) < 1e-12);
   assert.throws(() => completeEntryScores(['a'], [], [1]), /one positive weight per cell/);
+});
+
+test('conclusion scores follow the selected display baseline without changing their matrix', () => {
+  const scores = new Map([['a', 1.25], ['b', 2.5]]);
+  assert.deepEqual([...rebaseEntryScores(['a', 'b', 'partial'], scores, 'fastest')], [
+    ['a', 1.25],
+    ['b', 2.5],
+  ]);
+  assert.deepEqual([...rebaseEntryScores(['a', 'b', 'partial'], scores, 'a')], [
+    ['a', 1],
+    ['b', 2],
+    ['partial', null],
+  ]);
+  assert.deepEqual([...rebaseEntryScores(['a', 'b'], scores, 'partial')], [
+    ['a', null],
+    ['b', null],
+  ]);
 });
 
 test('trend slope is recalculated from current points', () => {
