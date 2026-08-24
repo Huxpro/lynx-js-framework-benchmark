@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
 
-test('rank over time is the final content section', () => {
+test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
   const pageContentEnd = source.lastIndexOf("      )}\n", history);
   const historyEnd = source.indexOf('/>', history);

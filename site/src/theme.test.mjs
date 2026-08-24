@@ -22,3 +22,10 @@ test('dataset slider owns the full sticky second row', () => {
   assert.doesNotMatch(timeline, /grid-template-columns/);
   assert.match(control, /minmax\(0, 1fr\)/);
 });
+
+test('dataset slider exposes a visible checkpoint rail without replacing the range input', () => {
+  assert.match(css, /\.timeline-range-track\s*\{/);
+  assert.match(css, /\.timeline-dot\s*\{/);
+  assert.match(css, /\.timeline-dot\.is-active\s*\{/);
+  assert.match(css, /\.timeline-range input\[type='range'\]/);
+});

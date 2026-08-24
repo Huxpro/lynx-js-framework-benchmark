@@ -20,6 +20,18 @@ test('dataset checkpoints are named independently of any one framework commit', 
   assert.doesNotMatch(rankingSource, /FEATURED_IDS/);
 });
 
+test('dataset navigation and ranking share the same discrete checkpoint model', () => {
+  assert.match(source, /snapshots\.map/);
+  assert.match(source, /className=\{`timeline-dot/);
+  assert.match(source, /timeline-range-progress/);
+  assert.match(rankingSource, /type: 'point'/);
+  assert.match(rankingSource, /domain: DATASET_IDS/);
+  assert.match(rankingSource, /x: 'dataset'/);
+  assert.match(rankingSource, />Rank by dataset</);
+  assert.doesNotMatch(rankingSource, /type: 'utc'/);
+  assert.doesNotMatch(rankingSource, /x: 'time'/);
+});
+
 test('framework hover cards own source links and exact plugin options', () => {
   assert.match(legendSource, /snapshot\.identityPointers\.find/);
   assert.match(legendSource, /className="external-link"/);

@@ -47,7 +47,7 @@ function metricLabel(metric: string): string {
 interface RankedPoint {
   entry: string;
   label: string;
-  time: Date;
+  dataset: string;
   rank: number | null;
   plotRank: number;
   status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
@@ -61,6 +61,13 @@ const HISTORY_ENTRY_IDS = [...new Set(BENCHMARK_HISTORY.checkpoints.flatMap((che
   checkpoint.harnesses.flatMap((cohort) => cohort.entryIds)))];
 const HISTORY_RANK_LIMIT = Math.max(1, ...BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
   checkpoint.harnesses.map((cohort) => cohort.entryIds.length)));
+const DATASET_IDS = BENCHMARK_HISTORY.checkpoints.map((checkpoint) => checkpoint.id);
+const DATASET_BY_ID = new Map(BENCHMARK_HISTORY.checkpoints.map((checkpoint) =>
+  [checkpoint.id, checkpoint]));
+const datasetAxisLabel = (id: string) => {
+  const label = DATASET_BY_ID.get(id)?.label ?? id;
+  return label.includes(' · ') ? label.slice(label.indexOf(' · ') + 3) : label;
+};
 
 export function HistoryRanking({
   harness,
@@ -120,7 +127,7 @@ export function HistoryRanking({
         out.push({
           ...point,
           label: shortLabel(point.entry),
-          time: new Date(checkpoint.generatedAt),
+          dataset: checkpoint.id,
           plotRank: point.rank ?? HISTORY_RANK_LIMIT + 1,
           checkpoint,
           cohortIdentity,
@@ -164,7 +171,7 @@ export function HistoryRanking({
       const transport = record?.transport;
       return [
         `${point.label} — ${status}`,
-        `${point.checkpoint.generatedAt.slice(0, 10)} · ${formatValue(record)}`,
+        `${point.checkpoint.label} · ${formatValue(record)}`,
         record ? `source ${record.runFile}` : point.checkpoint.description,
         record ? `commit ${record.entryCommit?.slice(0, 12) ?? 'unknown'} · machine ${record.machineId}` : '',
         record ? `${record.boundary} · n=${record.n}${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}` : '',
@@ -177,9 +184,16 @@ export function HistoryRanking({
       height: 390,
       marginLeft: 52,
       marginRight: 18,
-      marginBottom: 56,
+      marginBottom: 64,
       style: { background: 'transparent', color: fg, fontSize: '11px' },
-      x: { label: 'exact source time →', type: 'utc', grid: true, ticks: Math.min(8, points.length / 2) },
+      x: {
+        label: 'dataset sequence →',
+        type: 'point',
+        domain: DATASET_IDS,
+        tickFormat: datasetAxisLabel,
+        grid: true,
+        padding: 0.45,
+      },
       y: {
         label: 'rank (lower is better)',
         domain: [1, statusRank],
@@ -190,17 +204,17 @@ export function HistoryRanking({
       },
       color: { domain: ids, range: ids.map((id) => entryColor(id, theme)) },
       marks: [
-        Plot.ruleX([new Date(selectedCheckpoint.generatedAt)], { stroke: 'var(--accent)', strokeWidth: 2, strokeOpacity: 0.8 }),
-        Plot.line(rankedPoints, { x: 'time', y: 'rank', z: 'segment', stroke: 'entry', strokeWidth: 2 }),
-        Plot.dot(rankedPoints, { x: 'time', y: 'rank', stroke: 'entry', fill: background, r: 4, strokeWidth: 2 }),
-        Plot.dot(observations, { x: 'time', y: 'plotRank', stroke: 'entry', fill: background, r: 4, strokeWidth: 1.5 }),
-        Plot.dot(incomparable, { x: 'time', y: 'plotRank', stroke: 'entry', fill: 'entry', r: 4, opacity: 0.8 }),
-        Plot.dot(dnfs, { x: 'time', y: 'plotRank', stroke: 'var(--bad)', fill: 'var(--bad)', r: 3 }),
-        Plot.dot(missing, { x: 'time', y: 'plotRank', fill: 'entry', r: 1.4, opacity: 0.18 }),
+        Plot.ruleX([selectedCheckpoint.id], { stroke: 'var(--accent)', strokeWidth: 2, strokeOpacity: 0.8 }),
+        Plot.line(rankedPoints, { x: 'dataset', y: 'rank', z: 'segment', stroke: 'entry', strokeWidth: 2 }),
+        Plot.dot(rankedPoints, { x: 'dataset', y: 'rank', stroke: 'entry', fill: background, r: 4, strokeWidth: 2 }),
+        Plot.dot(observations, { x: 'dataset', y: 'plotRank', stroke: 'entry', fill: background, r: 4, strokeWidth: 1.5 }),
+        Plot.dot(incomparable, { x: 'dataset', y: 'plotRank', stroke: 'entry', fill: 'entry', r: 4, opacity: 0.8 }),
+        Plot.dot(dnfs, { x: 'dataset', y: 'plotRank', stroke: 'var(--bad)', fill: 'var(--bad)', r: 3 }),
+        Plot.dot(missing, { x: 'dataset', y: 'plotRank', fill: 'entry', r: 1.4, opacity: 0.18 }),
         Plot.dot(selectedPoints.filter((point) => point.status === 'ranked'), {
-          x: 'time', y: 'rank', stroke: 'var(--accent)', fill: 'none', r: 7, strokeWidth: 2,
+          x: 'dataset', y: 'rank', stroke: 'var(--accent)', fill: 'none', r: 7, strokeWidth: 2,
         }),
-        Plot.tip(points, Plot.pointer({ x: 'time', y: 'plotRank', title })),
+        Plot.tip(points, Plot.pointer({ x: 'dataset', y: 'plotRank', title })),
       ],
     });
     node.replaceChildren(plot);
@@ -219,12 +233,12 @@ export function HistoryRanking({
       <div className="history-heading">
         <div>
           <div className="history-kicker">Exact-source history</div>
-          <h2 id="history-ranking-title">Rank over time</h2>
-          <p>Each rank is computed only inside one exact run or identity-matched Native cohort. Lines break when the machine, method cohort, or eligible framework set changes.</p>
+          <h2 id="history-ranking-title">Rank by dataset</h2>
+          <p>Each node is one retained dataset, spaced evenly regardless of the date between runs. Ranks are computed only inside its exact run or identity-matched Native cohort; lines break when the machine, method cohort, or eligible framework set changes.</p>
         </div>
         <div className="history-selected" aria-live="polite">
           <span>selected</span>
-          <strong>{new Date(selectedCheckpoint.generatedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong>
+          <strong>{selectedCheckpoint.label}</strong>
           {selectedRanked.length ? selectedRanked.map((point) => `#${point.rank} ${point.label}`).join(' · ') : `no comparable ${harness} rank for this cell`}
         </div>
       </div>
@@ -257,11 +271,11 @@ export function HistoryRanking({
         <summary>Source evidence and gaps ({BENCHMARK_HISTORY.sources.length} audited runs)</summary>
         <div className="history-evidence-scroll">
           <table>
-            <thead><tr><th>time</th><th>framework</th><th>rank</th><th>value</th><th>source / provenance</th></tr></thead>
+            <thead><tr><th>dataset</th><th>framework</th><th>rank</th><th>value</th><th>source / provenance</th></tr></thead>
             <tbody>
               {points.map((point) => (
                 <tr key={`${point.checkpoint.id}:${point.entry}`}>
-                  <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{point.checkpoint.generatedAt.replace('T', ' ').slice(0, 16)}</button></td>
+                  <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{point.checkpoint.label}</button></td>
                   <td>{point.label}</td><td>{point.rank == null ? point.status : `#${point.rank}`}</td>
                   <td>{formatValue(point.record)}</td>
                   <td><code>{point.record?.runFile ?? point.checkpoint.description}</code>{point.record?.entryCommit ? ` @ ${point.record.entryCommit.slice(0, 12)}` : ''}</td>

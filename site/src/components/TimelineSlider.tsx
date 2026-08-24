@@ -28,6 +28,7 @@ export function TimelineSlider({
 }) {
   const snapshot = snapshots[index];
   const checkpoint = BENCHMARK_HISTORY.checkpoints[index];
+  const progress = snapshots.length > 1 ? (index / (snapshots.length - 1)) * 100 : 0;
   const cohorts = checkpoint.harnesses.map((cohort) =>
     `${cohort.harness === 'web' ? 'Web' : 'Native'} ${cohort.entryIds.length}${cohort.rankEligible ? '' : ' observation'}`);
   return (
@@ -69,16 +70,28 @@ export function TimelineSlider({
             disabled={index === 0}
             onClick={() => onChange(index - 1)}
           >←</button>
-          <input
-            type="range"
-            min={0}
-            max={snapshots.length - 1}
-            step={1}
-            value={index}
-            onChange={(event) => onChange(Number(event.target.value))}
-            aria-label="Dataset checkpoint"
-            aria-valuetext={`${checkpoint.label}, ${dateLabel(snapshot.generatedAt)}, ${checkpoint.identityPointers.length} framework identities, ${cohorts.join(', ')}`}
-          />
+          <div className="timeline-range">
+            <div className="timeline-range-track" aria-hidden="true">
+              <span className="timeline-range-progress" style={{ width: `${progress}%` }} />
+              {snapshots.map((candidate, checkpointIndex) => (
+                <i
+                  key={candidate.id}
+                  className={`timeline-dot${checkpointIndex <= index ? ' is-reached' : ''}${checkpointIndex === index ? ' is-active' : ''}`}
+                  style={{ left: `${snapshots.length > 1 ? (checkpointIndex / (snapshots.length - 1)) * 100 : 50}%` }}
+                />
+              ))}
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={snapshots.length - 1}
+              step={1}
+              value={index}
+              onChange={(event) => onChange(Number(event.target.value))}
+              aria-label="Dataset checkpoint"
+              aria-valuetext={`${checkpoint.label}, ${dateLabel(snapshot.generatedAt)}, ${checkpoint.identityPointers.length} framework identities, ${cohorts.join(', ')}`}
+            />
+          </div>
           <button
             type="button"
             aria-label="Next exact-source checkpoint"
