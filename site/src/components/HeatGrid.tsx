@@ -276,7 +276,7 @@ export function HeatGrid({
                         type="button"
                         className="score-summary-trigger"
                         aria-pressed={isPinned}
-                        aria-label={`${scoreRow.equation.head}. ${scoreRow.equation.lines.join(' ')}`}
+                        aria-label={`${scoreRow.groupLabel}: ${scoreRow.equation.head}. ${scoreRow.equation.lines.join(' ')}`}
                         onClick={() => setPinnedScore((current) => current === scoreRow.key ? null : scoreRow.key)}
                         onFocus={(event) => {
                           const rect = event.currentTarget.getBoundingClientRect();
@@ -286,11 +286,12 @@ export function HeatGrid({
                           }));
                         }}
                       >
-                        <span className="score-summary-copy">
-                          <span className="score-summary-group">{scoreRow.groupLabel}</span>
-                          <span className="score-summary-label">{scoreRow.label}</span>
+                        <span className="score-summary-group">{scoreRow.groupLabel}</span>
+                        <span className="score-summary-label">{scoreRow.label}</span>
+                        <span className="score-summary-count" aria-hidden="true">
+                          <span className="score-summary-count-long">{text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}</span>
+                          <span className="score-summary-count-compact">n={scoreRow.cellCount}</span>
                         </span>
-                        <span className="score-summary-count" aria-hidden="true">{text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}</span>
                       </button>
                     </th>
                     {ids.map((id) => {
