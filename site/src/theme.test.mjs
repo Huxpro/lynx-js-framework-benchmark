@@ -29,3 +29,11 @@ test('dataset slider exposes a visible checkpoint rail without replacing the ran
   assert.match(css, /\.timeline-dot\.is-active\s*\{/);
   assert.match(css, /\.timeline-range input\[type='range'\]/);
 });
+
+test('ranking configuration is a horizontally browsable one-click option rail', () => {
+  assert.match(css, /\.history-choice-rail\s*\{/);
+  assert.match(css, /\.history-choice-scroll\s*\{/);
+  assert.match(css, /overflow-x\s*:\s*auto/);
+  assert.match(css, /\.history-choice-scroll button\[aria-pressed='true'\]/);
+  assert.match(css, /@media \(pointer: coarse\)/);
+});

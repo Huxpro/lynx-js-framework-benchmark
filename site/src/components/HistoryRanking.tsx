@@ -57,6 +57,71 @@ interface RankedPoint {
   segment?: string;
 }
 
+interface CohortTransition {
+  entry: string;
+  fromDataset: string;
+  fromRank: number;
+  toDataset: string;
+  toRank: number;
+}
+
+function ChoiceRail({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="history-choice-rail">
+      <span className="history-choice-label">{label}</span>
+      <div
+        className="history-choice-scroll"
+        role="group"
+        aria-label={`History ${label}`}
+        onKeyDown={(event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
+          const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+          const next = event.key === 'Home' ? 0
+            : event.key === 'End' ? buttons.length - 1
+              : (current + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+          event.preventDefault();
+          buttons[next]?.focus();
+          buttons[next]?.click();
+        }}
+      >
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={option.value === value}
+            tabIndex={option.value === value ? 0 : -1}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function workloadLabel(workload: string): string {
+  const labels: Record<string, string> = {
+    append1k: 'append 1k',
+    update10th: 'update every 10th',
+    updateStorm: 'update storm',
+    selectStorm: 'select storm',
+    memoryAfterClear: 'memory after clear',
+  };
+  return labels[workload] ?? workload;
+}
+
 const HISTORY_ENTRY_IDS = [...new Set(BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
   checkpoint.harnesses.flatMap((cohort) => cohort.entryIds)))];
 const HISTORY_RANK_LIMIT = Math.max(1, ...BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
@@ -153,6 +218,28 @@ export function HistoryRanking({
   const incomparable = points.filter((point) => point.status === 'incomparable');
   const dnfs = points.filter((point) => point.status === 'dnf');
   const missing = points.filter((point) => point.status === 'missing');
+  const transitions = useMemo(() => {
+    const out: CohortTransition[] = [];
+    const order = new Map(DATASET_IDS.map((id, index) => [id, index]));
+    for (const entry of HISTORY_ENTRY_IDS) {
+      const ranked = points.filter((point) => point.entry === entry && point.status === 'ranked')
+        .sort((a, b) => (order.get(a.dataset) ?? 0) - (order.get(b.dataset) ?? 0));
+      for (let index = 1; index < ranked.length; index += 1) {
+        const previous = ranked[index - 1];
+        const current = ranked[index];
+        if ((order.get(current.dataset) ?? 0) !== (order.get(previous.dataset) ?? 0) + 1) continue;
+        if (previous.cohortIdentity === current.cohortIdentity) continue;
+        out.push({
+          entry,
+          fromDataset: previous.dataset,
+          fromRank: previous.rank!,
+          toDataset: current.dataset,
+          toRank: current.rank!,
+        });
+      }
+    }
+    return out;
+  }, [points]);
 
   useEffect(() => {
     const node = ref.current;
@@ -168,14 +255,11 @@ export function HistoryRanking({
         : point.status === 'incomparable' ? 'not ranked — incomparable transport work'
           : point.status === 'observation' ? 'not ranked — isolated observation'
             : point.status === 'dnf' ? 'not ranked — DNF' : 'not run in this exact cohort';
-      const transport = record?.transport;
       return [
-        `${point.label} — ${status}`,
-        `${point.checkpoint.label} · ${formatValue(record)}`,
-        record ? `source ${record.runFile}` : point.checkpoint.description,
-        record ? `commit ${record.entryCommit?.slice(0, 12) ?? 'unknown'} · machine ${record.machineId}` : '',
-        record ? `${record.boundary} · n=${record.n}${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}` : '',
-        transport ? `transport ${transport.toMtsMessages ?? '?'} BTS→MTS / ${transport.toBtsMessages ?? '?'} MTS→BTS; expected ≥${transport.expectedSequentialCommits}` : '',
+        point.label,
+        `${status}  ·  ${formatValue(record)}`,
+        datasetAxisLabel(point.checkpoint.id),
+        record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : point.checkpoint.description,
       ].filter(Boolean).join('\n');
     };
     const width = Math.max(760, node.clientWidth || 760);
@@ -204,8 +288,13 @@ export function HistoryRanking({
       },
       color: { domain: ids, range: ids.map((id) => entryColor(id, theme)) },
       marks: [
-        Plot.ruleX([selectedCheckpoint.id], { stroke: 'var(--accent)', strokeWidth: 2, strokeOpacity: 0.8 }),
+        Plot.ruleX([selectedCheckpoint.id], { stroke: 'var(--accent)', strokeWidth: 14, strokeOpacity: 0.08 }),
+        Plot.ruleX([selectedCheckpoint.id], { stroke: 'var(--accent)', strokeWidth: 1.5, strokeOpacity: 0.9 }),
         Plot.line(rankedPoints, { x: 'dataset', y: 'rank', z: 'segment', stroke: 'entry', strokeWidth: 2 }),
+        Plot.link(transitions, {
+          x1: 'fromDataset', y1: 'fromRank', x2: 'toDataset', y2: 'toRank',
+          stroke: 'entry', strokeWidth: 2, strokeDasharray: '5,4', strokeOpacity: 0.72,
+        }),
         Plot.dot(rankedPoints, { x: 'dataset', y: 'rank', stroke: 'entry', fill: background, r: 4, strokeWidth: 2 }),
         Plot.dot(observations, { x: 'dataset', y: 'plotRank', stroke: 'entry', fill: background, r: 4, strokeWidth: 1.5 }),
         Plot.dot(incomparable, { x: 'dataset', y: 'plotRank', stroke: 'entry', fill: 'entry', r: 4, opacity: 0.8 }),
@@ -214,19 +303,42 @@ export function HistoryRanking({
         Plot.dot(selectedPoints.filter((point) => point.status === 'ranked'), {
           x: 'dataset', y: 'rank', stroke: 'var(--accent)', fill: 'none', r: 7, strokeWidth: 2,
         }),
-        Plot.tip(points, Plot.pointer({ x: 'dataset', y: 'plotRank', title })),
+        Plot.text(selectedPoints.filter((point) => point.status === 'ranked'), {
+          x: 'dataset',
+          y: 'rank',
+          text: (point: RankedPoint) => `${point.label}  ${formatValue(point.record)}`,
+          dx: snapshotIndex >= DATASET_IDS.length - 2 ? -12 : 12,
+          textAnchor: snapshotIndex >= DATASET_IDS.length - 2 ? 'end' : 'start',
+          fill: 'entry',
+          stroke: background,
+          strokeWidth: 4,
+          paintOrder: 'stroke',
+          fontWeight: 700,
+          fontSize: 11,
+        }),
+        Plot.tip(points, Plot.pointer({
+          x: 'dataset', y: 'plotRank', title,
+          fill: theme === 'dark' ? '#252831' : '#fffdf8',
+          stroke: theme === 'dark' ? '#5b5e68' : '#bbb8ad',
+          strokeWidth: 1,
+          fontSize: 12,
+          fontWeight: 550,
+          lineHeight: 1.3,
+          lineWidth: 28,
+          textPadding: 11,
+          pointerSize: 8,
+          pathFilter: 'drop-shadow(0 8px 20px rgba(0,0,0,0.24))',
+        })),
       ],
     });
     node.replaceChildren(plot);
     return () => plot.remove();
-  }, [points, rankedPoints, observations, incomparable, dnfs, missing, selectedPoints,
-    selectedCheckpoint, activeScale, harness, theme]);
+  }, [points, rankedPoints, observations, incomparable, dnfs, missing, transitions, selectedPoints,
+    selectedCheckpoint, snapshotIndex, activeScale, harness, theme]);
 
   const changeWorkload = (value: string) => { setWorkload(value); syncParam('historyCase', value === 'create' ? null : value); };
   const changeMetric = (value: string) => { setMetric(value); syncParam('historyMetric', value === 'latency' ? null : value); };
   const changeScale = (value: number) => { setScale(value); syncParam('historyScale', value === 1000 ? null : String(value)); };
-  const selectedRanked = selectedPoints.filter((point) => point.status === 'ranked')
-    .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99));
 
   return (
     <section className="history-ranking" aria-labelledby="history-ranking-title">
@@ -234,37 +346,44 @@ export function HistoryRanking({
         <div>
           <div className="history-kicker">Exact-source history</div>
           <h2 id="history-ranking-title">Rank by dataset</h2>
-          <p>Each node is one retained dataset, spaced evenly regardless of the date between runs. Ranks are computed only inside its exact run or identity-matched Native cohort; lines break when the machine, method cohort, or eligible framework set changes.</p>
-        </div>
-        <div className="history-selected" aria-live="polite">
-          <span>selected</span>
-          <strong>{selectedCheckpoint.label}</strong>
-          {selectedRanked.length ? selectedRanked.map((point) => `#${point.rank} ${point.label}`).join(' · ') : `no comparable ${harness} rank for this cell`}
+          <p>Each node is one retained dataset. Solid lines share one comparison cohort; dashed bridges preserve the framework story across a cohort change.</p>
         </div>
       </div>
-      <div className="history-controls">
-        <div className="seg" role="group" aria-label="History harness">
-          {['web', 'native'].map((value) => (
-            <button key={value} aria-pressed={harness === value} onClick={() => onHarnessChange(value)}>
-              {value === 'web' ? 'Lynx for Web' : 'Native engine'}
-            </button>
-          ))}
+      <div className="history-browser" aria-label="Browse ranking configuration">
+        <div className="history-browser-heading">
+          <span>Browse configuration</span>
+          <output>{workloadLabel(activeWorkload)} · {activeScale?.toLocaleString()} rows · {metricLabel(activeMetric)}</output>
         </div>
-        <label>case<select aria-label="History case" value={activeWorkload} onChange={(event) => changeWorkload(event.target.value)}>
-          {workloads.map((value) => <option key={value}>{value}</option>)}
-        </select></label>
-        <label>scale<select aria-label="History scale" value={activeScale} onChange={(event) => changeScale(Number(event.target.value))}>
-          {scales.map((value) => <option key={value} value={value}>{value.toLocaleString()} rows</option>)}
-        </select></label>
-        <label>metric<select aria-label="History metric" value={activeMetric} onChange={(event) => changeMetric(event.target.value)}>
-          {metrics.map((value) => <option key={value} value={value}>{metricLabel(value)}</option>)}
-        </select></label>
+        <ChoiceRail
+          label="Lynx for"
+          value={harness}
+          options={[{ value: 'web', label: 'Web' }, { value: 'native', label: 'Native' }]}
+          onChange={onHarnessChange}
+        />
+        <ChoiceRail
+          label="Case"
+          value={activeWorkload}
+          options={workloads.map((value) => ({ value, label: workloadLabel(value) }))}
+          onChange={changeWorkload}
+        />
+        <ChoiceRail
+          label="Scale"
+          value={String(activeScale)}
+          options={scales.map((value) => ({ value: String(value), label: `${value.toLocaleString()} rows` }))}
+          onChange={(value) => changeScale(Number(value))}
+        />
+        <ChoiceRail
+          label="Metric"
+          value={activeMetric}
+          options={metrics.map((value) => ({ value, label: metricLabel(value) }))}
+          onChange={changeMetric}
+        />
       </div>
       <div className="history-legend" aria-label="Framework colors">
         {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
           <span key={entry.id}><i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}</span>
         ))}
-        <span className="history-status">○ observation · ● incomparable · red DNF · faint dot missing</span>
+        <span className="history-status">– – cohort change · ○ observation · ● incomparable · red DNF · faint missing</span>
       </div>
       <div className="history-plot" ref={ref} />
       <details className="history-evidence">

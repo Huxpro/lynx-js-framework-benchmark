@@ -32,6 +32,18 @@ test('dataset navigation and ranking share the same discrete checkpoint model', 
   assert.doesNotMatch(rankingSource, /x: 'time'/);
 });
 
+test('history ranking keeps cohort transitions visible and puts rank context inside the plot', () => {
+  assert.match(rankingSource, /Plot\.link\(transitions/);
+  assert.match(rankingSource, /strokeDasharray: '5,4'/);
+  assert.match(rankingSource, /Plot\.text\(selectedPoints/);
+  assert.match(rankingSource, /formatValue\(point\.record\)/);
+  assert.doesNotMatch(rankingSource, /className="history-selected"/);
+  assert.match(rankingSource, /className="history-choice-rail"/);
+  assert.match(rankingSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
+  assert.match(rankingSource, /tabIndex=\{option\.value === value \? 0 : -1\}/);
+  assert.doesNotMatch(rankingSource, /<select/);
+});
+
 test('framework hover cards own source links and exact plugin options', () => {
   assert.match(legendSource, /snapshot\.identityPointers\.find/);
   assert.match(legendSource, /className="external-link"/);
