@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { useMediaQuery } from '../hooks';
 import { useI18n } from '../i18n';
@@ -28,6 +28,38 @@ export function ResponsiveCopy({
         <span className="responsive-copy-mark" aria-hidden="true" />
       </summary>
       <div className="responsive-copy-body">{children}</div>
+    </details>
+  );
+}
+
+/**
+ * Chart/card captions use the title itself as the disclosure surface. Wide
+ * layouts start expanded; compact layouts start collapsed, without adding a
+ * second "read context" row between the title and the visualization.
+ */
+export function CardCaption({
+  title,
+  children,
+  className = '',
+}: {
+  title: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  const compact = useMediaQuery('(max-width: 48rem)');
+  const [open, setOpen] = useState(!compact);
+  useEffect(() => setOpen(!compact), [compact]);
+  return (
+    <details
+      className={`card-caption ${className}`.trim()}
+      open={open}
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+    >
+      <summary>
+        <span className="card-title">{title}</span>
+        <span className="card-caption-chevron" aria-hidden="true">›</span>
+      </summary>
+      <div className="card-desc">{children}</div>
     </details>
   );
 }

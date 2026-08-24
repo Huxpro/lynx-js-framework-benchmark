@@ -100,7 +100,7 @@ test('interaction workloads share one module with three formula modes and one de
   assert.match(rankedBarsSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
 });
 
-test('at-a-glance summaries reuse the three published interaction equations', () => {
+test('at-a-glance conclusions lead with startup FCP and reuse the three interaction equations', () => {
   assert.equal(source.match(/<HeatGrid[^>]*scoreModes=\{interactionModes\}/g)?.length, 2);
   assert.match(heatGridSource, /scoreModes: ScoreModeSpec\[\]/);
   assert.match(heatGridSource, /completeEntryScores/);
@@ -108,6 +108,11 @@ test('at-a-glance summaries reuse the three published interaction equations', ()
   assert.match(heatGridSource, /scoreMode\.scoreWeights/);
   assert.match(heatGridSource, /scoreMode\.ops\.map\(\(op\) => op\.key\)/);
   assert.match(heatGridSource, /scoreInputKey\(row\.spec\)/);
+  assert.match(heatGridSource, /const startupScoreRow = useMemo/);
+  assert.match(heatGridSource, /row\.spec\.suite === 'startup'/);
+  assert.match(heatGridSource, /row\.spec\.metric === 'fcp'/);
+  assert.match(heatGridSource, /groupLabel: text\('Startup', '启动'\)/);
+  assert.match(heatGridSource, /const conclusionRows =/);
 });
 
 test('at-a-glance equations expose pointer, keyboard, and pinned row tracing', () => {
@@ -117,6 +122,8 @@ test('at-a-glance equations expose pointer, keyboard, and pinned row tracing', (
   assert.match(heatGridSource, /setPinnedScore/);
   assert.match(heatGridSource, /is-score-source/);
   assert.match(heatGridSource, /is-score-muted/);
+  assert.match(heatGridSource, /document\.addEventListener\('pointerdown', clearOutside\)/);
+  assert.match(heatGridSource, /event\.key === 'Escape'/);
 });
 
 test('Scale leads with one scale-comparable interaction composite instead of misusing the upstream mixed-scale score', () => {

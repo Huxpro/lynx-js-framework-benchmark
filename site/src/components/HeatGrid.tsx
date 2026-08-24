@@ -1,7 +1,7 @@
 // "Every case at a glance": rows = workload@scale, columns = entries, cell =
 // × vs baseline (selectable entry) or vs the row's fastest. Log-scaled
 // diverging tint saturating at 4× either way; the numeral stays legible.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
@@ -52,17 +52,13 @@ export function HeatGrid({
   const [mode, setMode] = useState<'fastest' | string>('fastest');
   const [previewScore, setPreviewScore] = useState<string | null>(null);
   const [pinnedScore, setPinnedScore] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const activeMode = mode === 'fastest' || selected.has(mode) ? mode : 'fastest';
   const activeScore = previewScore ?? pinnedScore;
   const { setTip, onMove, place, tipNode } = useTooltip();
   useEffect(() => {
     if (mode !== 'fastest' && !selected.has(mode)) setMode('fastest');
   }, [mode, selected]);
-  useEffect(() => {
-    const keys = new Set(scoreModes.map((scoreMode) => scoreMode.key));
-    if (previewScore != null && !keys.has(previewScore)) setPreviewScore(null);
-    if (pinnedScore != null && !keys.has(pinnedScore)) setPinnedScore(null);
-  }, [pinnedScore, previewScore, scoreModes]);
 
   const grid = useMemo(() => {
     return rows.map((spec) => {
@@ -78,7 +74,7 @@ export function HeatGrid({
     });
   }, [rows, harness, ids.join(','), select]);
 
-  const scoreRows = useMemo(() => {
+  const interactionScoreRows = useMemo(() => {
     const byKey = new Map(grid.map((row) => [scoreInputKey(row.spec), row]));
     return scoreModes.filter((scoreMode) => scoreMode.ops.length > 0).map((scoreMode) => {
       const cells = scoreMode.ops.map((op) => {
@@ -100,16 +96,76 @@ export function HeatGrid({
       );
       return {
         ...scoreMode,
+        group: 'interaction' as const,
+        groupLabel: text('Interaction', '交互'),
         cellCount: score.cellCount,
         rowKeys: new Set(scoreMode.ops.map((op) => op.key)),
         values: new Map(score.scores.map(({ id, value }) => [id, value])),
       };
     });
-  }, [grid, ids.join(','), scoreModes]);
-  const activeScoreRow = scoreRows.find((row) => row.key === activeScore) ?? null;
+  }, [grid, ids.join(','), scoreModes, text]);
+  const startupScoreRow = useMemo(() => {
+    const startupRows = grid.filter((row) => row.spec.suite === 'startup'
+      && row.spec.metric === 'fcp');
+    if (startupRows.length === 0) return null;
+    const score = completeEntryScores(ids, startupRows.map((row) => ({
+      key: scoreInputKey(row.spec),
+      values: Object.fromEntries(ids.map((id, index) => [id, row.values[index]])),
+    })));
+    return {
+      key: 'startup-fcp',
+      label: text('FCP overall', 'FCP 综合'),
+      group: 'startup' as const,
+      groupLabel: text('Startup', '启动'),
+      cellCount: score.cellCount,
+      rowKeys: new Set(startupRows.map((row) => scoreInputKey(row.spec))),
+      values: new Map(score.scores.map(({ id, value }) => [id, value])),
+      equation: {
+        head: text('Startup FCP geometric mean', '启动 FCP 几何平均'),
+        lines: [
+          text('rₛ = FCP median at scale s ÷ fastest FCP median at scale s', 'rₛ = 规模 s 的 FCP 中位数 ÷ 该规模最快 FCP 中位数'),
+          'score = exp(Σ ln(rₛ) ÷ N)',
+          text('N = startup scales complete for every selected entry', 'N = 所有已选条目均完整的启动规模数'),
+          text('Local/cached startup only; production network transfer is excluded', '仅限本地/缓存启动；不包含生产网络传输'),
+        ],
+      },
+    };
+  }, [grid, ids.join(','), text]);
+  const conclusionRows = [
+    ...(startupScoreRow == null ? [] : [startupScoreRow]),
+    ...interactionScoreRows,
+  ];
+  const conclusionKey = conclusionRows.map((row) => row.key).join('|');
+  const activeScoreRow = conclusionRows.find((row) => row.key === activeScore) ?? null;
+
+  useEffect(() => {
+    const keys = new Set(conclusionRows.map((row) => row.key));
+    if (previewScore != null && !keys.has(previewScore)) setPreviewScore(null);
+    if (pinnedScore != null && !keys.has(pinnedScore)) setPinnedScore(null);
+  }, [conclusionKey, pinnedScore, previewScore]);
+
+  useEffect(() => {
+    if (pinnedScore == null) return;
+    const clearOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element
+        && rootRef.current?.contains(target)
+        && target.closest('.score-summary-row')) return;
+      setPinnedScore(null);
+    };
+    const clearEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPinnedScore(null);
+    };
+    document.addEventListener('pointerdown', clearOutside);
+    document.addEventListener('keydown', clearEscape);
+    return () => {
+      document.removeEventListener('pointerdown', clearOutside);
+      document.removeEventListener('keydown', clearEscape);
+    };
+  }, [pinnedScore]);
 
   return (
-    <div className="card" onMouseMove={onMove}>
+    <div className="card" ref={rootRef} onMouseMove={onMove}>
       <div className="controls-row glance-heading">
         <div className="card-title">{text('All cases at a glance', '全部 case 一览')}</div>
         <div className="seg" role="group" aria-label={text('Baseline', '基线')}>
@@ -188,10 +244,12 @@ export function HeatGrid({
               </tr>
             ))}
           </tbody>
-          {scoreRows.length > 0 && (
+          {conclusionRows.length > 0 && (
             <tfoot>
-              {scoreRows.map((scoreRow, scoreIndex) => {
+              {conclusionRows.map((scoreRow, scoreIndex) => {
                 const isPinned = pinnedScore === scoreRow.key;
+                const startsGroup = scoreIndex === 0
+                  || conclusionRows[scoreIndex - 1]?.group !== scoreRow.group;
                 const showEquation = () => {
                   setPreviewScore(scoreRow.key);
                   setTip(scoreRow.equation);
@@ -203,7 +261,7 @@ export function HeatGrid({
                 return (
                   <tr
                     key={scoreRow.key}
-                    className={`score-summary-row${activeScore === scoreRow.key ? ' is-active' : ''}`}
+                    className={`score-summary-row${startsGroup ? ' starts-score-group' : ''}${activeScore === scoreRow.key ? ' is-active' : ''}`}
                     onPointerEnter={showEquation}
                     onPointerLeave={(event) => {
                       if (!event.currentTarget.contains(document.activeElement)) clearPreview();
@@ -213,7 +271,7 @@ export function HeatGrid({
                       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) clearPreview();
                     }}
                   >
-                    <th className="rowhead" style={scoreIndex === 0 ? { borderTop: '2px solid var(--border)' } : undefined}>
+                    <th className="rowhead">
                       <button
                         type="button"
                         className="score-summary-trigger"
@@ -228,8 +286,11 @@ export function HeatGrid({
                           }));
                         }}
                       >
-                        {scoreRow.label}
-                        <span aria-hidden="true">{text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}</span>
+                        <span className="score-summary-copy">
+                          <span className="score-summary-group">{scoreRow.groupLabel}</span>
+                          <span className="score-summary-label">{scoreRow.label}</span>
+                        </span>
+                        <span className="score-summary-count" aria-hidden="true">{text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}</span>
                       </button>
                     </th>
                     {ids.map((id) => {
@@ -239,7 +300,6 @@ export function HeatGrid({
                           key={id}
                           className="data"
                           style={{
-                            ...(scoreIndex === 0 ? { borderTop: '2px solid var(--border)' } : {}),
                             ...(value == null ? {} : { background: tintFor(value) }),
                             fontWeight: 700,
                           }}
@@ -256,15 +316,15 @@ export function HeatGrid({
         </table>
       </div>
       <div className="note" style={{ marginTop: '0.5rem' }}>
-        {scoreRows.length === 0 ? (
+        {conclusionRows.length === 0 ? (
           <>{text(
-            'No published interaction equation is available for this snapshot. Blank cells remain visible, but do not produce an aggregate score.',
-            '此快照没有可用的正式交互公式。空白单元仍会展示，但不会生成聚合得分。',
+            'No published conclusion equation is available for this snapshot. Blank cells remain visible, but do not produce an aggregate score.',
+            '此快照没有可用的正式结论公式。空白单元仍会展示，但不会生成聚合得分。',
           )}</>
         ) : (
           <>{text(
-            `Each case cell is relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}. The three score rows mirror the published interaction equations below and always normalize each input to its row's fastest selected entry. Hover or focus a score row to trace its inputs; click to keep them highlighted. Incomplete entries receive no score.`,
-            `每个 case 单元都相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}显示。底部三行得分与下方正式交互公式完全一致，并始终把每项输入归一化到该行已选条目中的最快项。悬停或聚焦得分行可追踪输入，点击可固定高亮；数据不完整的条目不生成得分。`,
+            `Each case cell is relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}. Conclusions are grouped into startup FCP and three interaction formulas; every input is normalized to its row's fastest selected entry. Hover or focus a conclusion to trace its inputs; click to pin, then click elsewhere or press Escape to clear. Incomplete entries receive no score.`,
+            `每个 case 单元都相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}显示。结论分为启动 FCP 与三种交互公式；每项输入都归一化到该行已选条目中的最快项。悬停或聚焦结论可追踪输入；点击可固定，再点击其他区域或按 Escape 即可清除。数据不完整的条目不生成得分。`,
           )}</>
         )}
       </div>

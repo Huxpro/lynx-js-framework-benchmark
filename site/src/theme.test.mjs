@@ -9,6 +9,7 @@ const costSpace = fs.readFileSync(new URL('./components/CostSpace.tsx', import.m
 const scaleTrends = fs.readFileSync(new URL('./components/ScaleTrends.tsx', import.meta.url), 'utf8');
 const scaleComposite = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const responsiveCopy = fs.readFileSync(new URL('./components/ResponsiveCopy.tsx', import.meta.url), 'utf8');
+const historyRanking = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
 
 test('expanded exact-data tables scroll inside their card on narrow viewports', () => {
   const rule = css.match(/details\.data-table\s*\{([^}]*)\}/)?.[1] ?? '';
@@ -94,6 +95,18 @@ test('heat score tracing emphasizes formula inputs without hiding source rows', 
   assert.doesNotMatch(css.match(/\.score-summary-trigger\s*\{([^}]*)\}/)?.[1] ?? '', /border-radius/);
 });
 
+test('conclusion rows keep ordinary table density and release fixed labels on narrow cards', () => {
+  const trigger = css.match(/\.score-summary-trigger\s*\{([^}]*)\}/)?.[1] ?? '';
+  const compact = css.match(/@container \(max-width: 38rem\)\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+
+  assert.match(trigger, /min-height\s*:\s*0/);
+  assert.match(trigger, /padding\s*:\s*0/);
+  assert.match(css, /\.score-summary-row\.starts-score-group/);
+  assert.match(compact, /table\.heat \.rowhead/);
+  assert.match(compact, /white-space\s*:\s*normal/);
+  assert.match(compact, /overflow-wrap\s*:\s*anywhere/);
+});
+
 test('compact prose uses native progressive disclosure without hiding primary results', () => {
   assert.match(responsiveCopy, /useMediaQuery\('\(max-width: 48rem\)'\)/);
   assert.match(responsiveCopy, /<details className=/);
@@ -103,10 +116,31 @@ test('compact prose uses native progressive disclosure without hiding primary re
   assert.match(css, /\.responsive-copy-body\s*\{/);
 });
 
+test('chart titles own their description disclosure without a second read-context row', () => {
+  assert.match(responsiveCopy, /export function CardCaption/);
+  assert.match(responsiveCopy, /<summary>/);
+  assert.match(responsiveCopy, /<span className="card-title">\{title\}<\/span>/);
+  assert.match(responsiveCopy, /open=\{open\}/);
+  assert.match(responsiveCopy, /onToggle=/);
+  assert.match(css, /\.card-caption > summary\s*\{/);
+  assert.match(css, /\.card-caption-chevron\s*\{/);
+  assert.doesNotMatch(css.match(/\.card-caption > summary\s*\{([^}]*)\}/)?.[1] ?? '', /border-radius|box-shadow/);
+});
+
 test('ranking series fade as a group while the hovered line is emphasized', () => {
   assert.match(css, /\.history-series \.is-series-muted\s*\{\s*opacity: 0\.12/);
   assert.match(css, /\.history-series-line \.is-series-focus/);
   assert.match(css, /\.history-legend button\.is-series-muted/);
+});
+
+test('mobile ranking legend is one scrollable framework rail with a compact mark key', () => {
+  const mobile = css.match(/@media \(max-width: 48rem\)\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(historyRanking, /className="history-entry-legend"/);
+  assert.match(historyRanking, /<details className="history-status">/);
+  assert.match(historyRanking, /text\('Mark key', '标记说明'\)/);
+  assert.match(mobile, /\.history-entry-legend/);
+  assert.match(mobile, /overflow-x\s*:\s*auto/);
+  assert.match(css, /\.history-entry-legend button[\s\S]*?flex\s*:\s*0 0 auto/);
 });
 
 test('scale composite uses the same line-focus language and a flat formula trigger', () => {

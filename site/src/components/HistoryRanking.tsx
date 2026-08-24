@@ -19,7 +19,7 @@ import {
   rankHistoryAggregate,
   rankHistoryCell,
 } from '../derive.mjs';
-import { useElementWidth, useTooltip } from '../hooks';
+import { useElementWidth, useMediaQuery, useTooltip } from '../hooks';
 import {
   localizedCheckpoint,
   localizedWorkload,
@@ -208,6 +208,7 @@ export function HistoryRanking({
   onSnapshotChange: (index: number) => void;
 }) {
   const { locale, text } = useI18n();
+  const compact = useMediaQuery('(max-width: 48rem)');
   const ref = useRef<HTMLDivElement>(null);
   const plotWidth = useElementWidth(ref);
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
@@ -643,26 +644,41 @@ export function HistoryRanking({
         )}
       </div>
       <div className="history-legend" aria-label={text('Framework colors', '框架颜色')}>
-        {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            data-history-entry={entry.id}
-            onPointerEnter={() => focusSeriesRef.current(entry.id)}
-            onPointerLeave={(event) => {
-              if (document.activeElement !== event.currentTarget) focusSeriesRef.current(null);
-            }}
-            onFocus={() => focusSeriesRef.current(entry.id)}
-            onBlur={() => focusSeriesRef.current(null)}
-            aria-label={text(`Highlight ${shortLabel(entry.id)}`, `高亮 ${shortLabel(entry.id)}`)}
-          >
-            <i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}
-          </button>
-        ))}
-        <span className="history-status">{text(
-          '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
-          '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
-        )}</span>
+        <div className="history-entry-legend">
+          {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              data-history-entry={entry.id}
+              onPointerEnter={() => focusSeriesRef.current(entry.id)}
+              onPointerLeave={(event) => {
+                if (document.activeElement !== event.currentTarget) focusSeriesRef.current(null);
+              }}
+              onFocus={() => focusSeriesRef.current(entry.id)}
+              onBlur={() => focusSeriesRef.current(null)}
+              aria-label={text(`Highlight ${shortLabel(entry.id)}`, `高亮 ${shortLabel(entry.id)}`)}
+            >
+              <i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}
+            </button>
+          ))}
+        </div>
+        {compact ? (
+          <details className="history-status">
+            <summary>
+              <span>{text('Mark key', '标记说明')}</span>
+              <span className="history-status-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div>{text(
+              '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
+              '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
+            )}</div>
+          </details>
+        ) : (
+          <span className="history-status">{text(
+            '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
+            '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
+          )}</span>
+        )}
       </div>
       <div className="history-plot" ref={ref} />
       <details className="history-evidence">

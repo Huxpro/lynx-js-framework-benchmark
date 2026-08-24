@@ -8,7 +8,7 @@ import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, shortLabel } from '../data';
 import { useElementWidth } from '../hooks';
 import { useI18n } from '../i18n';
-import { ResponsiveCopy } from './ResponsiveCopy';
+import { CardCaption } from './ResponsiveCopy';
 
 export function CostSpace({
   harness,
@@ -89,13 +89,12 @@ export function CostSpace({
   return (
     <figure className="card" role="group" aria-label={text('Cost space', '成本空间')}>
       <figcaption>
-        <div className="card-title">{text('cost space — what you ship vs what you get', '成本空间——交付体积与启动表现')}</div>
-        <ResponsiveCopy className="card-desc">
+        <CardCaption title={text('cost space — what you ship vs what you get', '成本空间——交付体积与启动表现')}>
           {text(
             "This environment's bundle size (gzip) against local/cached startup FCP at N pre-rendered rows. The x-axis is a separate shipping-cost proxy: production network transfer is not inside FCP. The lower-left corner dominates—less code to parse/evaluate/create, faster first paint.",
             '对比此环境的 bundle 体积（gzip）与预渲染 N 行时的本地/缓存启动 FCP。横轴是独立的交付成本代理：FCP 不包含生产网络传输。左下角占优——需要解析、求值和创建的代码更少，首次绘制更快。',
           )}
-        </ResponsiveCopy>
+        </CardCaption>
       </figcaption>
       <div className="controls-row">
         <div className="seg" role="group" aria-label={text('Rows', '行数')}>

@@ -14,7 +14,7 @@ import {
 } from '../data';
 import { useTooltip } from '../hooks';
 import { localizedWorkload, Locale, useI18n } from '../i18n';
-import { ResponsiveCopy } from './ResponsiveCopy';
+import { CardCaption } from './ResponsiveCopy';
 
 const THREAD_WORKLOADS = ['create', 'update10th', 'select', 'updateStorm', 'selectStorm'];
 const THREAD_METRICS = new Set(['btsCpu', 'mtsCpu', 'wireToMtsBytes', 'wireToBtsBytes']);
@@ -265,36 +265,33 @@ export function ThreadsPage({
       </div>
 
       <div className="card">
-        <div className="card-title">{text('where the time goes', '时间花在哪里')} — {active.label}</div>
-        <ResponsiveCopy className="card-desc">
+        <CardCaption title={<>{text('where the time goes', '时间花在哪里')} — {active.label}</>}>
           {text(
             'Wall latency (tap → DOM predicate) beside per-realm sampled JS CPU. The two threads run concurrently: a framework can hide BTS cost behind MTS work or vice versa — or fail to. CPU is sampled by the V8 profiler per realm (200µs interval), so it includes GC and microtasks.',
             '并列展示墙钟延迟（点击 → DOM 条件）与各 realm 采样的 JS CPU。两个线程并发运行：框架可能把 BTS 成本隐藏在 MTS 工作之后，反之亦然，也可能做不到。CPU 由 V8 profiler 按 realm 采样（间隔 200µs），因此包含 GC 和 microtask。',
           )}
-        </ResponsiveCopy>
+        </CardCaption>
         <GroupedTimeBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} />
       </div>
 
       <div className="wire-analysis">
         <div className="grid-2">
           <div className="card">
-            <div className="card-title">{text('wire bytes by direction', '按方向拆分 wire 字节')} — {active.label}</div>
-            <ResponsiveCopy className="card-desc">
+            <CardCaption title={<>{text('wire bytes by direction', '按方向拆分 wire 字节')} — {active.label}</>}>
               {text(
                 "Serialized payload crossing the BTS↔MTS boundary during the op, measured at web-core's rpc channel with one instrument for every framework. Each framework has separate directional bars, sorted by their two-direction total, so it can be lowest in one direction and highest in the other. Hover for the per-endpoint split.",
                 '操作期间跨越 BTS↔MTS 边界的序列化 payload，由 web-core rpc channel 对所有框架使用同一测量工具。每个框架按方向分别绘制，并按双向总量排序，因此它可能在一个方向最低、另一个方向最高。悬停可查看各 endpoint 拆分。',
               )}
-            </ResponsiveCopy>
+            </CardCaption>
             <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Bytes" fmt={fmtBytes} />
           </div>
           <div className="card">
-            <div className="card-title">{text('wire messages by direction', '按方向拆分 wire 消息')} — {active.label}</div>
-            <ResponsiveCopy className="card-desc">
+            <CardCaption title={<>{text('wire messages by direction', '按方向拆分 wire 消息')} — {active.label}</>}>
               {text(
                 'Message count both directions. Chatty protocols pay per-message overhead (structured clone, scheduling) even when bytes are small.',
                 '统计双向消息数。即使字节数很小，频繁通信的协议仍需承担逐消息开销（structured clone、调度）。',
               )}
-            </ResponsiveCopy>
+            </CardCaption>
             <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Msgs" fmt={fmtCount} />
           </div>
         </div>
@@ -332,13 +329,12 @@ function MemoryCard({
 
   return (
     <div className="card" onMouseMove={onMove}>
-      <div className="card-title">{text("memory — GC'd heap holding 10k rows", '内存——持有 10k 行时 GC 后的堆')}</div>
-      <ResponsiveCopy className="card-desc">
+      <CardCaption title={text("memory — GC'd heap holding 10k rows", '内存——持有 10k 行时 GC 后的堆')}>
         {text(
           'Used JS heap per realm after creating 10,000 rows and forcing GC. Indicative (one scenario), but the BTS/MTS asymmetry shows where each framework keeps its state.',
           '创建 10,000 行并强制 GC 后，各 realm 使用的 JS 堆。它只代表一个场景，但 BTS/MTS 的不对称能显示各框架把状态保存在何处。',
         )}
-      </ResponsiveCopy>
+      </CardCaption>
       <div className="bars" aria-hidden="true">
         {rows.map((r) => (
           <div key={r.id} className="bar-row" style={{ alignItems: 'start' }}>
@@ -473,12 +469,11 @@ function BundleSections({ harness, theme, selected }: { harness: string; theme: 
 
   return (
     <div className="card" onMouseMove={onMove}>
-      <div className="card-title">{text('bundle split — MTS vs BTS program size (gzip)', 'bundle 拆分——MTS 与 BTS 程序体积（gzip）')}</div>
-      <ResponsiveCopy className="card-desc">
+      <CardCaption title={text('bundle split — MTS vs BTS program size (gzip)', 'bundle 拆分——MTS 与 BTS 程序体积（gzip）')}>
         {text('How much code each thread must parse before it can work. JSON-format web bundles expose the split', '每个线程开始工作前必须解析多少代码。JSON 格式 web bundle 会暴露拆分：')}{' '}
         (<code>lepusCode.root</code> = {text('main thread', '主线程')}, <code>app-service.js</code> = {text('background', '后台')});{' '}
         {text('binary bundles report whole-bundle only (hatched).', '二进制 bundle 只报告整体体积（斜线填充）。')}
-      </ResponsiveCopy>
+      </CardCaption>
       <div className="bars" aria-hidden="true">
         {rows.map((r) => (
           <div key={r.id} className="bar-row">
