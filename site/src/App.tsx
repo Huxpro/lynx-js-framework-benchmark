@@ -20,6 +20,7 @@ import {
   entrySupportsHarness,
 } from './data';
 import { useTheme } from './hooks';
+import { localizedWorkload, useI18n } from './i18n';
 import {
   INTERACTION_WORKLOADS,
   JS_FRAMEWORK_SCORE_OPS,
@@ -78,6 +79,7 @@ function AppContent({
   snapshotIndex: number;
   onSnapshotChange: (index: number) => void;
 }) {
+  const { locale, text } = useI18n();
   const [theme, toggleTheme] = useTheme();
   const { select, snapshot, workloadScales } = useBenchmarkData();
   const [page, setPage] = useState<Page>('overview');
@@ -106,7 +108,7 @@ function AppContent({
     if (next === 'web') params.delete('harness');
     else params.set('harness', next);
     const query = params.toString();
-    history.replaceState(null, '', query ? `?${query}` : location.pathname);
+    history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
   };
 
   const toggleEntry = (id: string) =>
@@ -128,13 +130,13 @@ function AppContent({
         seen.add(key);
         const startupBoundary = {
           fcp: 'FCP',
-          settled: 'settled',
-          octaneCommitAck: 'commit ACK',
-          octaneSecondFrame: 'second frame',
+          settled: text('settled', '稳定'),
+          octaneCommitAck: text('commit ACK', '提交 ACK'),
+          octaneSecondFrame: text('second frame', '第二帧'),
         }[cell.metric] ?? cell.metric;
         const label = cell.suite === 'startup'
-          ? `startup ${startupBoundary} @${scaleLabel(cell.scale)}`
-          : `${cell.workload} @${scaleLabel(cell.scale)}`;
+          ? `${text('startup', '启动')} ${startupBoundary} @${scaleLabel(cell.scale)}`
+          : `${localizedWorkload(cell.workload, locale)} @${scaleLabel(cell.scale)}`;
         rows.push({
           key,
           label,
@@ -149,70 +151,85 @@ function AppContent({
     for (const w of ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
       for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
-          rows.push({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
+          rows.push({ key: `${w}@${s}`, label: `${localizedWorkload(w, locale)} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
         }
       }
     }
     for (const s of workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })) {
       if (select({ suite: 'startup', harness, workload: 'startup', scale: s, metric: 'fcp' }).length >= 2) {
-        rows.push({ key: `startup@${s}`, label: `startup @${scaleLabel(s)}`, suite: 'startup', workload: 'startup', scale: s, metric: 'fcp' });
+        rows.push({ key: `startup@${s}`, label: `${text('startup', '启动')} @${scaleLabel(s)}`, suite: 'startup', workload: 'startup', scale: s, metric: 'fcp' });
       }
     }
     return rows;
-  }, [harness, select, snapshot.nativeCoverage.cells, workloadScales]);
+  }, [harness, locale, select, snapshot.nativeCoverage.cells, text, workloadScales]);
 
   const tableOps = (scales: number[]) =>
     INTERACTION_WORKLOADS.flatMap((w) =>
       workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
         .filter((s) => scales.includes(s))
-        .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
+        .map((s) => ({ key: `${w}@${s}`, label: `${localizedWorkload(w, locale)}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
 
   const equal1kOps = tableOps([1000]);
   const equal10kOps = tableOps([10000]);
   const interactionModes = [
     ...(harness === 'web' ? [{
       key: 'weighted',
-      label: 'js-framework weighted',
+      label: text('js-framework weighted', 'js-framework 加权'),
       ops: JS_FRAMEWORK_SCORE_OPS,
       scoreWeights: JS_FRAMEWORK_SCORE_WEIGHTS,
-      summaryLabel: 'weighted score',
-      caption: 'weighted geometric mean of all 9 upstream CPU workload ratios × vs each workload\'s fastest entry — 1× is the per-workload oracle; incomplete entries are excluded',
+      summaryLabel: text('weighted score', '加权得分'),
+      caption: text(
+        'weighted geometric mean of all 9 upstream CPU workload ratios × vs each workload\'s fastest entry — 1× is the per-workload oracle; incomplete entries are excluded',
+        '九项上游 CPU workload 相对各自最快项的比值 ×，按权重取几何平均——1× 是逐 workload 的理论最优；不完整条目不参与计算',
+      ),
       equation: {
-        head: 'Upstream weighted geometric mean',
+        head: text('Upstream weighted geometric mean', '上游加权几何平均'),
         lines: [
-          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          text('rᵢ = medianᵢ ÷ fastest medianᵢ', 'rᵢ = 中位数ᵢ ÷ 最快中位数ᵢ'),
           'score = exp(Σ wᵢ · ln(rᵢ) ÷ Σ wᵢ)',
-          '9/9 cells required · upstream CPU weights',
+          text('9/9 cells required · upstream CPU weights', '必须具备 9/9 单元 · 使用上游 CPU 权重'),
         ],
       },
     }] : []),
     {
       key: 'equal-1k',
-      label: 'equal · 1k',
+      label: text('equal · 1k', '等权 · 1k'),
       ops: equal1kOps,
-      summaryLabel: 'equal score',
-      caption: `equal-weight geometric mean of the complete ${equal1kOps.length}-operation 1k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+      summaryLabel: text('equal score', '等权得分'),
+      caption: text(
+        `equal-weight geometric mean of the complete ${equal1kOps.length}-operation 1k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+        `完整 ${equal1kOps.length} 项 1k 操作矩阵相对各操作最快项的比值 ×，等权取几何平均——1× 是逐操作的理论最优`,
+      ),
       equation: {
-        head: 'Equal-weight 1k geometric mean',
+        head: text('Equal-weight 1k geometric mean', '1k 等权几何平均'),
         lines: [
-          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          text('rᵢ = medianᵢ ÷ fastest medianᵢ', 'rᵢ = 中位数ᵢ ÷ 最快中位数ᵢ'),
           `score = exp(Σ ln(rᵢ) ÷ ${equal1kOps.length})`,
-          `${equal1kOps.length}/${equal1kOps.length} 1k cells required · every operation counts equally`,
+          text(
+            `${equal1kOps.length}/${equal1kOps.length} 1k cells required · every operation counts equally`,
+            `必须具备 ${equal1kOps.length}/${equal1kOps.length} 个 1k 单元 · 每项操作权重相同`,
+          ),
         ],
       },
     },
     {
       key: 'equal-10k',
-      label: 'equal · 10k',
+      label: text('equal · 10k', '等权 · 10k'),
       ops: equal10kOps,
-      summaryLabel: 'equal score',
-      caption: `equal-weight geometric mean of the complete ${equal10kOps.length}-operation 10k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+      summaryLabel: text('equal score', '等权得分'),
+      caption: text(
+        `equal-weight geometric mean of the complete ${equal10kOps.length}-operation 10k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+        `完整 ${equal10kOps.length} 项 10k 操作矩阵相对各操作最快项的比值 ×，等权取几何平均——1× 是逐操作的理论最优`,
+      ),
       equation: {
-        head: 'Equal-weight 10k geometric mean',
+        head: text('Equal-weight 10k geometric mean', '10k 等权几何平均'),
         lines: [
-          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          text('rᵢ = medianᵢ ÷ fastest medianᵢ', 'rᵢ = 中位数ᵢ ÷ 最快中位数ᵢ'),
           `score = exp(Σ ln(rᵢ) ÷ ${equal10kOps.length})`,
-          `${equal10kOps.length}/${equal10kOps.length} 10k cells required · every operation counts equally`,
+          text(
+            `${equal10kOps.length}/${equal10kOps.length} 10k cells required · every operation counts equally`,
+            `必须具备 ${equal10kOps.length}/${equal10kOps.length} 个 10k 单元 · 每项操作权重相同`,
+          ),
         ],
       },
     },
@@ -223,7 +240,7 @@ function AppContent({
   return (
     <div className="page">
       <header className="site-header">
-        <div className="site-title"><span className="lynx">Lynx</span> JS Framework Benchmark</div>
+        <div className="site-title"><span className="lynx">Lynx</span> {text('JS Framework Benchmark', 'JS 框架基准测试')}</div>
       </header>
       <TimelineSlider
         snapshots={TIMELINE_SNAPSHOTS}
@@ -241,19 +258,21 @@ function AppContent({
       {harness === 'native' && !nativeHasData ? (
         page === 'overview' ? (
           <>
-            <h1>How fast is each framework on Lynx?</h1>
+            <h1>{text('How fast is each framework on Lynx?', '各框架在 Lynx 上有多快？')}</h1>
             <p className="subtitle">
-              No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
-              matrix keeps every contracted cell visible without turning archived observations into
-              rankings.
+              {text(
+                'No complete Native comparison cohort is publishable for this snapshot. The at-a-glance matrix keeps every contracted cell visible without turning archived observations into rankings.',
+                '此快照没有可发布的完整 Native 对比 cohort。概览矩阵仍展示合约中的每个单元，但不会把归档观察值转成排名。',
+              )}
             </p>
             <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
             <div className="empty-state">
-              <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
+              <p><b>{text('No publishable Native comparison cohort for this snapshot.', '此快照没有可发布的 Native 对比 cohort。')}</b></p>
               <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
-                Any archive-only observations follow. The appendix at the end distinguishes work
-                that was never scheduled from evidenced DNF, proven unsupported capability,
-                incompatible archived runs, and derivation defects.
+                {text(
+                  'Any archive-only observations follow. The appendix at the end distinguishes work that was never scheduled from evidenced DNF, proven unsupported capability, incompatible archived runs, and derivation defects.',
+                  '下方保留仅供归档的观察值。末尾附录会区分从未调度的工作、有证据的 DNF、已证明不支持的能力、不兼容的归档运行和派生缺陷。',
+                )}
               </p>
             </div>
             <NativeObservations theme={theme} />
@@ -261,31 +280,39 @@ function AppContent({
           </>
         ) : (
           <>
-            <h1>How does Native cost grow with scale?</h1>
+            <h1>{text('How does Native cost grow with scale?', 'Native 成本如何随规模增长？')}</h1>
             <p className="subtitle">
-              This checkpoint has no complete Native cohort, so no cross-framework scale curve can
-              be published. Archived observations remain visible as evidence below.
+              {text(
+                'This checkpoint has no complete Native cohort, so no cross-framework scale curve can be published. Archived observations remain visible as evidence below.',
+                '此节点没有完整 Native cohort，因此无法发布跨框架规模曲线。归档观察值仍在下方作为证据展示。',
+              )}
             </p>
             <NativeObservations theme={theme} />
           </>
         )
       ) : page === 'overview' ? (
         <>
-          <h1>How fast is each framework on Lynx?</h1>
+          <h1>{text('How fast is each framework on Lynx?', '各框架在 Lynx 上有多快？')}</h1>
           <p className="subtitle">
-            The same table app, one instrument. {harness === 'web'
-              ? 'Headless Chromium running Lynx for Web; input is measured to the composed-DOM result.'
-              : 'Lynx Native Engine on an Android 10 Sandbox device; input-handler time is measured to the second native frame.'}{' '}
-            Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
-            any card's data table for exact numbers.
+            {text('The same table app, one instrument. ', '相同的表格应用，同一套测量工具。')}{harness === 'web'
+              ? text('Headless Chromium running Lynx for Web; input is measured to the composed-DOM result.', '无头 Chromium 运行 Lynx for Web；从输入测量到 composed DOM 结果。')
+              : text('Lynx Native Engine on an Android 10 Sandbox device; input-handler time is measured to the second native frame.', 'Android 10 Sandbox 设备运行 Lynx Native Engine；从输入处理器测量到第二个原生帧。')}{' '}
+            {text(
+              'Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open any card\'s data table for exact numbers.',
+              '结果取中位数，越低越好；DNF 会明确标出。可选择条目、悬停任意图形，并展开卡片数据表查看精确值。',
+            )}
           </p>
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
-            title="interaction benchmark"
+            title={text('interaction benchmark', '交互基准测试')}
             description={harness === 'web'
-              ? <>One <KrausestBenchmarkLink /> workload family, three views: the upstream-weighted nine-case score and equal-weight 1k/10k scale slices. Measured from pointerdown → composed DOM; hover or focus a formula tab for its equation.</>
-              : <>The same <KrausestBenchmarkLink /> workload family at two Native scale slices, measured from the input handler → second native animation frame. Hover or focus a formula tab for its equation.</>}
+              ? locale === 'zh-CN'
+                ? <>同一套 <KrausestBenchmarkLink /> workload，提供三种视图：上游九项加权得分，以及 1k/10k 等权规模切片。从 pointerdown 测量到 composed DOM；悬停或聚焦公式标签可查看方程。</>
+                : <>One <KrausestBenchmarkLink /> workload family, three views: the upstream-weighted nine-case score and equal-weight 1k/10k scale slices. Measured from pointerdown → composed DOM; hover or focus a formula tab for its equation.</>
+              : locale === 'zh-CN'
+                ? <>相同的 <KrausestBenchmarkLink /> workload 在两个 Native 规模切片上运行，从输入处理器测量到第二个原生动画帧。悬停或聚焦公式标签可查看方程。</>
+                : <>The same <KrausestBenchmarkLink /> workload family at two Native scale slices, measured from the input handler → second native animation frame. Hover or focus a formula tab for its equation.</>}
             suite="table"
             scoreModes={interactionModes}
             harness={harness}
@@ -293,27 +320,27 @@ function AppContent({
             selected={activeSelected}
           />
           <RankedBars
-            title="storms"
+            title={text('storms', '连续交互')}
             description={harness === 'web'
-              ? 'one tap, many sequential render cycles (50 update / 30 select ticks through a MessageChannel pump). Throughput of the full state→render→wire→apply loop.'
-              : 'one tap, many sequential Native task/transport commits (50 update / 30 select ticks), each acknowledged before the next tick.'}
+              ? text('one tap, many sequential render cycles (50 update / 30 select ticks through a MessageChannel pump). Throughput of the full state→render→wire→apply loop.', '一次点击触发多轮连续渲染（通过 MessageChannel pump 执行 50 次更新 / 30 次选择）。衡量完整 state→render→wire→apply 循环的吞吐。')
+              : text('one tap, many sequential Native task/transport commits (50 update / 30 select ticks), each acknowledged before the next tick.', '一次点击触发多次连续 Native task/transport 提交（50 次更新 / 30 次选择），每次都在下一 tick 前收到确认。')}
             suite="table"
             ops={['updateStorm', 'selectStorm'].flatMap((w) =>
               workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
-                .map((s) => ({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, workload: w, scale: s })))}
+                .map((s) => ({ key: `${w}@${s}`, label: `${localizedWorkload(w, locale)} @${scaleLabel(s)}`, workload: w, scale: s })))}
             harness={harness}
             theme={theme}
             selected={activeSelected}
           />
           <RankedBars
-            title="startup (first contentful paint)"
+            title={text('startup (first contentful paint)', '启动（首次内容绘制）')}
             description={harness === 'web'
-              ? 'view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration.'
-              : 'native pipeline open → first contentful paint. Entries without a pipeline performance entry are absent rather than replaced by another boundary.'}
+              ? text('view attach → first table content, with the first screen pre-rendering N rows. IFR-capable configs paint from the main thread before hydration.', 'view attach → 首次表格内容，首屏预渲染 N 行。支持 IFR 的配置会在 hydration 前由主线程完成绘制。')
+              : text('native pipeline open → first contentful paint. Entries without a pipeline performance entry are absent rather than replaced by another boundary.', 'native pipeline open → 首次内容绘制。缺少 pipeline performance entry 的条目直接留空，不会用其他边界替代。')}
             suite="startup"
             metric="fcp"
             ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' }).map((s) => ({
-              key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
+              key: `startup@${s}`, label: `@${scaleLabel(s)} ${text('rows', '行')}`, workload: 'startup', scale: s,
             }))}
             harness={harness}
             theme={theme}
@@ -326,14 +353,14 @@ function AppContent({
             return (
               <RankedBars
                 key={metric}
-                title={isAck ? 'Octane startup (transport commit ACK)' : 'Octane startup (second post-ACK frame)'}
+                title={isAck ? text('Octane startup (transport commit ACK)', 'Octane 启动（transport 提交 ACK）') : text('Octane startup (second post-ACK frame)', 'Octane 启动（ACK 后第二帧）')}
                 description={isAck
-                  ? 'Open request → acknowledgement of Octane’s initial root transport commit. Octane-only Native metric; not FCP.'
-                  : 'Open request → second Native frame after Octane’s initial transport acknowledgement. Octane-only Native metric; not FCP.'}
+                  ? text('Open request → acknowledgement of Octane’s initial root transport commit. Octane-only Native metric; not FCP.', 'Open request → Octane 初始根 transport 提交的确认。仅适用于 Octane 的 Native 指标，不是 FCP。')
+                  : text('Open request → second Native frame after Octane’s initial transport acknowledgement. Octane-only Native metric; not FCP.', 'Open request → Octane 初始 transport 确认后的第二个 Native 帧。仅适用于 Octane 的 Native 指标，不是 FCP。')}
                 suite="startup"
                 metric={metric}
                 ops={workloadScales({ suite: 'startup', harness, workload: 'startup', metric }).map((s) => ({
-                  key: `startup@${s}`, label: `@${scaleLabel(s)} rows`, workload: 'startup', scale: s,
+                  key: `startup@${s}`, label: `@${scaleLabel(s)} ${text('rows', '行')}`, workload: 'startup', scale: s,
                 }))}
                 harness={harness}
                 theme={theme}
@@ -343,11 +370,13 @@ function AppContent({
           })}
           <section className="thread-section" aria-labelledby="thread-section-title">
             <div className="section-heading">
-              <div className="section-kicker">Inside the operation</div>
-              <h2 id="thread-section-title">Thread &amp; transport</h2>
+              <div className="section-kicker">{text('Inside the operation', '操作内部')}</div>
+              <h2 id="thread-section-title">{text('Thread & transport', '线程与传输')}</h2>
               <p>
-                Wall time can hide where work runs. This environment-specific breakdown keeps CPU,
-                wire traffic, memory and bundle placement beside the headline ranking.
+                {text(
+                  'Wall time can hide where work runs. This environment-specific breakdown keeps CPU, wire traffic, memory and bundle placement beside the headline ranking.',
+                  '墙钟时间可能掩盖工作实际运行的位置。按环境拆分 CPU、wire traffic、内存和 bundle 分布，并与核心排名并列展示。',
+                )}
               </p>
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
@@ -356,11 +385,12 @@ function AppContent({
         </>
       ) : (
         <>
-          <h1>How does cost grow with scale?</h1>
+          <h1>{text('How does cost grow with scale?', '成本如何随规模增长？')}</h1>
           <p className="subtitle">
-            The unified-matrix lineage: each case across row scales, linear for absolute gaps and
-            log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing;
-            0 ≈ scale-independent).
+            {text(
+              'The unified-matrix lineage: each case across row scales, linear for absolute gaps and log–log for shape. α is the fitted scaling exponent (1 = linear in N; below 1 = amortizing; 0 ≈ scale-independent).',
+              '统一矩阵的规模轨迹：每个 case 跨行数观察；线性坐标展示绝对差距，log–log 展示增长形态。α 是拟合出的规模指数（1 = 随 N 线性增长；低于 1 = 成本被摊薄；0 ≈ 与规模无关）。',
+            )}
           </p>
           <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           <InteractionScaleComposite harness={harness} theme={theme} selected={activeSelected} />
@@ -383,8 +413,10 @@ function AppContent({
         <a href="https://github.com/Huxpro/lynx-js-framework-benchmark" target="_blank" rel="noreferrer">
           github.com/Huxpro/lynx-js-framework-benchmark
         </a>
-        {' '}· reproduce with <code>pnpm bench run</code> · results are the checked-in{' '}
-        <code>results/latest.json</code> materialized cache, regenerated from source before every build.
+        {' '}· {text('reproduce with', '复现命令')} <code>pnpm bench run</code> · {text(
+          'results are the checked-in materialized cache, regenerated from source before every build:',
+          '结果是提交到仓库的物化缓存，每次构建前都会从来源重新生成：',
+        )}{' '}<code>results/latest.json</code>
       </footer>
     </div>
   );

@@ -7,6 +7,7 @@ import { useBenchmarkData } from '../data-context';
 import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
 import { completeRowGeomeans } from '../derive.mjs';
 import { useTooltip } from '../hooks';
+import { useI18n } from '../i18n';
 import { Legend } from './Legend';
 
 function tintFor(v: number): string {
@@ -38,6 +39,7 @@ export function HeatGrid({
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const { text } = useI18n();
   const { select } = useBenchmarkData();
   const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
   const [mode, setMode] = useState<'fastest' | string>('fastest');
@@ -71,12 +73,12 @@ export function HeatGrid({
   return (
     <div className="card" onMouseMove={onMove}>
       <div className="controls-row glance-heading">
-        <div className="card-title">All cases at a glance</div>
-        <div className="seg" role="group" aria-label="Baseline">
-          <button aria-pressed={activeMode === 'fastest'} onClick={() => setMode('fastest')}>vs fastest</button>
+        <div className="card-title">{text('All cases at a glance', '全部 case 一览')}</div>
+        <div className="seg" role="group" aria-label={text('Baseline', '基线')}>
+          <button aria-pressed={activeMode === 'fastest'} onClick={() => setMode('fastest')}>{text('vs fastest', '对比最快项')}</button>
           {ENTRIES.filter((e) => selected.has(e.id)).map((e) => (
             <button key={e.id} aria-pressed={activeMode === e.id} onClick={() => setMode(e.id)}>
-              vs {shortLabel(e.id)}
+              {text('vs', '对比')} {shortLabel(e.id)}
             </button>
           ))}
         </div>
@@ -106,7 +108,7 @@ export function HeatGrid({
                   const v = row.values[i];
                   const base = activeMode === 'fastest' ? row.fastest : row.recs.get(activeMode)?.median ?? null;
                   if (v == null || base == null || base <= 0) {
-                    return <td key={id} className="null" aria-label="no data">—</td>;
+                    return <td key={id} className="null" aria-label={text('no data', '无数据')}>—</td>;
                   }
                   const ratio = v / base;
                   const isRef = activeMode !== 'fastest' && id === activeMode;
@@ -120,8 +122,14 @@ export function HeatGrid({
                         setTip({
                           head: `${shortLabel(id)} · ${row.spec.label}`,
                           lines: [
-                            `${fmtX(ratio)} vs ${activeMode === 'fastest' ? `fastest (${shortLabel(row.fastestId!)})` : shortLabel(activeMode)}`,
-                            `median ${row.recs.get(id)?.median?.toFixed(1)}ms, n=${row.recs.get(id)?.n}`,
+                            text(
+                              `${fmtX(ratio)} vs ${activeMode === 'fastest' ? `fastest (${shortLabel(row.fastestId!)})` : shortLabel(activeMode)}`,
+                              `${fmtX(ratio)}，对比${activeMode === 'fastest' ? `最快项（${shortLabel(row.fastestId!)}）` : shortLabel(activeMode)}`,
+                            ),
+                            text(
+                              `median ${row.recs.get(id)?.median?.toFixed(1)}ms, n=${row.recs.get(id)?.n}`,
+                              `中位数 ${row.recs.get(id)?.median?.toFixed(1)}ms，n=${row.recs.get(id)?.n}`,
+                            ),
                           ],
                         });
                         onMove(e);
@@ -137,7 +145,7 @@ export function HeatGrid({
           </tbody>
           <tfoot>
             <tr>
-              <th className="rowhead" style={{ borderTop: '2px solid var(--border)' }}>geomean</th>
+              <th className="rowhead" style={{ borderTop: '2px solid var(--border)' }}>{text('geomean', '几何平均')}</th>
               {ids.map((id) => {
                 const g = geo.values.get(id);
                 const isRef = activeMode !== 'fastest' && id === activeMode;
@@ -161,13 +169,15 @@ export function HeatGrid({
       </div>
       <div className="note" style={{ marginTop: '0.5rem' }}>
         {geo.rowCount === 0 ? (
-          <>No row has complete data for every selected entry in this snapshot. Blank cells remain
-            visible, but are excluded from ratios, geomeans, and rankings.</>
+          <>{text(
+            'No row has complete data for every selected entry in this snapshot. Blank cells remain visible, but are excluded from ratios, geomeans, and rankings.',
+            '此快照中没有任何一行对所有已选条目都具备完整数据。空白单元仍会展示，但不参与比率、几何平均和排名。',
+          )}</>
         ) : (
-          <>Each cell is that entry's median relative to the {activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`},
-            per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers;
-            the geomean is recomputed over {geo.rowCount} rows with complete data for every selected entry.
-            Per-case cards below carry the full data tables.</>
+          <>{text(
+            `Each cell is that entry's median relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}, per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers; the geomean is recomputed over ${geo.rowCount} rows with complete data for every selected entry. Per-case cards below carry the full data tables.`,
+            `每个单元都是该条目中位数相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}的比值，逐 case 计算。绿色更快，红色更慢；双向色深都在 4× 饱和。悬停可查看精确值；几何平均会基于 ${geo.rowCount} 行对所有已选条目都完整的数据重新计算。下方逐 case 卡片包含完整数据表。`,
+          )}</>
         )}
       </div>
       {tipNode}

@@ -64,7 +64,7 @@ test('endpoint rows are a collapsed data appendix owned by the wire visualizatio
   assert.notEqual(wireGroup, -1);
   assert.ok(appendix > wireGroup);
   assert.match(threadsSource, /<details className="visualization-appendix">/);
-  assert.match(threadsSource, /<small>Data appendix<\/small>/);
+  assert.match(threadsSource, /<small>\{text\('Data appendix', '数据附录'\)\}<\/small>/);
   assert.doesNotMatch(threadsSource, /<details className="visualization-appendix" open/);
 });
 
@@ -79,10 +79,10 @@ test('Native empty checkpoints preserve the selected Scale view', () => {
 test('interaction workloads share one module with three formula modes and one detail rail', () => {
   assert.match(source, /https:\/\/github\.com\/krausest\/js-framework-benchmark/);
   assert.match(source, /className="external-link benchmark-source-link"/);
-  assert.match(source, /title="interaction benchmark"/);
-  assert.match(source, /label: 'js-framework weighted'/);
-  assert.match(source, /label: 'equal · 1k'/);
-  assert.match(source, /label: 'equal · 10k'/);
+  assert.match(source, /title=\{text\('interaction benchmark', '交互基准测试'\)\}/);
+  assert.match(source, /label: text\('js-framework weighted', 'js-framework 加权'\)/);
+  assert.match(source, /label: text\('equal · 1k', '等权 · 1k'\)/);
+  assert.match(source, /label: text\('equal · 10k', '等权 · 10k'\)/);
   assert.match(interactionScoreSource, /select@1000/);
   assert.match(interactionScoreSource, /clear@1000/);
   assert.match(source, /scoreModes=\{interactionModes\}/);

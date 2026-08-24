@@ -14,6 +14,7 @@ import {
 } from '../data';
 import { completeEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
+import { useI18n } from '../i18n';
 import { coverageCellLabel } from './NativeCoverage';
 
 interface OpSpec {
@@ -36,12 +37,17 @@ export interface ScoreModeSpec {
   };
 }
 
-function failureSummary(record: BenchRecord | undefined): string {
-  if (!record || record.dnfCount < 1) return 'not run';
+function failureSummary(
+  record: BenchRecord | undefined,
+  text: (english: string, chinese: string) => string,
+): string {
+  if (!record || record.dnfCount < 1) return text('not run', '未运行');
   const failure = record.failures?.[0];
   if (!failure) return `${record.dnfCount} DNF`;
-  const reason = failure.category ?? failure.phase ?? 'failed';
-  const timeout = failure.timeoutMs ? ` after ${(failure.timeoutMs / 1000).toFixed(0)}s` : '';
+  const reason = failure.category ?? failure.phase ?? text('failed', '失败');
+  const timeout = failure.timeoutMs
+    ? text(` after ${(failure.timeoutMs / 1000).toFixed(0)}s`, `，${(failure.timeoutMs / 1000).toFixed(0)} 秒后超时`)
+    : '';
   return `${record.dnfCount} DNF: ${reason}${timeout}`;
 }
 
@@ -74,6 +80,7 @@ export function RankedBars({
   overallCaption?: string;
   scoreModes?: ScoreModeSpec[];
 }) {
+  const { locale, text } = useI18n();
   const { select, snapshot } = useBenchmarkData();
   const hasScoreModes = Boolean(scoreModes?.length);
   const [modeKey, setModeKey] = useState(scoreModes?.[0]?.key ?? 'single');
@@ -143,7 +150,10 @@ export function RankedBars({
         fmt: fmtX,
         scoreOps: score.cellCount,
         caption: overallCaption
-          ?? `equal-weight geometric mean of the complete ${score.cellCount}-op matrix × vs each operation's fastest entry — 1× is the per-operation oracle, so the best aggregate can exceed 1×`,
+          ?? text(
+            `equal-weight geometric mean of the complete ${score.cellCount}-op matrix × vs each operation's fastest entry — 1× is the per-operation oracle, so the best aggregate can exceed 1×`,
+            `完整 ${score.cellCount} 项操作矩阵相对各操作最快项的比值 ×，等权取几何平均——1× 是逐操作的理论最优，因此实际最佳聚合值也可能高于 1×`,
+          ),
       };
     }
     const spec = ops.find((o) => o.key === activeOp)!;
@@ -167,8 +177,14 @@ export function RankedBars({
       record: inner.get(r.id),
       coverage: missingCoverage(r.id, spec),
     }));
-    return { rows: present, missing, fmt: unitFmt, scoreOps: 1, caption: `median ${spec.label} — lower is better` };
-  }, [activeOp, byOp, selected, ops, unitFmt, scoreWeights, overallCaption]);
+    return {
+      rows: present,
+      missing,
+      fmt: unitFmt,
+      scoreOps: 1,
+      caption: text(`median ${spec.label} — lower is better`, `${spec.label} 中位数——越低越好`),
+    };
+  }, [activeOp, byOp, selected, ops, unitFmt, scoreWeights, overallCaption, text]);
 
   const scaleMax = Math.max(1e-9, ...view.rows.map((r) => r.value as number)) * 1.08;
   const refValue = activeOp === 'overall' ? 1 : null;
@@ -184,7 +200,7 @@ export function RankedBars({
         <div
           className="score-mode-tabs"
           role="tablist"
-          aria-label="Score equation"
+          aria-label={text('Score equation', '得分公式')}
           onKeyDown={(event) => {
             if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
             const tabs = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
@@ -237,8 +253,8 @@ export function RankedBars({
           })}
         </div>
       )}
-      <div className={hasScoreModes ? 'chips score-detail-tabs' : 'chips'} role="group" aria-label="Detail data">
-        {hasScoreModes && <span className="score-detail-label">Detail</span>}
+      <div className={hasScoreModes ? 'chips score-detail-tabs' : 'chips'} role="group" aria-label={text('Detail data', '详细数据')}>
+        {hasScoreModes && <span className="score-detail-label">{text('Detail', '明细')}</span>}
         <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>{overallLabel}</button>
         {ops.map((o) => (
           <button key={o.key} className="chip" aria-pressed={activeOp === o.key} onClick={() => setOp(o.key)}>
@@ -259,9 +275,15 @@ export function RankedBars({
                 setTip({
                   head: shortLabel(r.id),
                   lines: activeOp === 'overall'
-                    ? [`${fmtX(r.value as number)} vs the per-operation fastest values (${view.scoreOps} complete ops)`]
+                    ? [text(
+                      `${fmtX(r.value as number)} vs the per-operation fastest values (${view.scoreOps} complete ops)`,
+                      `${fmtX(r.value as number)}，对比逐操作最快值（${view.scoreOps} 项完整操作）`,
+                    )]
                     : [
-                      `${unitFmt(r.value as number)} median${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
+                      text(
+                        `${unitFmt(r.value as number)} median${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
+                        `中位数 ${unitFmt(r.value as number)}${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
+                      ),
                       `n = ${rec?.n ?? '?'}${rec?.dnfCount ? `, ${rec.dnfCount} DNF` : ''}`,
                     ],
                 });
@@ -289,18 +311,18 @@ export function RankedBars({
           <div key={id} className="bar-row" title={record?.failures?.[0]?.message}>
             <div className="bar-label">{shortLabel(id)}</div>
             <div className="bar-dnf">— {coverage
-              ? coverageCellLabel(coverage)
-              : activeOp === 'overall' ? 'incomplete matrix' : failureSummary(record)}</div>
+              ? coverageCellLabel(coverage, locale)
+              : activeOp === 'overall' ? text('incomplete matrix', '矩阵不完整') : failureSummary(record, text)}</div>
           </div>
         ))}
       </div>
       <div className="note">{view.caption}</div>
       <details className="data-table">
-        <summary>Data table (median, all ops)</summary>
+        <summary>{text('Data table (median, all ops)', '数据表（中位数，全部操作）')}</summary>
         <table>
           <thead>
             <tr>
-              <th>op</th>
+              <th>{text('op', '操作')}</th>
               {ENTRIES.filter((e) => selected.has(e.id)).map((e) => <th key={e.id}>{e.label}</th>)}
             </tr>
           </thead>
@@ -315,7 +337,7 @@ export function RankedBars({
                     <td key={e.id} title={r?.failures?.[0]?.message}>
                       {r?.median != null
                         ? unitFmt(r.median)
-                        : coverage ? coverageCellLabel(coverage)
+                        : coverage ? coverageCellLabel(coverage, locale)
                           : (r?.dnfCount ?? 0) > 0 ? 'DNF' : '—'}
                     </td>
                   );
