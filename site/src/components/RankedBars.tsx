@@ -26,7 +26,7 @@ interface OpSpec {
 export interface ScoreModeSpec {
   key: string;
   label: string;
-  ops: OpSpec[];
+  ops: readonly OpSpec[];
   scoreWeights?: Record<string, number>;
   summaryLabel: string;
   caption: string;

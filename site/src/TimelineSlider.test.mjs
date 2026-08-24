@@ -42,10 +42,17 @@ test('history ranking keeps cohort transitions visible and puts rank context ins
   assert.match(rankingSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
   assert.match(rankingSource, /tabIndex=\{option\.value === value \? 0 : -1\}/);
   assert.doesNotMatch(rankingSource, /<select/);
-  assert.match(rankingSource, /INTERACTIVE_CASE = 'interactive'/);
+  assert.match(rankingSource, /label="Rank"/);
+  assert.match(rankingSource, /Composite score/);
+  assert.match(rankingSource, /Single measurement/);
+  assert.match(rankingSource, /label="Formula"/);
+  assert.match(rankingSource, /label: 'js-framework weighted'/);
+  assert.match(rankingSource, /label: `equal · \$\{scale \/ 1000\}k`/);
   assert.match(rankingSource, /rankHistoryAggregate\(cohort\.entryIds/);
-  assert.match(rankingSource, /Equal-weight interaction/);
-  assert.match(rankingSource, /separate from the nine-case/);
+  assert.match(rankingSource, /activeScoreMode\.weights/);
+  assert.match(rankingSource, /history-choice-info/);
+  assert.match(rankingSource, /Composite score formulas/);
+  assert.doesNotMatch(rankingSource, /label="Scale"[\s\S]*relative geomean/);
 });
 
 test('history ranking exposes every series to hover and legend focus highlighting', () => {

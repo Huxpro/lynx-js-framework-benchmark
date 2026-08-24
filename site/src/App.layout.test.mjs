@@ -5,6 +5,7 @@ import test from 'node:test';
 const source = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
 const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import.meta.url), 'utf8');
 const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', import.meta.url), 'utf8');
+const interactionScoreSource = fs.readFileSync(new URL('./interaction-score.ts', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -81,8 +82,8 @@ test('interaction workloads share one module with three formula modes and one de
   assert.match(source, /label: 'js-framework weighted'/);
   assert.match(source, /label: 'equal · 1k'/);
   assert.match(source, /label: 'equal · 10k'/);
-  assert.match(source, /select@1000/);
-  assert.match(source, /clear@1000/);
+  assert.match(interactionScoreSource, /select@1000/);
+  assert.match(interactionScoreSource, /clear@1000/);
   assert.match(source, /scoreModes=\{interactionModes\}/);
   assert.doesNotMatch(source, /title="js-framework weighted score"/);
   assert.doesNotMatch(source, /title="interaction latency @(?:1|10)k"/);

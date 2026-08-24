@@ -100,7 +100,12 @@ export function rankHistoryCell(entryIds, records, cohortEligible = true) {
 /** Rank a complete matrix of cells without pretending it is one raw record.
  * Each cell is normalized to its fastest eligible entry, then the per-entry
  * score is the unweighted geometric mean of those ratios. */
-export function rankHistoryAggregate(entryIds, cells, cohortEligible = true) {
+export function rankHistoryAggregate(
+  entryIds,
+  cells,
+  cohortEligible = true,
+  weights = cells.map(() => 1),
+) {
   const recordsByCell = cells.map((cell) => ({
     key: cell.key,
     byEntry: new Map(cell.records.map((record) => [record.entry, record])),
@@ -114,7 +119,7 @@ export function rankHistoryAggregate(entryIds, cells, cohortEligible = true) {
   const score = completeEntryScores(completeIds, recordsByCell.map((cell) => ({
     key: cell.key,
     values: Object.fromEntries(completeIds.map((entry) => [entry, cell.byEntry.get(entry)?.median])),
-  })));
+  })), weights);
   const scoreByEntry = new Map(score.scores.map(({ id, value }) => [id, value]));
   const ranked = cohortEligible && completeIds.length >= 2
     ? score.scores.slice().sort((a, b) => a.value - b.value || a.id.localeCompare(b.id))

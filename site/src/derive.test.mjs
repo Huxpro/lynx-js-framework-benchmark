@@ -99,3 +99,26 @@ test('history interactive rank uses one complete unweighted operation matrix', (
   assert.equal(result[2].rank, null);
   assert.equal(result[0].cellCount, 2);
 });
+
+test('history composite rank applies the supplied js-framework weights', () => {
+  const result = rankHistoryAggregate(['a', 'b'], [
+    {
+      key: 'heavy',
+      records: [
+        { entry: 'a', median: 10, dnfCount: 0, rankEligible: true },
+        { entry: 'b', median: 20, dnfCount: 0, rankEligible: true },
+      ],
+    },
+    {
+      key: 'light',
+      records: [
+        { entry: 'a', median: 40, dnfCount: 0, rankEligible: true },
+        { entry: 'b', median: 10, dnfCount: 0, rankEligible: true },
+      ],
+    },
+  ], true, [3, 1]);
+
+  assert.equal(result[0].rank, 1);
+  assert.equal(result[1].rank, 2);
+  assert.ok(result[0].value < result[1].value);
+});

@@ -15,6 +15,8 @@ import {
   shortLabel,
 } from '../data';
 import { rankHistoryAggregate, rankHistoryCell } from '../derive.mjs';
+import { useTooltip } from '../hooks';
+import { INTERACTION_WORKLOADS, JS_FRAMEWORK_SCORE_OPS } from '../interaction-score';
 
 const param = (name: string) => new URLSearchParams(location.search).get(name);
 
@@ -85,9 +87,14 @@ function ChoiceRail({
 }: {
   label: string;
   value: string;
-  options: Array<{ value: string; label: string }>;
+  options: Array<{
+    value: string;
+    label: string;
+    equation?: { head: string; lines: string[] };
+  }>;
   onChange: (value: string) => void;
 }) {
+  const { setTip, onMove, place, tipNode } = useTooltip();
   return (
     <div className="history-choice-rail">
       <span className="history-choice-label">{label}</span>
@@ -112,20 +119,41 @@ function ChoiceRail({
             key={option.value}
             type="button"
             aria-pressed={option.value === value}
+            aria-label={option.equation
+              ? `${option.label}. ${option.equation.head}. ${option.equation.lines.join(' ')}`
+              : option.label}
             tabIndex={option.value === value ? 0 : -1}
             onClick={() => onChange(option.value)}
+            onMouseEnter={option.equation ? (event) => {
+              setTip(option.equation!);
+              onMove(event);
+            } : undefined}
+            onMouseMove={option.equation ? onMove : undefined}
+            onMouseLeave={option.equation ? (event) => {
+              if (document.activeElement !== event.currentTarget) setTip(null);
+            } : undefined}
+            onFocus={option.equation ? (event) => {
+              setTip(option.equation!);
+              const rect = event.currentTarget.getBoundingClientRect();
+              requestAnimationFrame(() => place({
+                clientX: rect.left + rect.width / 2,
+                clientY: rect.bottom,
+              }));
+            } : undefined}
+            onBlur={option.equation ? () => setTip(null) : undefined}
           >
             {option.label}
+            {option.equation && <span className="history-choice-info" aria-hidden="true">?</span>}
           </button>
         ))}
       </div>
+      {tipNode}
     </div>
   );
 }
 
 function workloadLabel(workload: string): string {
   const labels: Record<string, string> = {
-    interactive: 'equal-weight interaction',
     append1k: 'append 1k',
     update10th: 'update every 10th',
     updateStorm: 'update storm',
@@ -142,11 +170,18 @@ const HISTORY_RANK_LIMIT = Math.max(1, ...BENCHMARK_HISTORY.checkpoints.flatMap(
 const DATASET_IDS = BENCHMARK_HISTORY.checkpoints.map((checkpoint) => checkpoint.id);
 const DATASET_BY_ID = new Map(BENCHMARK_HISTORY.checkpoints.map((checkpoint) =>
   [checkpoint.id, checkpoint]));
-const INTERACTIVE_CASE = 'interactive';
-const INTERACTIVE_WORKLOADS = [
-  'create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear',
-];
-const INTERACTIVE_SCALES = [1000, 10000];
+const SCORE_VIEW = 'score';
+const CELL_VIEW = 'cell';
+type RankView = typeof SCORE_VIEW | typeof CELL_VIEW;
+
+interface HistoryScoreMode {
+  key: string;
+  label: string;
+  ops: Array<{ key: string; workload: string; scale: number }>;
+  weights?: number[];
+  formulaLabel: string;
+  equation: { head: string; lines: string[] };
+}
 const datasetAxisLabel = (id: string) => {
   const label = DATASET_BY_ID.get(id)?.label ?? id;
   return label.includes(' · ') ? label.slice(label.indexOf(' · ') + 3) : label;
@@ -175,22 +210,70 @@ export function HistoryRanking({
     const preferred = ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm', 'memory', 'startup'];
     return preferred.indexOf(a) - preferred.indexOf(b) || a.localeCompare(b);
   });
-  const workloads = [INTERACTIVE_CASE, ...rawWorkloads];
+  const scoreModes = useMemo<HistoryScoreMode[]>(() => {
+    const equalMode = (scale: number): HistoryScoreMode => {
+      const ops = INTERACTION_WORKLOADS
+        .map((workload) => ({ key: `${workload}@${scale}`, workload, scale }))
+        .filter((op) => allRecords.some((record) => record.workload === op.workload
+          && record.scale === op.scale && record.metric === 'latency'));
+      return {
+        key: `equal-${scale}`,
+        label: `equal · ${scale / 1000}k`,
+        ops,
+        formulaLabel: 'equal-weight geometric mean',
+        equation: {
+          head: `Equal-weight ${scale / 1000}k geometric mean`,
+          lines: [
+            'rᵢ = medianᵢ ÷ fastest medianᵢ',
+            `score = exp(Σ ln(rᵢ) ÷ ${ops.length})`,
+            `${ops.length}/${ops.length} cells required · every operation counts equally`,
+          ],
+        },
+      };
+    };
+    return [
+      ...(harness === 'web' ? [{
+        key: 'weighted',
+        label: 'js-framework weighted',
+        ops: JS_FRAMEWORK_SCORE_OPS.map(({ key, workload, scale }) => ({ key, workload, scale })),
+        weights: JS_FRAMEWORK_SCORE_OPS.map((op) => op.weight),
+        formulaLabel: 'upstream-weighted geometric mean',
+        equation: {
+          head: 'Upstream weighted geometric mean',
+          lines: [
+            'rᵢ = medianᵢ ÷ fastest medianᵢ',
+            'score = exp(Σ wᵢ · ln(rᵢ) ÷ Σ wᵢ)',
+            '9/9 cells required · upstream CPU weights',
+          ],
+        },
+      }] : []),
+      equalMode(1000),
+      equalMode(10000),
+    ];
+  }, [allRecords, harness]);
+  const initialCase = param('historyCase');
+  const [rankView, setRankView] = useState<RankView>(() =>
+    param('historyView') === CELL_VIEW || (initialCase != null && initialCase !== 'interactive')
+      ? CELL_VIEW : SCORE_VIEW);
+  const [scoreModeKey, setScoreModeKey] = useState(() => {
+    if (initialCase === 'interactive') {
+      return Number(param('historyScale') ?? 1000) === 10000 ? 'equal-10000' : 'equal-1000';
+    }
+    return param('historyScore') ?? 'weighted';
+  });
+  const activeScoreMode = scoreModes.find((mode) => mode.key === scoreModeKey) ?? scoreModes[0];
+  const workloads = rawWorkloads;
   const [workload, setWorkload] = useState(() => param('historyCase') ?? 'create');
   const activeWorkload = workloads.includes(workload) ? workload : (workloads[0] ?? 'create');
-  const isInteractive = activeWorkload === INTERACTIVE_CASE;
-  const metrics = isInteractive ? ['score'] : [...new Set(allRecords
+  const isAggregate = rankView === SCORE_VIEW;
+  const metrics = [...new Set(allRecords
     .filter((record) => record.workload === activeWorkload)
     .map((record) => record.metric))].sort((a, b) =>
     (a === 'latency' ? -1 : b === 'latency' ? 1 : a.localeCompare(b)));
   const [metric, setMetric] = useState(() => param('historyMetric') ?? 'latency');
   const activeMetric = metrics.includes(metric) ? metric : (metrics[0] ?? 'latency');
-  const scales = isInteractive
-    ? INTERACTIVE_SCALES.filter((candidate) => allRecords.some((record) =>
-      record.scale === candidate && INTERACTIVE_WORKLOADS.includes(record.workload)
-      && record.metric === 'latency'))
-    : [...new Set(allRecords.filter((record) => record.workload === activeWorkload
-      && record.metric === activeMetric).map((record) => record.scale))].sort((a, b) => a - b);
+  const scales = [...new Set(allRecords.filter((record) => record.workload === activeWorkload
+    && record.metric === activeMetric).map((record) => record.scale))].sort((a, b) => a - b);
   const [scale, setScale] = useState(() => Number(param('historyScale') ?? 1000));
   const activeScale = scales.includes(scale) ? scale : (scales.includes(1000) ? 1000 : scales[0]);
 
@@ -207,14 +290,12 @@ export function HistoryRanking({
       if (!cohort) continue;
       const checkpointRecords = historyRecordsForCheckpoint(checkpoint)
         .filter((record) => record.harness === harness) as HistoryRecord[];
-      const aggregateWorkloads = INTERACTIVE_WORKLOADS.filter((candidate) => allRecords.some((record) =>
-        record.workload === candidate && record.scale === activeScale && record.metric === 'latency'));
-      const ranked = isInteractive
-        ? rankHistoryAggregate(cohort.entryIds, aggregateWorkloads.map((candidate) => ({
-          key: `${candidate}@${activeScale}`,
-          records: checkpointRecords.filter((record) => record.workload === candidate
-            && record.scale === activeScale && record.metric === 'latency'),
-        })), cohort.rankEligible).map((point) => ({
+      const ranked = isAggregate && activeScoreMode
+        ? rankHistoryAggregate(cohort.entryIds, activeScoreMode.ops.map((op) => ({
+          key: op.key,
+          records: checkpointRecords.filter((record) => record.workload === op.workload
+            && record.scale === op.scale && record.metric === 'latency'),
+        })), cohort.rankEligible, activeScoreMode.weights).map((point) => ({
           entry: point.entry,
           record: null,
           aggregateRecords: point.records,
@@ -252,7 +333,7 @@ export function HistoryRanking({
       }
     }
     return out;
-  }, [harness, activeWorkload, activeScale, activeMetric, allRecords, isInteractive]);
+  }, [harness, activeWorkload, activeScale, activeMetric, isAggregate, activeScoreMode]);
 
   const selectedCheckpoint = BENCHMARK_HISTORY.checkpoints[snapshotIndex];
   const selectedPoints = points.filter((point) => point.checkpoint.id === selectedCheckpoint.id);
@@ -303,7 +384,7 @@ export function HistoryRanking({
         `${status}  ·  ${formatPointValue(point)}`,
         datasetAxisLabel(point.checkpoint.id),
         point.aggregateCellCount != null
-          ? `${point.aggregateCellCount} complete operations  ·  unweighted geometric mean`
+          ? `${point.aggregateCellCount} complete cells  ·  ${activeScoreMode?.formulaLabel ?? 'geometric mean'}`
           : record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : point.checkpoint.description,
       ].filter(Boolean).join('\n');
     };
@@ -429,6 +510,15 @@ export function HistoryRanking({
   }, [points, rankedPoints, observations, incomparable, dnfs, missing, transitions, selectedPoints,
     selectedCheckpoint, snapshotIndex, activeScale, harness, theme]);
 
+  const changeRankView = (value: string) => {
+    const next = value === CELL_VIEW ? CELL_VIEW : SCORE_VIEW;
+    setRankView(next);
+    syncParam('historyView', next === SCORE_VIEW ? null : next);
+  };
+  const changeScoreMode = (value: string) => {
+    setScoreModeKey(value);
+    syncParam('historyScore', value === 'weighted' ? null : value);
+  };
   const changeWorkload = (value: string) => { setWorkload(value); syncParam('historyCase', value === 'create' ? null : value); };
   const changeMetric = (value: string) => { setMetric(value); syncParam('historyMetric', value === 'latency' ? null : value); };
   const changeScale = (value: number) => { setScale(value); syncParam('historyScale', value === 1000 ? null : String(value)); };
@@ -441,16 +531,18 @@ export function HistoryRanking({
           <h2 id="history-ranking-title">Rank by dataset</h2>
           <p>
             Each node is one retained dataset. Solid lines share one comparison cohort; dashed
-            bridges preserve the framework story across a cohort change. Equal-weight interaction
-            is this lab's geomean over one complete scale slice; it is separate from the nine-case
-            js-framework weighted score on the current Web overview.
+            bridges preserve the framework story across a cohort change. Composite score formulas
+            match the interaction benchmark above; single measurement exposes the underlying raw
+            case, scale, and metric without conflating those dimensions.
           </p>
         </div>
       </div>
       <div className="history-browser" aria-label="Browse ranking configuration">
         <div className="history-browser-heading">
           <span>Browse configuration</span>
-          <output>{workloadLabel(activeWorkload)} · {activeScale?.toLocaleString()} rows · {metricLabel(activeMetric)}</output>
+          <output>{isAggregate && activeScoreMode
+            ? `${activeScoreMode.label} · ${activeScoreMode.ops.length} cells · relative geomean`
+            : `${workloadLabel(activeWorkload)} · ${activeScale?.toLocaleString()} rows · ${metricLabel(activeMetric)}`}</output>
         </div>
         <ChoiceRail
           label="Lynx for"
@@ -459,23 +551,47 @@ export function HistoryRanking({
           onChange={onHarnessChange}
         />
         <ChoiceRail
-          label="Case"
-          value={activeWorkload}
-          options={workloads.map((value) => ({ value, label: workloadLabel(value) }))}
-          onChange={changeWorkload}
+          label="Rank"
+          value={rankView}
+          options={[
+            { value: SCORE_VIEW, label: 'Composite score' },
+            { value: CELL_VIEW, label: 'Single measurement' },
+          ]}
+          onChange={changeRankView}
         />
-        <ChoiceRail
-          label="Scale"
-          value={String(activeScale)}
-          options={scales.map((value) => ({ value: String(value), label: `${value.toLocaleString()} rows` }))}
-          onChange={(value) => changeScale(Number(value))}
-        />
-        <ChoiceRail
-          label="Metric"
-          value={activeMetric}
-          options={metrics.map((value) => ({ value, label: metricLabel(value) }))}
-          onChange={changeMetric}
-        />
+        {isAggregate && activeScoreMode ? (
+          <ChoiceRail
+            label="Formula"
+            value={activeScoreMode.key}
+            options={scoreModes.map((mode) => ({
+              value: mode.key,
+              label: mode.label,
+              equation: mode.equation,
+            }))}
+            onChange={changeScoreMode}
+          />
+        ) : (
+          <>
+            <ChoiceRail
+              label="Case"
+              value={activeWorkload}
+              options={workloads.map((value) => ({ value, label: workloadLabel(value) }))}
+              onChange={changeWorkload}
+            />
+            <ChoiceRail
+              label="Scale"
+              value={String(activeScale)}
+              options={scales.map((value) => ({ value: String(value), label: `${value.toLocaleString()} rows` }))}
+              onChange={(value) => changeScale(Number(value))}
+            />
+            <ChoiceRail
+              label="Metric"
+              value={activeMetric}
+              options={metrics.map((value) => ({ value, label: metricLabel(value) }))}
+              onChange={changeMetric}
+            />
+          </>
+        )}
       </div>
       <div className="history-legend" aria-label="Framework colors">
         {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (

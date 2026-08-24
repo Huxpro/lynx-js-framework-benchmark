@@ -34,6 +34,7 @@ export function rankHistoryAggregate<T extends {
   entryIds: string[],
   cells: Array<{ key: string; records: T[] }>,
   cohortEligible?: boolean,
+  weights?: number[],
 ): Array<{
   entry: string;
   records: T[];
