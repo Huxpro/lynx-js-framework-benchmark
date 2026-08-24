@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
+const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -51,6 +52,17 @@ test('Threads and method are inlined instead of competing page tabs', () => {
   assert.doesNotMatch(source, /page === 'method'/);
   assert.match(source, /<ThreadsPage harness=\{harness\}/);
   assert.match(source, /<MeasurementReceipt harness=\{harness\}/);
+});
+
+test('endpoint rows are a collapsed data appendix owned by the wire visualization', () => {
+  const wireGroup = threadsSource.indexOf('className="wire-analysis"');
+  const appendix = threadsSource.indexOf('<EndpointTable', wireGroup);
+
+  assert.notEqual(wireGroup, -1);
+  assert.ok(appendix > wireGroup);
+  assert.match(threadsSource, /<details className="visualization-appendix">/);
+  assert.match(threadsSource, /<small>Data appendix<\/small>/);
+  assert.doesNotMatch(threadsSource, /<details className="visualization-appendix" open/);
 });
 
 test('Native empty checkpoints preserve the selected Scale view', () => {

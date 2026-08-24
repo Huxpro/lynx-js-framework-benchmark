@@ -37,3 +37,11 @@ test('ranking configuration is a horizontally browsable one-click option rail', 
   assert.match(css, /\.history-choice-scroll button\[aria-pressed='true'\]/);
   assert.match(css, /@media \(pointer: coarse\)/);
 });
+
+test('visualization appendices stay compact until their audited table is opened', () => {
+  assert.match(css, /\.visualization-appendix\s*\{/);
+  assert.match(css, /\.visualization-appendix > summary\s*\{/);
+  assert.match(css, /\.appendix-table-scroll\s*\{/);
+  assert.match(css, /max-height\s*:\s*30rem/);
+  assert.match(css, /overflow\s*:\s*auto/);
+});

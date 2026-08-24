@@ -756,6 +756,72 @@ h2 { font-size: 1.2rem; letter-spacing: -0.01em; margin: 2.2rem 0 0.4rem; }
   text-transform: uppercase;
 }
 
+.wire-analysis { margin: 1rem 0; }
+.wire-analysis > .grid-2 { align-items: stretch; }
+.wire-analysis > .grid-2 > .card { margin: 0; }
+.visualization-appendix {
+  margin-top: 0.42rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.visualization-appendix > summary {
+  display: grid;
+  grid-template-columns: 1rem minmax(13rem, auto) minmax(12rem, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 2.85rem;
+  padding: 0.45rem 0.15rem;
+  cursor: pointer;
+  list-style: none;
+}
+.visualization-appendix > summary::-webkit-details-marker { display: none; }
+.appendix-chevron {
+  color: var(--accent);
+  font: 750 1.1rem/1 ui-monospace, Menlo, monospace;
+  transform-origin: center;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.visualization-appendix[open] .appendix-chevron { transform: rotate(90deg); }
+.appendix-name { display: inline-flex; align-items: baseline; gap: 0.55rem; }
+.appendix-name small {
+  color: var(--accent);
+  font: 750 0.61rem/1 ui-monospace, Menlo, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.appendix-name strong { color: var(--text-primary); font-size: 0.82rem; }
+.appendix-meta { color: var(--text-muted); font-size: 0.7rem; text-align: right; }
+.visualization-appendix-body { padding: 0.15rem 0.15rem 0.8rem 1.7rem; }
+.visualization-appendix-body > p {
+  max-width: 86ch;
+  margin: 0 0 0.65rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+.appendix-table-scroll {
+  max-height: 30rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+}
+.appendix-table-scroll table { width: 100%; min-width: 42rem; border-collapse: collapse; font-size: 0.75rem; }
+.appendix-table-scroll th,
+.appendix-table-scroll td {
+  padding: 0.28rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-family: ui-monospace, Menlo, monospace;
+}
+.appendix-table-scroll th {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  background: var(--surface-1);
+}
+.appendix-table-scroll th:first-child,
+.appendix-table-scroll td:first-child { text-align: left; font-family: inherit; }
+.appendix-table-scroll th:nth-child(2),
+.appendix-table-scroll td:nth-child(2) { text-align: left; }
+
 /* ranked bars */
 .bars { display: grid; grid-template-columns: max-content 1fr; gap: 0.3rem 0.6rem; margin: 0.5rem 0; }
 .bar-row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; }
@@ -897,6 +963,7 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
 
 @media (prefers-reduced-motion: reduce) {
   .bar-fill { transition: none; }
+  .appendix-chevron { transition: none; }
 }
 @media (pointer: coarse) {
   .history-choice-scroll button { min-height: 2.75rem; padding-inline: 0.72rem; }
@@ -924,6 +991,10 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .history-choice-rail { grid-template-columns: 4.45rem minmax(0, 1fr); }
   .history-legend .history-status { width: 100%; margin-left: 0; }
   .history-plot { margin-left: -0.3rem; width: calc(100% + 0.6rem); }
+  .visualization-appendix > summary { grid-template-columns: 1rem minmax(0, 1fr); }
+  .appendix-name { flex-wrap: wrap; gap: 0.25rem 0.5rem; }
+  .appendix-meta { grid-column: 2; text-align: left; }
+  .visualization-appendix-body { padding-left: 1.7rem; }
   .observation-sheet > header { align-items: stretch; flex-direction: column; }
   .observation-stamp { align-self: flex-start; }
   .observation-grid { grid-template-columns: 1fr; }
