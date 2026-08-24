@@ -12,7 +12,7 @@ const entry = (id) => JSON.parse(fs.readFileSync(
 ));
 
 test('dataset checkpoints are named independently of any one framework commit', () => {
-  assert.match(source, /checkpoint\.label/);
+  assert.match(source, /localizedCheckpoint\(checkpoint, locale\)/);
   assert.doesNotMatch(source, /checkpoint\.identityPointers\.map/);
   assert.doesNotMatch(source, /octaneCommit/);
   assert.doesNotMatch(source, />Octane \{/);
@@ -27,7 +27,7 @@ test('dataset navigation and ranking share the same discrete checkpoint model', 
   assert.match(rankingSource, /type: 'point'/);
   assert.match(rankingSource, /domain: DATASET_IDS/);
   assert.match(rankingSource, /x: 'dataset'/);
-  assert.match(rankingSource, />Rank by dataset</);
+  assert.match(rankingSource, /text\('Rank by dataset', '按 dataset 排名'\)/);
   assert.doesNotMatch(rankingSource, /type: 'utc'/);
   assert.doesNotMatch(rankingSource, /x: 'time'/);
 });
@@ -36,18 +36,18 @@ test('history ranking keeps cohort transitions visible and puts rank context ins
   assert.match(rankingSource, /Plot\.link\(transitions/);
   assert.match(rankingSource, /strokeDasharray: '5,4'/);
   assert.match(rankingSource, /Plot\.text\(selectedPoints/);
-  assert.match(rankingSource, /formatValue\(point\.record\)/);
+  assert.match(rankingSource, /formatPointValue\(point, locale\)/);
   assert.doesNotMatch(rankingSource, /className="history-selected"/);
   assert.match(rankingSource, /className="history-choice-rail"/);
   assert.match(rankingSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
   assert.match(rankingSource, /tabIndex=\{option\.value === value \? 0 : -1\}/);
   assert.doesNotMatch(rankingSource, /<select/);
-  assert.match(rankingSource, /label="Rank"/);
+  assert.match(rankingSource, /label=\{text\('Rank', '排名'\)\}/);
   assert.match(rankingSource, /Composite score/);
   assert.match(rankingSource, /Single measurement/);
-  assert.match(rankingSource, /label="Formula"/);
-  assert.match(rankingSource, /label: 'weighted · available'/);
-  assert.match(rankingSource, /label: `equal · \$\{scale \/ 1000\}k`/);
+  assert.match(rankingSource, /label=\{text\('Formula', '公式'\)\}/);
+  assert.match(rankingSource, /label: text\('weighted · available', '加权 · 可用单元'\)/);
+  assert.match(rankingSource, /label: text\(`equal · \$\{scale \/ 1000\}k`, `等权 · \$\{scale \/ 1000\}k`\)/);
   assert.match(rankingSource, /rankHistoryAggregate\(\s*cohort\.entryIds/);
   assert.match(rankingSource, /activeScoreMode\.weights/);
   assert.match(rankingSource, /completeHistoryAggregateCells\(cohort\.entryIds/);
@@ -63,7 +63,7 @@ test('history ranking exposes every series to hover and legend focus highlightin
   assert.match(rankingSource, /focusSeriesRef/);
   assert.match(rankingSource, /mark\.classList\.toggle\('is-series-muted'/);
   assert.match(rankingSource, /data-history-entry=\{entry\.id\}/);
-  assert.match(rankingSource, /aria-label=\{`Highlight \$\{shortLabel\(entry\.id\)\}`\}/);
+  assert.match(rankingSource, /aria-label=\{text\(`Highlight \$\{shortLabel\(entry\.id\)\}`, `高亮 \$\{shortLabel\(entry\.id\)\}`\)\}/);
 });
 
 test('framework hover cards own source links and exact plugin options', () => {
@@ -90,7 +90,7 @@ test('framework hover cards own source links and exact plugin options', () => {
 test('sticky workspace owns view and environment navigation', () => {
   assert.match(source, /className="workspace-toolbar"/);
   assert.match(source, /\(\['overview', 'scale'\] as const\)/);
-  assert.match(source, /<span>Lynx for<\/span>/);
+  assert.match(source, /<span>\{text\('Lynx for', 'Lynx 环境'\)\}<\/span>/);
   assert.match(source, /candidate === 'web' \? 'Web' : 'Native'/);
   assert.doesNotMatch(source, /Native engine/);
 });
@@ -100,9 +100,9 @@ test('sticky workspace gives its second row entirely to the dataset slider', () 
   assert.doesNotMatch(source, /timeline-copy/);
   assert.doesNotMatch(source, /timeline-identities/);
   assert.doesNotMatch(source, /timeline-meta/);
-  assert.match(receiptSource, /checkpoint\?\.label/);
-  assert.match(receiptSource, /checkpoint\?\.description/);
-  assert.match(receiptSource, />What changed</);
+  assert.match(receiptSource, /checkpointCopy\?\.label/);
+  assert.match(receiptSource, /checkpointCopy\?\.description/);
+  assert.match(receiptSource, /text\('What changed', '发生了什么变化'\)/);
   assert.match(receiptSource, /dateTime=\{snapshot\.generatedAt\}/);
   assert.match(legendSource, /className="entry-method"/);
 });

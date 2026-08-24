@@ -7,6 +7,10 @@ const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import
 const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', import.meta.url), 'utf8');
 const scaleCompositeSource = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const interactionScoreSource = fs.readFileSync(new URL('./interaction-score.ts', import.meta.url), 'utf8');
+const heatGridSource = fs.readFileSync(new URL('./components/HeatGrid.tsx', import.meta.url), 'utf8');
+const costSpaceSource = fs.readFileSync(new URL('./components/CostSpace.tsx', import.meta.url), 'utf8');
+const methodSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
+const scaleTrendsSource = fs.readFileSync(new URL('./components/ScaleTrends.tsx', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -64,7 +68,7 @@ test('endpoint rows are a collapsed data appendix owned by the wire visualizatio
   assert.notEqual(wireGroup, -1);
   assert.ok(appendix > wireGroup);
   assert.match(threadsSource, /<details className="visualization-appendix">/);
-  assert.match(threadsSource, /<small>Data appendix<\/small>/);
+  assert.match(threadsSource, /<small>\{text\('Data appendix', '数据附录'\)\}<\/small>/);
   assert.doesNotMatch(threadsSource, /<details className="visualization-appendix" open/);
 });
 
@@ -79,10 +83,10 @@ test('Native empty checkpoints preserve the selected Scale view', () => {
 test('interaction workloads share one module with three formula modes and one detail rail', () => {
   assert.match(source, /https:\/\/github\.com\/krausest\/js-framework-benchmark/);
   assert.match(source, /className="external-link benchmark-source-link"/);
-  assert.match(source, /title="interaction benchmark"/);
-  assert.match(source, /label: 'js-framework weighted'/);
-  assert.match(source, /label: 'equal · 1k'/);
-  assert.match(source, /label: 'equal · 10k'/);
+  assert.match(source, /title=\{text\('interaction benchmark', '交互基准测试'\)\}/);
+  assert.match(source, /label: text\('js-framework weighted', 'js-framework 加权'\)/);
+  assert.match(source, /label: text\('equal · 1k', '等权 · 1k'\)/);
+  assert.match(source, /label: text\('equal · 10k', '等权 · 10k'\)/);
   assert.match(interactionScoreSource, /select@1000/);
   assert.match(interactionScoreSource, /clear@1000/);
   assert.match(source, /scoreModes=\{interactionModes\}/);
@@ -94,6 +98,32 @@ test('interaction workloads share one module with three formula modes and one de
   assert.match(rankedBarsSource, /showEquation\(mode\)/);
   assert.match(rankedBarsSource, /onFocus=\{\(event\) =>/);
   assert.match(rankedBarsSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
+});
+
+test('at-a-glance conclusions lead with startup FCP and reuse the three interaction equations', () => {
+  assert.equal(source.match(/<HeatGrid[^>]*scoreModes=\{interactionModes\}/g)?.length, 2);
+  assert.match(heatGridSource, /scoreModes: ScoreModeSpec\[\]/);
+  assert.match(heatGridSource, /completeEntryScores/);
+  assert.doesNotMatch(heatGridSource, /completeRowGeomeans|>geomean<|'geomean', '几何平均'/);
+  assert.match(heatGridSource, /scoreMode\.scoreWeights/);
+  assert.match(heatGridSource, /scoreMode\.ops\.map\(\(op\) => op\.key\)/);
+  assert.match(heatGridSource, /scoreInputKey\(row\.spec\)/);
+  assert.match(heatGridSource, /const startupScoreRow = useMemo/);
+  assert.match(heatGridSource, /row\.spec\.suite === 'startup'/);
+  assert.match(heatGridSource, /row\.spec\.metric === 'fcp'/);
+  assert.match(heatGridSource, /groupLabel: text\('Startup', '启动'\)/);
+  assert.match(heatGridSource, /const conclusionRows =/);
+});
+
+test('at-a-glance equations expose pointer, keyboard, and pinned row tracing', () => {
+  assert.match(heatGridSource, /onPointerEnter=\{showEquation\}/);
+  assert.match(heatGridSource, /onFocus=\{showEquation\}/);
+  assert.match(heatGridSource, /aria-pressed=\{isPinned\}/);
+  assert.match(heatGridSource, /setPinnedScore/);
+  assert.match(heatGridSource, /is-score-source/);
+  assert.match(heatGridSource, /is-score-muted/);
+  assert.match(heatGridSource, /document\.addEventListener\('pointerdown', clearOutside\)/);
+  assert.match(heatGridSource, /event\.key === 'Escape'/);
 });
 
 test('Scale leads with one scale-comparable interaction composite instead of misusing the upstream mixed-scale score', () => {
@@ -111,4 +141,17 @@ test('Scale leads with one scale-comparable interaction composite instead of mis
   assert.match(scaleCompositeSource, /commonWorkloads\.length < 2/);
   assert.match(scaleCompositeSource, /no aggregate is drawn/);
   assert.match(scaleCompositeSource, /className="formula-explainer"/);
+});
+
+test('startup FCP states its local bundle and non-network boundary everywhere it is interpreted', () => {
+  assert.match(source, /Local\/cached startup: view attach/);
+  assert.match(source, /Production network transfer is outside this comparison/);
+  assert.match(source, /bundle parse\/eval, framework boot, initial create and paint/);
+  assert.match(costSpaceSource, /x-axis is a separate shipping-cost proxy/);
+  assert.match(costSpaceSource, /production network transfer is not inside FCP/);
+  assert.match(scaleTrendsSource, /Local\/cached bundle: view attach/);
+  assert.match(methodSource, /workload-defined content boundary, not cold browser-navigation FCP/);
+  assert.match(methodSource, /DNS, TLS, CDN and bandwidth are outside the timing/);
+  assert.match(methodSource, /github\.com\/google\/tachometer#first-contentful-paint-fcp/);
+  assert.match(methodSource, /developer\.chrome\.com\/docs\/lighthouse\/performance\/first-contentful-paint/);
 });

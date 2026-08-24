@@ -6,6 +6,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, shortLabel } from '../data';
+import { useElementWidth } from '../hooks';
+import { useI18n } from '../i18n';
+import { CardCaption } from './ResponsiveCopy';
 
 export function CostSpace({
   harness,
@@ -16,8 +19,10 @@ export function CostSpace({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { text } = useI18n();
   const { one, workloadScales } = useBenchmarkData();
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
   const scales = useMemo(
     () => workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' })
       .filter((value) => value > 0),
@@ -50,19 +55,19 @@ export function CostSpace({
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
     const fg = theme === 'dark' ? '#b5b4ab' : '#5f5e57';
     const plot = Plot.plot({
-      width: Math.min(640, Math.max(420, node.clientWidth || 600)),
+      width: Math.max(420, plotWidth || node.clientWidth || 600),
       height: 360,
       marginLeft: 56,
       marginBottom: 44,
       style: { background: 'transparent', color: fg, fontSize: '12px' },
       x: {
-        label: 'bundle (gzip) →',
+        label: text('bundle (gzip) →', 'bundle（gzip）→'),
         grid: true,
         domain: [0, Math.max(...data.map((d) => d.gzip)) * 1.15],
         tickFormat: (d: number) => `${Math.round(d / 1024)}k`,
       },
       y: {
-        label: `↑ FCP @${(activeScale ?? 0) / 1000}k rows (ms)`,
+        label: text(`↑ FCP @${(activeScale ?? 0) / 1000}k rows (ms)`, `↑ FCP @${(activeScale ?? 0) / 1000}k 行（ms）`),
         grid: true,
         domain: [0, Math.max(...data.map((d) => d.fcp)) * 1.15],
       },
@@ -79,27 +84,27 @@ export function CostSpace({
     });
     node.replaceChildren(plot);
     return () => plot.remove();
-  }, [data, theme, selected, activeScale]);
+  }, [data, theme, selected, activeScale, plotWidth, text]);
 
   return (
-    <figure className="card" role="group" aria-label="Cost space">
+    <figure className="card" role="group" aria-label={text('Cost space', '成本空间')}>
       <figcaption>
-        <div className="card-title">cost space — what you ship vs what you get</div>
-        <div className="card-desc">
-          This environment's bundle size (gzip) against startup FCP at N pre-rendered rows. The lower-left
-          corner dominates: less code, faster first paint. Paying bytes that don't buy startup
-          moves an entry right without moving it down.
-        </div>
+        <CardCaption title={text('cost space — what you ship vs what you get', '成本空间——交付体积与启动表现')}>
+          {text(
+            "This environment's bundle size (gzip) against local/cached startup FCP at N pre-rendered rows. The x-axis is a separate shipping-cost proxy: production network transfer is not inside FCP. The lower-left corner dominates—less code to parse/evaluate/create, faster first paint.",
+            '对比此环境的 bundle 体积（gzip）与预渲染 N 行时的本地/缓存启动 FCP。横轴是独立的交付成本代理：FCP 不包含生产网络传输。左下角占优——需要解析、求值和创建的代码更少，首次绘制更快。',
+          )}
+        </CardCaption>
       </figcaption>
       <div className="controls-row">
-        <div className="seg" role="group" aria-label="Rows">
+        <div className="seg" role="group" aria-label={text('Rows', '行数')}>
           {scales.map((s) => (
             <button key={s} aria-pressed={activeScale === s} onClick={() => setScale(s)}>@{s / 1000}k</button>
           ))}
         </div>
       </div>
       {data.length === 0
-        ? <div className="empty-state">No startup + bundle data yet.</div>
+        ? <div className="empty-state">{text('No startup + bundle data yet.', '暂无启动与 bundle 联合数据。')}</div>
         : <div className="plot-figure" ref={ref} />}
     </figure>
   );

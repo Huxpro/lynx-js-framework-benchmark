@@ -7,6 +7,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, shortLabel } from '../data';
 import { slopeFit } from '../derive.mjs';
+import { useElementWidth } from '../hooks';
+import { useI18n } from '../i18n';
+import { CardCaption } from './ResponsiveCopy';
 
 interface TrendSpec {
   title: string;
@@ -16,6 +19,41 @@ interface TrendSpec {
   metric: string;
   unit: 'ms' | 'bytes';
 }
+
+const TREND_ZH: Record<string, { title: string; desc: string }> = {
+  'startup — first contentful paint vs rows': {
+    title: '启动——首次内容绘制与行数',
+    desc: '本地/缓存 bundle：view attach → 首个包含表格内容的帧，首屏预渲染 N 行。不包含生产网络传输；主要反映解析/求值、框架初始化、首次创建与绘制随规模的变化。',
+  },
+  'startup — settled vs rows': {
+    title: '启动——稳定时间与行数',
+    desc: 'view attach → composed DOM 停止变化（静默 400ms）。展示不同规模下的完整 hydration 成本。',
+  },
+  'create — latency vs rows': {
+    title: '创建——延迟与行数',
+    desc: '点击 → N 行全部进入 DOM。经典的创建规模曲线。',
+  },
+  'update storm — latency vs rows': {
+    title: '连续更新——延迟与行数',
+    desc: '一次点击触发 50 个连续更新 tick；每个 tick 都完成一次 render→wire→apply 循环，把逐次更新成本放大到帧下限之上。',
+  },
+  'select storm — latency vs rows': {
+    title: '连续选择——延迟与行数',
+    desc: '连续移动选择 30 次。对于与变更量成正比的 wire，每个 tick 都是 O(1)，不随 N 改变。',
+  },
+  'create — BTS→MTS wire bytes vs rows': {
+    title: '创建——BTS→MTS wire 字节与行数',
+    desc: '从 BTS 发往 MTS、用于构建 N 行的序列化渲染 payload。这里只统计单向流量，不是 wire 总量；线程视图会分别展示 BTS→MTS、MTS→BTS 及双向总量。',
+  },
+  'Octane startup — transport commit ACK vs rows': {
+    title: 'Octane 启动——transport 提交 ACK 与行数',
+    desc: 'Open request → 初始根渲染后 Octane transport 的确认。这个独立 Native 指标不是 FCP，也不会与 pipeline FCP 排名。',
+  },
+  'Octane startup — second post-ACK frame vs rows': {
+    title: 'Octane 启动——ACK 后第二帧与行数',
+    desc: 'Open request → Octane 确认初始 transport 提交后的第二个 Native 动画帧。它仍是独立渲染器指标，不是 FCP。',
+  },
+};
 
 export function ScaleTrend({
   spec,
@@ -28,9 +66,12 @@ export function ScaleTrend({
   theme: 'light' | 'dark';
   selected: Set<string>;
 }) {
+  const { locale, text } = useI18n();
   const { select, selectNativeObservations } = useBenchmarkData();
+  const copy = locale === 'zh-CN' ? TREND_ZH[spec.title] : null;
   const [scaleMode, setScaleMode] = useState<'linear' | 'log'>('linear');
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
 
   const data = useMemo(() => {
     const out: { entry: string; label: string; scale: number; value: number }[] = [];
@@ -81,18 +122,18 @@ export function ScaleTrend({
     const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
     const fg = theme === 'dark' ? '#b5b4ab' : '#5f5e57';
     const plot = Plot.plot({
-      width: Math.min(680, Math.max(420, node.clientWidth || 640)),
+      width: Math.max(420, plotWidth || node.clientWidth || 640),
       height: 340,
       marginLeft: 56,
       marginRight: 110,
       style: { background: 'transparent', color: fg, fontSize: '12px' },
       x: {
-        label: 'rows',
+        label: text('rows', '行数'),
         type: scaleMode === 'log' ? 'log' : 'linear',
         tickFormat: (d: number) => (d >= 1000 ? `${d / 1000}k` : String(d)),
       },
       y: {
-        label: spec.unit === 'ms' ? 'ms (median)' : 'bytes',
+        label: spec.unit === 'ms' ? text('ms (median)', 'ms（中位数）') : text('bytes', '字节'),
         type: scaleMode === 'log' ? 'log' : 'linear',
         ...(scaleMode === 'linear' ? { domain: [0, Math.max(...data.map((d) => d.value)) * 1.05] } : {}),
         grid: true,
@@ -114,23 +155,22 @@ export function ScaleTrend({
         Plot.tip(data, Plot.pointer({
           x: 'scale', y: 'value',
           title: (d: { label: string; scale: number; value: number }) =>
-            `${d.label}\n${d.scale.toLocaleString()} rows\n${spec.unit === 'ms' ? `${d.value.toFixed(1)} ms` : `${(d.value / 1024).toFixed(1)} kB`}`,
+            `${d.label}\n${text(`${d.scale.toLocaleString()} rows`, `${d.scale.toLocaleString()} 行`)}\n${spec.unit === 'ms' ? `${d.value.toFixed(1)} ms` : `${(d.value / 1024).toFixed(1)} kB`}`,
         })),
       ],
     });
     node.replaceChildren(plot);
     return () => plot.remove();
-  }, [data, scaleMode, theme, selected, spec]);
+  }, [data, scaleMode, theme, selected, spec, plotWidth, text]);
 
   return (
-    <figure className="card" role="group" aria-label={spec.title}>
+    <figure className="card" role="group" aria-label={copy?.title ?? spec.title}>
       <figcaption>
-        <div className="card-title">{spec.title}</div>
-        <div className="card-desc">{spec.desc}</div>
+        <CardCaption title={copy?.title ?? spec.title}>{copy?.desc ?? spec.desc}</CardCaption>
       </figcaption>
       <div className="controls-row">
-        <div className="seg" role="group" aria-label="Axis scale">
-          <button aria-pressed={scaleMode === 'linear'} onClick={() => setScaleMode('linear')}>linear</button>
+        <div className="seg" role="group" aria-label={text('Axis scale', '坐标轴尺度')}>
+          <button aria-pressed={scaleMode === 'linear'} onClick={() => setScaleMode('linear')}>{text('linear', '线性')}</button>
           <button aria-pressed={scaleMode === 'log'} onClick={() => setScaleMode('log')}>log–log</button>
         </div>
         <span className="note">
@@ -138,14 +178,14 @@ export function ScaleTrend({
         </span>
       </div>
       {data.length === 0
-        ? <div className="empty-state">No data for this trend yet — run more scales with <code>lynx-bench run --scale …</code></div>
+        ? <div className="empty-state">{text('No data for this trend yet — run more scales with', '此趋势暂无数据——运行更多规模：')} <code>lynx-bench run --scale …</code></div>
         : <div className="plot-figure" ref={ref} />}
       <details className="data-table">
-        <summary>Data table</summary>
+        <summary>{text('Data table', '数据表')}</summary>
         <table>
           <thead>
             <tr>
-              <th>rows</th>
+              <th>{text('rows', '行数')}</th>
               {ENTRIES.filter((e) => selected.has(e.id)).map((e) => <th key={e.id}>{e.label}</th>)}
             </tr>
           </thead>
@@ -169,7 +209,7 @@ export function ScaleTrend({
 const COMMON_TREND_SPECS: TrendSpec[] = [
   {
     title: 'startup — first contentful paint vs rows',
-    desc: 'view attach → first frame with table content, on bundles whose first screen pre-renders N rows. The IFR story lives here: main-thread first frame vs background hydration.',
+    desc: 'Local/cached bundle: view attach → first frame with table content, with N rows pre-rendered. Production network transfer is excluded; the curve is parse/eval, framework boot, initial create and paint as scale grows.',
     suite: 'startup', workload: 'startup', metric: 'fcp', unit: 'ms',
   },
   {

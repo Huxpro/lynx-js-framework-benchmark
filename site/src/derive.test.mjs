@@ -4,7 +4,6 @@ import test from 'node:test';
 import {
   completeEntryScores,
   completeHistoryAggregateCells,
-  completeRowGeomeans,
   rankHistoryAggregate,
   rankHistoryCell,
   slopeFit,
@@ -35,25 +34,9 @@ test('weighted scores use one strict complete matrix and the supplied formula we
   assert.throws(() => completeEntryScores(['a'], [], [1]), /one positive weight per cell/);
 });
 
-test('heatmap geomeans give every entry the same complete-row denominator', () => {
-  const result = completeRowGeomeans(['a', 'b'], [
-    { key: 'complete', values: { a: 10, b: 20 } },
-    { key: 'missing-b', values: { a: 1, b: null } },
-  ]);
-  assert.equal(result.rowCount, 1);
-  assert.equal(result.values.get('a'), 1);
-  assert.equal(result.values.get('b'), 2);
-});
-
 test('trend slope is recalculated from current points', () => {
   assert.ok(Math.abs(slopeFit([[10, 100], [100, 1000], [1000, 10000]]) - 1) < 1e-12);
   assert.equal(slopeFit([[10, 1]]), null);
-});
-
-test('empty selections do not report phantom complete rows', () => {
-  const result = completeRowGeomeans([], [{ key: 'row', values: {} }]);
-  assert.equal(result.rowCount, 0);
-  assert.equal(result.values.size, 0);
 });
 
 test('history ranks only exact eligible cohort values and preserves every missing state', () => {

@@ -1,5 +1,6 @@
 import { ENTRIES, entryColor, entrySupportsHarness } from '../data';
 import { useBenchmarkData } from '../data-context';
+import { useI18n } from '../i18n';
 
 export function Legend({
   harness,
@@ -12,13 +13,14 @@ export function Legend({
   selected: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const { text } = useI18n();
   const { snapshot } = useBenchmarkData();
   const available = new Set(snapshot.comparison.harnesses
     .find((cohort) => cohort.harness === harness)?.entryIds ?? []);
   const visible = ENTRIES.filter((entry) =>
     available.has(entry.id) && entrySupportsHarness(entry, harness));
   return (
-    <div className="legend" role="group" aria-label="Entries">
+    <div className="legend" role="group" aria-label={text('Entries', '参测条目')}>
       {visible.map((e) => {
         const pointer = snapshot.identityPointers.find((candidate) => candidate.entryId === e.id);
         const detailId = `entry-method-${harness}-${e.id}`;
@@ -42,10 +44,10 @@ export function Legend({
               <button
                 className="entry-info-trigger"
                 type="button"
-                aria-label={`Details for ${e.label}`}
+                aria-label={text(`Details for ${e.label}`, `${e.label} 详情`)}
                 aria-controls={detailId}
               >i</button>
-              <aside className="entry-method" id={detailId} aria-label={`${e.label} source and configuration`}>
+              <aside className="entry-method" id={detailId} aria-label={text(`${e.label} source and configuration`, `${e.label} 的来源与配置`)}>
                 <strong>{e.label}</strong>
                 {pointer?.channel && <span>{pointer.channel}</span>}
                 {config && <span>{config}</span>}
@@ -56,7 +58,7 @@ export function Legend({
                   </a>
                   {configuration && (
                     <a className="external-link" href={configuration.href} target="_blank" rel="noreferrer">
-                      config <span aria-hidden="true">↗</span>
+                      {text('config', '配置')} <span aria-hidden="true">↗</span>
                     </a>
                   )}
                 </div>

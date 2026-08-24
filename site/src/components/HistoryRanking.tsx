@@ -19,8 +19,15 @@ import {
   rankHistoryAggregate,
   rankHistoryCell,
 } from '../derive.mjs';
-import { useTooltip } from '../hooks';
+import { useElementWidth, useMediaQuery, useTooltip } from '../hooks';
+import {
+  localizedCheckpoint,
+  localizedWorkload,
+  Locale,
+  useI18n,
+} from '../i18n';
 import { INTERACTION_WORKLOADS, JS_FRAMEWORK_SCORE_OPS } from '../interaction-score';
+import { ResponsiveCopy } from './ResponsiveCopy';
 
 const param = (name: string) => new URLSearchParams(location.search).get(name);
 
@@ -29,27 +36,29 @@ function syncParam(name: string, value: string | null) {
   if (value == null) params.delete(name);
   else params.set(name, value);
   const query = params.toString();
-  history.replaceState(null, '', query ? `?${query}` : location.pathname);
+  history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
 }
 
-function formatValue(record: HistoryRecord | null): string {
-  if (record?.median == null) return record?.dnfCount ? `DNF (${record.dnfCount})` : 'missing';
+function formatValue(record: HistoryRecord | null, locale: Locale): string {
+  if (record?.median == null) return record?.dnfCount
+    ? `DNF (${record.dnfCount})`
+    : locale === 'zh-CN' ? '缺失' : 'missing';
   if (record.unit === 'ms') return fmtMs(record.median);
   if (record.unit === 'bytes') return fmtBytes(record.median);
   if (record.unit === 'count') return fmtCount(record.median);
   return `${record.median.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${record.unit}`;
 }
 
-function metricLabel(metric: string): string {
-  const labels: Record<string, string> = {
-    score: 'relative geomean',
-    latency: 'wall latency', fcp: 'first contentful paint', settled: 'settled',
-    btsCpu: 'BTS CPU', mtsCpu: 'MTS CPU', wireToMtsBytes: 'BTS→MTS bytes',
-    wireToBtsBytes: 'MTS→BTS bytes', wireToMtsMsgs: 'BTS→MTS messages',
-    wireToBtsMsgs: 'MTS→BTS messages', heapBts: 'BTS heap', heapMts: 'MTS heap',
-    octaneCommitAck: 'Octane commit ACK', octaneSecondFrame: 'Octane second frame',
+function metricLabel(metric: string, locale: Locale): string {
+  const labels: Record<string, [string, string]> = {
+    score: ['relative geomean', '相对几何平均'],
+    latency: ['wall latency', '墙钟延迟'], fcp: ['first contentful paint', '首次内容绘制'], settled: ['settled', '稳定'],
+    btsCpu: ['BTS CPU', 'BTS CPU'], mtsCpu: ['MTS CPU', 'MTS CPU'], wireToMtsBytes: ['BTS→MTS bytes', 'BTS→MTS 字节'],
+    wireToBtsBytes: ['MTS→BTS bytes', 'MTS→BTS 字节'], wireToMtsMsgs: ['BTS→MTS messages', 'BTS→MTS 消息'],
+    wireToBtsMsgs: ['MTS→BTS messages', 'MTS→BTS 消息'], heapBts: ['BTS heap', 'BTS 堆'], heapMts: ['MTS heap', 'MTS 堆'],
+    octaneCommitAck: ['Octane commit ACK', 'Octane 提交 ACK'], octaneSecondFrame: ['Octane second frame', 'Octane 第二帧'],
   };
-  return labels[metric] ?? metric;
+  return labels[metric]?.[locale === 'zh-CN' ? 1 : 0] ?? metric;
 }
 
 interface RankedPoint {
@@ -68,11 +77,13 @@ interface RankedPoint {
   segment?: string;
 }
 
-function formatPointValue(point: RankedPoint): string {
+function formatPointValue(point: RankedPoint, locale: Locale): string {
   if (point.aggregateCellCount != null) {
-    return point.aggregateValue == null ? 'incomplete matrix' : fmtX(point.aggregateValue);
+    return point.aggregateValue == null
+      ? locale === 'zh-CN' ? '矩阵不完整' : 'incomplete matrix'
+      : fmtX(point.aggregateValue);
   }
-  return formatValue(point.record);
+  return formatValue(point.record, locale);
 }
 
 interface CohortTransition {
@@ -98,6 +109,7 @@ function ChoiceRail({
   }>;
   onChange: (value: string) => void;
 }) {
+  const { text } = useI18n();
   const { setTip, onMove, place, tipNode } = useTooltip();
   return (
     <div className="history-choice-rail">
@@ -105,7 +117,7 @@ function ChoiceRail({
       <div
         className="history-choice-scroll"
         role="group"
-        aria-label={`History ${label}`}
+        aria-label={text(`History ${label}`, `历史 ${label}`)}
         onKeyDown={(event) => {
           if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
           const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
@@ -156,17 +168,6 @@ function ChoiceRail({
   );
 }
 
-function workloadLabel(workload: string): string {
-  const labels: Record<string, string> = {
-    append1k: 'append 1k',
-    update10th: 'update every 10th',
-    updateStorm: 'update storm',
-    selectStorm: 'select storm',
-    memoryAfterClear: 'memory after clear',
-  };
-  return labels[workload] ?? workload;
-}
-
 const HISTORY_ENTRY_IDS = [...new Set(BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
   checkpoint.harnesses.flatMap((cohort) => cohort.entryIds)))];
 const HISTORY_RANK_LIMIT = Math.max(1, ...BENCHMARK_HISTORY.checkpoints.flatMap((checkpoint) =>
@@ -187,8 +188,9 @@ interface HistoryScoreMode {
   formulaLabel: string;
   equation: { head: string; lines: string[] };
 }
-const datasetAxisLabel = (id: string) => {
-  const label = DATASET_BY_ID.get(id)?.label ?? id;
+const datasetAxisLabel = (id: string, locale: Locale) => {
+  const checkpoint = DATASET_BY_ID.get(id);
+  const label = checkpoint ? localizedCheckpoint(checkpoint, locale).label : id;
   return label.includes(' · ') ? label.slice(label.indexOf(' · ') + 3) : label;
 };
 
@@ -205,7 +207,10 @@ export function HistoryRanking({
   snapshotIndex: number;
   onSnapshotChange: (index: number) => void;
 }) {
+  const { locale, text } = useI18n();
+  const compact = useMediaQuery('(max-width: 48rem)');
   const ref = useRef<HTMLDivElement>(null);
+  const plotWidth = useElementWidth(ref);
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
   const allRecords = useMemo(() => BENCHMARK_HISTORY.records.filter((record) =>
     record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry)), [harness]);
@@ -223,17 +228,17 @@ export function HistoryRanking({
           && record.scale === op.scale && record.metric === 'latency'));
       return {
         key: `equal-${scale}`,
-        label: `equal · ${scale / 1000}k`,
+        label: text(`equal · ${scale / 1000}k`, `等权 · ${scale / 1000}k`),
         ops,
         adaptiveHistory: true,
-        formulaLabel: 'equal-weight geometric mean',
+        formulaLabel: text('equal-weight geometric mean', '等权几何平均'),
         equation: {
-          head: `Equal-weight ${scale / 1000}k geometric mean`,
+          head: text(`Equal-weight ${scale / 1000}k geometric mean`, `${scale / 1000}k 等权几何平均`),
           lines: [
-            'rᵢ = medianᵢ ÷ fastest medianᵢ',
+            text('rᵢ = medianᵢ ÷ fastest medianᵢ', 'rᵢ = 中位数ᵢ ÷ 最快中位数ᵢ'),
             'score = exp(Σ ln(rᵢ) ÷ N)',
-            'N = operations complete for every entry at that dataset',
-            'A changed operation set is joined with a dashed bridge',
+            text('N = operations complete for every entry at that dataset', 'N = 该 dataset 中对所有条目都完整的操作数'),
+            text('A changed operation set is joined with a dashed bridge', '操作集合变化时使用虚线连接'),
           ],
         },
       };
@@ -241,25 +246,25 @@ export function HistoryRanking({
     return [
       ...(harness === 'web' ? [{
         key: 'weighted',
-        label: 'weighted · available',
+        label: text('weighted · available', '加权 · 可用单元'),
         ops: JS_FRAMEWORK_SCORE_OPS.map(({ key, workload, scale }) => ({ key, workload, scale })),
         weights: JS_FRAMEWORK_SCORE_OPS.map((op) => op.weight),
         adaptiveHistory: true,
-        formulaLabel: 'coverage-adjusted upstream-weight geometric mean',
+        formulaLabel: text('coverage-adjusted upstream-weight geometric mean', '按覆盖率调整的上游权重几何平均'),
         equation: {
-          head: 'Available-cell upstream weights',
+          head: text('Available-cell upstream weights', '可用单元的上游权重'),
           lines: [
-            'rᵢ = medianᵢ ÷ fastest medianᵢ',
+            text('rᵢ = medianᵢ ÷ fastest medianᵢ', 'rᵢ = 中位数ᵢ ÷ 最快中位数ᵢ'),
             'score = exp(Σavailable wᵢ · ln(rᵢ) ÷ Σavailable wᵢ)',
-            'A missing cell is omitted for every entry; remaining weights are renormalized',
-            'A changed cell set is dashed; 9/9 is exact upstream coverage',
+            text('A missing cell is omitted for every entry; remaining weights are renormalized', '缺失单元会对所有条目共同省略；剩余权重重新归一化'),
+            text('A changed cell set is dashed; 9/9 is exact upstream coverage', '单元集合变化时使用虚线；9/9 才是精确的上游覆盖'),
           ],
         },
       }] : []),
       equalMode(1000),
       equalMode(10000),
     ];
-  }, [allRecords, harness]);
+  }, [allRecords, harness, text]);
   const initialCase = param('historyCase');
   const [rankView, setRankView] = useState<RankView>(() =>
     param('historyView') === CELL_VIEW || (initialCase != null && initialCase !== 'interactive')
@@ -410,21 +415,27 @@ export function HistoryRanking({
     const statusRank = HISTORY_RANK_LIMIT + 1;
     const title = (point: RankedPoint) => {
       const record = point.record;
-      const status = point.status === 'ranked' ? `rank ${point.rank} of ${point.checkpoint.harnesses
-        .find((cohort) => cohort.harness === harness)?.entryIds.length ?? '?'}`
-        : point.status === 'incomparable' ? 'not ranked — incomparable transport work'
-          : point.status === 'observation' ? 'not ranked — isolated observation'
-            : point.status === 'dnf' ? 'not ranked — DNF' : 'not run in this exact cohort';
+      const checkpointCopy = localizedCheckpoint(point.checkpoint, locale);
+      const cohortSize = point.checkpoint.harnesses
+        .find((cohort) => cohort.harness === harness)?.entryIds.length ?? '?';
+      const status = point.status === 'ranked'
+        ? text(`rank ${point.rank} of ${cohortSize}`, `第 ${point.rank} 名，共 ${cohortSize} 项`)
+        : point.status === 'incomparable' ? text('not ranked — incomparable transport work', '未排名——transport 工作不可比')
+          : point.status === 'observation' ? text('not ranked — isolated observation', '未排名——孤立观察值')
+            : point.status === 'dnf' ? text('not ranked — DNF', '未排名——DNF') : text('not run in this exact cohort', '未在此精确 cohort 中运行');
       return [
         point.label,
-        `${status}  ·  ${formatPointValue(point)}`,
-        datasetAxisLabel(point.checkpoint.id),
+        `${status}  ·  ${formatPointValue(point, locale)}`,
+        datasetAxisLabel(point.checkpoint.id, locale),
         point.aggregateCellCount != null
-          ? `${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} available cells  ·  ${activeScoreMode?.formulaLabel ?? 'geometric mean'}`
-          : record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : point.checkpoint.description,
+          ? text(
+            `${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} available cells  ·  ${activeScoreMode?.formulaLabel ?? 'geometric mean'}`,
+            `${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} 个可用单元  ·  ${activeScoreMode?.formulaLabel ?? '几何平均'}`,
+          )
+          : record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : checkpointCopy.description,
       ].filter(Boolean).join('\n');
     };
-    const width = Math.max(760, node.clientWidth || 760);
+    const width = Math.max(760, plotWidth || node.clientWidth || 760);
     const plot = Plot.plot({
       width,
       height: 390,
@@ -433,19 +444,19 @@ export function HistoryRanking({
       marginBottom: 64,
       style: { background: 'transparent', color: fg, fontSize: '11px' },
       x: {
-        label: 'dataset sequence →',
+        label: text('dataset sequence →', 'dataset 序列 →'),
         type: 'point',
         domain: DATASET_IDS,
-        tickFormat: datasetAxisLabel,
+        tickFormat: (id: string) => datasetAxisLabel(id, locale),
         grid: true,
         padding: 0.45,
       },
       y: {
-        label: 'rank (lower is better)',
+        label: text('rank (lower is better)', '排名（越低越好）'),
         domain: [1, statusRank],
         reverse: true,
         ticks: statusRank,
-        tickFormat: (value: number) => value === statusRank ? 'gap' : `#${value}`,
+        tickFormat: (value: number) => value === statusRank ? text('gap', '缺口') : `#${value}`,
         grid: true,
       },
       color: { domain: ids, range: ids.map((id) => entryColor(id, theme)) },
@@ -481,7 +492,7 @@ export function HistoryRanking({
         Plot.text(selectedPoints.filter((point) => point.status === 'ranked'), {
           x: 'dataset',
           y: 'rank',
-          text: (point: RankedPoint) => `${point.label}  ${formatPointValue(point)}`,
+          text: (point: RankedPoint) => `${point.label}  ${formatPointValue(point, locale)}`,
           dx: snapshotIndex >= DATASET_IDS.length - 2 ? -12 : 12,
           textAnchor: snapshotIndex >= DATASET_IDS.length - 2 ? 'end' : 'start',
           fill: 'entry',
@@ -544,7 +555,7 @@ export function HistoryRanking({
       plot.remove();
     };
   }, [points, rankedPoints, observations, incomparable, dnfs, missing, transitions, selectedPoints,
-    selectedCheckpoint, snapshotIndex, activeScale, harness, theme]);
+    selectedCheckpoint, snapshotIndex, activeScale, harness, locale, plotWidth, text, theme]);
 
   const changeRankView = (value: string) => {
     const next = value === CELL_VIEW ? CELL_VIEW : SCORE_VIEW;
@@ -563,41 +574,44 @@ export function HistoryRanking({
     <section className="history-ranking" aria-labelledby="history-ranking-title">
       <div className="history-heading">
         <div>
-          <div className="history-kicker">Exact-source history</div>
-          <h2 id="history-ranking-title">Rank by dataset</h2>
-          <p>
-            Each node is one retained dataset. Solid lines share one comparison cohort; dashed
-            bridges preserve the framework story across a cohort or formula-set change. Composite
-            history omits a missing cell for every entry together, then recomputes over that dataset's
-            largest complete common matrix. Single measurement exposes the raw case, scale, and metric.
-          </p>
+          <div className="history-kicker">{text('Exact-source history', '精确来源历史')}</div>
+          <h2 id="history-ranking-title">{text('Rank by dataset', '按 dataset 排名')}</h2>
+          <ResponsiveCopy className="history-copy">
+            {text(
+              "Each node is one retained dataset. Solid lines share one comparison cohort; dashed bridges preserve the framework story across a cohort or formula-set change. Composite history omits a missing cell for every entry together, then recomputes over that dataset's largest complete common matrix. Single measurement exposes the raw case, scale, and metric.",
+              '每个节点代表一个保留的 dataset。实线表示共享同一对比 cohort；跨 cohort 或公式集合变化时用虚线保留框架演进脉络。复合历史会对所有条目共同省略缺失单元，再基于该 dataset 最大的完整公共矩阵重新计算。单项测量则展示原始 case、规模和指标。',
+            )}
+          </ResponsiveCopy>
         </div>
       </div>
-      <div className="history-browser" aria-label="Browse ranking configuration">
+      <div className="history-browser" aria-label={text('Browse ranking configuration', '浏览排名配置')}>
         <div className="history-browser-heading">
-          <span>Browse configuration</span>
+          <span>{text('Browse configuration', '浏览配置')}</span>
           <output>{isAggregate && activeScoreMode
-            ? `${activeScoreMode.label} · ${selectedAggregateCellCount ?? 0}/${activeScoreMode.ops.length} cells · relative geomean`
-            : `${workloadLabel(activeWorkload)} · ${activeScale?.toLocaleString()} rows · ${metricLabel(activeMetric)}`}</output>
+            ? text(
+              `${activeScoreMode.label} · ${selectedAggregateCellCount ?? 0}/${activeScoreMode.ops.length} cells · relative geomean`,
+              `${activeScoreMode.label} · ${selectedAggregateCellCount ?? 0}/${activeScoreMode.ops.length} 单元 · 相对几何平均`,
+            )
+            : `${localizedWorkload(activeWorkload, locale)} · ${activeScale?.toLocaleString()} ${text('rows', '行')} · ${metricLabel(activeMetric, locale)}`}</output>
         </div>
         <ChoiceRail
-          label="Lynx for"
+          label={text('Lynx for', 'Lynx 环境')}
           value={harness}
           options={[{ value: 'web', label: 'Web' }, { value: 'native', label: 'Native' }]}
           onChange={onHarnessChange}
         />
         <ChoiceRail
-          label="Rank"
+          label={text('Rank', '排名')}
           value={rankView}
           options={[
-            { value: SCORE_VIEW, label: 'Composite score' },
-            { value: CELL_VIEW, label: 'Single measurement' },
+            { value: SCORE_VIEW, label: text('Composite score', '复合得分') },
+            { value: CELL_VIEW, label: text('Single measurement', '单项测量') },
           ]}
           onChange={changeRankView}
         />
         {isAggregate && activeScoreMode ? (
           <ChoiceRail
-            label="Formula"
+            label={text('Formula', '公式')}
             value={activeScoreMode.key}
             options={scoreModes.map((mode) => ({
               value: mode.key,
@@ -609,62 +623,85 @@ export function HistoryRanking({
         ) : (
           <>
             <ChoiceRail
-              label="Case"
+                  label={text('Case', '测试项')}
               value={activeWorkload}
-              options={workloads.map((value) => ({ value, label: workloadLabel(value) }))}
+              options={workloads.map((value) => ({ value, label: localizedWorkload(value, locale) }))}
               onChange={changeWorkload}
             />
             <ChoiceRail
-              label="Scale"
+              label={text('Scale', '规模')}
               value={String(activeScale)}
-              options={scales.map((value) => ({ value: String(value), label: `${value.toLocaleString()} rows` }))}
+              options={scales.map((value) => ({ value: String(value), label: `${value.toLocaleString()} ${text('rows', '行')}` }))}
               onChange={(value) => changeScale(Number(value))}
             />
             <ChoiceRail
-              label="Metric"
+              label={text('Metric', '指标')}
               value={activeMetric}
-              options={metrics.map((value) => ({ value, label: metricLabel(value) }))}
+              options={metrics.map((value) => ({ value, label: metricLabel(value, locale) }))}
               onChange={changeMetric}
             />
           </>
         )}
       </div>
-      <div className="history-legend" aria-label="Framework colors">
-        {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            data-history-entry={entry.id}
-            onPointerEnter={() => focusSeriesRef.current(entry.id)}
-            onPointerLeave={(event) => {
-              if (document.activeElement !== event.currentTarget) focusSeriesRef.current(null);
-            }}
-            onFocus={() => focusSeriesRef.current(entry.id)}
-            onBlur={() => focusSeriesRef.current(null)}
-            aria-label={`Highlight ${shortLabel(entry.id)}`}
-          >
-            <i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}
-          </button>
-        ))}
-        <span className="history-status">– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing</span>
+      <div className="history-legend" aria-label={text('Framework colors', '框架颜色')}>
+        <div className="history-entry-legend">
+          {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              data-history-entry={entry.id}
+              onPointerEnter={() => focusSeriesRef.current(entry.id)}
+              onPointerLeave={(event) => {
+                if (document.activeElement !== event.currentTarget) focusSeriesRef.current(null);
+              }}
+              onFocus={() => focusSeriesRef.current(entry.id)}
+              onBlur={() => focusSeriesRef.current(null)}
+              aria-label={text(`Highlight ${shortLabel(entry.id)}`, `高亮 ${shortLabel(entry.id)}`)}
+            >
+              <i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}
+            </button>
+          ))}
+        </div>
+        {compact ? (
+          <details className="history-status">
+            <summary>
+              <span>{text('Mark key', '标记说明')}</span>
+              <span className="history-status-chevron" aria-hidden="true">›</span>
+            </summary>
+            <div>{text(
+              '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
+              '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
+            )}</div>
+          </details>
+        ) : (
+          <span className="history-status">{text(
+            '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
+            '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
+          )}</span>
+        )}
       </div>
       <div className="history-plot" ref={ref} />
       <details className="history-evidence">
-        <summary>Source evidence and gaps ({BENCHMARK_HISTORY.sources.length} audited runs)</summary>
+        <summary>{text(
+          `Source evidence and gaps (${BENCHMARK_HISTORY.sources.length} audited runs)`,
+          `来源证据与缺口（已审计 ${BENCHMARK_HISTORY.sources.length} 次运行）`,
+        )}</summary>
         <div className="history-evidence-scroll">
           <table>
-            <thead><tr><th>dataset</th><th>framework</th><th>rank</th><th>value</th><th>source / provenance</th></tr></thead>
+            <thead><tr><th>dataset</th><th>{text('framework', '框架')}</th><th>{text('rank', '排名')}</th><th>{text('value', '值')}</th><th>{text('source / provenance', '来源 / 溯源')}</th></tr></thead>
             <tbody>
               {points.map((point) => (
                 <tr key={`${point.checkpoint.id}:${point.entry}`}>
-                  <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{point.checkpoint.label}</button></td>
-                  <td>{point.label}</td><td>{point.rank == null ? point.status : `#${point.rank}`}</td>
-                  <td>{formatPointValue(point)}{point.aggregateCellCount != null
-                    ? ` · ${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} cells`
+                  <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{localizedCheckpoint(point.checkpoint, locale).label}</button></td>
+                  <td>{point.label}</td><td>{point.rank == null
+                    ? ({ missing: text('missing', '缺失'), observation: text('observation', '观察值'), dnf: 'DNF', incomparable: text('incomparable', '不可比'), ranked: text('ranked', '已排名') } as const)[point.status]
+                    : `#${point.rank}`}</td>
+                  <td>{formatPointValue(point, locale)}{point.aggregateCellCount != null
+                    ? ` · ${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} ${text('cells', '单元')}`
                     : ''}</td>
                   <td><code>{point.record?.runFile
                     ?? point.aggregateRecords?.[0]?.runFile
-                    ?? point.checkpoint.description}</code>{point.record?.entryCommit
+                    ?? localizedCheckpoint(point.checkpoint, locale).description}</code>{point.record?.entryCommit
                     ? ` @ ${point.record.entryCommit.slice(0, 12)}`
                     : point.aggregateRecords?.[0]?.entryCommit
                       ? ` @ ${point.aggregateRecords[0].entryCommit.slice(0, 12)}`

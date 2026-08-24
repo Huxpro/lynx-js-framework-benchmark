@@ -10,10 +10,6 @@ export function completeEntryScores(ids: string[], cells: DerivedCell[], weights
   missing: string[];
   cellCount: number;
 };
-export function completeRowGeomeans(ids: string[], cells: DerivedCell[], baselineId?: string | null): {
-  values: Map<string, number | null>;
-  rowCount: number;
-};
 export function slopeFit(points: [number, number][]): number | null;
 export function rankHistoryCell(
   entryIds: string[],
