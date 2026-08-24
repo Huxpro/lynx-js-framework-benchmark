@@ -701,6 +701,58 @@ h2 { font-size: 1.2rem; letter-spacing: -0.01em; margin: 2.2rem 0 0.4rem; }
 .chips .chip:hover { background: var(--surface-2); }
 .chips .chip[aria-pressed='true'] { background: var(--surface-2); color: var(--text-primary); font-weight: 650; }
 
+.score-mode-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(max-content, 1fr);
+  overflow-x: auto;
+  margin: 0.75rem 0 0;
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: thin;
+}
+.score-mode-tab {
+  position: relative;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  padding: 0.55rem clamp(0.75rem, 2vw, 1.35rem) 0.48rem;
+  font: 650 0.82rem ui-monospace, Menlo, monospace;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.score-mode-tab:hover,
+.score-mode-tab:focus-visible { color: var(--text-primary); background: var(--surface-2); outline: none; }
+.score-mode-tab[aria-selected='true'] {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+.score-mode-info {
+  display: inline-block;
+  margin-left: 0.4rem;
+  color: var(--text-tertiary);
+  font-size: 0.66rem;
+  transform: translateY(-0.18rem);
+}
+.score-detail-tabs {
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow-x: auto;
+  padding: 0.35rem 0 0.45rem;
+  margin: 0;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+.score-detail-tabs .chip { flex: 0 0 auto; }
+.score-detail-label {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+  font: 650 0.66rem ui-monospace, Menlo, monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-right: 0.25rem;
+}
+
 .legend { display: flex; flex-wrap: wrap; gap: 0.35rem 0.75rem; margin: 0.4rem 0 0.65rem; }
 .card > .legend {
   margin: 0.15rem -0.15rem 0.7rem;

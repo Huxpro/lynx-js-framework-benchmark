@@ -48,6 +48,18 @@ test('ranking choices use an independent selection rule instead of a rounded bor
   assert.match(css, /button\[aria-pressed='true'\]::after\s*\{\s*transform: scaleX\(1\)/);
 });
 
+test('interaction formula and detail tabs each stay on one horizontally browsable row', () => {
+  const formulas = css.match(/\.score-mode-tabs\s*\{([^}]*)\}/)?.[1] ?? '';
+  const details = css.match(/\.score-detail-tabs\s*\{([^}]*)\}/)?.[1] ?? '';
+  const formulaButton = css.match(/\.score-mode-tab\s*\{([^}]*)\}/)?.[1] ?? '';
+
+  assert.match(formulas, /grid-auto-flow\s*:\s*column/);
+  assert.match(formulas, /overflow-x\s*:\s*auto/);
+  assert.match(details, /flex-wrap\s*:\s*nowrap/);
+  assert.match(details, /overflow-x\s*:\s*auto/);
+  assert.doesNotMatch(formulaButton, /border-radius/);
+});
+
 test('ranking series fade as a group while the hovered line is emphasized', () => {
   assert.match(css, /\.history-series \.is-series-muted\s*\{\s*opacity: 0\.12/);
   assert.match(css, /\.history-series-line \.is-series-focus/);

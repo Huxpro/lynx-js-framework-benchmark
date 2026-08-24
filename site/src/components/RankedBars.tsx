@@ -23,6 +23,19 @@ interface OpSpec {
   scale: number;
 }
 
+export interface ScoreModeSpec {
+  key: string;
+  label: string;
+  ops: OpSpec[];
+  scoreWeights?: Record<string, number>;
+  summaryLabel: string;
+  caption: string;
+  equation: {
+    head: string;
+    lines: string[];
+  };
+}
+
 function failureSummary(record: BenchRecord | undefined): string {
   if (!record || record.dnfCount < 1) return 'not run';
   const failure = record.failures?.[0];
@@ -37,20 +50,21 @@ export function RankedBars({
   description,
   suite,
   metric = 'latency',
-  ops,
+  ops: baseOps,
   harness,
   theme,
   selected,
   unitFmt = fmtMs,
-  scoreWeights,
-  overallLabel = 'overall',
-  overallCaption,
+  scoreWeights: baseScoreWeights,
+  overallLabel: baseOverallLabel = 'overall',
+  overallCaption: baseOverallCaption,
+  scoreModes,
 }: {
   title: string;
   description: ReactNode;
   suite: string;
   metric?: string;
-  ops: OpSpec[];
+  ops?: OpSpec[];
   harness: string;
   theme: 'light' | 'dark';
   selected: Set<string>;
@@ -58,20 +72,33 @@ export function RankedBars({
   scoreWeights?: Record<string, number>;
   overallLabel?: string;
   overallCaption?: string;
+  scoreModes?: ScoreModeSpec[];
 }) {
   const { select, snapshot } = useBenchmarkData();
+  const hasScoreModes = Boolean(scoreModes?.length);
+  const [modeKey, setModeKey] = useState(scoreModes?.[0]?.key ?? 'single');
+  const activeMode = scoreModes?.find((mode) => mode.key === modeKey) ?? scoreModes?.[0];
+  const ops = activeMode?.ops ?? baseOps ?? [];
+  const scoreWeights = activeMode?.scoreWeights ?? baseScoreWeights;
+  const overallLabel = activeMode?.summaryLabel ?? baseOverallLabel;
+  const overallCaption = activeMode?.caption ?? baseOverallCaption;
   const firstOp = ops[0]?.key ?? 'overall';
   const [op, setOp] = useState<'overall' | string>(
-    harness === 'native' ? firstOp : 'overall',
+    hasScoreModes ? 'overall' : harness === 'native' ? firstOp : 'overall',
   );
-  const { setTip, onMove, tipNode } = useTooltip();
+  const { setTip, onMove, place, tipNode } = useTooltip();
   const activeOp = op === 'overall' || ops.some((spec) => spec.key === op) ? op : 'overall';
   useEffect(() => {
-    setOp(harness === 'native' ? firstOp : 'overall');
-  }, [firstOp, harness]);
+    setOp(hasScoreModes ? 'overall' : harness === 'native' ? firstOp : 'overall');
+  }, [firstOp, harness, hasScoreModes]);
   useEffect(() => {
     if (op !== 'overall' && !ops.some((spec) => spec.key === op)) setOp('overall');
   }, [op, ops]);
+
+  const showEquation = (mode: ScoreModeSpec) => setTip({
+    head: mode.equation.head,
+    lines: mode.equation.lines,
+  });
 
   const byOp = useMemo(() => {
     const m = new Map<string, Map<string, BenchRecord>>();
@@ -153,7 +180,65 @@ export function RankedBars({
         <div className="card-title">{title}</div>
         <div className="card-desc">{description}</div>
       </figcaption>
-      <div className="chips" role="group" aria-label="Operation">
+      {hasScoreModes && scoreModes && (
+        <div
+          className="score-mode-tabs"
+          role="tablist"
+          aria-label="Score equation"
+          onKeyDown={(event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+            const tabs = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+            const current = tabs.indexOf(document.activeElement as HTMLButtonElement);
+            const next = event.key === 'Home' ? 0
+              : event.key === 'End' ? tabs.length - 1
+                : event.key === 'ArrowRight' ? (current + 1) % tabs.length
+                  : (current - 1 + tabs.length) % tabs.length;
+            event.preventDefault();
+            tabs[next]?.focus();
+            tabs[next]?.click();
+          }}
+        >
+          {scoreModes.map((mode) => {
+            const active = mode.key === activeMode?.key;
+            return (
+              <button
+                key={mode.key}
+                type="button"
+                role="tab"
+                className="score-mode-tab"
+                aria-selected={active}
+                aria-label={`${mode.label}. ${mode.equation.head}. ${mode.equation.lines.join(' ')}`}
+                tabIndex={active ? 0 : -1}
+                onClick={() => {
+                  setModeKey(mode.key);
+                  setOp('overall');
+                }}
+                onMouseEnter={(event) => {
+                  showEquation(mode);
+                  onMove(event);
+                }}
+                onMouseMove={onMove}
+                onMouseLeave={(event) => {
+                  if (document.activeElement !== event.currentTarget) setTip(null);
+                }}
+                onFocus={(event) => {
+                  showEquation(mode);
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  requestAnimationFrame(() => place({
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.bottom,
+                  }));
+                }}
+                onBlur={() => setTip(null)}
+              >
+                {mode.label}<span aria-hidden="true" className="score-mode-info">?</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <div className={hasScoreModes ? 'chips score-detail-tabs' : 'chips'} role="group" aria-label="Detail data">
+        {hasScoreModes && <span className="score-detail-label">Detail</span>}
         <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>{overallLabel}</button>
         {ops.map((o) => (
           <button key={o.key} className="chip" aria-pressed={activeOp === o.key} onClick={() => setOp(o.key)}>

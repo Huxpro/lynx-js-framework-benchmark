@@ -180,6 +180,57 @@ function AppContent({
         .filter((s) => scales.includes(s))
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
 
+  const equal1kOps = tableOps([1000]);
+  const equal10kOps = tableOps([10000]);
+  const interactionModes = [
+    ...(harness === 'web' ? [{
+      key: 'weighted',
+      label: 'js-framework weighted',
+      ops: JS_FRAMEWORK_SCORE_OPS,
+      scoreWeights: JS_FRAMEWORK_SCORE_WEIGHTS,
+      summaryLabel: 'weighted score',
+      caption: 'weighted geometric mean of all 9 upstream CPU workload ratios × vs each workload\'s fastest entry — 1× is the per-workload oracle; incomplete entries are excluded',
+      equation: {
+        head: 'Upstream weighted geometric mean',
+        lines: [
+          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          'score = exp(Σ wᵢ · ln(rᵢ) ÷ Σ wᵢ)',
+          '9/9 cells required · upstream CPU weights',
+        ],
+      },
+    }] : []),
+    {
+      key: 'equal-1k',
+      label: 'equal · 1k',
+      ops: equal1kOps,
+      summaryLabel: 'equal score',
+      caption: `equal-weight geometric mean of the complete ${equal1kOps.length}-operation 1k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+      equation: {
+        head: 'Equal-weight 1k geometric mean',
+        lines: [
+          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          `score = exp(Σ ln(rᵢ) ÷ ${equal1kOps.length})`,
+          `${equal1kOps.length}/${equal1kOps.length} 1k cells required · every operation counts equally`,
+        ],
+      },
+    },
+    {
+      key: 'equal-10k',
+      label: 'equal · 10k',
+      ops: equal10kOps,
+      summaryLabel: 'equal score',
+      caption: `equal-weight geometric mean of the complete ${equal10kOps.length}-operation 10k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+      equation: {
+        head: 'Equal-weight 10k geometric mean',
+        lines: [
+          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          `score = exp(Σ ln(rᵢ) ÷ ${equal10kOps.length})`,
+          `${equal10kOps.length}/${equal10kOps.length} 10k cells required · every operation counts equally`,
+        ],
+      },
+    },
+  ];
+
   const nativeHasData = select({ harness: 'native' }).length > 0;
 
   return (
@@ -243,40 +294,13 @@ function AppContent({
           </p>
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
-          {harness === 'web' && (
-            <RankedBars
-              title="js-framework weighted score"
-              description={<>The upstream nine-case CPU formula, applied strictly to this lab's Web latency medians. All 9 cells must exist for an entry to rank. Workloads and weights follow <KrausestBenchmarkLink />; the Lynx measurement boundary remains pointerdown → composed DOM.</>}
-              suite="table"
-              ops={JS_FRAMEWORK_SCORE_OPS}
-              scoreWeights={JS_FRAMEWORK_SCORE_WEIGHTS}
-              overallLabel="weighted score"
-              overallCaption="weighted geometric mean of all 9 upstream CPU workload ratios × vs each workload's fastest entry — 1× is the per-workload oracle; incomplete entries are excluded"
-              harness={harness}
-              theme={theme}
-              selected={activeSelected}
-            />
-          )}
           <RankedBars
-            title="interaction latency @1k"
+            title="interaction benchmark"
             description={harness === 'web'
-              ? <>Table operations adapted from <KrausestBenchmarkLink />: tap → all mutations visible in the composed DOM. The equal summary describes this 1k slice; it is separate from the nine-case weighted score above.</>
-              : <>Table operations adapted from <KrausestBenchmarkLink />: native input handler → second native animation frame. The equal summary covers the complete Native 1k slice.</>}
+              ? <>One <KrausestBenchmarkLink /> workload family, three views: the upstream-weighted nine-case score and equal-weight 1k/10k scale slices. Measured from pointerdown → composed DOM; hover or focus a formula tab for its equation.</>
+              : <>The same <KrausestBenchmarkLink /> workload family at two Native scale slices, measured from the input handler → second native animation frame. Hover or focus a formula tab for its equation.</>}
             suite="table"
-            ops={tableOps([1000])}
-            overallLabel="equal summary"
-            harness={harness}
-            theme={theme}
-            selected={activeSelected}
-          />
-          <RankedBars
-            title="interaction latency @10k"
-            description={harness === 'web'
-              ? <>The same <KrausestBenchmarkLink />-style operations at 10,000 rows — where wire cost and reconciliation strategy separate.</>
-              : <>The same <KrausestBenchmarkLink />-style Native operations at 10,000 rows; input/session timeouts remain visible as DNF.</>}
-            suite="table"
-            ops={tableOps([10000])}
-            overallLabel="equal summary"
+            scoreModes={interactionModes}
             harness={harness}
             theme={theme}
             selected={activeSelected}

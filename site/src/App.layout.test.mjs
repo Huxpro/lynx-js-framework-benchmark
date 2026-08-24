@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
 const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import.meta.url), 'utf8');
+const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -73,14 +74,22 @@ test('Native empty checkpoints preserve the selected Scale view', () => {
   assert.match(emptyState, /How does Native cost grow with scale/);
 });
 
-test('Web overview exposes the strict upstream-weighted score separately from scale summaries', () => {
+test('interaction workloads share one module with three formula modes and one detail rail', () => {
   assert.match(source, /https:\/\/github\.com\/krausest\/js-framework-benchmark/);
   assert.match(source, /className="external-link benchmark-source-link"/);
-  assert.match(source, /title="js-framework weighted score"/);
-  assert.match(source, /All 9 cells must exist for an entry to rank/);
+  assert.match(source, /title="interaction benchmark"/);
+  assert.match(source, /label: 'js-framework weighted'/);
+  assert.match(source, /label: 'equal · 1k'/);
+  assert.match(source, /label: 'equal · 10k'/);
   assert.match(source, /select@1000/);
   assert.match(source, /clear@1000/);
-  assert.match(source, /scoreWeights=\{JS_FRAMEWORK_SCORE_WEIGHTS\}/);
-  assert.match(source, /title="interaction latency @1k"/);
-  assert.match(source, /overallLabel="equal summary"/);
+  assert.match(source, /scoreModes=\{interactionModes\}/);
+  assert.doesNotMatch(source, /title="js-framework weighted score"/);
+  assert.doesNotMatch(source, /title="interaction latency @(?:1|10)k"/);
+  assert.match(rankedBarsSource, /className="score-mode-tabs"/);
+  assert.match(rankedBarsSource, /className="score-mode-info">\?</);
+  assert.match(rankedBarsSource, /className=\{hasScoreModes \? 'chips score-detail-tabs'/);
+  assert.match(rankedBarsSource, /showEquation\(mode\)/);
+  assert.match(rankedBarsSource, /onFocus=\{\(event\) =>/);
+  assert.match(rankedBarsSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
 });
