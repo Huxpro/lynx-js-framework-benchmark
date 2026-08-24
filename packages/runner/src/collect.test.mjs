@@ -1262,10 +1262,12 @@ test('history audits every run but publishes only complete source-defined featur
   assert.deepEqual(
     out.history.checkpoints.map((checkpoint) => checkpoint.label),
     [
-      'Aug 10 · first complete matrix',
-      'Aug 16 · calibrated baseline',
-      'Aug 22 · expanded source cohort',
-      'Current · standards-aligned black-box',
+      'Aug 8 · React/Vue reference',
+      'Aug 10 · slow Octane joins',
+      'Aug 11 · Octane step change',
+      'Aug 15 · Octane converges',
+      'Aug 22 · Octane (Hux) joins',
+      'Current · merged upstream',
     ],
   );
   assert.equal(out.history.checkpoints.every((checkpoint) =>
@@ -1293,13 +1295,25 @@ test('history audits every run but publishes only complete source-defined featur
     }
   }
 
+  const aug8File = '2026-08-08T07-22-33-b0fcfd511132-full.json';
+  const aug8 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug8File)));
+  assert.ok(aug8);
+  assert.deepEqual(aug8.harnesses[0].entryIds, [
+    'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+  ]);
+  assert.equal(aug8.identityPointers.some(({ framework }) => framework === 'octane'), false);
+  assert.equal(
+    out.history.sources.find((source) => source.runFile === aug8File).reason,
+    'selected dataset checkpoint 2026-08-08-peer-reference',
+  );
+
   const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
   const aug10 = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File)));
   assert.ok(aug10);
   assert.deepEqual(aug10.harnesses[0].entryIds, [
-    'octane', 'octane-hux', 'react',
-    'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
   ]);
   assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').commit,
     'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
@@ -1307,39 +1321,23 @@ test('history audits every run but publishes only complete source-defined featur
     'upstream HEAD at measurement time');
   assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux1'), false);
   assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux2'), false);
-  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').commit,
-    'e9d0fab6d0dde33a70c77be05f4d2e5372431fbf');
-  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').sourceEntryId,
-    'octane-hux2');
-  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').label,
-    'Octane (Hux)');
-  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').version,
-    '0.1.31');
-  assert.match(aug10.identityPointers.find(({ entryId }) => entryId === 'octane-hux').config,
-    /S3 final stack/);
+  assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux'), false);
   const aug10Source = out.history.sources.find((source) => source.runFile === aug10File);
   assert.ok(aug10Source);
   assert.equal(aug10Source.entryCommits['octane-main'],
     'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
   assert.equal(aug10Source.rankEligible, true);
-  assert.equal(aug10Source.reason, 'selected dataset checkpoint 2026-08-10-hux-attempts');
+  assert.equal(aug10Source.reason, 'selected dataset checkpoint 2026-08-10-slow-octane');
 
   const aug16File = '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json';
   const aug16 = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug16File)));
-  assert.ok(aug16);
-  assert.deepEqual(aug16.harnesses[0].entryIds, [
-    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
-  ]);
-  assert.equal(aug16.harnesses[0].rankEligible, true);
-  const vueIfr = aug16.identityPointers.find(({ entryId }) => entryId === 'vue-vdom-ifr-et');
-  assert.match(vueIfr.configuration.summary, /enableIFR: true/);
-  assert.match(vueIfr.configuration.href, /vue-lynx-bench\.patch#L537-L550$/);
+  assert.equal(aug16, undefined);
 
   const incompleteFiles = [
-    '2026-08-08T07-22-33-b0fcfd511132-full.json',
     '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
     '2026-08-11T13-06-38-65160668d8d9-verify-featured-select10k.json',
+    aug16File,
   ];
   for (const file of incompleteFiles) {
     assert.equal(out.history.checkpoints.some((checkpoint) =>
@@ -1367,7 +1365,7 @@ test('history audits every run but publishes only complete source-defined featur
     ))), false);
 });
 
-test('history omits incomplete storm matrices and ranks the complete current cohort', () => {
+test('history omits non-standard storm rows and ranks the complete retained cohort', () => {
   const out = collectRuns({ root: repoRoot(), log: () => {} });
   const aug12File = '2026-08-12T18-02-55-65160668d8d9-upstream-main-6079a680-featured.json';
   assert.equal(out.history.checkpoints.some((checkpoint) =>
@@ -1380,16 +1378,16 @@ test('history omits incomplete storm matrices and ranks the complete current coh
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
     )));
-  const currentRecord = current.activeRecordIndexes.map((index) => out.history.records[index])
+  const currentRecords = current.activeRecordIndexes.map((index) => out.history.records[index]);
+  assert.equal(currentRecords.some((candidate) =>
+    ['updateStorm', 'selectStorm'].includes(candidate.workload)), false);
+  const currentRecord = currentRecords
     .find((candidate) => candidate.entry === 'octane-hux'
       && candidate.harness === 'web'
-      && candidate.workload === 'selectStorm'
+      && candidate.workload === 'select'
       && candidate.scale === 1000
       && candidate.metric === 'latency');
-  assert.equal(currentRecord.median, 22.610000133514404);
+  assert.equal(currentRecord.median, 23.894999980926514);
   assert.equal(currentRecord.rankEligible, true);
-  assert.equal(currentRecord.transport.issue, null);
-  assert.equal(currentRecord.transport.expectedSequentialCommits, 30);
-  assert.ok(currentRecord.transport.toMtsMessages >= 30);
-  assert.ok(currentRecord.transport.toBtsMessages >= 30);
+  assert.equal(currentRecord.transport, undefined);
 });

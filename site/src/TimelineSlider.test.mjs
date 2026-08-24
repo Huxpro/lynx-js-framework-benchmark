@@ -55,6 +55,8 @@ test('sticky workspace gives its second row entirely to the dataset slider', () 
   assert.doesNotMatch(source, /timeline-identities/);
   assert.doesNotMatch(source, /timeline-meta/);
   assert.match(receiptSource, /checkpoint\?\.label/);
+  assert.match(receiptSource, /checkpoint\?\.description/);
+  assert.match(receiptSource, />What changed</);
   assert.match(receiptSource, /dateTime=\{snapshot\.generatedAt\}/);
   assert.match(legendSource, /className="entry-method"/);
 });

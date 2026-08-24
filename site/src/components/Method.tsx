@@ -24,6 +24,12 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
         </span>
       </summary>
       <div className="receipt-grid">
+        {checkpoint?.description && (
+          <section className="receipt-change">
+            <h3>What changed</h3>
+            <p>{checkpoint.description}</p>
+          </section>
+        )}
         <section>
           <h3>Observation boundary</h3>
           <p>{boundary}. Timeout and unreachable prestate remain explicit DNF, never proxy values.</p>

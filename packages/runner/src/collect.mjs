@@ -162,42 +162,76 @@ const HUX1_COMMITS = new Set([
 ]);
 
 // Dataset history is editorially explicit. A complete run is necessary but no
-// longer sufficient to create a time-machine stop: otherwise retries and
-// one-entry additions turn into near-duplicate checkpoints. Stops represent a
-// material dataset change (first complete matrix, method/calibration contract,
-// public source cohort, or workload contract), never one framework's commit
-// history. Each checkpoint names one coherent dataset and its exact identities.
+// longer sufficient to create a time-machine stop: otherwise retries turn into
+// near-duplicate checkpoints. A stop must either establish the peer reference,
+// add a public source identity, change the workload contract, or capture a
+// material framework-level performance regime change inside an otherwise stable
+// cohort. Each checkpoint names one coherent dataset and its exact identities.
 export const DATASET_CHECKPOINT_SPECS = [
   {
-    id: '2026-08-10-hux-attempts',
-    label: 'Aug 10 · first complete matrix',
-    description: 'The earliest complete shared Web matrix in the archive. It includes upstream '
-      + 'Octane beside the faster Hux branch-head attempt; legacy storm rows stay source evidence because '
-      + 'they predate verified sequential-transport receipts.',
+    id: '2026-08-08-peer-reference',
+    label: 'Aug 8 · React/Vue reference',
+    description: 'The first retained comparison is a five-entry React/Vue same-run reference with '
+      + '90 shared non-storm benchmark cells. An early Octane build was captured in the same raw run, '
+      + 'but this stop leaves it as source evidence so the next checkpoint shows Octane entering the '
+      + 'ranked cohort instead of silently changing the baseline.',
+    webRunFile: '2026-08-08T07-22-33-b0fcfd511132-full.json',
+    excludedWorkloads: ['updateStorm', 'selectStorm'],
+    minimumBenchmarkCellCount: 90,
+    entryIds: [
+      'react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
+    ],
+  },
+  {
+    id: '2026-08-10-slow-octane',
+    label: 'Aug 10 · slow Octane joins',
+    description: 'Upstream Octane e81fd879 enters the five-entry reference cohort. Across 11 shared '
+      + 'interaction-latency cells its geomean is 3.91× React; Hux and DOM experiments captured in '
+      + 'this run remain source evidence and do not enter this checkpoint.',
     webRunFile: '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json',
     excludedWorkloads: ['updateStorm', 'selectStorm'],
     minimumBenchmarkCellCount: 90,
     entryIds: [
-      'octane', 'octane-hux', 'react',
+      'octane', 'react',
       'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
     ],
   },
   {
-    id: '2026-08-16-upstream-baseline',
-    label: 'Aug 16 · calibrated baseline',
-    description: 'Six-framework Web baseline after the measurement and calibration contract changed.',
-    webRunFile: '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json',
-    minimumBenchmarkCellCount: 100,
+    id: '2026-08-11-octane-step-change',
+    label: 'Aug 11 · Octane step change',
+    description: 'Upstream Octane moves to 9b147781 while the five peers and 99-cell non-storm matrix '
+      + 'stay fixed. Its 11-cell latency geomean falls from 3.91× to 1.32× React (66% lower), '
+      + 'making this a material framework change rather than another run.',
+    webRunFile: '2026-08-11T13-03-50-65160668d8d9-upstream-main-9b147781-featured.json',
+    excludedWorkloads: ['updateStorm', 'selectStorm'],
+    minimumBenchmarkCellCount: 90,
+    entryIds: [
+      'octane', 'react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
+    ],
+  },
+  {
+    id: '2026-08-15-octane-converges',
+    label: 'Aug 15 · Octane converges',
+    description: 'Upstream Octane advances to 63eb7888 with the same six-entry cohort and 99 shared '
+      + 'non-storm cells. Its 11-cell latency geomean reaches 1.14× React, 14% lower than Aug 11; '
+      + 'the intermediate 6079a680 run remains source evidence because its additional change was only '
+      + 'about 5.5% and changed neither the cohort nor workload contract.',
+    webRunFile: '2026-08-15T18-26-24-65160668d8d9-latest-featured-upstream.json',
+    excludedWorkloads: ['updateStorm', 'selectStorm'],
+    minimumBenchmarkCellCount: 90,
     entryIds: [
       'octane', 'react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr',
     ],
   },
   {
     id: '2026-08-22-new-lynx',
-    label: 'Aug 22 · expanded source cohort',
-    description: 'The public comparison cohort expanded to include the dated Huxpro/new-lynx '
-      + 'block-core source identity beside upstream Octane.',
+    label: 'Aug 22 · Octane (Hux) joins',
+    description: 'The cohort expands from six to seven entries with Huxpro/new-lynx fb8426e9 beside '
+      + 'upstream Octane 0fc84da0, with 101 shared non-storm benchmark cells. Across the same 11 '
+      + 'interaction cells Hux is 0.84× upstream and 0.92× React; this is a source-cohort change, '
+      + 'not a date-only rerun.',
     webRunFile: '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
+    excludedWorkloads: ['updateStorm', 'selectStorm'],
     minimumBenchmarkCellCount: 100,
     entryIds: [
       'octane', 'octane-hux', 'react',
@@ -970,9 +1004,11 @@ const buildHistory = ({
   checkpoints.push({
     id: 'current-main',
     generatedAt: current.generatedAt,
-    label: 'Current · standards-aligned black-box',
-    description: 'Current published Web and Native cohorts use clean source identities and the '
-      + 'standards-aligned black-box workload contract. Merged PR snapshots remain archive evidence.',
+    label: 'Current · merged upstream',
+    description: 'Upstream Octane advances from 0fc84da0 to 5227d7ba and now contains merged PR #791; '
+      + 'the seven-entry cohort still keeps Octane (Hux) fb8426e9 as a separate source identity. Across '
+      + '11 shared interaction cells upstream moves from 1.09× to 0.88× React. The public comparison '
+      + 'also uses the standards-aligned black-box workload, with storm experiments left as archive evidence.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
