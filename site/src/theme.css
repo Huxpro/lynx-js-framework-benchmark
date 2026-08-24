@@ -424,7 +424,6 @@ summary:focus-visible,
   flex: 0 0 auto;
   min-height: 1.72rem;
   border: 0;
-  border-radius: 0.24rem;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
@@ -436,20 +435,51 @@ summary:focus-visible,
   scroll-snap-align: start;
   white-space: nowrap;
 }
-.history-choice-scroll button:hover { background: var(--surface-2); color: var(--text-primary); }
+.history-choice-scroll button::after {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.12rem;
+  left: 0.55rem;
+  height: 2px;
+  background: var(--accent);
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.history-choice-scroll button:hover { color: var(--text-primary); }
 .history-choice-scroll button:active { transform: translateY(1px); }
 .history-choice-scroll button[aria-pressed='true'] {
-  background: var(--surface-2);
   color: var(--text-primary);
   font-weight: 720;
-  box-shadow: inset 0 -2px var(--accent);
 }
+.history-choice-scroll button[aria-pressed='true']::after { transform: scaleX(1); }
 .history-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; margin-top: 0.65rem; color: var(--text-secondary); font-size: 0.72rem; }
+.history-legend button,
 .history-legend span { display: inline-flex; align-items: center; gap: 0.28rem; }
+.history-legend button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: crosshair;
+  transition: color 120ms ease-out, opacity 120ms ease-out;
+}
 .history-legend i { width: 0.52rem; height: 0.52rem; border-radius: 2px; }
 .history-legend .history-status { margin-left: auto; color: var(--text-muted); }
 .history-plot { width: 100%; overflow-x: auto; margin-top: 0.2rem; border-top: 1px dotted var(--border); }
 .history-plot svg { display: block; max-width: none; }
+.history-series path,
+.history-series circle,
+.history-series text { transition: opacity 120ms ease-out, stroke-width 120ms ease-out; }
+.history-series path { pointer-events: stroke; cursor: crosshair; }
+.history-series circle { pointer-events: all; cursor: crosshair; }
+.history-series .is-series-muted { opacity: 0.12; }
+.history-series-line .is-series-focus { stroke-opacity: 1; stroke-width: 3.25px; }
+.history-series-point .is-series-focus { stroke-width: 3px; }
+.history-legend button.is-series-muted { opacity: 0.24; }
+.history-legend button.is-series-focus { color: var(--text-primary); }
 .history-evidence summary { cursor: pointer; color: var(--text-secondary); font-size: 0.8rem; }
 .history-evidence-scroll { max-height: 24rem; overflow: auto; margin-top: 0.45rem; border: 1px solid var(--border); }
 .history-evidence table { border-collapse: collapse; width: 100%; font-size: 0.7rem; }
@@ -964,6 +994,11 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
 @media (prefers-reduced-motion: reduce) {
   .bar-fill { transition: none; }
   .appendix-chevron { transition: none; }
+  .history-choice-scroll button::after,
+  .history-legend button,
+  .history-series path,
+  .history-series circle,
+  .history-series text { transition: none; }
 }
 @media (pointer: coarse) {
   .history-choice-scroll button { min-height: 2.75rem; padding-inline: 0.72rem; }

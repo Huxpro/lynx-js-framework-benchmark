@@ -148,6 +148,7 @@ export function HistoryRanking({
   onSnapshotChange: (index: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
   const allRecords = BENCHMARK_HISTORY.records.filter((record) =>
     record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry));
   const workloads = [...new Set(allRecords.map((record) => record.workload))].sort((a, b) => {
@@ -290,14 +291,27 @@ export function HistoryRanking({
       marks: [
         Plot.ruleX([selectedCheckpoint.id], { stroke: 'var(--accent)', strokeWidth: 14, strokeOpacity: 0.08 }),
         Plot.ruleX([selectedCheckpoint.id], { stroke: 'var(--accent)', strokeWidth: 1.5, strokeOpacity: 0.9 }),
-        Plot.line(rankedPoints, { x: 'dataset', y: 'rank', z: 'segment', stroke: 'entry', strokeWidth: 2 }),
+        Plot.line(rankedPoints, {
+          x: 'dataset', y: 'rank', z: 'segment', stroke: 'entry', strokeWidth: 2,
+          className: 'history-series history-series-line',
+        }),
         Plot.link(transitions, {
           x1: 'fromDataset', y1: 'fromRank', x2: 'toDataset', y2: 'toRank',
           stroke: 'entry', strokeWidth: 2, strokeDasharray: '5,4', strokeOpacity: 0.72,
+          className: 'history-series history-series-line',
         }),
-        Plot.dot(rankedPoints, { x: 'dataset', y: 'rank', stroke: 'entry', fill: background, r: 4, strokeWidth: 2 }),
-        Plot.dot(observations, { x: 'dataset', y: 'plotRank', stroke: 'entry', fill: background, r: 4, strokeWidth: 1.5 }),
-        Plot.dot(incomparable, { x: 'dataset', y: 'plotRank', stroke: 'entry', fill: 'entry', r: 4, opacity: 0.8 }),
+        Plot.dot(rankedPoints, {
+          x: 'dataset', y: 'rank', stroke: 'entry', fill: background, r: 4, strokeWidth: 2,
+          className: 'history-series history-series-point',
+        }),
+        Plot.dot(observations, {
+          x: 'dataset', y: 'plotRank', stroke: 'entry', fill: background, r: 4, strokeWidth: 1.5,
+          className: 'history-series history-series-point',
+        }),
+        Plot.dot(incomparable, {
+          x: 'dataset', y: 'plotRank', stroke: 'entry', fill: 'entry', r: 4, opacity: 0.8,
+          className: 'history-series history-series-point',
+        }),
         Plot.dot(dnfs, { x: 'dataset', y: 'plotRank', stroke: 'var(--bad)', fill: 'var(--bad)', r: 3 }),
         Plot.dot(missing, { x: 'dataset', y: 'plotRank', fill: 'entry', r: 1.4, opacity: 0.18 }),
         Plot.dot(selectedPoints.filter((point) => point.status === 'ranked'), {
@@ -315,6 +329,7 @@ export function HistoryRanking({
           paintOrder: 'stroke',
           fontWeight: 700,
           fontSize: 11,
+          className: 'history-series history-series-label',
         }),
         Plot.tip(points, Plot.pointer({
           x: 'dataset', y: 'plotRank', title,
@@ -332,7 +347,41 @@ export function HistoryRanking({
       ],
     });
     node.replaceChildren(plot);
-    return () => plot.remove();
+    const entryByColor = new Map(ids.map((id) => [entryColor(id, theme).toLowerCase(), id]));
+    const seriesMarks = [...plot.querySelectorAll<SVGElement>(
+      '.history-series path, .history-series circle, .history-series text',
+    )];
+    const entryForMark = (mark: SVGElement) => {
+      const stroke = mark.getAttribute('stroke')?.toLowerCase();
+      const fill = mark.getAttribute('fill')?.toLowerCase();
+      return (stroke && entryByColor.get(stroke)) || (fill && entryByColor.get(fill)) || null;
+    };
+    const focusSeries = (entry: string | null) => {
+      for (const mark of seriesMarks) {
+        const markEntry = entryForMark(mark);
+        mark.classList.toggle('is-series-muted', Boolean(entry && markEntry && markEntry !== entry));
+        mark.classList.toggle('is-series-focus', Boolean(entry && markEntry === entry));
+      }
+      const section = node.closest('.history-ranking');
+      for (const item of section?.querySelectorAll<HTMLElement>('[data-history-entry]') ?? []) {
+        const itemEntry = item.dataset.historyEntry;
+        item.classList.toggle('is-series-muted', Boolean(entry && itemEntry !== entry));
+        item.classList.toggle('is-series-focus', Boolean(entry && itemEntry === entry));
+      }
+    };
+    const controller = new AbortController();
+    for (const mark of seriesMarks) {
+      const entry = entryForMark(mark);
+      if (!entry) continue;
+      mark.addEventListener('pointerenter', () => focusSeries(entry), { signal: controller.signal });
+    }
+    plot.addEventListener('pointerleave', () => focusSeries(null), { signal: controller.signal });
+    focusSeriesRef.current = focusSeries;
+    return () => {
+      controller.abort();
+      focusSeriesRef.current = () => undefined;
+      plot.remove();
+    };
   }, [points, rankedPoints, observations, incomparable, dnfs, missing, transitions, selectedPoints,
     selectedCheckpoint, snapshotIndex, activeScale, harness, theme]);
 
@@ -381,7 +430,20 @@ export function HistoryRanking({
       </div>
       <div className="history-legend" aria-label="Framework colors">
         {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
-          <span key={entry.id}><i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}</span>
+          <button
+            key={entry.id}
+            type="button"
+            data-history-entry={entry.id}
+            onPointerEnter={() => focusSeriesRef.current(entry.id)}
+            onPointerLeave={(event) => {
+              if (document.activeElement !== event.currentTarget) focusSeriesRef.current(null);
+            }}
+            onFocus={() => focusSeriesRef.current(entry.id)}
+            onBlur={() => focusSeriesRef.current(null)}
+            aria-label={`Highlight ${shortLabel(entry.id)}`}
+          >
+            <i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}
+          </button>
         ))}
         <span className="history-status">– – cohort change · ○ observation · ● incomparable · red DNF · faint missing</span>
       </div>

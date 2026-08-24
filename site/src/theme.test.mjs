@@ -38,6 +38,22 @@ test('ranking configuration is a horizontally browsable one-click option rail', 
   assert.match(css, /@media \(pointer: coarse\)/);
 });
 
+test('ranking choices use an independent selection rule instead of a rounded bordered block', () => {
+  const button = css.match(/\.history-choice-scroll button\s*\{([^}]*)\}/)?.[1] ?? '';
+  const active = css.match(/\.history-choice-scroll button\[aria-pressed='true'\]\s*\{([^}]*)\}/)?.[1] ?? '';
+
+  assert.doesNotMatch(button, /border-radius/);
+  assert.doesNotMatch(active, /background|border|box-shadow/);
+  assert.match(css, /\.history-choice-scroll button::after\s*\{/);
+  assert.match(css, /button\[aria-pressed='true'\]::after\s*\{\s*transform: scaleX\(1\)/);
+});
+
+test('ranking series fade as a group while the hovered line is emphasized', () => {
+  assert.match(css, /\.history-series \.is-series-muted\s*\{\s*opacity: 0\.12/);
+  assert.match(css, /\.history-series-line \.is-series-focus/);
+  assert.match(css, /\.history-legend button\.is-series-muted/);
+});
+
 test('visualization appendices stay compact until their audited table is opened', () => {
   assert.match(css, /\.visualization-appendix\s*\{/);
   assert.match(css, /\.visualization-appendix > summary\s*\{/);

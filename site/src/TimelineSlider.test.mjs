@@ -44,6 +44,15 @@ test('history ranking keeps cohort transitions visible and puts rank context ins
   assert.doesNotMatch(rankingSource, /<select/);
 });
 
+test('history ranking exposes every series to hover and legend focus highlighting', () => {
+  assert.match(rankingSource, /className: 'history-series history-series-line'/);
+  assert.match(rankingSource, /className: 'history-series history-series-point'/);
+  assert.match(rankingSource, /focusSeriesRef/);
+  assert.match(rankingSource, /mark\.classList\.toggle\('is-series-muted'/);
+  assert.match(rankingSource, /data-history-entry=\{entry\.id\}/);
+  assert.match(rankingSource, /aria-label=\{`Highlight \$\{shortLabel\(entry\.id\)\}`\}/);
+});
+
 test('framework hover cards own source links and exact plugin options', () => {
   assert.match(legendSource, /snapshot\.identityPointers\.find/);
   assert.match(legendSource, /className="external-link"/);
