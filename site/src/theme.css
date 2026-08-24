@@ -542,6 +542,12 @@ summary:focus-visible,
 }
 .history-choice-scroll button:hover { color: var(--text-primary); }
 .history-choice-scroll button:active { transform: translateY(1px); }
+.history-choice-scroll button:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.42;
+  transform: none;
+}
 .history-choice-scroll button[aria-pressed='true'] {
   color: var(--text-primary);
   font-weight: 720;
@@ -553,6 +559,72 @@ summary:focus-visible,
   color: var(--text-muted);
   font-size: 0.62rem;
   transform: translateY(-0.16rem);
+}
+.history-change-ledger {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(9rem, 0.42fr) minmax(16rem, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem 0.8rem;
+  min-height: 3.15rem;
+  margin: 0.7rem 0 0.2rem;
+  padding: 0.4rem 0.15rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.history-change-asterisk {
+  align-self: stretch;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  font: 800 1.35rem/1 ui-monospace, Menlo, monospace;
+}
+.history-change-ledger.has-change .history-change-asterisk {
+  border-right-color: var(--accent);
+  color: var(--accent);
+}
+.history-change-context {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+.history-change-context > span,
+.history-change-item b {
+  color: var(--text-muted);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.58rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.history-change-context strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-change-items {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+}
+.history-change-item {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.38rem;
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+.history-change-item b { color: var(--accent); }
+.history-basis-receipt {
+  color: var(--text-muted);
+  font: 0.62rem/1.35 ui-monospace, Menlo, monospace;
+  text-align: right;
+  white-space: nowrap;
 }
 .history-legend {
   display: flex;
@@ -1466,6 +1538,19 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .receipt-audit { gap: 0.45rem; }
   .history-browser-heading output { display: none; }
   .history-choice-rail { grid-template-columns: 4.45rem minmax(0, 1fr); }
+  .history-change-ledger {
+    grid-template-columns: 1.45rem minmax(0, 1fr);
+    align-items: start;
+    gap: 0.35rem 0.6rem;
+    padding-block: 0.5rem;
+  }
+  .history-change-asterisk { grid-row: 1 / span 3; }
+  .history-change-items { gap: 0.25rem 0.7rem; }
+  .history-basis-receipt {
+    grid-column: 2;
+    text-align: left;
+    white-space: normal;
+  }
   .history-legend { display: block; }
   .history-entry-legend {
     width: 100%;

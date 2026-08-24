@@ -57,6 +57,23 @@ test('history ranking keeps cohort transitions visible and puts rank context ins
   assert.doesNotMatch(rankingSource, /label="Scale"[\s\S]*relative geomean/);
 });
 
+test('history ranking defaults to a complete replay and explains every dataset delta', () => {
+  assert.match(rankingSource, /WEB_HISTORY_REPLAY/);
+  assert.match(rankingSource, /historyReplayRecordsForCheckpoint/);
+  assert.match(rankingSource, /const REPLAY_BASIS = 'replay'/);
+  assert.match(rankingSource, /param\('historyBasis'\) === ORIGINAL_BASIS/);
+  assert.match(rankingSource, /label: text\('Unified replay', '统一 replay'\)/);
+  assert.match(rankingSource, /label: text\('Original runs', '原始运行'\)/);
+  assert.match(rankingSource, /11 repetitions · 12\/12 standard latency cells/);
+  assert.match(rankingSource, /className="history-change-asterisk"/);
+  assert.match(rankingSource, /text\('Change ledger', '变化台账'\)/);
+  assert.match(rankingSource, /rankDeltaGlyph/);
+  assert.match(rankingSource, /sourceChanges/);
+  assert.match(rankingSource, /formulaAdded/);
+  assert.match(rankingSource, /machineChanged/);
+  assert.match(rankingSource, /run-to-run measurement variance/);
+});
+
 test('history ranking exposes every series to hover and legend focus highlighting', () => {
   assert.match(rankingSource, /className: 'history-series history-series-line'/);
   assert.match(rankingSource, /className: 'history-series history-series-point'/);

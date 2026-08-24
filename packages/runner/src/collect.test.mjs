@@ -7,7 +7,11 @@ import test from 'node:test';
 
 import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
 
-import { collectRuns, DATASET_CHECKPOINT_SPECS } from './collect.mjs';
+import {
+  collectRuns,
+  DATASET_CHECKPOINT_SPECS,
+  HISTORY_REPLAY_SPEC,
+} from './collect.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
   CONNECTOR_PACKAGE_TREES_PROTOCOL,
@@ -1272,6 +1276,46 @@ test('history audits every run but publishes only complete source-defined featur
   );
   assert.equal(out.history.checkpoints.every((checkpoint) =>
     !Object.hasOwn(checkpoint, 'octaneCommit')), true);
+
+  assert.equal(out.history.replays.length, 1);
+  const replay = out.history.replays[0];
+  assert.equal(replay.id, HISTORY_REPLAY_SPEC.id);
+  assert.equal(replay.runFile, HISTORY_REPLAY_SPEC.runFile);
+  assert.equal(replay.minimumReps, 11);
+  assert.equal(replay.cellKeys.length, 12);
+  assert.equal(replay.cellKeys.includes('clear@1000'), true);
+  assert.equal(replay.checkpoints.length, webCheckpointIds.length);
+  const stablePeerCells = [];
+  for (const replayCheckpoint of replay.checkpoints) {
+    const checkpoint = out.history.checkpoints.find((candidate) =>
+      candidate.id === replayCheckpoint.checkpointId);
+    assert.ok(checkpoint);
+    const records = replayCheckpoint.activeRecordIndexes.map((index) => replay.records[index]);
+    assert.equal(records.length, replayCheckpoint.entryIds.length * replay.cellKeys.length);
+    assert.equal(records.every((record) =>
+      record.n >= replay.minimumReps
+      && record.dnfCount === 0
+      && Number.isFinite(record.median)
+      && record.comparisonKind === 'historical-replay'), true);
+    assert.equal(records.filter((record) =>
+      record.workload === 'clear' && record.scale === 1000).length,
+    replayCheckpoint.entryIds.length);
+    for (const [entryId, sourceEntryId] of Object.entries(replayCheckpoint.sourceByEntry)) {
+      const pointer = checkpoint.identityPointers.find((item) => item.entryId === entryId);
+      const record = records.find((item) => item.entry === entryId);
+      assert.ok(record);
+      assert.equal(record.entryCommit, pointer.commit);
+      assert.equal(record.sourceEntry ?? record.entry, sourceEntryId);
+    }
+    stablePeerCells.push(Object.fromEntries(records
+      .filter((record) => record.entry === 'react')
+      .map((record) => [`${record.workload}@${record.scale}`, record.median])));
+  }
+  for (const cells of stablePeerCells.slice(1)) assert.deepEqual(cells, stablePeerCells[0]);
+  assert.equal(out.history.sources.find((source) =>
+    source.runFile === HISTORY_REPLAY_SPEC.runFile).reason,
+  'partial Web run; explicit suite, case, or scale selection');
+
   for (const checkpoint of out.history.checkpoints) {
     const entryIds = new Set(checkpoint.harnesses.flatMap((cohort) => cohort.entryIds));
     assert.deepEqual(

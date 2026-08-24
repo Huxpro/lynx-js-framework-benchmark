@@ -11,6 +11,8 @@ import {
   fmtX,
   HistoryCheckpoint,
   HistoryRecord,
+  HistoryReplay,
+  historyReplayRecordsForCheckpoint,
   historyRecordsForCheckpoint,
   shortLabel,
 } from '../data';
@@ -61,6 +63,11 @@ function metricLabel(metric: string, locale: Locale): string {
   return labels[metric]?.[locale === 'zh-CN' ? 1 : 0] ?? metric;
 }
 
+function rankDeltaGlyph(delta: number | null | undefined): string {
+  if (delta == null || delta === 0) return '';
+  return delta > 0 ? `↑${delta}` : `↓${Math.abs(delta)}`;
+}
+
 interface RankedPoint {
   entry: string;
   label: string;
@@ -74,7 +81,11 @@ interface RankedPoint {
   aggregateCellCount?: number;
   checkpoint: HistoryCheckpoint;
   cohortIdentity: string;
+  machineId: string;
+  aggregateCellKeys?: string[];
   segment?: string;
+  previousRank?: number | null;
+  rankDelta?: number | null;
 }
 
 function formatPointValue(point: RankedPoint, locale: Locale): string {
@@ -94,6 +105,27 @@ interface CohortTransition {
   toRank: number;
 }
 
+interface EntrySourceChange {
+  entry: string;
+  kind: 'added' | 'removed' | 'changed';
+  from: string | null;
+  to: string | null;
+}
+
+interface DatasetChangeAudit {
+  checkpoint: HistoryCheckpoint;
+  baseline: boolean;
+  sourceChanges: EntrySourceChange[];
+  cohortAdded: string[];
+  cohortRemoved: string[];
+  formulaAdded: string[];
+  formulaRemoved: string[];
+  machineChanged: boolean;
+  previousMachineId: string | null;
+  machineId: string;
+  hasChanges: boolean;
+}
+
 function ChoiceRail({
   label,
   value,
@@ -106,6 +138,7 @@ function ChoiceRail({
     value: string;
     label: string;
     equation?: { head: string; lines: string[] };
+    disabled?: boolean;
   }>;
   onChange: (value: string) => void;
 }) {
@@ -135,6 +168,7 @@ function ChoiceRail({
             key={option.value}
             type="button"
             aria-pressed={option.value === value}
+            disabled={option.disabled}
             aria-label={option.equation
               ? `${option.label}. ${option.equation.head}. ${option.equation.lines.join(' ')}`
               : option.label}
@@ -178,6 +212,11 @@ const DATASET_BY_ID = new Map(BENCHMARK_HISTORY.checkpoints.map((checkpoint) =>
 const SCORE_VIEW = 'score';
 const CELL_VIEW = 'cell';
 type RankView = typeof SCORE_VIEW | typeof CELL_VIEW;
+const REPLAY_BASIS = 'replay';
+const ORIGINAL_BASIS = 'original';
+type HistoryBasis = typeof REPLAY_BASIS | typeof ORIGINAL_BASIS;
+const WEB_HISTORY_REPLAY: HistoryReplay | null = BENCHMARK_HISTORY.replays?.find((replay) =>
+  replay.id === 'web-history-replay-v1') ?? null;
 
 interface HistoryScoreMode {
   key: string;
@@ -269,6 +308,8 @@ export function HistoryRanking({
   const [rankView, setRankView] = useState<RankView>(() =>
     param('historyView') === CELL_VIEW || (initialCase != null && initialCase !== 'interactive')
       ? CELL_VIEW : SCORE_VIEW);
+  const [historyBasis, setHistoryBasis] = useState<HistoryBasis>(() =>
+    param('historyBasis') === ORIGINAL_BASIS ? ORIGINAL_BASIS : REPLAY_BASIS);
   const [scoreModeKey, setScoreModeKey] = useState(() => {
     if (initialCase === 'interactive') {
       return Number(param('historyScale') ?? 1000) === 10000 ? 'equal-10000' : 'equal-1000';
@@ -290,6 +331,12 @@ export function HistoryRanking({
     && record.metric === activeMetric).map((record) => record.scale))].sort((a, b) => a - b);
   const [scale, setScale] = useState(() => Number(param('historyScale') ?? 1000));
   const activeScale = scales.includes(scale) ? scale : (scales.includes(1000) ? 1000 : scales[0]);
+  const replayAvailable = harness === 'web'
+    && WEB_HISTORY_REPLAY != null
+    && (isAggregate || activeMetric === 'latency');
+  const activeHistoryBasis: HistoryBasis = replayAvailable
+    ? historyBasis
+    : ORIGINAL_BASIS;
 
   useEffect(() => {
     if (activeWorkload !== workload) setWorkload(activeWorkload);
@@ -302,8 +349,17 @@ export function HistoryRanking({
     for (const [index, checkpoint] of BENCHMARK_HISTORY.checkpoints.entries()) {
       const cohort = checkpoint.harnesses.find((candidate) => candidate.harness === harness);
       if (!cohort) continue;
-      const checkpointRecords = historyRecordsForCheckpoint(checkpoint)
+      const originalRecords = historyRecordsForCheckpoint(checkpoint)
         .filter((record) => record.harness === harness) as HistoryRecord[];
+      const replayRecords = WEB_HISTORY_REPLAY && harness === 'web'
+        ? historyReplayRecordsForCheckpoint(WEB_HISTORY_REPLAY, checkpoint)
+        : [];
+      const checkpointRecords = activeHistoryBasis === REPLAY_BASIS && replayRecords.length > 0
+        ? replayRecords
+        : originalRecords;
+      const machineId = activeHistoryBasis === REPLAY_BASIS && replayRecords.length > 0
+        ? WEB_HISTORY_REPLAY!.machineId
+        : cohort.machineId;
       const requestedAggregateCells = activeScoreMode?.ops.map((op) => ({
         key: op.key,
         records: checkpointRecords.filter((record) => record.workload === op.workload
@@ -346,7 +402,7 @@ export function HistoryRanking({
         ? `${activeScoreMode?.key}:${aggregateCells.map((cell) => cell.key).join(',')}`
         : 'single-cell';
       const cohortIdentity = [
-        cohort.machineId,
+        machineId,
         cohort.environment,
         ...cohort.entryIds,
         formulaIdentity,
@@ -359,6 +415,8 @@ export function HistoryRanking({
           plotRank: point.rank ?? HISTORY_RANK_LIMIT + 1,
           checkpoint,
           cohortIdentity,
+          machineId,
+          ...(isAggregate ? { aggregateCellKeys: aggregateCells.map((cell) => cell.key) } : {}),
         });
       }
     }
@@ -371,11 +429,108 @@ export function HistoryRanking({
         previousIdentity = point.status === 'ranked' ? point.cohortIdentity : null;
       }
     }
+    for (const entry of HISTORY_ENTRY_IDS) {
+      let previous: RankedPoint | null = null;
+      for (const point of out.filter((candidate) => candidate.entry === entry)) {
+        point.previousRank = previous?.rank ?? null;
+        point.rankDelta = point.rank != null && previous?.rank != null
+          ? previous.rank - point.rank
+          : null;
+        previous = point.status === 'ranked' ? point : previous;
+      }
+    }
     return out;
-  }, [harness, activeWorkload, activeScale, activeMetric, isAggregate, activeScoreMode]);
+  }, [harness, activeWorkload, activeScale, activeMetric, isAggregate, activeScoreMode,
+    activeHistoryBasis]);
+
+  const checkpointAudits = useMemo(() => {
+    const audits: DatasetChangeAudit[] = [];
+    let previous: {
+      checkpoint: HistoryCheckpoint;
+      entries: string[];
+      commits: Map<string, string | null>;
+      formulaKeys: string[];
+      machineId: string;
+    } | null = null;
+    for (const checkpoint of BENCHMARK_HISTORY.checkpoints) {
+      const cohort = checkpoint.harnesses.find((candidate) => candidate.harness === harness);
+      if (!cohort) continue;
+      const checkpointPoints = points.filter((point) => point.checkpoint.id === checkpoint.id);
+      const sample = checkpointPoints[0];
+      const formulaKeys = isAggregate
+        ? sample?.aggregateCellKeys ?? []
+        : [`${activeWorkload}@${activeScale}:${activeMetric}`];
+      const commits = new Map(checkpoint.identityPointers.map((pointer) =>
+        [pointer.entryId, pointer.commit]));
+      const machineId = sample?.machineId ?? cohort.machineId;
+      if (!previous) {
+        audits.push({
+          checkpoint,
+          baseline: true,
+          sourceChanges: [],
+          cohortAdded: [],
+          cohortRemoved: [],
+          formulaAdded: [],
+          formulaRemoved: [],
+          machineChanged: false,
+          previousMachineId: null,
+          machineId,
+          hasChanges: false,
+        });
+      } else {
+        const sourceChanges: EntrySourceChange[] = [];
+        const allEntries = new Set([...previous.commits.keys(), ...commits.keys()]);
+        for (const entry of allEntries) {
+          const from = previous.commits.get(entry) ?? null;
+          const to = commits.get(entry) ?? null;
+          if (from === to) continue;
+          sourceChanges.push({
+            entry,
+            kind: from == null ? 'added' : to == null ? 'removed' : 'changed',
+            from,
+            to,
+          });
+        }
+        const cohortAdded = cohort.entryIds.filter((entry) => !previous!.entries.includes(entry));
+        const cohortRemoved = previous.entries.filter((entry) => !cohort.entryIds.includes(entry));
+        const formulaAdded = formulaKeys.filter((key) => !previous!.formulaKeys.includes(key));
+        const formulaRemoved = previous.formulaKeys.filter((key) => !formulaKeys.includes(key));
+        const machineChanged = previous.machineId !== machineId;
+        audits.push({
+          checkpoint,
+          baseline: false,
+          sourceChanges,
+          cohortAdded,
+          cohortRemoved,
+          formulaAdded,
+          formulaRemoved,
+          machineChanged,
+          previousMachineId: previous.machineId,
+          machineId,
+          hasChanges: sourceChanges.length > 0
+            || cohortAdded.length > 0
+            || cohortRemoved.length > 0
+            || formulaAdded.length > 0
+            || formulaRemoved.length > 0
+            || machineChanged,
+        });
+      }
+      previous = {
+        checkpoint,
+        entries: cohort.entryIds,
+        commits,
+        formulaKeys,
+        machineId,
+      };
+    }
+    return audits;
+  }, [points, harness, isAggregate, activeWorkload, activeScale, activeMetric]);
+  const auditByCheckpoint = useMemo(() => new Map(checkpointAudits.map((audit) =>
+    [audit.checkpoint.id, audit])), [checkpointAudits]);
 
   const selectedCheckpoint = BENCHMARK_HISTORY.checkpoints[snapshotIndex];
   const selectedPoints = points.filter((point) => point.checkpoint.id === selectedCheckpoint.id);
+  const selectedAudit = auditByCheckpoint.get(selectedCheckpoint.id) ?? null;
   const selectedAggregateCellCount = selectedPoints.find((point) =>
     point.aggregateCellCount != null)?.aggregateCellCount;
   const rankedPoints = points.filter((point) => point.status === 'ranked');
@@ -423,10 +578,30 @@ export function HistoryRanking({
         : point.status === 'incomparable' ? text('not ranked — incomparable transport work', '未排名——transport 工作不可比')
           : point.status === 'observation' ? text('not ranked — isolated observation', '未排名——孤立观察值')
             : point.status === 'dnf' ? text('not ranked — DNF', '未排名——DNF') : text('not run in this exact cohort', '未在此精确 cohort 中运行');
+      const audit = auditByCheckpoint.get(point.checkpoint.id);
+      const ownSourceChange = audit?.sourceChanges.find((change) =>
+        change.entry === point.entry);
+      const delta = rankDeltaGlyph(point.rankDelta);
+      const changeSummary = ownSourceChange
+        ? text(
+          `* source ${ownSourceChange.kind}${delta ? ` · rank ${delta}` : ''}`,
+          `* 来源${ownSourceChange.kind === 'added' ? '加入' : ownSourceChange.kind === 'removed' ? '移除' : '变更'}${delta ? ` · 排名 ${delta}` : ''}`,
+        )
+        : delta
+          ? audit?.machineChanged || audit?.formulaAdded.length || audit?.formulaRemoved.length
+            || audit?.cohortAdded.length || audit?.cohortRemoved.length
+            ? text(`rank ${delta} across a comparison-contract change`, `排名 ${delta}，跨越对比合约变化`)
+            : activeHistoryBasis === ORIGINAL_BASIS
+              ? text(`rank ${delta} with unchanged source · run-to-run variance`, `来源未变但排名 ${delta} · 跨运行波动`)
+              : text(`rank ${delta} with shared replay controls`, `统一 replay 对照下排名 ${delta}`)
+          : activeHistoryBasis === REPLAY_BASIS
+            ? text('shared 11-rep replay control', '共享 11 次重复 replay 对照')
+            : null;
       return [
         point.label,
         `${status}  ·  ${formatPointValue(point, locale)}`,
         datasetAxisLabel(point.checkpoint.id, locale),
+        changeSummary,
         point.aggregateCellCount != null
           ? text(
             `${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} available cells  ·  ${activeScoreMode?.formulaLabel ?? 'geometric mean'}`,
@@ -447,7 +622,7 @@ export function HistoryRanking({
         label: text('dataset sequence →', 'dataset 序列 →'),
         type: 'point',
         domain: DATASET_IDS,
-        tickFormat: (id: string) => datasetAxisLabel(id, locale),
+        tickFormat: (id: string) => `${datasetAxisLabel(id, locale)}${auditByCheckpoint.get(id)?.hasChanges ? ' *' : ''}`,
         grid: true,
         padding: 0.45,
       },
@@ -489,10 +664,37 @@ export function HistoryRanking({
         Plot.dot(selectedPoints.filter((point) => point.status === 'ranked'), {
           x: 'dataset', y: 'rank', stroke: 'var(--accent)', fill: 'none', r: 7, strokeWidth: 2,
         }),
+        Plot.text(rankedPoints.filter((point) =>
+          point.checkpoint.id !== selectedCheckpoint.id
+          && (point.rankDelta || auditByCheckpoint.get(point.checkpoint.id)?.sourceChanges
+            .some((change) => change.entry === point.entry))), {
+          x: 'dataset',
+          y: 'rank',
+          text: (point: RankedPoint) => {
+            const sourceChanged = auditByCheckpoint.get(point.checkpoint.id)?.sourceChanges
+              .some((change) => change.entry === point.entry);
+            return `${sourceChanged ? '* ' : ''}${rankDeltaGlyph(point.rankDelta)}`.trim();
+          },
+          dx: 7,
+          dy: -9,
+          textAnchor: 'start',
+          fill: 'entry',
+          stroke: background,
+          strokeWidth: 3,
+          paintOrder: 'stroke',
+          fontWeight: 760,
+          fontSize: 9,
+          className: 'history-series history-series-delta',
+        }),
         Plot.text(selectedPoints.filter((point) => point.status === 'ranked'), {
           x: 'dataset',
           y: 'rank',
-          text: (point: RankedPoint) => `${point.label}  ${formatPointValue(point, locale)}`,
+          text: (point: RankedPoint) => {
+            const sourceChanged = auditByCheckpoint.get(point.checkpoint.id)?.sourceChanges
+              .some((change) => change.entry === point.entry);
+            const delta = rankDeltaGlyph(point.rankDelta);
+            return `${point.label}${sourceChanged ? ' *' : ''}  ${formatPointValue(point, locale)}${delta ? `  ${delta}` : ''}`;
+          },
           dx: snapshotIndex >= DATASET_IDS.length - 2 ? -12 : 12,
           textAnchor: snapshotIndex >= DATASET_IDS.length - 2 ? 'end' : 'start',
           fill: 'entry',
@@ -555,12 +757,18 @@ export function HistoryRanking({
       plot.remove();
     };
   }, [points, rankedPoints, observations, incomparable, dnfs, missing, transitions, selectedPoints,
-    selectedCheckpoint, snapshotIndex, activeScale, harness, locale, plotWidth, text, theme]);
+    selectedCheckpoint, snapshotIndex, activeScale, harness, locale, plotWidth, text, theme,
+    auditByCheckpoint, activeHistoryBasis]);
 
   const changeRankView = (value: string) => {
     const next = value === CELL_VIEW ? CELL_VIEW : SCORE_VIEW;
     setRankView(next);
     syncParam('historyView', next === SCORE_VIEW ? null : next);
+  };
+  const changeHistoryBasis = (value: string) => {
+    const next = value === ORIGINAL_BASIS ? ORIGINAL_BASIS : REPLAY_BASIS;
+    setHistoryBasis(next);
+    syncParam('historyBasis', next === REPLAY_BASIS ? null : next);
   };
   const changeScoreMode = (value: string) => {
     setScoreModeKey(value);
@@ -570,6 +778,64 @@ export function HistoryRanking({
   const changeMetric = (value: string) => { setMetric(value); syncParam('historyMetric', value === 'latency' ? null : value); };
   const changeScale = (value: number) => { setScale(value); syncParam('historyScale', value === 1000 ? null : String(value)); };
 
+  const selectedChangeItems: Array<{ kind: string; copy: string }> = [];
+  if (selectedAudit?.baseline) {
+    selectedChangeItems.push({
+      kind: text('baseline', '基线'),
+      copy: text('First retained dataset; no preceding checkpoint.', '首个保留 dataset；没有前一节点。'),
+    });
+  } else if (selectedAudit) {
+    if (selectedAudit.sourceChanges.length > 0) {
+      selectedChangeItems.push({
+        kind: text('source', '来源'),
+        copy: selectedAudit.sourceChanges.map((change) => {
+          const label = shortLabel(change.entry);
+          if (change.kind === 'added') return `${label} + @${change.to?.slice(0, 8)}`;
+          if (change.kind === 'removed') return `${label} − @${change.from?.slice(0, 8)}`;
+          return `${label} ${change.from?.slice(0, 8)} → ${change.to?.slice(0, 8)}`;
+        }).join(' · '),
+      });
+    }
+    if (selectedAudit.cohortAdded.length > 0 || selectedAudit.cohortRemoved.length > 0) {
+      selectedChangeItems.push({
+        kind: 'cohort',
+        copy: [
+          ...selectedAudit.cohortAdded.map((entry) => `+ ${shortLabel(entry)}`),
+          ...selectedAudit.cohortRemoved.map((entry) => `− ${shortLabel(entry)}`),
+        ].join(' · '),
+      });
+    }
+    if (selectedAudit.formulaAdded.length > 0 || selectedAudit.formulaRemoved.length > 0) {
+      selectedChangeItems.push({
+        kind: text('formula', '公式'),
+        copy: [
+          ...selectedAudit.formulaAdded.map((key) => `+ ${key}`),
+          ...selectedAudit.formulaRemoved.map((key) => `− ${key}`),
+        ].join(' · '),
+      });
+    }
+    if (selectedAudit.machineChanged) {
+      selectedChangeItems.push({
+        kind: text('machine', '机器'),
+        copy: `${selectedAudit.previousMachineId} → ${selectedAudit.machineId}`,
+      });
+    }
+    if (selectedChangeItems.length === 0) {
+      selectedChangeItems.push({
+        kind: text('stable', '稳定'),
+        copy: activeHistoryBasis === REPLAY_BASIS
+          ? text(
+            'Same source, cohort, formula and shared replay observations; unchanged peers cannot drift here.',
+            '来源、cohort、公式及共享 replay 观测均未变化；未变 peer 不会在这里漂移。',
+          )
+          : text(
+            'Same source, cohort, formula and machine; any rank movement is run-to-run measurement variance.',
+            '来源、cohort、公式和机器均未变化；任何排名移动都属于跨运行测量波动。',
+          ),
+      });
+    }
+  }
+
   return (
     <section className="history-ranking" aria-labelledby="history-ranking-title">
       <div className="history-heading">
@@ -578,8 +844,8 @@ export function HistoryRanking({
           <h2 id="history-ranking-title">{text('Rank by dataset', '按 dataset 排名')}</h2>
           <ResponsiveCopy className="history-copy">
             {text(
-              "Each node is one retained dataset. Solid lines share one comparison cohort; dashed bridges preserve the framework story across a cohort or formula-set change. Composite history omits a missing cell for every entry together, then recomputes over that dataset's largest complete common matrix. Single measurement exposes the raw case, scale, and metric.",
-              '每个节点代表一个保留的 dataset。实线表示共享同一对比 cohort；跨 cohort 或公式集合变化时用虚线保留框架演进脉络。复合历史会对所有条目共同省略缺失单元，再基于该 dataset 最大的完整公共矩阵重新计算。单项测量则展示原始 case、规模和指标。',
+              'Each node is one retained dataset. Unified replay is the default: exact historical bundles share one 11-repetition machine run and the complete current formula, while Original runs remains available as dated evidence. Asterisks mark source or comparison-contract changes; arrows show rank movement.',
+              '每个节点代表一个保留的 dataset。默认使用统一 replay：精确历史 bundle 共享同一次机器上的 11 次重复运行和完整当前公式；仍可切回当时原始观测。星号标记来源或对比合约变化，箭头表示排名移动。',
             )}
           </ResponsiveCopy>
         </div>
@@ -599,6 +865,37 @@ export function HistoryRanking({
           value={harness}
           options={[{ value: 'web', label: 'Web' }, { value: 'native', label: 'Native' }]}
           onChange={onHarnessChange}
+        />
+        <ChoiceRail
+          label={text('Evidence', '证据')}
+          value={activeHistoryBasis}
+          options={[
+            {
+              value: REPLAY_BASIS,
+              label: text('Unified replay', '统一 replay'),
+              disabled: !replayAvailable,
+              equation: {
+                head: text('Calibrated historical comparison', '校准后的历史对比'),
+                lines: [
+                  text('Exact historical bundle artifacts, verified by commit and SHA-256', '精确历史 bundle artifact，以 commit 和 SHA-256 验证'),
+                  text('One machine run · 11 repetitions · 12/12 standard latency cells', '同一次机器运行 · 11 次重复 · 12/12 标准 latency 单元'),
+                  text('Stable React/Vue observations are reused at every checkpoint', '稳定的 React/Vue 观测在每个 checkpoint 复用'),
+                ],
+              },
+            },
+            {
+              value: ORIGINAL_BASIS,
+              label: text('Original runs', '原始运行'),
+              equation: {
+                head: text('Dated source evidence', '当时的来源证据'),
+                lines: [
+                  text("Uses each checkpoint's original run, machine and available cell matrix", '使用每个 checkpoint 当时的运行、机器和可用 cell 矩阵'),
+                  text('Preserves historical noise and formula gaps for audit', '保留历史测量噪声与公式缺口以供审计'),
+                ],
+              },
+            },
+          ]}
+          onChange={changeHistoryBasis}
         />
         <ChoiceRail
           label={text('Rank', '排名')}
@@ -643,6 +940,33 @@ export function HistoryRanking({
           </>
         )}
       </div>
+      <div className={`history-change-ledger${selectedAudit?.hasChanges ? ' has-change' : ''}`}>
+        <span className="history-change-asterisk" aria-hidden="true">
+          {selectedAudit?.hasChanges ? '*' : '·'}
+        </span>
+        <div className="history-change-context">
+          <span>{text('Change ledger', '变化台账')}</span>
+          <strong>{localizedCheckpoint(selectedCheckpoint, locale).label}</strong>
+        </div>
+        <div className="history-change-items">
+          {selectedChangeItems.map((item) => (
+            <span className="history-change-item" key={`${item.kind}:${item.copy}`}>
+              <b>{item.kind}</b>{item.copy}
+            </span>
+          ))}
+        </div>
+        <span className="history-basis-receipt">
+          {activeHistoryBasis === REPLAY_BASIS && WEB_HISTORY_REPLAY
+            ? text(
+              `${WEB_HISTORY_REPLAY.minimumReps} reps · ${WEB_HISTORY_REPLAY.cellKeys.length}/12 latency cells`,
+              `${WEB_HISTORY_REPLAY.minimumReps} 次重复 · ${WEB_HISTORY_REPLAY.cellKeys.length}/12 latency 单元`,
+            )
+            : text(
+              `${selectedAggregateCellCount ?? 1}/${activeScoreMode?.ops.length ?? 1} selected formula cells · original`,
+              `${selectedAggregateCellCount ?? 1}/${activeScoreMode?.ops.length ?? 1} 个所选公式单元 · 原始`,
+            )}
+        </span>
+      </div>
       <div className="history-legend" aria-label={text('Framework colors', '框架颜色')}>
         <div className="history-entry-legend">
           {ENTRIES.filter((entry) => HISTORY_ENTRY_IDS.includes(entry.id)).map((entry) => (
@@ -669,14 +993,14 @@ export function HistoryRanking({
               <span className="history-status-chevron" aria-hidden="true">›</span>
             </summary>
             <div>{text(
-              '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
-              '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
+              '* source/contract change · ↑↓ rank delta · – – cohort/formula bridge · ○ observation · ● incomparable · red DNF · faint missing',
+              '* 来源/合约变化 · ↑↓ 排名变化 · – – cohort/公式桥接 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
             )}</div>
           </details>
         ) : (
           <span className="history-status">{text(
-            '– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing',
-            '– – cohort/公式变化 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
+            '* source/contract change · ↑↓ rank delta · – – cohort/formula bridge · ○ observation · ● incomparable · red DNF · faint missing',
+            '* 来源/合约变化 · ↑↓ 排名变化 · – – cohort/公式桥接 · ○ 观察值 · ● 不可比 · 红色 DNF · 淡色缺失',
           )}</span>
         )}
       </div>
@@ -688,17 +1012,33 @@ export function HistoryRanking({
         )}</summary>
         <div className="history-evidence-scroll">
           <table>
-            <thead><tr><th>dataset</th><th>{text('framework', '框架')}</th><th>{text('rank', '排名')}</th><th>{text('value', '值')}</th><th>{text('source / provenance', '来源 / 溯源')}</th></tr></thead>
+            <thead><tr><th>dataset</th><th>{text('framework', '框架')}</th><th>{text('rank', '排名')}</th><th>Δ</th><th>{text('value', '值')}</th><th>{text('change', '变化')}</th><th>{text('source / provenance', '来源 / 溯源')}</th></tr></thead>
             <tbody>
-              {points.map((point) => (
-                <tr key={`${point.checkpoint.id}:${point.entry}`}>
+              {points.map((point) => {
+                const audit = auditByCheckpoint.get(point.checkpoint.id);
+                const sourceChanged = audit?.sourceChanges.some((change) =>
+                  change.entry === point.entry);
+                const contractChanged = audit?.machineChanged
+                  || audit?.cohortAdded.length || audit?.cohortRemoved.length
+                  || audit?.formulaAdded.length || audit?.formulaRemoved.length;
+                return <tr key={`${point.checkpoint.id}:${point.entry}`}>
                   <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{localizedCheckpoint(point.checkpoint, locale).label}</button></td>
                   <td>{point.label}</td><td>{point.rank == null
                     ? ({ missing: text('missing', '缺失'), observation: text('observation', '观察值'), dnf: 'DNF', incomparable: text('incomparable', '不可比'), ranked: text('ranked', '已排名') } as const)[point.status]
                     : `#${point.rank}`}</td>
+                  <td>{rankDeltaGlyph(point.rankDelta) || '—'}{sourceChanged ? ' *' : ''}</td>
                   <td>{formatPointValue(point, locale)}{point.aggregateCellCount != null
                     ? ` · ${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} ${text('cells', '单元')}`
                     : ''}</td>
+                  <td>{sourceChanged
+                    ? text('source changed', '来源变化')
+                    : contractChanged
+                      ? text('comparison contract changed', '对比合约变化')
+                      : point.rankDelta
+                        ? activeHistoryBasis === ORIGINAL_BASIS
+                          ? text('run variance', '运行波动')
+                          : text('replay rank delta', 'replay 排名变化')
+                        : text('stable control', '稳定对照')}</td>
                   <td><code>{point.record?.runFile
                     ?? point.aggregateRecords?.[0]?.runFile
                     ?? localizedCheckpoint(point.checkpoint, locale).description}</code>{point.record?.entryCommit
@@ -706,8 +1046,8 @@ export function HistoryRanking({
                     : point.aggregateRecords?.[0]?.entryCommit
                       ? ` @ ${point.aggregateRecords[0].entryCommit.slice(0, 12)}`
                       : ''}</td>
-                </tr>
-              ))}
+                </tr>;
+              })}
             </tbody>
           </table>
         </div>
