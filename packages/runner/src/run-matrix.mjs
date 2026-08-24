@@ -1,7 +1,12 @@
-import { STARTUP_CASES, TABLE_CASES } from '@lynx-bench/shared/workloads';
+import {
+  STARTUP_CASES,
+  tableCasesForHarness,
+} from '@lynx-bench/shared/workloads';
+
+export const NATIVE_TABLE_CASES = tableCasesForHarness('native');
 
 export const NATIVE_TABLE_SCALES = [...new Set(
-  TABLE_CASES.flatMap((kase) => kase.scales),
+  NATIVE_TABLE_CASES.flatMap((kase) => kase.scales),
 )].sort((a, b) => a - b);
 
 export const NATIVE_STARTUP_SCALES = [...STARTUP_CASES[0].scales];
@@ -53,12 +58,12 @@ export function resolveNativeRunMatrix(args = {}) {
 
   const requestedCases = csv(args.case, 'case');
   const unknownCases = (requestedCases ?? []).filter(
-    (name) => !TABLE_CASES.some((kase) => kase.name === name),
+    (name) => !NATIVE_TABLE_CASES.some((kase) => kase.name === name),
   );
   if (unknownCases.length > 0) throw new Error(`unknown Native cases: ${unknownCases.join(',')}`);
   const cases = requestedCases
-    ? TABLE_CASES.filter((kase) => requestedCases.includes(kase.name))
-    : TABLE_CASES;
+    ? NATIVE_TABLE_CASES.filter((kase) => requestedCases.includes(kase.name))
+    : NATIVE_TABLE_CASES;
 
   const tableScales = scales(args.scale, 'scale', NATIVE_TABLE_SCALES, NATIVE_TABLE_SCALES);
   const startupScales = scales(

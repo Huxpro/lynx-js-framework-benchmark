@@ -91,7 +91,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 210-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign, 115-cell matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -136,7 +136,7 @@ reproducible instead of being lost with the process. Each cell names the lease t
 and every receipt remains in the ordered chain. Split checkpoints combine only when one receipt
 chain is an exact prefix of the other; same-serial forks remain archive-only. Known transport exhaustion and producer-protocol
 failures are retained as structured DNF evidence; unknown adapter/programming errors still abort.
-Each checkpoint carries a `native-featured-matrix-v1` coverage ledger. It distinguishes measured,
+Each checkpoint carries a `native-featured-black-box-matrix-v2` coverage ledger. It distinguishes measured,
 measured-with-DNF, DNF, capability-proven unsupported, unscheduled, incompatible cohort, and
 display/derivation defects. A completed campaign may contain measured, DNF, or proven unsupported
 cells, but never an unscheduled or invalid cell. Bundles are served from immutable byte snapshots;
@@ -152,7 +152,8 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
 
 Cases: the krausest superset (`create` 1k/3k/5k/10k/20k/30k, `replace`, `append1k`,
-`update10th`, `select`, `swap`, `remove`, `clear`) + storms (50 update / 30 select sequential
+`update10th`, standard preselected-row `select`, `swap`, `remove`, standard `clear@1k`
+plus `clear@10k`) + storms (50 update / 30 select sequential
 ticks) at 1k/3k/5k/10k/20k/30k +
 startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
 post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these
@@ -190,6 +191,12 @@ Bundles are vendored with provenance (source repo, commit, build command, checks
 `scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
 class structure, same storm semantics.
+
+**Dataset Time Machine.** The slider is a short editorial list of meaningful checkpoints, not an
+Octane-commit timeline. Every checkpoint links each framework identity to its recorded commit or
+version; Octane normally points to upstream HEAD at measurement time, while Hux1/Hux2 and dated
+`new-lynx` entries are preserved as Huxpro branch-head attempts. Checkpoints publish only complete
+shared matrices. Vue +IFR pointers also expose and link the exact `pluginVueLynx` options.
 
 The dated `Octane (new-YYYY-MM-DD)` entry is featured, not Lab. It freezes
 `Huxpro/octane:new-lynx`, reads only upstream `dist-block[-rowsN]` bundles produced with

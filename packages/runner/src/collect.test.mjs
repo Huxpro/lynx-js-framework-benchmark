@@ -7,7 +7,7 @@ import test from 'node:test';
 
 import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
 
-import { collectRuns } from './collect.mjs';
+import { collectRuns, DATASET_CHECKPOINT_SPECS } from './collect.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
   CONNECTOR_PACKAGE_TREES_PROTOCOL,
@@ -386,7 +386,7 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 70);
+    assert.equal(native.length, 46);
     assert.deepEqual(
       [...new Set(native.map((candidate) => candidate.machineId))],
       [validMeta.deviceCohort.id],
@@ -404,7 +404,7 @@ test('collector publishes only a complete exact-identity Native campaign', () =>
     assert.deepEqual(out.comparison.harnesses[1].entryIds, ['react', 'vue']);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, ['native-campaign.json']);
     assert.equal(native.some(({ runFile }) => runFile.includes('connector')), false);
-    assert.deepEqual(out.nativeCoverage.summary, { measured: 70 });
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 46 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -470,7 +470,7 @@ test('legacy Native runs remain archive-only and are selected separately per ent
     assert.equal(out.nativeObservationRecords.every((record) =>
       record.comparisonKind === 'isolated-observation'), true);
     assert.equal(out.nativeCoverage.summary['invalid-incomparable'], 4);
-    assert.equal(out.nativeCoverage.summary.unscheduled, 101);
+    assert.equal(out.nativeCoverage.summary.unscheduled, 65);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -532,7 +532,7 @@ test('collector combines split checkpoints only inside one exact Native campaign
       entries,
     });
     const native = out.comparisonRecords.filter((candidate) => candidate.harness === 'native');
-    assert.equal(native.length, 35);
+    assert.equal(native.length, 23);
     assert.deepEqual(out.comparison.harnesses[1].sourceRunFiles, [
       'native-startup.json', 'native-table.json',
     ]);
@@ -543,7 +543,7 @@ test('collector combines split checkpoints only inside one exact Native campaign
     assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
     assert.equal(native.some((candidate) => candidate.runFile === 'native-driver-diagnostic.json'), false);
     assert.equal(native.some((candidate) => candidate.runFile === 'native-wrong-receipt.json'), false);
-    assert.deepEqual(out.nativeCoverage.summary, { measured: 35 });
+    assert.deepEqual(out.nativeCoverage.summary, { measured: 23 });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -643,10 +643,10 @@ test('collector publishes only completely attributed Native method-revision chai
       });
       const nativeHarness = out.comparison.harnesses.find(({ harness }) => harness === 'native');
       if (invalid === null) {
-        assert.equal(nativeHarness.recordCount, 35);
+        assert.equal(nativeHarness.recordCount, 23);
         assert.equal(nativeHarness.methodRevisionChain.sha256, methodRevisionChain.sha256);
         const native = out.comparisonRecords.filter(({ harness }) => harness === 'native');
-        assert.equal(native.length, 35);
+        assert.equal(native.length, 23);
         assert.deepEqual(
           new Set(native.map(({ methodRevisionId }) => methodRevisionId)),
           new Set([baseRevision.id, currentRevision.id]),
@@ -1213,6 +1213,13 @@ test('history keeps a complete past entry set without requiring future featured 
       generatedAt: 'test',
       log: () => {},
       entryTiers: entryTiers(['octane', 'react', 'octane-new']),
+      datasetCheckpoints: [{
+        id: 'past-complete',
+        label: 'Past complete',
+        description: 'A complete historical dataset.',
+        webRunFile: 'past-complete.json',
+        entryIds: ['octane', 'react'],
+      }],
     });
     const checkpointFiles = out.history.checkpoints.flatMap((checkpoint) =>
       checkpoint.harnesses.flatMap(({ sourceRunFiles }) => sourceRunFiles));
@@ -1240,31 +1247,97 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  assert.equal(currentWeb.entryIds.length, 8);
-  assert.equal(currentWeb.entryIds.includes('octane-pr-791'), true);
+  assert.equal(currentWeb.entryIds.length, 7);
+  assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
+  assert.equal(out.history.sources.some((source) =>
+    source.entryIds.includes('octane-pr-791')), true);
+
+  const webCheckpointIds = out.history.checkpoints
+    .filter((checkpoint) => checkpoint.harnesses.some((cohort) => cohort.harness === 'web'))
+    .map((checkpoint) => checkpoint.id);
+  assert.deepEqual(webCheckpointIds, [
+    ...DATASET_CHECKPOINT_SPECS.map((checkpoint) => checkpoint.id),
+    'current-main',
+  ]);
+  assert.deepEqual(
+    out.history.checkpoints.map((checkpoint) => checkpoint.label),
+    [
+      'Aug 8 · React/Vue reference',
+      'Aug 10 · slow Octane joins',
+      'Aug 11 · Octane step change',
+      'Aug 15 · Octane converges',
+      'Aug 22 · Octane (Hux) joins',
+      'Current · merged upstream',
+    ],
+  );
+  assert.equal(out.history.checkpoints.every((checkpoint) =>
+    !Object.hasOwn(checkpoint, 'octaneCommit')), true);
+  for (const checkpoint of out.history.checkpoints) {
+    const entryIds = new Set(checkpoint.harnesses.flatMap((cohort) => cohort.entryIds));
+    assert.deepEqual(
+      new Set(checkpoint.identityPointers.map((pointer) => pointer.entryId)),
+      entryIds,
+    );
+    assert.equal(checkpoint.identityPointers.every((pointer) =>
+      pointer.version != null || pointer.commit != null), true);
+    assert.equal(checkpoint.identityPointers.every((pointer) => pointer.href != null), true);
+    const records = checkpoint.activeRecordIndexes.map((index) => out.history.records[index]);
+    for (const cohort of checkpoint.harnesses) {
+      const cohortRecords = records.filter((record) => record.harness === cohort.harness
+        && record.environment === cohort.environment);
+      const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
+        .filter((record) => record.entry === entryId)
+        .map((record) => [
+          record.suite, record.environment, record.workload, record.scale,
+          record.metric, record.boundary, record.unit,
+        ].join('|'))));
+      for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
+    }
+  }
+
+  const aug8File = '2026-08-08T07-22-33-b0fcfd511132-full.json';
+  const aug8 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug8File)));
+  assert.ok(aug8);
+  assert.deepEqual(aug8.harnesses[0].entryIds, [
+    'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+  ]);
+  assert.equal(aug8.identityPointers.some(({ framework }) => framework === 'octane'), false);
+  assert.equal(
+    out.history.sources.find((source) => source.runFile === aug8File).reason,
+    'selected dataset checkpoint 2026-08-08-peer-reference',
+  );
 
   const aug10File = '2026-08-10T21-20-16-65160668d8d9-full-frameworks-65160668d8d9.json';
-  assert.equal(out.history.checkpoints.some((checkpoint) =>
-    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File))), false);
+  const aug10 = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug10File)));
+  assert.ok(aug10);
+  assert.deepEqual(aug10.harnesses[0].entryIds, [
+    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
+  ]);
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').commit,
+    'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
+  assert.equal(aug10.identityPointers.find(({ entryId }) => entryId === 'octane').channel,
+    'upstream HEAD at measurement time');
+  assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux1'), false);
+  assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux2'), false);
+  assert.equal(aug10.identityPointers.some(({ entryId }) => entryId === 'octane-hux'), false);
   const aug10Source = out.history.sources.find((source) => source.runFile === aug10File);
   assert.ok(aug10Source);
   assert.equal(aug10Source.entryCommits['octane-main'],
     'e81fd879308a4367c8c1af920e0d59ef648b8ffe');
-  assert.equal(aug10Source.rankEligible, false);
-  assert.equal(aug10Source.reason, 'incomplete Web matrix for this run\'s eligible entry set');
+  assert.equal(aug10Source.rankEligible, true);
+  assert.equal(aug10Source.reason, 'selected dataset checkpoint 2026-08-10-slow-octane');
 
   const aug16File = '2026-08-16T15-36-12-65160668d8d9-2026-08-16-web-six-framework-full.json';
   const aug16 = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(aug16File)));
-  assert.ok(aug16);
-  assert.deepEqual(aug16.harnesses[0].entryIds, [
-    'octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et',
-  ]);
-  assert.equal(aug16.harnesses[0].rankEligible, true);
+  assert.equal(aug16, undefined);
 
   const incompleteFiles = [
     '2026-08-08T18-37-25-b0fcfd511132-octane-main.json',
     '2026-08-11T13-06-38-65160668d8d9-verify-featured-select10k.json',
+    aug16File,
   ];
   for (const file of incompleteFiles) {
     assert.equal(out.history.checkpoints.some((checkpoint) =>
@@ -1292,7 +1365,7 @@ test('history audits every run but publishes only complete source-defined featur
     ))), false);
 });
 
-test('history omits incomplete storm matrices and ranks the complete current cohort', () => {
+test('history omits non-standard storm rows and ranks the complete retained cohort', () => {
   const out = collectRuns({ root: repoRoot(), log: () => {} });
   const aug12File = '2026-08-12T18-02-55-65160668d8d9-upstream-main-6079a680-featured.json';
   assert.equal(out.history.checkpoints.some((checkpoint) =>
@@ -1305,16 +1378,16 @@ test('history omits incomplete storm matrices and ranks the complete current coh
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-22T03-28-41-65160668d8d9-octane-new-2026-08-22-block-web-rerun.json',
     )));
-  const currentRecord = current.activeRecordIndexes.map((index) => out.history.records[index])
-    .find((candidate) => candidate.entry === 'octane-new-2026-08-22'
+  const currentRecords = current.activeRecordIndexes.map((index) => out.history.records[index]);
+  assert.equal(currentRecords.some((candidate) =>
+    ['updateStorm', 'selectStorm'].includes(candidate.workload)), false);
+  const currentRecord = currentRecords
+    .find((candidate) => candidate.entry === 'octane-hux'
       && candidate.harness === 'web'
-      && candidate.workload === 'selectStorm'
+      && candidate.workload === 'select'
       && candidate.scale === 1000
       && candidate.metric === 'latency');
-  assert.equal(currentRecord.median, 22.610000133514404);
+  assert.equal(currentRecord.median, 23.894999980926514);
   assert.equal(currentRecord.rankEligible, true);
-  assert.equal(currentRecord.transport.issue, null);
-  assert.equal(currentRecord.transport.expectedSequentialCommits, 30);
-  assert.ok(currentRecord.transport.toMtsMessages >= 30);
-  assert.ok(currentRecord.transport.toBtsMessages >= 30);
+  assert.equal(currentRecord.transport, undefined);
 });

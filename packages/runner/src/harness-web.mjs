@@ -181,7 +181,12 @@ async function resolvePredicate(page, kase, scale) {
 }
 
 /** Cases that mutate state irreversibly get their pre-state rebuilt each sample. */
-const RESET_EACH_SAMPLE = new Set(['create', 'append1k', 'remove', 'clear']);
+const RESET_EACH_SAMPLE = new Set([
+  'create',
+  'append1k',
+  'remove',
+  'clear',
+]);
 
 async function measureOnce({ page, profiler, kase, spec, timeoutMs }) {
   const wireBefore = await wireSnapshot(page);

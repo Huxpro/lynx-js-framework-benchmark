@@ -3,16 +3,17 @@
   "label": "Octane (PR #791)",
   "framework": "octane",
   "frameworkVersion": "0.1.41",
-  "config": ".tsrx, keyed @for; octanejs/octane PR #791 universal memo repair 715e4979d41c",
+  "config": ".tsrx, keyed @for; merged into upstream main as 939c64dc9d9f",
+  "historyChannel": "merged upstream PR snapshot; archive evidence",
+  "supersededBy": "octane",
   "tags": [
     "optimized",
     "snapshot",
     "pr"
   ],
-  "tier": "featured",
+  "tier": "archive",
   "harnesses": [
-    "web",
-    "native"
+    "web"
   ],
   "color": "#2563eb",
   "presentation": {
@@ -25,19 +26,20 @@
     "source": "https://github.com/octanejs/octane",
     "ref": "pull/791/head",
     "commit": "715e4979d41c4326814b3355be5f261f7a137f21",
-    "patched": true,
-    "patchFile": "entries/_patches/octane-bench.patch",
+    "mergedInto": "939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a",
+    "patched": false,
+    "patchFile": null,
     "buildCommand": "node scripts/build-octane-upstream.mjs <octane-pr-791-checkout>",
     "builtAt": "2026-08-19T15:36:15+01:00",
     "sha256": {
-      "rows-0/main.web.bundle": "79be1d434518746f097145daa8e8e873e010119e73dfa542a1d4a20ba388ba1e",
-      "rows-0/main.lynx.bundle": "2be68d0149dc02537aef87d7e8767c3f2907eabc05c87a0b6c55330f7e07f61f",
-      "rows-1000/main.web.bundle": "5c7b0a3788157c02557bb2e27b152dd80d5be99d0fdc610f81f58f9748c22cde",
-      "rows-1000/main.lynx.bundle": "bb08d273b8d8701143b0c78e470cf178b5b5130e5f4bbea7eb3f6c035f18209d",
-      "rows-10000/main.web.bundle": "04e5624eaf7ba232ae7e743074bea3ff97bc96916e7f58d136bd2aed792c8d0c",
-      "rows-10000/main.lynx.bundle": "b07685f01b5cbd26f493229a8766c649c4a6282282759ab01c5e0fb8d2cd7ee8",
-      "rows-30000/main.web.bundle": "f693a9650b42201af9a482bd0c9d4f59c34971e7f54e8ca85d2dee7a5c49239e",
-      "rows-30000/main.lynx.bundle": "dd4be76e9fa50ae6fe1c09ba3f6770954158855a28485f8c75370ab43f854f33"
+      "rows-0/main.web.bundle": "855c35c2749d344778bb19f6b8501d31b2da5ca02ae4b22d65ec0400987f2eb8",
+      "rows-0/main.lynx.bundle": "08dfcf5c45d9a4a9086d6478c2e9d1214efcd8e54c6634c9ba39a60e331a7ad9",
+      "rows-1000/main.web.bundle": "05e5a3ecc028796acf7567675b102b6f8907be17932e64b7a3e50deb55f2c955",
+      "rows-1000/main.lynx.bundle": "7feed6f5861736af69471e3eb814082425c6ea4c4efb1bf603bdaabf79641907",
+      "rows-10000/main.web.bundle": "7512dc9edacc6aa6bff74f145a37e747bbd4a33e6f8856090aa21443d849e33e",
+      "rows-10000/main.lynx.bundle": "7bb7fc58f682fb47fb6d736e87ce53c70c7384fe783c90f27a4545ee2d0f77c0",
+      "rows-30000/main.web.bundle": "8f8bbe11aa373194151c0bd534e9aeaa020538353235bc127ce783bb242aab82",
+      "rows-30000/main.lynx.bundle": "c7c79714a20c84f6b50525634720d3fd3c2199e6dca95a960ef89961a0476268"
     }
   },
   "bundles": {

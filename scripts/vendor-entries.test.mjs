@@ -11,7 +11,7 @@ function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 }
 
-test('new-lynx vendor publishes a featured block-core snapshot with one audited patch', () => {
+test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-new-lynx-block-'));
   const repo = path.join(dir, 'benchmark');
   const build = path.join(dir, 'octane');
@@ -47,16 +47,6 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
     git(build, 'add', '.');
     git(build, 'commit', '-m', 'block source');
     const commit = git(build, 'rev-parse', 'HEAD');
-    fs.appendFileSync(patchedSource, 'await-commit\n');
-    const patchDir = path.join(repo, 'entries/_patches');
-    fs.mkdirSync(patchDir, { recursive: true });
-    const patchFile = path.join(patchDir, 'octane-new-2026-08-22-block-storm.patch');
-    fs.writeFileSync(patchFile, execFileSync(
-      'git',
-      ['diff', '--no-color', '--unified=0', '--', 'benchmarks/lynx-table/app/src/block-program.ts'],
-      { cwd: build },
-    ));
-
     const vendored = spawnSync(
       process.execPath,
       [path.join(repo, 'scripts/vendor-entries.mjs')],
@@ -64,28 +54,25 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
         cwd: repo,
         env: {
           ...process.env,
-          VENDOR_ONLY: 'octane-new-2026-08-22',
+          VENDOR_ONLY: 'octane-hux',
           OCTANE_NEW_BUILD: build,
-          OCTANE_NEW_PATCH: patchFile,
         },
         encoding: 'utf8',
       },
     );
     assert.equal(vendored.status, 0, vendored.stderr);
     const manifest = JSON.parse(fs.readFileSync(
-      path.join(repo, 'entries/octane-new-2026-08-22/entry.json'),
+      path.join(repo, 'entries/octane-hux/entry.json'),
       'utf8',
     ));
-    assert.equal(manifest.label, 'Octane (new-2026-08-22)');
+    assert.equal(manifest.id, 'octane-hux');
+    assert.equal(manifest.label, 'Octane (Hux)');
     assert.equal(manifest.tier, 'featured');
     assert.deepEqual(manifest.harnesses, ['web']);
     assert.equal(manifest.provenance.commit, commit);
     assert.equal(manifest.provenance.ref, 'new-lynx');
-    assert.equal(manifest.provenance.patched, true);
-    assert.equal(
-      manifest.provenance.patchFile,
-      'entries/_patches/octane-new-2026-08-22-block-storm.patch',
-    );
+    assert.equal(manifest.provenance.patched, false);
+    assert.equal(manifest.provenance.patchFile, null);
     assert.deepEqual(manifest.provenance.buildEnv, {
       BENCH_CORE: 'block',
       BENCH_BLOCK_MODE: 'scoped',
@@ -103,21 +90,20 @@ test('new-lynx vendor publishes a featured block-core snapshot with one audited 
         cwd: repo,
         env: {
           ...process.env,
-          VENDOR_ONLY: 'octane-new-2026-08-22',
+          VENDOR_ONLY: 'octane-hux',
           OCTANE_NEW_BUILD: build,
-          OCTANE_NEW_PATCH: patchFile,
         },
         encoding: 'utf8',
       },
     );
     assert.notEqual(dirty.status, 0);
-    assert.match(dirty.stderr, /must contain only the audited block-storm patch/);
+    assert.match(dirty.stderr, /must be built from a clean checkout/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('PR #791 vendor adds a separate featured Web and Native entry', () => {
+test('PR #791 vendor keeps a clean Web-only archive entry', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-octane-pr-791-'));
   const repo = path.join(dir, 'benchmark');
   const build = path.join(dir, 'octane');
@@ -157,25 +143,12 @@ test('PR #791 vendor adds a separate featured Web and Native entry', () => {
     git(build, 'add', '.');
     git(build, 'commit', '-m', 'PR snapshot');
     const commit = git(build, 'rev-parse', 'HEAD');
-    for (const relative of patchedPaths) {
-      fs.appendFileSync(path.join(build, relative), 'instrumented\n');
-    }
-    const patchDir = path.join(repo, 'entries/_patches');
-    fs.mkdirSync(patchDir, { recursive: true });
-    const patchFile = path.join(patchDir, 'octane-pr-791-bench.patch');
-    fs.writeFileSync(patchFile, execFileSync(
-      'git',
-      ['diff', '--no-color', '--unified=0', '--', ...patchedPaths],
-      { cwd: build },
-    ));
-
     const vendored = spawnSync(process.execPath, [path.join(repo, 'scripts/vendor-entries.mjs')], {
       cwd: repo,
       env: {
         ...process.env,
         VENDOR_ONLY: 'octane-pr-791',
         OCTANE_PR_791_BUILD: build,
-        OCTANE_PR_791_PATCH: patchFile,
       },
       encoding: 'utf8',
     });
@@ -185,12 +158,28 @@ test('PR #791 vendor adds a separate featured Web and Native entry', () => {
       'utf8',
     ));
     assert.equal(manifest.label, 'Octane (PR #791)');
-    assert.equal(manifest.tier, 'featured');
-    assert.deepEqual(manifest.harnesses, ['web', 'native']);
+    assert.equal(manifest.tier, 'archive');
+    assert.equal(manifest.supersededBy, 'octane');
+    assert.deepEqual(manifest.harnesses, ['web']);
     assert.equal(manifest.provenance.commit, commit);
     assert.equal(manifest.provenance.ref, 'pull/791/head');
-    assert.equal(manifest.provenance.patched, true);
+    assert.equal(manifest.provenance.mergedInto, '939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a');
+    assert.equal(manifest.provenance.patched, false);
+    assert.equal(manifest.provenance.patchFile, null);
     assert.equal(Object.keys(manifest.provenance.sha256).length, 8);
+
+    fs.appendFileSync(path.join(build, 'packages/lynx/src/core/transport.ts'), 'instrumented\n');
+    const dirty = spawnSync(process.execPath, [path.join(repo, 'scripts/vendor-entries.mjs')], {
+      cwd: repo,
+      env: {
+        ...process.env,
+        VENDOR_ONLY: 'octane-pr-791',
+        OCTANE_PR_791_BUILD: build,
+      },
+      encoding: 'utf8',
+    });
+    assert.notEqual(dirty.status, 0);
+    assert.match(dirty.stderr, /must be built from a clean checkout/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

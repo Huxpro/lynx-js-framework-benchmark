@@ -9,9 +9,7 @@
 //   OCTANE_DOM_BUILD an optional octanejs/octane PR #693 checkout with the same builds
 //   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
 //   OCTANE_NEW_BUILD an optional clean new-lynx checkout built with BENCH_CORE=block
-//   OCTANE_NEW_PATCH the exact block-storm workload patch applied to that checkout
-//   OCTANE_PR_791_BUILD an optional octanejs/octane PR #791 checkout
-//   OCTANE_PR_791_PATCH the exact benchmark instrumentation patch applied to that checkout
+//   OCTANE_PR_791_BUILD an optional clean octanejs/octane PR #791 checkout
 //
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
@@ -33,10 +31,7 @@ const OCTANE_HUX2_BUILD = process.env.OCTANE_HUX2_BUILD ?? null;
 const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
 const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
 const OCTANE_NEW_BUILD = process.env.OCTANE_NEW_BUILD ?? null;
-const OCTANE_NEW_PATCH = process.env.OCTANE_NEW_PATCH ?? null;
 const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
-const OCTANE_PR_791_PATCH = process.env.OCTANE_PR_791_PATCH
-  ?? path.join(root, 'entries/_patches/octane-bench.patch');
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
@@ -48,7 +43,7 @@ const PRESENTATION = {
   react: { order: 0, colorLight: '#2a78d6', colorDark: '#3987e5' },
   octane: { order: 1, colorLight: '#eb6834', colorDark: '#d95926' },
   'octane-pr-791': { order: 1.25, colorLight: '#2563eb', colorDark: '#60a5fa' },
-  'octane-new-2026-08-22': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
+  'octane-hux': { order: 1.5, colorLight: '#7c3aed', colorDark: '#a78bfa' },
   'vue-vdom': { order: 2, colorLight: '#1baf7a', colorDark: '#199e70' },
   'vue-vdom-ifr-et': { order: 3, colorLight: '#eda100', colorDark: '#c98500' },
   'vue-vapor': { order: 4, colorLight: '#e87ba4', colorDark: '#d55181' },
@@ -76,7 +71,20 @@ const gitInfo = (dir) => ({
     .toString().trim().length > 0,
 });
 
-function vendor({ id, label, framework, frameworkVersion, config, tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells }) {
+function requireCleanOctaneCheckout(id, dir) {
+  const sourceGit = gitInfo(dir);
+  if (sourceGit.dirty) {
+    throw new Error(
+      `${id}: Octane entries must be built from a clean checkout; benchmark and runtime patches are not allowed`,
+    );
+  }
+  return sourceGit;
+}
+
+function vendor({
+  id, label, framework, frameworkVersion, config, historyChannel, configuration,
+  supersededBy, tags, tier = 'lab', harnesses, color, source, ref, buildCommand, cells,
+}) {
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
@@ -103,6 +111,9 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
     framework,
     frameworkVersion,
     config,
+    ...(historyChannel == null ? {} : { historyChannel }),
+    ...(configuration == null ? {} : { configuration }),
+    ...(supersededBy == null ? {} : { supersededBy }),
     tags,
     tier,
     ...(harnesses == null ? {} : { harnesses }),
@@ -113,6 +124,7 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
       source: source.url,
       ref,
       commit: source.commit,
+      ...(source.mergedInto == null ? {} : { mergedInto: source.mergedInto }),
       patched: source.dirty,
       patchFile: source.dirty ? `entries/_patches/${source.patchName}` : null,
       buildCommand,
@@ -126,7 +138,7 @@ function vendor({ id, label, framework, frameworkVersion, config, tags, tier = '
   console.log(`[vendor] ${id}: ${Object.keys(checks).length} bundles`);
 }
 
-function vendorOctanePr791(buildDir, patchFile) {
+function vendorOctanePr791(buildDir) {
   const id = 'octane-pr-791';
   if (!wants(id)) return;
   const appDir = path.join(buildDir ?? '', 'benchmarks/lynx-table/app');
@@ -134,57 +146,27 @@ function vendorOctanePr791(buildDir, patchFile) {
     console.log(`[vendor] ${id} skipped (set OCTANE_PR_791_BUILD to the built PR checkout)`);
     return;
   }
-  const sourceGit = gitInfo(buildDir);
-  const resolvedPatch = patchFile == null || !fs.existsSync(patchFile)
-    ? null
-    : fs.realpathSync(path.resolve(patchFile));
-  const patchRoot = path.join(root, 'entries', '_patches');
-  const expectedPaths = [
-    'benchmarks/lynx-table/app/src/App.lynx.tsrx',
-    'benchmarks/lynx-table/app/src/app.css',
-    'benchmarks/lynx-table/app/src/index.ts',
-    'packages/lynx/src/core/transport.ts',
-    'packages/lynx/src/main-thread.ts',
-  ];
-  const changedPaths = execFileSync(
-    'git',
-    ['status', '--porcelain', '--', 'packages', 'benchmarks', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
-    { cwd: buildDir },
-  ).toString().trimEnd().split('\n').filter(Boolean).map((line) => line.slice(3)).sort();
-  if (
-    !sourceGit.dirty
-    || resolvedPatch == null
-    || path.dirname(resolvedPatch) !== patchRoot
-    || JSON.stringify(changedPaths) !== JSON.stringify(expectedPaths)
-  ) {
-    throw new Error(`${id}: checkout must contain only the audited benchmark instrumentation patch`);
-  }
-  const actualPatch = execFileSync(
-    'git',
-    ['diff', '--no-color', '--unified=0', '--', ...expectedPaths],
-    { cwd: buildDir, maxBuffer: 64 * 1024 * 1024 },
-  ).toString();
-  if (actualPatch !== fs.readFileSync(resolvedPatch, 'utf8')) {
-    throw new Error(`${id}: applied benchmark patch does not match ${path.basename(resolvedPatch)}`);
-  }
+  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
   const version = JSON.parse(
     fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
   ).version;
   vendor({
     id,
-    tier: 'featured',
-    harnesses: ['web', 'native'],
+    tier: 'archive',
+    harnesses: ['web'],
     label: 'Octane (PR #791)',
     framework: 'octane',
     frameworkVersion: version,
-    config: `.tsrx, keyed @for; octanejs/octane PR #791 universal memo repair ${sourceGit.commit.slice(0, 12)}`,
+    config: `.tsrx, keyed @for; merged upstream PR snapshot ${sourceGit.commit.slice(0, 12)}`,
+    historyChannel: 'merged upstream PR snapshot; archive evidence',
+    supersededBy: 'octane',
     tags: ['optimized', 'snapshot', 'pr'],
     color: '#2563eb',
     source: {
       url: 'https://github.com/octanejs/octane',
       commit: sourceGit.commit,
-      dirty: true,
-      patchName: path.basename(resolvedPatch),
+      mergedInto: '939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a',
+      dirty: false,
       builtAt: sourceDate(buildDir),
     },
     ref: 'pull/791/head',
@@ -196,41 +178,14 @@ function vendorOctanePr791(buildDir, patchFile) {
   });
 }
 
-function vendorNewLynxBlockSnapshot(id, label, buildDir, patchFile) {
+function vendorNewLynxBlockSnapshot(id, label, buildDir) {
   if (!wants(id)) return;
   const appDir = path.join(buildDir ?? '', 'benchmarks/lynx-table/app');
   if (!buildDir || !fs.existsSync(path.join(appDir, 'dist-block'))) {
     console.log(`[vendor] ${id} skipped (set OCTANE_NEW_BUILD to a block-core build)`);
     return;
   }
-  const sourceGit = gitInfo(buildDir);
-  const resolvedPatch = patchFile == null || !fs.existsSync(patchFile)
-    ? null
-    : fs.realpathSync(path.resolve(patchFile));
-  const patchRoot = path.join(root, 'entries', '_patches');
-  const changedPaths = execFileSync(
-    'git',
-    ['status', '--porcelain', '--', 'packages', 'benchmarks', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
-    { cwd: buildDir },
-  ).toString().trimEnd().split('\n').filter(Boolean).map((line) => line.slice(3));
-  if (
-    !sourceGit.dirty
-    || resolvedPatch == null
-    || path.dirname(resolvedPatch) !== patchRoot
-    || JSON.stringify(changedPaths) !== JSON.stringify([
-      'benchmarks/lynx-table/app/src/block-program.ts',
-    ])
-  ) {
-    throw new Error(`${id}: frozen new-lynx must contain only the audited block-storm patch`);
-  }
-  const actualPatch = execFileSync(
-    'git',
-    ['diff', '--no-color', '--unified=0', '--', 'benchmarks/lynx-table/app/src/block-program.ts'],
-    { cwd: buildDir },
-  ).toString();
-  if (actualPatch !== fs.readFileSync(resolvedPatch, 'utf8')) {
-    throw new Error(`${id}: applied block-storm patch does not match ${path.basename(resolvedPatch)}`);
-  }
+  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
   const version = JSON.parse(
     fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
   ).version;
@@ -242,13 +197,13 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir, patchFile) {
     framework: 'octane',
     frameworkVersion: version,
     config: `.tsrx, keyed @for; block core (scoped writes); Huxpro/octane new-lynx ${sourceGit.commit.slice(0, 12)}`,
+    historyChannel: 'Huxpro branch-head attempt',
     tags: ['optimized', 'snapshot', 'block-core'],
     color: '#7c3aed',
     source: {
       url: 'https://github.com/Huxpro/octane',
       commit: sourceGit.commit,
-      dirty: true,
-      patchName: path.basename(resolvedPatch),
+      dirty: false,
       builtAt: sourceDate(buildDir),
       buildEnv: { BENCH_CORE: 'block', BENCH_BLOCK_MODE: 'scoped' },
     },
@@ -277,12 +232,9 @@ if (vueGit?.dirty) {
 }
 const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
 if (octaneGit?.dirty) {
-  const patch = execFileSync(
-    'git',
-    ['diff', '--no-color', '--unified=0', '--', 'packages', 'benchmarks'],
-    { cwd: OCTANE_BUILD },
-  ).toString();
-  fs.writeFileSync(path.join(patchesDir, 'octane-bench.patch'), patch);
+  throw new Error(
+    'octane: Octane entries must be built from a clean checkout; benchmark and runtime patches are not allowed',
+  );
 }
 
 const vueSource = vueGit === null ? null : {
@@ -296,7 +248,6 @@ const octaneSource = octaneGit === null ? null : {
   url: 'https://github.com/octanejs/octane',
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
-  patchName: 'octane-bench.patch',
   builtAt: sourceDate(OCTANE_BUILD),
 };
 
@@ -323,7 +274,7 @@ vendor({
 vendor({
   id: 'vue-vdom',
   tier: 'featured',
-  label: 'Vue-Lynx VDOM',
+  label: 'Vue',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} / vue-lynx 0.4.2`,
   config: 'vdom, IFR off, ET off',
@@ -337,10 +288,14 @@ vendor({
 vendor({
   id: 'vue-vdom-ifr-et',
   tier: 'featured',
-  label: 'Vue-Lynx VDOM +IFR+ET',
+  label: 'Vue +IFR',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} / vue-lynx 0.4.2`,
   config: 'vdom, enableIFR + enableElementTemplates',
+  configuration: {
+    summary: 'pluginVueLynx({ optionsApi: false, enableIFR: true, enableElementTemplates: true })',
+    href: 'https://github.com/Huxpro/lynx-js-framework-benchmark/blob/e62f054/entries/_patches/vue-lynx-bench.patch#L537-L550',
+  },
   tags: ['optimized'],
   color: '#2f855a',
   source: vueSource,
@@ -351,7 +306,7 @@ vendor({
 vendor({
   id: 'vue-vapor',
   tier: 'featured',
-  label: 'Vue-Lynx Vapor',
+  label: 'Vue Vapor',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} vapor / vue-lynx 0.4.2`,
   config: 'vapor mode, IFR off',
@@ -365,10 +320,14 @@ vendor({
 vendor({
   id: 'vue-vapor-ifr',
   tier: 'featured',
-  label: 'Vue-Lynx Vapor +IFR',
+  label: 'Vue Vapor +IFR',
   framework: 'vue-lynx',
   frameworkVersion: `vue ${'3.6.0-beta.17'} vapor / vue-lynx 0.4.2`,
   config: 'vapor mode, enableIFR',
+  configuration: {
+    summary: 'pluginVueLynx({ optionsApi: false, vapor: true, enableIFR: true, enableElementTemplates: false })',
+    href: 'https://github.com/Huxpro/lynx-js-framework-benchmark/blob/e62f054/entries/_patches/vue-lynx-bench.patch#L307-L319',
+  },
   tags: ['optimized'],
   color: '#9d4b8f',
   source: vueSource,
@@ -384,10 +343,12 @@ const octaneVersion = wants('octane')
 vendor({
   id: 'octane',
   tier: 'featured',
+  harnesses: ['web'],
   label: 'Octane',
   framework: 'octane',
   frameworkVersion: octaneVersion,
   config: '.tsrx, keyed @for; latest upstream main',
+  historyChannel: 'upstream HEAD at measurement time',
   tags: ['optimized'],
   color: '#ff415a',
   source: octaneSource,
@@ -420,11 +381,13 @@ if (
   ).version;
   vendor({
     id: 'octane-hux1',
-    tier: 'lab',
+    tier: 'archive',
+    supersededBy: 'octane-hux',
     label: 'Octane (Hux1)',
     framework: 'octane',
     frameworkVersion: hux1Version,
     config: '.tsrx, keyed @for; hux perf stack tip (PR#15 lynx/receiver-diet, stacks #1→#10…#14)',
+    historyChannel: 'Huxpro branch-head attempt',
     tags: ['optimized'],
     color: '#9f3c0d',
     source: {
@@ -465,11 +428,13 @@ if (
   ).version;
   vendor({
     id: 'octane-hux2',
-    tier: 'lab',
+    tier: 'archive',
+    supersededBy: 'octane-hux',
     label: 'Octane (Hux2)',
     framework: 'octane',
     frameworkVersion: hux2Version,
     config: '.tsrx, keyed @for; S3 final stack (#25→#31→#32→#33), BTS materialization and retained-state diet',
+    historyChannel: 'Huxpro branch-head attempt',
     tags: ['optimized'],
     color: '#d63384',
     source: {
@@ -589,12 +554,11 @@ if (
 }
 
 vendorNewLynxBlockSnapshot(
-  'octane-new-2026-08-22',
-  'Octane (new-2026-08-22)',
+  'octane-hux',
+  'Octane (Hux)',
   OCTANE_NEW_BUILD,
-  OCTANE_NEW_PATCH,
 );
 
-vendorOctanePr791(OCTANE_PR_791_BUILD, OCTANE_PR_791_PATCH);
+vendorOctanePr791(OCTANE_PR_791_BUILD);
 
 console.log('[vendor] done');

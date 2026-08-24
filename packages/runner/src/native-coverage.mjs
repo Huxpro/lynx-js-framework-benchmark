@@ -1,32 +1,20 @@
 import crypto from 'node:crypto';
 
-import { STARTUP_CASES, TABLE_CASES } from '@lynx-bench/shared/workloads';
+import { STARTUP_CASES, tableCasesForHarness } from '@lynx-bench/shared/workloads';
 import { entrySupportsHarness } from './entries.mjs';
 
-export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-matrix-v1';
-export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 35;
-export const NATIVE_FEATURED_MATRIX_CELL_COUNT = 245;
+export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-black-box-matrix-v2';
+export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 23;
+export const NATIVE_FEATURED_MATRIX_CELL_COUNT = 115;
 
 const STARTUP_SCALES = [...STARTUP_CASES[0].scales];
+const NATIVE_TABLE_CASES = tableCasesForHarness('native');
 
-export function nativeStartupMetricContracts(entry) {
-  return entry.framework === 'octane' || entry.id === 'octane'
-    ? [
-        {
-          metric: 'octaneCommitAck',
-          unit: 'ms',
-          boundary: 'native-open-request-to-octane-transport-ack',
-        },
-        {
-          metric: 'octaneSecondFrame',
-          unit: 'ms',
-          boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
-        },
-      ]
-    : [
-        { metric: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
-        { metric: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
-      ];
+export function nativeStartupMetricContracts() {
+  return [
+    { metric: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
+    { metric: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
+  ];
 }
 
 export function nativeCellKey(cell) {
@@ -40,7 +28,7 @@ export function buildNativeMatrixContract(entries) {
     .sort((a, b) => a.id.localeCompare(b.id));
   const cells = [];
   for (const entry of featured) {
-    for (const kase of TABLE_CASES) {
+    for (const kase of NATIVE_TABLE_CASES) {
       for (const scale of kase.scales) {
         cells.push({
           entry: entry.id,

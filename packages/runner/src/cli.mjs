@@ -24,6 +24,7 @@ import { runPreflight } from './preflight.mjs';
 import { launchBrowser } from './browser.mjs';
 import { runReceipt } from './provenance.mjs';
 import { stringifyResult } from './result-json.mjs';
+import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
 import {
   assertConnectorPackageTrees,
   resolveConnectorPackageTrees,
@@ -116,7 +117,7 @@ async function cmdRun(args) {
       nativeSuites.length !== 2
       || !nativeSuites.includes('table')
       || !nativeSuites.includes('startup')
-      || nativeCases.length !== TABLE_CASES.length
+      || nativeCases.length !== NATIVE_TABLE_CASES.length
       || scales.length !== NATIVE_TABLE_SCALES.length
       || startupScales.length !== NATIVE_STARTUP_SCALES.length
       || JSON.stringify(selectedIds) !== JSON.stringify(featuredIds)

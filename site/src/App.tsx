@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
 import { HeatGrid } from './components/HeatGrid';
 import { HistoryRanking } from './components/HistoryRanking';
-import { MethodPage } from './components/Method';
+import { InteractionScaleComposite } from './components/InteractionScaleComposite';
+import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
 import { RankedBars } from './components/RankedBars';
@@ -15,24 +16,39 @@ import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
 import {
   ENTRIES,
   ENTRY_BY_ID,
-  FEATURED_IDS,
   TIMELINE_SNAPSHOTS,
   entrySupportsHarness,
 } from './data';
 import { useTheme } from './hooks';
+import {
+  INTERACTION_WORKLOADS,
+  JS_FRAMEWORK_SCORE_OPS,
+  JS_FRAMEWORK_SCORE_WEIGHTS,
+} from './interaction-score';
+
+const KrausestBenchmarkLink = () => (
+  <a
+    className="external-link benchmark-source-link"
+    href="https://github.com/krausest/js-framework-benchmark"
+    target="_blank"
+    rel="noreferrer"
+  >
+    krausest/js-framework-benchmark <span aria-hidden="true">↗</span>
+  </a>
+);
 
 // Sharable comparison state: ?entries=a,b,c picks an exact featured set.
-function initialSelection(): Set<string> {
+function initialSelection(defaultIds: string[]): Set<string> {
   const params = new URLSearchParams(location.search);
   const ids = params.get('entries')?.split(',').map((s) => s.trim())
-    .filter((id) => FEATURED_IDS.includes(id));
-  return new Set(ids?.length ? ids : FEATURED_IDS);
+    .filter((id) => defaultIds.includes(id));
+  return new Set(ids?.length ? ids : defaultIds);
 }
 
-function syncUrl(selected: Set<string>) {
+function syncUrl(selected: Set<string>, defaultIds: string[]) {
   const params = new URLSearchParams(location.search);
-  const isDefault = selected.size === FEATURED_IDS.length
-    && FEATURED_IDS.every((id) => selected.has(id));
+  const isDefault = selected.size === defaultIds.length
+    && defaultIds.every((id) => selected.has(id));
   if (isDefault) {
     params.delete('entries');
   } else {
@@ -43,14 +59,7 @@ function syncUrl(selected: Set<string>) {
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
-type Page = 'overview' | 'scale' | 'threads' | 'method';
-
-const PAGES: { key: Page; label: string }[] = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'scale', label: 'Scale' },
-  { key: 'threads', label: 'Threads' },
-  { key: 'method', label: 'Method' },
-];
+type Page = 'overview' | 'scale';
 
 const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 
@@ -74,11 +83,23 @@ function AppContent({
   const [page, setPage] = useState<Page>('overview');
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
-  const [selected, setSelected] = useState<Set<string>>(initialSelection);
+  const cohortEntryIds = snapshot.comparison.harnesses
+    .find((cohort) => cohort.harness === harness)?.entryIds ?? [];
+  const cohortKey = `${snapshot.id}:${harness}`;
+  const previousCohort = useRef(cohortKey);
+  const [selected, setSelected] = useState<Set<string>>(() => initialSelection(cohortEntryIds));
+  const availableIds = useMemo(() => new Set(cohortEntryIds), [cohortEntryIds]);
+  useEffect(() => {
+    if (previousCohort.current === cohortKey) return;
+    const next = new Set(cohortEntryIds);
+    previousCohort.current = cohortKey;
+    setSelected(next);
+    syncUrl(next, cohortEntryIds);
+  }, [cohortEntryIds, cohortKey]);
   const activeSelected = useMemo(() => new Set([...selected].filter((id) => {
     const entry = ENTRY_BY_ID.get(id);
-    return entry != null && entrySupportsHarness(entry, harness);
-  })), [harness, selected]);
+    return availableIds.has(id) && entry != null && entrySupportsHarness(entry, harness);
+  })), [availableIds, harness, selected]);
   const changeHarness = (next: string) => {
     setHarness(next);
     const params = new URLSearchParams(location.search);
@@ -93,7 +114,7 @@ function AppContent({
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      syncUrl(next);
+      syncUrl(next, cohortEntryIds);
       return next;
     });
 
@@ -125,7 +146,7 @@ function AppContent({
       }
       return rows;
     }
-    for (const w of ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
+    for (const w of ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
       for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
           rows.push({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
@@ -141,10 +162,61 @@ function AppContent({
   }, [harness, select, snapshot.nativeCoverage.cells, workloadScales]);
 
   const tableOps = (scales: number[]) =>
-    ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear'].flatMap((w) =>
+    INTERACTION_WORKLOADS.flatMap((w) =>
       workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })
         .filter((s) => scales.includes(s))
         .map((s) => ({ key: `${w}@${s}`, label: `${w}${scales.length > 1 ? ` @${scaleLabel(s)}` : ''}`, workload: w, scale: s })));
+
+  const equal1kOps = tableOps([1000]);
+  const equal10kOps = tableOps([10000]);
+  const interactionModes = [
+    ...(harness === 'web' ? [{
+      key: 'weighted',
+      label: 'js-framework weighted',
+      ops: JS_FRAMEWORK_SCORE_OPS,
+      scoreWeights: JS_FRAMEWORK_SCORE_WEIGHTS,
+      summaryLabel: 'weighted score',
+      caption: 'weighted geometric mean of all 9 upstream CPU workload ratios × vs each workload\'s fastest entry — 1× is the per-workload oracle; incomplete entries are excluded',
+      equation: {
+        head: 'Upstream weighted geometric mean',
+        lines: [
+          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          'score = exp(Σ wᵢ · ln(rᵢ) ÷ Σ wᵢ)',
+          '9/9 cells required · upstream CPU weights',
+        ],
+      },
+    }] : []),
+    {
+      key: 'equal-1k',
+      label: 'equal · 1k',
+      ops: equal1kOps,
+      summaryLabel: 'equal score',
+      caption: `equal-weight geometric mean of the complete ${equal1kOps.length}-operation 1k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+      equation: {
+        head: 'Equal-weight 1k geometric mean',
+        lines: [
+          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          `score = exp(Σ ln(rᵢ) ÷ ${equal1kOps.length})`,
+          `${equal1kOps.length}/${equal1kOps.length} 1k cells required · every operation counts equally`,
+        ],
+      },
+    },
+    {
+      key: 'equal-10k',
+      label: 'equal · 10k',
+      ops: equal10kOps,
+      summaryLabel: 'equal score',
+      caption: `equal-weight geometric mean of the complete ${equal10kOps.length}-operation 10k matrix × vs each operation's fastest entry — 1× is the per-operation oracle`,
+      equation: {
+        head: 'Equal-weight 10k geometric mean',
+        lines: [
+          'rᵢ = medianᵢ ÷ fastest medianᵢ',
+          `score = exp(Σ ln(rᵢ) ÷ ${equal10kOps.length})`,
+          `${equal10kOps.length}/${equal10kOps.length} 10k cells required · every operation counts equally`,
+        ],
+      },
+    },
+  ];
 
   const nativeHasData = select({ harness: 'native' }).length > 0;
 
@@ -152,49 +224,51 @@ function AppContent({
     <div className="page">
       <header className="site-header">
         <div className="site-title"><span className="lynx">Lynx</span> JS Framework Benchmark</div>
-        <nav className="site-nav" aria-label="Pages">
-          {PAGES.map((p) => (
-            <button key={p.key} aria-current={page === p.key} onClick={() => setPage(p.key)}>{p.label}</button>
-          ))}
-        </nav>
-        <div className="harness-switch" role="group" aria-label="Harness">
-          {['web', 'native'].map((h) => (
-            <button key={h} aria-pressed={harness === h} onClick={() => changeHarness(h)}>
-              {h === 'web' ? 'Lynx for Web' : 'Native engine'}
-            </button>
-          ))}
-        </div>
-        <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
-          {theme === 'dark' ? '☀' : '☾'}
-        </button>
       </header>
       <TimelineSlider
         snapshots={TIMELINE_SNAPSHOTS}
         index={snapshotIndex}
         onChange={onSnapshotChange}
+        page={page}
+        onPageChange={setPage}
+        harness={harness}
+        onHarnessChange={changeHarness}
+        theme={theme}
+        onThemeToggle={toggleTheme}
       />
+      <MeasurementReceipt harness={harness} />
 
       {harness === 'native' && !nativeHasData ? (
-        <>
-          <h1>How fast is each framework on Lynx?</h1>
-          <p className="subtitle">
-            No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
-            matrix keeps every contracted cell visible without turning archived observations into
-            rankings.
-          </p>
-          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
-          <div className="empty-state">
-            <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
-            <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
-              Any archive-only observations follow. The appendix at the end distinguishes work
-              that was never scheduled from evidenced DNF, proven unsupported capability,
-              incompatible archived runs, and derivation defects.
+        page === 'overview' ? (
+          <>
+            <h1>How fast is each framework on Lynx?</h1>
+            <p className="subtitle">
+              No complete Native comparison cohort is publishable for this snapshot. The at-a-glance
+              matrix keeps every contracted cell visible without turning archived observations into
+              rankings.
             </p>
-          </div>
-          <NativeObservations theme={theme} />
-          <NativeCoverage />
-        </>
+            <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+            <div className="empty-state">
+              <p><b>No publishable Native comparison cohort for this snapshot.</b></p>
+              <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
+                Any archive-only observations follow. The appendix at the end distinguishes work
+                that was never scheduled from evidenced DNF, proven unsupported capability,
+                incompatible archived runs, and derivation defects.
+              </p>
+            </div>
+            <NativeObservations theme={theme} />
+            <NativeCoverage />
+          </>
+        ) : (
+          <>
+            <h1>How does Native cost grow with scale?</h1>
+            <p className="subtitle">
+              This checkpoint has no complete Native cohort, so no cross-framework scale curve can
+              be published. Archived observations remain visible as evidence below.
+            </p>
+            <NativeObservations theme={theme} />
+          </>
+        )
       ) : page === 'overview' ? (
         <>
           <h1>How fast is each framework on Lynx?</h1>
@@ -205,27 +279,15 @@ function AppContent({
             Medians, lower is better. DNF is shown explicitly. Pick entries, hover anything, open
             any card's data table for exact numbers.
           </p>
-          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} />
+          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
-            title="interactive @1k"
+            title="interaction benchmark"
             description={harness === 'web'
-              ? 'krausest-style table ops on 1,000 rows: tap → all mutations visible in the composed DOM.'
-              : 'krausest-style table ops on 1,000 rows: native input handler → second native animation frame.'}
+              ? <>One <KrausestBenchmarkLink /> workload family, three views: the upstream-weighted nine-case score and equal-weight 1k/10k scale slices. Measured from pointerdown → composed DOM; hover or focus a formula tab for its equation.</>
+              : <>The same <KrausestBenchmarkLink /> workload family at two Native scale slices, measured from the input handler → second native animation frame. Hover or focus a formula tab for its equation.</>}
             suite="table"
-            ops={tableOps([1000])}
-            harness={harness}
-            theme={theme}
-            selected={activeSelected}
-          />
-          <RankedBars
-            title="interactive @10k"
-            description={harness === 'web'
-              ? 'the same ops at 10,000 rows — where wire cost and reconciliation strategy separate.'
-              : 'the same native operations at 10,000 rows; input/session timeouts remain visible as DNF.'}
-            suite="table"
-            ops={tableOps([10000])}
+            scoreModes={interactionModes}
             harness={harness}
             theme={theme}
             selected={activeSelected}
@@ -279,9 +341,20 @@ function AppContent({
               />
             );
           })}
+          <section className="thread-section" aria-labelledby="thread-section-title">
+            <div className="section-heading">
+              <div className="section-kicker">Inside the operation</div>
+              <h2 id="thread-section-title">Thread &amp; transport</h2>
+              <p>
+                Wall time can hide where work runs. This environment-specific breakdown keeps CPU,
+                wire traffic, memory and bundle placement beside the headline ranking.
+              </p>
+            </div>
+            <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
+          </section>
           {harness === 'native' && <NativeCoverage />}
         </>
-      ) : page === 'scale' ? (
+      ) : (
         <>
           <h1>How does cost grow with scale?</h1>
           <p className="subtitle">
@@ -290,31 +363,11 @@ function AppContent({
             0 ≈ scale-independent).
           </p>
           <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          {harness === 'web' && <CostSpace harness={harness} theme={theme} selected={activeSelected} />}
+          <InteractionScaleComposite harness={harness} theme={theme} selected={activeSelected} />
+          <CostSpace harness={harness} theme={theme} selected={activeSelected} />
           {trendSpecsForHarness(harness).map((spec) => (
             <ScaleTrend key={spec.title} spec={spec} harness={harness} theme={theme} selected={activeSelected} />
           ))}
-        </>
-      ) : page === 'threads' ? (
-        <>
-          <h1>The dual-thread equation</h1>
-          <p className="subtitle">
-            Lynx runs frameworks on a background thread (BTS) and applies UI on the main thread
-            (MTS); everything between them crosses a serialized wire. Total time hides this —
-            here it's split apart: per-realm CPU, bytes and messages in each direction, and which
-            rpc endpoints carried them.
-          </p>
-          <Legend harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
-          <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
-        </>
-      ) : (
-        <>
-          <h1>Method</h1>
-          <p className="subtitle">
-            What is measured, how neutrality is enforced, and where these numbers may and may not
-            be compared.
-          </p>
-          <MethodPage />
         </>
       )}
 

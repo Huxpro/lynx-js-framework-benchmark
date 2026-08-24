@@ -30,7 +30,7 @@ export function CostSpace({
     const out: { entry: string; label: string; gzip: number; fcp: number }[] = [];
     for (const e of ENTRIES) {
       if (!selected.has(e.id)) continue;
-      const gzip = one({ suite: 'bundle', entry: e.id, metric: 'bundleWebGzip' })?.median;
+      const gzip = one({ suite: 'bundle', harness, entry: e.id, metric: 'bundleWebGzip' })?.median;
       const fcp = activeScale == null ? null
         : one({ suite: 'startup', harness, entry: e.id, workload: 'startup', scale: activeScale, metric: 'fcp' })?.median;
       if (gzip != null && fcp != null) {
@@ -56,7 +56,7 @@ export function CostSpace({
       marginBottom: 44,
       style: { background: 'transparent', color: fg, fontSize: '12px' },
       x: {
-        label: 'web bundle (gzip) →',
+        label: 'bundle (gzip) →',
         grid: true,
         domain: [0, Math.max(...data.map((d) => d.gzip)) * 1.15],
         tickFormat: (d: number) => `${Math.round(d / 1024)}k`,
@@ -86,7 +86,7 @@ export function CostSpace({
       <figcaption>
         <div className="card-title">cost space — what you ship vs what you get</div>
         <div className="card-desc">
-          Web bundle size (gzip) against startup FCP at N pre-rendered rows. The lower-left
+          This environment's bundle size (gzip) against startup FCP at N pre-rendered rows. The lower-left
           corner dominates: less code, faster first paint. Paying bytes that don't buy startup
           moves an entry right without moving it down.
         </div>

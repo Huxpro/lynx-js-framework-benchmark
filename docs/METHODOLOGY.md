@@ -15,10 +15,8 @@ had a documented weakness, the fix is noted.
   `lynx.requestAnimationFrame`. The entry emits a `__NATIVE_BENCH_RESULT__` payload through the
   Runtime console, so both endpoints and the duration use the device clock; host ADB/CDP latency
   is outside the sample. The Sandbox adapter subscribes before dispatching real Native touch input
-  for every featured entry. Octane additionally waits for `root.flushTransport()` before its two
-  frames, then emits a post-ACK row/ID/label/selection snapshot. The adapter validates that
-  snapshot against the requested workload. Its optional DevTool driver is diagnostic-only and
-  records a distinct trigger source/boundary so it cannot masquerade as a tap sample.
+  for every Native-eligible featured entry. Featured Octane entries are Web-only: the benchmark
+  does not patch Octane's runtime or app to expose a private completion protocol.
 - **Web startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
@@ -42,14 +40,38 @@ had a documented weakness, the fix is noted.
   `enable_perf_metrics` switch. A versioned producer receipt must also prove the requested row
   state after two Native frames; a producer frame timestamp alone is never called FCP.
   `pipelineEnd - openTime` is retained as settled only when both sources validate.
-  Octane's custom renderer publishes no pipeline entries in this Explorer build, so **no Native
-  Octane FCP is reported**. Instead it emits two isolated metrics with different names and
-  boundaries: host `openPage` request → initial transport commit ACK (`octaneCommitAck`), and →
-  second frame after that ACK (`octaneSecondFrame`). The request time is converted to the device
-  epoch using seven ADB clock samples (lowest RTT wins); offset and RTT remain in machine metadata.
-  Neither isolated metric enters an FCP ranking.
-- Storm predicates await the final tick's state (`bench 50` label / final selection), so a
-  storm number is end-to-end throughput of N sequential render cycles.
+  Octane's custom renderer does not expose the same pipeline boundary in this Explorer build, so
+  **no featured Native Octane metric is reported**. Archived private-protocol observations remain
+  evidence, but cannot fill the current black-box matrix.
+- Update/select storms are archived experiments, not featured workload cases. Existing apps differ
+  in whether intermediate ticks must commit or may coalesce to the same final state; until one
+  framework-neutral contract exists, storm values do not enter current runs or rankings.
+- The standard `select@1k` preselects one row, then measures moving selection to another row. That
+  matches js-framework-benchmark's Playwright `init()`/`run()` sequence; an unselected-to-selected
+  variant is not substituted. Web `select@10k` remains the larger-scale Lynx extension. Likewise,
+  Web `clear` covers the standard 1k workload and the existing 10k scale/memory extension. The Web
+  clear addition does not change the published Native matrix.
+
+### js-framework weighted score
+
+The Web results expose one strict, formula-compatible score over the nine CPU workloads in
+[js-framework-benchmark's current order](https://github.com/krausest/js-framework-benchmark/blob/afe7c118dd217ccae4c10813613ac0d7566b1ef1/webdriver-ts/src/benchmarksCommon.ts):
+create 1k, replace 1k, update every tenth row, move selection, swap, remove, create 10k,
+append 1k to 1k, and clear 1k. For each workload, every featured entry's median is divided by
+the fastest featured median for that workload. The score is the weighted geometric mean
+
+`exp(sum(weight[i] * ln(ratio[i])) / sum(weight))`
+
+using the nine weights from
+[the upstream results implementation](https://github.com/krausest/js-framework-benchmark/blob/afe7c118dd217ccae4c10813613ac0d7566b1ef1/webdriver-ts-results/src/Common.ts).
+An entry missing any one of the nine cells is not scored; a partial matrix is never divided by
+the full weight denominator.
+
+This is **formula and operation-set parity, not measurement-protocol identity**. Upstream measures
+Chrome trace duration and applies case-specific CPU throttling (4× for update/select/swap/clear,
+2× for remove) plus its own warmup schedule. This lab applies the same formula to medians from
+the framework-neutral Lynx for Web boundary: input `pointerdown` until the composed-DOM predicate
+is true. The label therefore says `js-framework weighted score`, not `official js-framework-benchmark score`.
 
 ## Dual-thread metrics
 
@@ -96,7 +118,7 @@ had a documented weakness, the fix is noted.
 
 ## Statistics
 
-- Web warmup: two untimed create/clear cycles per page; storms and startup use fresh pages per
+- Web warmup: two untimed create/clear cycles per page; startup uses a fresh page per
   sample (page-load variance is inside the sample, stated on the site). Native opens a fresh
   page/session per repetition without dropping any raw sample. Formal Android runs use direct
   transport, one persistent CDP channel per page, a 100 ms unmeasured DebugRouter teardown
@@ -137,9 +159,8 @@ had a documented weakness, the fix is noted.
   after which the device logged `ReadAndCheckMessageHeader` protocol failure. Formal runs use one
   persistent direct CDP channel; retries remain only as bounded evidence for genuinely interrupted
   device sessions, not as the normal control path.
-  Octane uses the configured long ceiling required by its renderer cliff. Other Native operations
-  use the configured 30-second control ceiling; Web case timeouts are not imported into the Native
-  domain and a global Octane timeout is not imposed on every framework.
+  Native operations use the configured 30-second control ceiling; Web case timeouts are not
+  imported into the Native domain.
 - Startup polling applies the cell deadline to each individual CDP request as the remaining total
   time, so a final unresponsive Performance request cannot overrun the declared timeout. A timeout
   at rows 0 proves only that cell failed: every later scale is attempted independently and emits
@@ -147,21 +168,23 @@ had a documented weakness, the fix is noted.
   capability evidence; absence or one timeout is not capability proof.
 - No single aggregate score across suites; per-suite geomeans only (the unified benchmark's
   audit rejected a global score; we follow).
-- The site time slider is generated from every defensible exact-source checkpoint rather than four
-  handpicked dates or a moving archive cutoff. Web positions are one physical run; Native positions
+- The site time slider uses a small editorial list of meaningful exact-source checkpoints rather
+  than treating every complete retry—or one framework's commit—as a timeline identity. Every valid
+  run remains in the source audit. Web positions are one physical run and expose the complete cell
+  intersection shared by their declared framework identities; Native positions
   combine incremental source runs only inside one unchanged machine/lease/environment/method
-  identity. Octane always means the upstream-main source recorded by that checkpoint, even when
-  older files called it `octane-main`; the original source ID, file, commit, and missing cells stay
-  visible. Rank-over-time never carries a value forward or ranks an isolated observation.
+  identity. Every framework identity shows a linked version or commit pointer. Octane normally means
+  the upstream HEAD recorded by that checkpoint, even when older files called it `octane-main`;
+  Hux1, Hux2, and dated `new-lynx` entries are labelled as Huxpro branch-head attempts. The original
+  source ID, file, and commit remain visible. Rank-over-time never carries a value forward or ranks
+  an isolated observation.
   Historical storm values need special care: the Aug 11/12 and
   Aug 15 Octane runs recorded only 6–8 BTS→MTS and 14–17 MTS→BTS messages for a nominal
-  30-tick select storm, while the current run records 60 and 92. The benchmark app's
+  30-tick select storm, while the later patched audit run recorded 60 and 92. The benchmark app's
   MessageChannel storm implementation is unchanged across those commits, so the old fast values
   reflect runtime/transport batching or collapsed intermediate commits, not 30 equivalent
-  end-to-end commits. The slider labels this comparability break. New Web storm samples fail
-  closed as `incomplete-storm-transport` unless both transport directions observe at least one
-  rpc message per requested tick (50 update / 30 select); reaching only the final DOM predicate is
-  no longer sufficient. The controlled immutable-bundle replay and exact root-cause split are in
+  end-to-end commits. Storms are therefore absent from the featured matrix rather than repaired
+  with framework-specific barriers. The controlled immutable-bundle replay and root-cause split are in
   [OCTANE_WEB_AUDIT.md](./OCTANE_WEB_AUDIT.md). Those old medians remain visible as
   provenance-bearing incomparable points, but are excluded from rank lines.
 
@@ -172,7 +195,7 @@ had a documented weakness, the fix is noted.
   approximating render work) run in the same headless browser. Higher = faster machine.
 - Web default comparisons use records from one physical run. Native checkpoints combine only when
   they share the exact stable physical-device cohort, environment, harness configuration, campaign,
-  210-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
+  115-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
   checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
   its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
   prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made
@@ -208,9 +231,7 @@ had a documented weakness, the fix is noted.
 - `harness: "native"` — real Native Engine execution on an Android 10 ByteDance aries_10
   Lynx Sandbox device through LynxExplorer and `@byted/agent-lynx`. The boundary is
   `native-input-handler-to-second-native-frame`; startup normally uses Native pipeline
-  performance entries, while Octane's commit-ACK/second-frame observations remain isolated and
-  are not labelled FCP. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
+  performance entries. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
   `--jitless`, jsdom, or extrapolated value is published as Native.
-- The published Native Octane entries are upstream `main` and the separately identified PR #791
-  snapshot. The dated block-core `new-lynx` snapshot is explicitly Web-only, and historical
-  Octane Lab variants remain opt-in Web history rather than entering the Native cohort.
+- All featured Octane entries are explicitly Web-only. Historical Octane Native observations remain
+  appendix evidence and never enter the current Native cohort or ranking.

@@ -1,210 +1,70 @@
 import { useBenchmarkData } from '../data-context';
-import { BENCHMARK_HISTORY, ENTRIES } from '../data';
+import { BENCHMARK_HISTORY } from '../data';
 
-export function MethodPage() {
+export function MeasurementReceipt({ harness }: { harness: string }) {
   const { snapshot } = useBenchmarkData();
-  const comparison = snapshot.comparison;
   const checkpoint = BENCHMARK_HISTORY.checkpoints.find((candidate) => candidate.id === snapshot.id);
-  const isCurrent = checkpoint?.current === true;
+  const cohort = snapshot.comparison.harnesses.find((candidate) => candidate.harness === harness);
+  const boundary = harness === 'web'
+    ? 'Interaction: in-page pointerdown → first frame whose composed-DOM predicate passes. Startup: view attach → first contentful paint.'
+    : 'Interaction: real device input handler → second Native animation frame. Startup: pipeline open → FCP; renderer-only ACK/frame metrics stay separately named.';
+  const generatedAt = new Date(snapshot.generatedAt).toLocaleString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+
   return (
-    <>
-      <div className="card">
-        <div className="card-title">source data vs derived data</div>
-        <div className="card-desc" style={{ maxWidth: '80ch' }}>
-          <p>
-            <b>Benchmark source</b> is limited to run/environment identity, record identity,
-            raw repeated <code>samples</code>, one-shot <code>value</code>, <code>dnfCount</code>,
-            structured per-repetition <code>failures</code>, and per-repetition wire{' '}
-            <code>detailSamples</code>. Entry manifests and their checked bundles are build source.
-          </p>
-          <p>
-            <b>Everything else is derived:</b> median/mean/CI, endpoint display samples, cohort and
-            Lab calibration, available entries/cases/scales, rankings, interactive scores,
-            geomeans, ratios, trend α, axes, totals, sorting, and every visual mark. The site build
-            regenerates <code>results/latest.json</code> from source before loading it; stored
-            aggregate fields in historical run files are ignored and recomputed.
-          </p>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-title">how the numbers are made</div>
-        <div className="card-desc" style={{ maxWidth: '80ch' }}>
-          <p>
-            Every entry is the same krausest-style table app, implemented idiomatically per
-            framework. The Web boundary is <b>in-page pointerdown → the first animation frame
-            where a composed-DOM predicate holds</b>. The Native boundary is <b>input handler →
-            second native animation frame</b>, emitted by the bundle on the device clock and read
-            through the Lynx Runtime console. Every featured entry uses real Native touch input.
-            Octane waits for its renderer transport acknowledgement before two Native frames and
-            emits a post-ACK state snapshot, which the adapter checks against the requested
-            workload. Its DevTool driver is diagnostic-only and has a distinct recorded source.
-            Native startup requires both a Lynx pipeline performance entry (<b>open → FCP</b>) and
-            a versioned producer receipt proving the requested rows exist after two Native frames.
-            A producer frame timestamp alone is never relabelled FCP. Octane's custom renderer
-            publishes no such entry in this Explorer build, so it reports no Native FCP; its
-            transport-ACK and post-ACK-frame startup metrics are isolated under different names
-            and boundaries.
-          </p>
-          <p>
-            Dual-thread metrics come from two framework-neutral instruments: a{' '}
-            <b>wire meter</b> patched over the MessageChannel that carries every BTS↔MTS rpc
-            message on Lynx for Web (both directions, per-endpoint, bytes as UTF-8 JSON
-            serialization — a structured-clone proxy applied identically to all entries), and{' '}
-            <b>per-realm CPU sampling</b> via the Chrome DevTools Profiler attached separately to
-            the UI thread and the background worker.
-          </p>
-          <p>
-            Fairness: seeded PRNG in both realms (identical row data everywhere), <code>window.gc()</code>{' '}
-            before timed samples, web-core's unbounded <code>lynx.profile</code> shim neutralized for
-            every entry (native parity), medians with t-distribution CI, DNFs reported — never
-            silently dropped.
-          </p>
-          <p>
-            The two harnesses are separate comparison domains. Web numbers are
-            Lynx-for-Web-in-Chromium; Native numbers are real <code>main.lynx.bundle</code> runs in
-            LynxExplorer on a leased Android Sandbox device. They are never charted against one
-            another. A timeout or an unreachable prestate is retained as DNF with structured
-            evidence rather than omitted or replaced with a proxy number.
-          </p>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-title">machines &amp; calibration</div>
-        <div className="card-desc">
-          Web charts are sourced from one coherent run: <code>{comparison.runFile}</code> on machine{' '}
-          <code>{comparison.machineId}</code>{comparison.calibration.score > 0
-            ? `, preflight score ${comparison.calibration.score} (v${comparison.calibration.probeVersion})`
-            : ''}. Native charts combine one complete run
-          per entry only when every run has the same device and environment identity. The collector
-          keeps partial, stale-commit, cross-lease, cross-method, and cross-input records for provenance, but never merges
-          them into the default ranking. A current featured entry measured under another Native
-          lease may appear in a separate absolute-observation panel with its machine and source run
-          visible; those records never enter rankings, heatmaps, geomeans, or cross-framework
-          ratios. The campaign ID hashes the full 210-cell schedule, immutable bundle/source
-          receipt, retry policy, timeouts, Explorer lifecycle/reconnect cadence, render grace, and
-          thermal gate. Opt-in Lab
-          variants marked <b>≈ calibrated</b> come from one complete historical run per entry;
-          millisecond fields are multiplied by source-score / comparison-score. Heap, wire, bundle,
-          and count fields cannot be CPU-calibrated and remain explicitly historical values.
-        </div>
-        <details className="data-table" open>
-          <summary>Published harness cohorts</summary>
-          <table>
-            <thead>
-              <tr><th>harness</th><th>environment</th><th>machine</th><th>entries</th><th>source runs</th></tr>
-            </thead>
-            <tbody>
-              {comparison.harnesses.map((cohort) => (
-                <tr key={cohort.harness}>
-                  <td>{cohort.harness}</td>
-                  <td style={{ textAlign: 'left' }}>{cohort.environment ?? '—'}</td>
-                  <td>{cohort.machineId}</td>
-                  <td>{cohort.entryIds.length}</td>
-                  <td>{cohort.sourceRunFiles.length}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-        {snapshot.nativeObservations.length > 0 && (
-          <details className="data-table" open>
-            <summary>Separate Native observations</summary>
-            <table>
-              <thead>
-                <tr><th>entry</th><th>environment</th><th>machine</th><th>source run</th><th>records</th></tr>
-              </thead>
-              <tbody>
-                {snapshot.nativeObservations.map((observation) => (
-                  <tr key={`${observation.entryId}:${observation.machineId}`}>
-                    <td>{observation.entryId}</td>
-                    <td style={{ textAlign: 'left' }}>{observation.environment}</td>
-                    <td>{observation.machineId}</td>
-                    <td style={{ textAlign: 'left' }}>{observation.sourceRunFile}</td>
-                    <td>{observation.sourceRecordCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </details>
+    <details className="measurement-receipt">
+      <summary>
+        <span>Measurement receipt</span>
+        <span className="receipt-context">
+          <code title={checkpoint?.description}>{checkpoint?.label ?? snapshot.label}</code>
+          {' · '}<time dateTime={snapshot.generatedAt}>{generatedAt}</time>
+          {' · '}{harness === 'web' ? 'Web' : 'Native'}
+          {' · '}{cohort ? `${cohort.entryIds.length} comparable entries` : 'no publishable cohort'}
+        </span>
+      </summary>
+      <div className="receipt-grid">
+        {checkpoint?.description && (
+          <section className="receipt-change">
+            <h3>What changed</h3>
+            <p>{checkpoint.description}</p>
+          </section>
         )}
-        <details className="data-table" open>
-          <summary>Machines in this dataset</summary>
-          <table>
-            <thead>
-              <tr><th>machine</th><th>cpu</th><th>cores</th><th>node</th><th>latest preflight</th></tr>
-            </thead>
-            <tbody>
-              {Object.values(snapshot.machines).map((m) => (
-                <tr key={m.id}>
-                  <td>{m.id}</td>
-                  <td style={{ textAlign: 'left' }}>{m.cpuModel} ({m.platform}/{m.arch})</td>
-                  <td>{m.cores}</td>
-                  <td>{m.node}</td>
-                  <td>{m.latestCalibration?.score ?? '—'} (v{m.latestCalibration?.probeVersion ?? '?'})</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-        {isCurrent && comparison.labEstimates.length > 0 && (
-          <details className="data-table">
-            <summary>Calibration-only Lab sources</summary>
-            <table>
-              <thead>
-                <tr><th>entry</th><th>source run</th><th>source score</th><th>target score</th><th>ratio</th></tr>
-              </thead>
-              <tbody>
-                {comparison.labEstimates.map((estimate) => (
-                  <tr key={estimate.entryId}>
-                    <td>{estimate.entryId}</td>
-                    <td style={{ textAlign: 'left' }}>{estimate.sourceRunFile}</td>
-                    <td>{estimate.sourceCalibration.score}</td>
-                    <td>{estimate.targetCalibration.score}</td>
-                    <td>{estimate.calibrationRatio?.toFixed(4) ?? 'incompatible'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </details>
-        )}
-        <div className="note">
-          exact checkpoint {new Date(snapshot.generatedAt).toLocaleString()} · {checkpoint?.sourceIndexes.length ?? 0} source run{checkpoint?.sourceIndexes.length === 1 ? '' : 's'}
-        </div>
+        <section>
+          <h3>Observation boundary</h3>
+          <p>{boundary}. Timeout and unreachable prestate remain explicit DNF, never proxy values.</p>
+        </section>
+        <section>
+          <h3>Fairness controls</h3>
+          <p>
+            Identical table contract and seeded rows; medians are derived from raw repetitions.
+            Web and Native stay separate comparison domains.
+          </p>
+        </section>
+        <section>
+          <h3>Published cohort</h3>
+          <p>
+            {cohort
+              ? <><code>{cohort.machineId}</code> · {cohort.sourceRunFiles.length} source run{cohort.sourceRunFiles.length === 1 ? '' : 's'}</>
+              : 'Archived observations may remain as evidence, but cannot enter rankings.'}
+          </p>
+        </section>
       </div>
-
-      <div className="card">
-        <div className="card-title">entries &amp; provenance</div>
-        <div className="card-desc">
-          Vendored bundles carry source repo, commit, build command, and sha256 checksums; add an
-          entry by adding <code>entries/&lt;id&gt;/</code> with an <code>entry.json</code> — nothing else changes.
-        </div>
-        <details className="data-table provenance" open>
-          <summary>Entry table</summary>
-          <table>
-            <thead>
-              <tr><th>entry</th><th>framework</th><th>config</th><th>source</th><th>commit</th></tr>
-            </thead>
-            <tbody>
-              {ENTRIES.map((e) => (
-                <tr key={e.id}>
-                  <td style={{ textAlign: 'left' }}>{e.label}</td>
-                  <td style={{ textAlign: 'left' }}>{e.framework} {e.frameworkVersion}</td>
-                  <td style={{ textAlign: 'left' }}>{e.config}</td>
-                  <td style={{ textAlign: 'left' }}>
-                    <a href={e.provenance.source} target="_blank" rel="noreferrer">
-                      {e.provenance.source.replace('https://github.com/', '')}
-                    </a>{' '}
-                    @ {e.provenance.ref}
-                  </td>
-                  <td style={{ textAlign: 'left' }}>{e.provenance.commit.slice(0, 10)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
+      <div className="receipt-audit">
+        <p>
+          <b>Raw → derived.</b> Run identity, raw repetitions, one-shot values, failures and DNF
+          counts are source evidence. Medians, CI, eligible matrices, rankings, geomeans, ratios,
+          trend α and every visual mark are regenerated at build time.
+        </p>
+        <p>
+          <b>Instrumentation.</b> Per-realm CPU and directional BTS↔MTS wire breakdowns appear only
+          when that exact environment captured them. Missing instruments never borrow values from
+          the other environment.
+        </p>
       </div>
-    </>
+      <div className="receipt-foot">
+        exact checkpoint <code>{checkpoint?.id ?? snapshot.id}</code>
+      </div>
+    </details>
   );
 }

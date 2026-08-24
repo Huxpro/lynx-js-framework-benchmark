@@ -62,6 +62,8 @@ export const TABLE_CASES = [
     defaultScales: [1000, 10000],
   },
   {
+    // js-framework-benchmark selects row 5 during init, then times moving the
+    // selection to row 2. This pre-selected state matches that measured work.
     name: 'select',
     pre: 'rows+preselect',
     trigger: { cell: { rowIndex: 1, cls: 'col-label' } },
@@ -90,9 +92,18 @@ export const TABLE_CASES = [
     pre: 'rows',
     trigger: { button: () => 'Clear' },
     predicate: () => ({ type: 'rowCount', value: 0 }),
-    scales: [10000],
-    defaultScales: [10000],
+    // 1k is the Web js-framework-benchmark workload; 10k is the existing
+    // Lynx scale/memory extension. Native retains its published 10k contract.
+    scales: [1000, 10000],
+    defaultScales: [1000, 10000],
+    nativeScales: [10000],
   },
+];
+
+// Archived experiment definitions. These are intentionally excluded from the
+// featured matrix: the current entry apps do not share one black-box scheduling
+// contract for each intermediate tick, so their storm timings are not rankings.
+export const EXPERIMENTAL_STORM_CASES = [
   {
     name: 'updateStorm',
     pre: 'rows',
@@ -128,7 +139,18 @@ export const STARTUP_CASES = [
 ];
 
 export function tableCase(name) {
-  const c = TABLE_CASES.find((c) => c.name === name);
+  const c = [...TABLE_CASES, ...EXPERIMENTAL_STORM_CASES].find((c) => c.name === name);
   if (!c) throw new Error(`unknown table case: ${name}`);
   return c;
+}
+
+/** Resolve the shared table contract for one harness without mutating it. */
+export function tableCasesForHarness(harness) {
+  return TABLE_CASES.flatMap((kase) => {
+    if (kase.harnesses != null && !kase.harnesses.includes(harness)) return [];
+    const scales = harness === 'native' && kase.nativeScales != null
+      ? kase.nativeScales
+      : kase.scales;
+    return scales.length === 0 ? [] : [{ ...kase, scales: [...scales] }];
+  });
 }

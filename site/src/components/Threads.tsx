@@ -15,6 +15,7 @@ import {
 import { useTooltip } from '../hooks';
 
 const THREAD_WORKLOADS = ['create', 'update10th', 'select', 'updateStorm', 'selectStorm'];
+const THREAD_METRICS = new Set(['btsCpu', 'mtsCpu', 'wireToMtsBytes', 'wireToBtsBytes']);
 const scaleLabel = (scale: number) => scale >= 1000 ? `${scale / 1000}k` : String(scale);
 const endpointDetailLabel = (kind: string | null | undefined) => kind === 'sample-nearest-median'
   ? 'sample nearest the median total'
@@ -220,19 +221,30 @@ export function ThreadsPage({
   const available = useMemo(
     () => THREAD_WORKLOADS.flatMap((workload) => [...new Set(
       select({ suite: 'table', harness, workload, metric: 'latency' }).map((record) => record.scale),
-    )].sort((a, b) => a - b).map((scale) => ({
-      key: `${workload}@${scale}`,
-      workload,
-      scale,
-      label: `${workload} @${scaleLabel(scale)}`,
-    }))),
+    )].sort((a, b) => a - b)
+      .filter((scale) => select({ suite: 'table', harness, workload, scale })
+        .some((record) => THREAD_METRICS.has(record.metric)))
+      .map((scale) => ({
+        key: `${workload}@${scale}`,
+        workload,
+        scale,
+        label: `${workload} @${scaleLabel(scale)}`,
+      }))),
     [harness, select],
   );
   const [caseKey, setCaseKey] = useState<string | null>(null);
   const active = available.find((c) => c.key === caseKey) ?? available[0];
 
   if (!active) {
-    return <div className="empty-state">No dual-thread data for this harness yet.</div>;
+    return (
+      <div className="empty-state compact-empty">
+        <b>No thread or transport samples for Lynx for {harness === 'web' ? 'Web' : 'Native'}.</b>
+        <span>
+          Headline latency remains valid; this checkpoint did not capture the per-realm CPU and
+          directional wire instruments needed for the breakdown.
+        </span>
+      </div>
+    );
   }
 
   return (
@@ -255,32 +267,34 @@ export function ThreadsPage({
         <GroupedTimeBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} />
       </div>
 
-      <div className="grid-2">
-        <div className="card">
-          <div className="card-title">wire bytes by direction — {active.label}</div>
-          <div className="card-desc">
-            Serialized payload crossing the BTS↔MTS boundary during the op, measured at web-core's
-            rpc channel with one instrument for every framework. Each framework has separate
-            directional bars, sorted by their two-direction total, so it can be lowest in one
-            direction and highest in the other. Hover for the per-endpoint split.
+      <div className="wire-analysis">
+        <div className="grid-2">
+          <div className="card">
+            <div className="card-title">wire bytes by direction — {active.label}</div>
+            <div className="card-desc">
+              Serialized payload crossing the BTS↔MTS boundary during the op, measured at web-core's
+              rpc channel with one instrument for every framework. Each framework has separate
+              directional bars, sorted by their two-direction total, so it can be lowest in one
+              direction and highest in the other. Hover for the per-endpoint split.
+            </div>
+            <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Bytes" fmt={fmtBytes} />
           </div>
-          <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Bytes" fmt={fmtBytes} />
-        </div>
-        <div className="card">
-          <div className="card-title">wire messages by direction — {active.label}</div>
-          <div className="card-desc">
-            Message count both directions. Chatty protocols pay per-message overhead (structured
-            clone, scheduling) even when bytes are small.
+          <div className="card">
+            <div className="card-title">wire messages by direction — {active.label}</div>
+            <div className="card-desc">
+              Message count both directions. Chatty protocols pay per-message overhead (structured
+              clone, scheduling) even when bytes are small.
+            </div>
+            <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Msgs" fmt={fmtCount} />
           </div>
-          <WireBars workload={active.workload} scale={active.scale} harness={harness} theme={theme} selected={selected} metric="Msgs" fmt={fmtCount} />
         </div>
+        <EndpointTable workload={active.workload} scale={active.scale} harness={harness} selected={selected} />
       </div>
 
-      <EndpointTable workload={active.workload} scale={active.scale} harness={harness} selected={selected} />
       <div className="grid-2">
         <MemoryCard harness={harness} theme={theme} selected={selected} />
       </div>
-      <BundleSections theme={theme} selected={selected} />
+      <BundleSections harness={harness} theme={theme} selected={selected} />
     </>
   );
 }
@@ -382,49 +396,63 @@ function EndpointTable({
   const detailDescription = detailKinds.size === 1
     ? endpointDetailLabel([...detailKinds][0])
     : 'source-labelled samples (see row data)';
+  const tableRows = rows.flatMap((row) => Object.entries(row.endpoints)
+    .sort((a, b) => b[1].bytes - a[1].bytes)
+    .slice(0, 8)
+    .map(([name, value], index) => ({ id: row.id, name, value, first: index === 0 })));
+
+  if (!tableRows.length) return null;
 
   return (
-    <div className="card">
-      <div className="card-title">per-endpoint breakdown — {detailDescription}</div>
-      <div className="card-desc">
-        Which rpc endpoints carried the traffic. <code>callLepusMethod</code> carries most
-        frameworks' render payloads; <code>publishEvent</code>/<code>publicComponentEvent</code> carry input
-        events up; <code>markTiming</code>/<code>postTimingFlags</code> are the engine's own timing chatter.
-      </div>
-      <details className="data-table" open>
-        <summary>Endpoint table</summary>
+    <details className="visualization-appendix">
+      <summary>
+        <span className="appendix-chevron" aria-hidden="true">›</span>
+        <span className="appendix-name">
+          <small>Data appendix</small>
+          <strong>Endpoint traffic</strong>
+        </span>
+        <span className="appendix-meta">
+          {detailDescription} · {rows.filter((row) => Object.keys(row.endpoints).length).length} entries · {tableRows.length} rows
+        </span>
+      </summary>
+      <div className="visualization-appendix-body">
+        <p>
+          Exact endpoint rows behind the wire bytes and messages charts. <code>callLepusMethod</code> carries most
+          frameworks' render payloads; <code>publishEvent</code>/<code>publicComponentEvent</code> carry input
+          events up; <code>markTiming</code>/<code>postTimingFlags</code> are engine timing chatter.
+        </p>
+        <div className="appendix-table-scroll">
         <table>
           <thead>
             <tr><th>entry</th><th>endpoint</th><th>msgs</th><th>bytes</th></tr>
           </thead>
           <tbody>
-            {rows.flatMap((r) => {
-              const entries = Object.entries(r.endpoints).sort((a, b) => b[1].bytes - a[1].bytes).slice(0, 8);
-              return entries.map(([name, v], i) => (
-                <tr key={`${r.id}-${name}`}>
-                  <td>{i === 0 ? shortLabel(r.id) : ''}</td>
-                  <td style={{ textAlign: 'left', fontFamily: 'ui-monospace, Menlo, monospace' }}>{name}</td>
-                  <td>{v.messages}</td>
-                  <td>{fmtBytes(v.bytes)}</td>
-                </tr>
-              ));
-            })}
+            {tableRows.map((row) => (
+              <tr key={`${row.id}-${row.name}`}>
+                <td>{row.first ? shortLabel(row.id) : ''}</td>
+                <td>{row.name}</td>
+                <td>{row.value.messages}</td>
+                <td>{fmtBytes(row.value.bytes)}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
-      </details>
-    </div>
+        </div>
+      </div>
+    </details>
   );
 }
 
-function BundleSections({ theme, selected }: { theme: 'light' | 'dark'; selected: Set<string> }) {
+function BundleSections({ harness, theme, selected }: { harness: string; theme: 'light' | 'dark'; selected: Set<string> }) {
   const { one } = useBenchmarkData();
   const { setTip, onMove, tipNode } = useTooltip();
   const rows = ENTRIES.filter((e) => selected.has(e.id)).map((e) => ({
     id: e.id,
-    mts: one({ suite: 'bundle', entry: e.id, metric: 'mtsSectionGzip' })?.median ?? null,
-    bts: one({ suite: 'bundle', entry: e.id, metric: 'btsSectionGzip' })?.median ?? null,
-    whole: one({ suite: 'bundle', entry: e.id, metric: 'bundleWebGzip' })?.median ?? null,
+    mts: one({ suite: 'bundle', harness, entry: e.id, metric: 'mtsSectionGzip' })?.median ?? null,
+    bts: one({ suite: 'bundle', harness, entry: e.id, metric: 'btsSectionGzip' })?.median ?? null,
+    whole: one({ suite: 'bundle', harness, entry: e.id, metric: 'bundleWebGzip' })?.median ?? null,
   }));
+  if (!rows.some((row) => row.whole != null)) return null;
   const max = Math.max(1e-9, ...rows.map((r) => r.whole ?? 0)) * 1.08;
 
   return (

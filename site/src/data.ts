@@ -180,7 +180,7 @@ export interface TimelineSnapshot {
   label: string;
   description: string;
   generatedAt: string;
-  octaneCommit: string | null;
+  identityPointers: HistoryIdentityPointer[];
   records: BenchRecord[];
   comparison: ComparisonRun;
   machines: Record<string, Machine>;
@@ -212,12 +212,32 @@ export interface HistoryCohort {
   rankEligible: boolean;
 }
 
+export interface EntryConfiguration {
+  summary: string;
+  href: string;
+}
+
+export interface HistoryIdentityPointer {
+  entryId: string;
+  sourceEntryId: string;
+  label: string;
+  framework: string | null;
+  version: string | null;
+  commit: string | null;
+  source: string | null;
+  ref: string | null;
+  href: string | null;
+  channel: string | null;
+  config: string | null;
+  configuration: EntryConfiguration | null;
+}
+
 export interface HistoryCheckpoint {
   id: string;
   generatedAt: string;
   label: string;
   description: string;
-  octaneCommit: string | null;
+  identityPointers: HistoryIdentityPointer[];
   current?: boolean;
   activeRecordIndexes: number[];
   sourceIndexes: number[];
@@ -253,10 +273,13 @@ export interface EntryMeta {
   framework: string;
   frameworkVersion: string;
   config: string;
+  historyChannel?: string;
+  supersededBy?: string;
+  configuration?: EntryConfiguration;
   tags: string[];
-  /** featured = default public view; lab = author-development variants
-   * (versions/PRs/permutations), hidden until Lab mode is on. */
-  tier?: 'featured' | 'lab';
+  /** featured = default public view; lab = calibrated author-development
+   * variants; archive = source evidence that never enters a public cohort. */
+  tier?: 'featured' | 'lab' | 'archive';
   /** Harnesses this public entry is eligible to run in. Omitted means both. */
   harnesses?: ('web' | 'native')[];
   color: string;
@@ -284,7 +307,6 @@ const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   cells: [],
 };
 export function historyRecordsForCheckpoint(checkpoint: HistoryCheckpoint): HistoryRecord[] {
-  if (checkpoint.current) return collected.comparisonRecords as HistoryRecord[];
   return checkpoint.activeRecordIndexes.map((index) => BENCHMARK_HISTORY.records[index]);
 }
 export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoints.map((checkpoint) => {
@@ -316,7 +338,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     label: checkpoint.label,
     description: checkpoint.description,
     generatedAt: checkpoint.generatedAt,
-    octaneCommit: checkpoint.octaneCommit,
+    identityPointers: checkpoint.identityPointers,
     records,
     comparison: {
       runFile: checkpoint.harnesses[0]?.sourceRunFiles[0] ?? '',
@@ -352,7 +374,7 @@ export const ENTRIES: (EntryMeta & { colorLight: string; colorDark: string })[] 
       colorDark: entry.presentation.colorDark,
     }));
 
-export const FEATURED_IDS = ENTRIES.filter((e) => e.tier !== 'lab').map((e) => e.id);
+export const FEATURED_IDS = ENTRIES.filter((e) => e.tier === 'featured').map((e) => e.id);
 
 export const ENTRY_BY_ID = new Map(ENTRIES.map((e) => [e.id, e]));
 

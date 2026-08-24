@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
 
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
-const TIERS = new Set(['featured', 'lab']);
+const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
 
 let failures = 0;
@@ -45,35 +45,49 @@ for (const id of ids) {
     }
   }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
-  if (/^octane-new-\d{4}-\d{2}-\d{2}$/.test(id)) {
-    if (manifest.tier !== 'featured') fail(`${id}: dated new-lynx entry must be featured`);
-    if (manifest.provenance.ref !== 'new-lynx') fail(`${id}: provenance.ref must be new-lynx`);
-    if (
-      manifest.provenance.patched !== true
-      || manifest.provenance.patchFile
-        !== `entries/_patches/${id}-block-storm.patch`
-    ) {
-      fail(`${id}: dated new-lynx entry must use its audited block-storm patch`);
+  if (manifest.tier === 'featured' && manifest.framework === 'octane') {
+    if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
+      fail(`${id}: featured Octane entries must use an unpatched source checkout`);
     }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+      fail(`${id}: featured Octane entries must be explicitly Web-only`);
+    }
+  }
+  if (id === 'octane-hux') {
+    if (manifest.label !== 'Octane (Hux)') fail(`${id}: public label must be Octane (Hux)`);
+    if (manifest.tier !== 'featured') fail(`${id}: Hux new-lynx entry must be featured`);
+    if (manifest.provenance.ref !== 'new-lynx') fail(`${id}: provenance.ref must be new-lynx`);
     if (
       manifest.provenance.buildEnv?.BENCH_CORE !== 'block'
       || manifest.provenance.buildEnv?.BENCH_BLOCK_MODE !== 'scoped'
       || !String(manifest.provenance.buildCommand).includes('BENCH_CORE=block')
     ) {
-      fail(`${id}: dated new-lynx entry must prove the scoped block-core build`);
+      fail(`${id}: Hux new-lynx entry must prove the scoped block-core build`);
     }
     if (manifest.webLab != null || manifest.nativeLab != null || manifest.ranking != null) {
-      fail(`${id}: dated new-lynx entry must not use Lab contracts`);
+      fail(`${id}: Hux new-lynx entry must not use Lab contracts`);
     }
     if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
-      fail(`${id}: dated new-lynx entry must be explicitly Web-only`);
+      fail(`${id}: Hux new-lynx entry must be explicitly Web-only`);
+    }
+  }
+  if (id === 'octane-hux1' || id === 'octane-hux2') {
+    if (manifest.tier !== 'archive' || manifest.supersededBy !== 'octane-hux') {
+      fail(`${id}: historical Hux attempt must be archive evidence superseded by octane-hux`);
     }
   }
   if (id === 'octane-pr-791') {
-    if (manifest.tier !== 'featured') fail(`${id}: PR #791 entry must be featured`);
+    if (manifest.tier !== 'archive') fail(`${id}: merged PR #791 entry must be archive evidence`);
+    if (manifest.supersededBy !== 'octane') fail(`${id}: merged PR #791 must be superseded by octane`);
     if (manifest.provenance.ref !== 'pull/791/head') fail(`${id}: provenance.ref must be pull/791/head`);
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
-      fail(`${id}: PR #791 entry must participate in both harnesses`);
+    if (manifest.provenance.mergedInto !== '939c64dc9d9f0fd5c5fe50255fe75ce592d0b31a') {
+      fail(`${id}: provenance.mergedInto must identify PR #791's upstream merge commit`);
+    }
+    if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
+      fail(`${id}: archived PR #791 evidence must use a clean source checkout`);
+    }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+      fail(`${id}: PR #791 entry must be explicitly Web-only`);
     }
   }
   if (manifest.provenance?.patched && manifest.provenance?.patchFile) {

@@ -4,7 +4,8 @@ export interface DerivedCell {
 }
 
 export function geomean(values: number[]): number | null;
-export function completeEntryScores(ids: string[], cells: DerivedCell[]): {
+export function weightedGeomean(values: number[], weights: number[]): number | null;
+export function completeEntryScores(ids: string[], cells: DerivedCell[], weights?: number[]): {
   scores: { id: string; value: number | null }[];
   missing: string[];
   cellCount: number;
@@ -23,4 +24,30 @@ export function rankHistoryCell(
   record: { entry: string; median: number | null; rankEligible?: boolean; dnfCount: number } | null;
   rank: number | null;
   status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
+}>;
+export function completeHistoryAggregateCells<T extends {
+  entry: string;
+  median: number | null;
+  rankEligible?: boolean;
+}>(
+  entryIds: string[],
+  cells: Array<{ key: string; records: T[] }>,
+): Array<{ key: string; records: T[] }>;
+export function rankHistoryAggregate<T extends {
+  entry: string;
+  median: number | null;
+  rankEligible?: boolean;
+  dnfCount: number;
+}>(
+  entryIds: string[],
+  cells: Array<{ key: string; records: T[] }>,
+  cohortEligible?: boolean,
+  weights?: number[],
+): Array<{
+  entry: string;
+  records: T[];
+  value: number | null;
+  rank: number | null;
+  status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
+  cellCount: number;
 }>;
