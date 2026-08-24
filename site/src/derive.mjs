@@ -97,6 +97,16 @@ export function rankHistoryCell(entryIds, records, cohortEligible = true) {
   });
 }
 
+/** Keep only aggregate cells measured comparably for every entry in one
+ * checkpoint. This lets historical formulas use the largest complete matrix
+ * available in that era without giving any entry a different denominator. */
+export function completeHistoryAggregateCells(entryIds, cells) {
+  return cells.filter((cell) => entryIds.every((entry) => {
+    const record = cell.records.find((candidate) => candidate.entry === entry);
+    return record?.rankEligible !== false && valid(record?.median);
+  }));
+}
+
 /** Rank a complete matrix of cells without pretending it is one raw record.
  * Each cell is normalized to its fastest eligible entry, then the per-entry
  * score is the unweighted geometric mean of those ratios. */

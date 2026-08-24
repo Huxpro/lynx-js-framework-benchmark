@@ -46,12 +46,14 @@ test('history ranking keeps cohort transitions visible and puts rank context ins
   assert.match(rankingSource, /Composite score/);
   assert.match(rankingSource, /Single measurement/);
   assert.match(rankingSource, /label="Formula"/);
-  assert.match(rankingSource, /label: 'js-framework weighted'/);
+  assert.match(rankingSource, /label: 'weighted · available'/);
   assert.match(rankingSource, /label: `equal · \$\{scale \/ 1000\}k`/);
-  assert.match(rankingSource, /rankHistoryAggregate\(cohort\.entryIds/);
+  assert.match(rankingSource, /rankHistoryAggregate\(\s*cohort\.entryIds/);
   assert.match(rankingSource, /activeScoreMode\.weights/);
+  assert.match(rankingSource, /completeHistoryAggregateCells\(cohort\.entryIds/);
+  assert.match(rankingSource, /selectedAggregateCellCount/);
   assert.match(rankingSource, /history-choice-info/);
-  assert.match(rankingSource, /Composite score formulas/);
+  assert.match(rankingSource, /remaining weights are renormalized/);
   assert.doesNotMatch(rankingSource, /label="Scale"[\s\S]*relative geomean/);
 });
 

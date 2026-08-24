@@ -25,6 +25,14 @@ export function rankHistoryCell(
   rank: number | null;
   status: 'ranked' | 'missing' | 'observation' | 'dnf' | 'incomparable';
 }>;
+export function completeHistoryAggregateCells<T extends {
+  entry: string;
+  median: number | null;
+  rankEligible?: boolean;
+}>(
+  entryIds: string[],
+  cells: Array<{ key: string; records: T[] }>,
+): Array<{ key: string; records: T[] }>;
 export function rankHistoryAggregate<T extends {
   entry: string;
   median: number | null;

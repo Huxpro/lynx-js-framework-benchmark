@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   completeEntryScores,
+  completeHistoryAggregateCells,
   completeRowGeomeans,
   rankHistoryAggregate,
   rankHistoryCell,
@@ -121,4 +122,66 @@ test('history composite rank applies the supplied js-framework weights', () => {
   assert.equal(result[0].rank, 1);
   assert.equal(result[1].rank, 2);
   assert.ok(result[0].value < result[1].value);
+});
+
+test('historical formulas omit a missing cell for every entry together', () => {
+  const complete = {
+    key: 'create@1000',
+    records: [
+      { entry: 'a', median: 10, rankEligible: true },
+      { entry: 'b', median: 20, rankEligible: true },
+    ],
+  };
+  const partial = {
+    key: 'clear@1000',
+    records: [{ entry: 'a', median: 5, rankEligible: true }],
+  };
+  const incomparable = {
+    key: 'select@1000',
+    records: [
+      { entry: 'a', median: 2, rankEligible: true },
+      { entry: 'b', median: 3, rankEligible: false },
+    ],
+  };
+
+  assert.deepEqual(
+    completeHistoryAggregateCells(['a', 'b'], [complete, partial, incomparable]),
+    [complete],
+  );
+});
+
+test('historical weighted formulas renormalize the weights of available cells', () => {
+  const cells = [
+    {
+      key: 'heavy',
+      records: [
+        { entry: 'a', median: 10, dnfCount: 0, rankEligible: true },
+        { entry: 'b', median: 20, dnfCount: 0, rankEligible: true },
+      ],
+    },
+    {
+      key: 'light',
+      records: [
+        { entry: 'a', median: 40, dnfCount: 0, rankEligible: true },
+        { entry: 'b', median: 10, dnfCount: 0, rankEligible: true },
+      ],
+    },
+    {
+      key: 'missing',
+      records: [{ entry: 'a', median: 1, dnfCount: 0, rankEligible: true }],
+    },
+  ];
+  const weights = new Map([['heavy', 3], ['light', 1], ['missing', 10]]);
+  const available = completeHistoryAggregateCells(['a', 'b'], cells);
+  const result = rankHistoryAggregate(
+    ['a', 'b'],
+    available,
+    true,
+    available.map((cell) => weights.get(cell.key)),
+  );
+
+  assert.deepEqual(available.map((cell) => cell.key), ['heavy', 'light']);
+  assert.equal(result[0].cellCount, 2);
+  assert.ok(Math.abs(result[0].value - Math.pow(4, 0.25)) < 1e-12);
+  assert.ok(Math.abs(result[1].value - Math.pow(8, 0.25)) < 1e-12);
 });

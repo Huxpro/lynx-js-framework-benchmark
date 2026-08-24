@@ -14,7 +14,11 @@ import {
   historyRecordsForCheckpoint,
   shortLabel,
 } from '../data';
-import { rankHistoryAggregate, rankHistoryCell } from '../derive.mjs';
+import {
+  completeHistoryAggregateCells,
+  rankHistoryAggregate,
+  rankHistoryCell,
+} from '../derive.mjs';
 import { useTooltip } from '../hooks';
 import { INTERACTION_WORKLOADS, JS_FRAMEWORK_SCORE_OPS } from '../interaction-score';
 
@@ -179,6 +183,7 @@ interface HistoryScoreMode {
   label: string;
   ops: Array<{ key: string; workload: string; scale: number }>;
   weights?: number[];
+  adaptiveHistory: boolean;
   formulaLabel: string;
   equation: { head: string; lines: string[] };
 }
@@ -220,13 +225,15 @@ export function HistoryRanking({
         key: `equal-${scale}`,
         label: `equal · ${scale / 1000}k`,
         ops,
+        adaptiveHistory: true,
         formulaLabel: 'equal-weight geometric mean',
         equation: {
           head: `Equal-weight ${scale / 1000}k geometric mean`,
           lines: [
             'rᵢ = medianᵢ ÷ fastest medianᵢ',
-            `score = exp(Σ ln(rᵢ) ÷ ${ops.length})`,
-            `${ops.length}/${ops.length} cells required · every operation counts equally`,
+            'score = exp(Σ ln(rᵢ) ÷ N)',
+            'N = operations complete for every entry at that dataset',
+            'A changed operation set is joined with a dashed bridge',
           ],
         },
       };
@@ -234,16 +241,18 @@ export function HistoryRanking({
     return [
       ...(harness === 'web' ? [{
         key: 'weighted',
-        label: 'js-framework weighted',
+        label: 'weighted · available',
         ops: JS_FRAMEWORK_SCORE_OPS.map(({ key, workload, scale }) => ({ key, workload, scale })),
         weights: JS_FRAMEWORK_SCORE_OPS.map((op) => op.weight),
-        formulaLabel: 'upstream-weighted geometric mean',
+        adaptiveHistory: true,
+        formulaLabel: 'coverage-adjusted upstream-weight geometric mean',
         equation: {
-          head: 'Upstream weighted geometric mean',
+          head: 'Available-cell upstream weights',
           lines: [
             'rᵢ = medianᵢ ÷ fastest medianᵢ',
-            'score = exp(Σ wᵢ · ln(rᵢ) ÷ Σ wᵢ)',
-            '9/9 cells required · upstream CPU weights',
+            'score = exp(Σavailable wᵢ · ln(rᵢ) ÷ Σavailable wᵢ)',
+            'A missing cell is omitted for every entry; remaining weights are renormalized',
+            'A changed cell set is dashed; 9/9 is exact upstream coverage',
           ],
         },
       }] : []),
@@ -290,12 +299,29 @@ export function HistoryRanking({
       if (!cohort) continue;
       const checkpointRecords = historyRecordsForCheckpoint(checkpoint)
         .filter((record) => record.harness === harness) as HistoryRecord[];
+      const requestedAggregateCells = activeScoreMode?.ops.map((op) => ({
+        key: op.key,
+        records: checkpointRecords.filter((record) => record.workload === op.workload
+          && record.scale === op.scale && record.metric === 'latency'),
+      })) ?? [];
+      const availableAggregateCells = activeScoreMode?.adaptiveHistory
+        ? completeHistoryAggregateCells(cohort.entryIds, requestedAggregateCells)
+        : requestedAggregateCells;
+      const aggregateCells = availableAggregateCells;
+      const weightByCell = new Map(activeScoreMode?.ops.map((op, index) => [
+        op.key,
+        activeScoreMode.weights?.[index],
+      ]) ?? []);
+      const aggregateWeights = activeScoreMode?.weights
+        ? aggregateCells.map((cell) => weightByCell.get(cell.key)!)
+        : undefined;
       const ranked = isAggregate && activeScoreMode
-        ? rankHistoryAggregate(cohort.entryIds, activeScoreMode.ops.map((op) => ({
-          key: op.key,
-          records: checkpointRecords.filter((record) => record.workload === op.workload
-            && record.scale === op.scale && record.metric === 'latency'),
-        })), cohort.rankEligible, activeScoreMode.weights).map((point) => ({
+        ? rankHistoryAggregate(
+          cohort.entryIds,
+          aggregateCells,
+          cohort.rankEligible,
+          aggregateWeights,
+        ).map((point) => ({
           entry: point.entry,
           record: null,
           aggregateRecords: point.records,
@@ -311,7 +337,15 @@ export function HistoryRanking({
           entry: string; record: HistoryRecord | null; rank: number | null;
           status: RankedPoint['status'];
         }>;
-      const cohortIdentity = [cohort.machineId, cohort.environment, ...cohort.entryIds].join('|');
+      const formulaIdentity = isAggregate
+        ? `${activeScoreMode?.key}:${aggregateCells.map((cell) => cell.key).join(',')}`
+        : 'single-cell';
+      const cohortIdentity = [
+        cohort.machineId,
+        cohort.environment,
+        ...cohort.entryIds,
+        formulaIdentity,
+      ].join('|');
       for (const point of ranked) {
         out.push({
           ...point,
@@ -337,6 +371,8 @@ export function HistoryRanking({
 
   const selectedCheckpoint = BENCHMARK_HISTORY.checkpoints[snapshotIndex];
   const selectedPoints = points.filter((point) => point.checkpoint.id === selectedCheckpoint.id);
+  const selectedAggregateCellCount = selectedPoints.find((point) =>
+    point.aggregateCellCount != null)?.aggregateCellCount;
   const rankedPoints = points.filter((point) => point.status === 'ranked');
   const observations = points.filter((point) => point.status === 'observation');
   const incomparable = points.filter((point) => point.status === 'incomparable');
@@ -384,7 +420,7 @@ export function HistoryRanking({
         `${status}  ·  ${formatPointValue(point)}`,
         datasetAxisLabel(point.checkpoint.id),
         point.aggregateCellCount != null
-          ? `${point.aggregateCellCount} complete cells  ·  ${activeScoreMode?.formulaLabel ?? 'geometric mean'}`
+          ? `${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} available cells  ·  ${activeScoreMode?.formulaLabel ?? 'geometric mean'}`
           : record ? `${record.boundary}  ·  n=${record.n}${record.dnfCount ? `  ·  ${record.dnfCount} DNF` : ''}` : point.checkpoint.description,
       ].filter(Boolean).join('\n');
     };
@@ -531,9 +567,9 @@ export function HistoryRanking({
           <h2 id="history-ranking-title">Rank by dataset</h2>
           <p>
             Each node is one retained dataset. Solid lines share one comparison cohort; dashed
-            bridges preserve the framework story across a cohort change. Composite score formulas
-            match the interaction benchmark above; single measurement exposes the underlying raw
-            case, scale, and metric without conflating those dimensions.
+            bridges preserve the framework story across a cohort or formula-set change. Composite
+            history omits a missing cell for every entry together, then recomputes over that dataset's
+            largest complete common matrix. Single measurement exposes the raw case, scale, and metric.
           </p>
         </div>
       </div>
@@ -541,7 +577,7 @@ export function HistoryRanking({
         <div className="history-browser-heading">
           <span>Browse configuration</span>
           <output>{isAggregate && activeScoreMode
-            ? `${activeScoreMode.label} · ${activeScoreMode.ops.length} cells · relative geomean`
+            ? `${activeScoreMode.label} · ${selectedAggregateCellCount ?? 0}/${activeScoreMode.ops.length} cells · relative geomean`
             : `${workloadLabel(activeWorkload)} · ${activeScale?.toLocaleString()} rows · ${metricLabel(activeMetric)}`}</output>
         </div>
         <ChoiceRail
@@ -610,7 +646,7 @@ export function HistoryRanking({
             <i style={{ background: entryColor(entry.id, theme) }} />{shortLabel(entry.id)}
           </button>
         ))}
-        <span className="history-status">– – cohort change · ○ observation · ● incomparable · red DNF · faint missing</span>
+        <span className="history-status">– – cohort/formula change · ○ observation · ● incomparable · red DNF · faint missing</span>
       </div>
       <div className="history-plot" ref={ref} />
       <details className="history-evidence">
@@ -623,13 +659,15 @@ export function HistoryRanking({
                 <tr key={`${point.checkpoint.id}:${point.entry}`}>
                   <td><button type="button" onClick={() => onSnapshotChange(BENCHMARK_HISTORY.checkpoints.indexOf(point.checkpoint))}>{point.checkpoint.label}</button></td>
                   <td>{point.label}</td><td>{point.rank == null ? point.status : `#${point.rank}`}</td>
-                  <td>{formatPointValue(point)}</td>
+                  <td>{formatPointValue(point)}{point.aggregateCellCount != null
+                    ? ` · ${point.aggregateCellCount}/${activeScoreMode?.ops.length ?? point.aggregateCellCount} cells`
+                    : ''}</td>
                   <td><code>{point.record?.runFile
                     ?? point.aggregateRecords?.[0]?.runFile
                     ?? point.checkpoint.description}</code>{point.record?.entryCommit
                     ? ` @ ${point.record.entryCommit.slice(0, 12)}`
                     : point.aggregateRecords?.[0]?.entryCommit
-                      ? ` @ ${point.aggregateRecords[0].entryCommit.slice(0, 12)} · ${point.aggregateCellCount} cells`
+                      ? ` @ ${point.aggregateRecords[0].entryCommit.slice(0, 12)}`
                       : ''}</td>
                 </tr>
               ))}
