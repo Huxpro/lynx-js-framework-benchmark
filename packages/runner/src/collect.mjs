@@ -11,7 +11,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
-import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workloads';
+import {
+  STORM_SELECT_TICKS,
+  STORM_UPDATE_TICKS,
+  TABLE_CASES,
+} from '@lynx-bench/shared/workloads';
 
 import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
@@ -239,6 +243,20 @@ export const DATASET_CHECKPOINT_SPECS = [
     ],
   },
 ];
+
+export const HISTORY_REPLAY_SPEC = {
+  id: 'web-history-replay-v1',
+  label: 'Unified Web replay · 9/9 weighted cells',
+  runFile: '2026-08-24T10-08-41-65160668d8d9-history-replay-v1.json',
+  minimumReps: 11,
+  octaneSources: {
+    '2026-08-10-slow-octane': 'octane-prior',
+    '2026-08-11-octane-step-change': 'octane-history-9b147781',
+    '2026-08-15-octane-converges': 'octane-history-63eb7888',
+    '2026-08-22-new-lynx': 'octane-history-0fc84da0',
+    'current-main': 'octane',
+  },
+};
 
 const normalizedEntryId = (run, entry) => {
   if (entry === 'octane-main') return 'octane-prior';
@@ -802,6 +820,104 @@ const completeMatrixRecords = (candidateRecords, entryIds) => {
   return eligible.filter((record) => completeCells.has(cellKey(record)));
 };
 
+const historyReplayCellKey = (record) => `${record.workload}@${record.scale}`;
+const HISTORY_REPLAY_CELLS = TABLE_CASES.flatMap((kase) =>
+  kase.scales
+    .filter((scale) => scale === 1000 || scale === 10000)
+    .map((scale) => `${kase.name}@${scale}`));
+
+const buildHistoryReplays = ({ runs, checkpoints }) => {
+  const candidate = runs.find(({ file }) => file === HISTORY_REPLAY_SPEC.runFile);
+  if (!candidate) return [];
+  const { file, run } = candidate;
+  const environment = run.records.find((record) =>
+    record.harness === 'web' && record.suite === 'table')?.environment ?? null;
+  const replayRecords = run.records.filter((record) =>
+    record.harness === 'web'
+    && record.suite === 'table'
+    && record.metric === 'latency'
+    && HISTORY_REPLAY_CELLS.includes(historyReplayCellKey(record)));
+  const records = [];
+  const replayCheckpoints = [];
+
+  for (const checkpoint of checkpoints) {
+    const cohort = checkpoint.harnesses.find((item) => item.harness === 'web');
+    if (!cohort) continue;
+    const sourceByEntry = Object.fromEntries(cohort.entryIds.map((entryId) => [
+      entryId,
+      entryId === 'octane'
+        ? HISTORY_REPLAY_SPEC.octaneSources[checkpoint.id]
+        : entryId,
+    ]));
+    if (cohort.entryIds.includes('octane') && !sourceByEntry.octane) {
+      throw new Error(`history replay has no Octane source for ${checkpoint.id}`);
+    }
+    const activeRecordIndexes = [];
+    for (const [entryId, sourceEntryId] of Object.entries(sourceByEntry)) {
+      const pointer = checkpoint.identityPointers.find((item) => item.entryId === entryId);
+      const replayCommit = run.meta.entryCommits?.[sourceEntryId] ?? null;
+      if (!pointer || pointer.commit !== replayCommit) {
+        throw new Error(
+          `history replay commit mismatch for ${checkpoint.id}/${entryId}: `
+          + `${replayCommit ?? 'missing'} != ${pointer?.commit ?? 'missing checkpoint identity'}`,
+        );
+      }
+      const byCell = new Map(replayRecords
+        .filter((record) => record.entry === sourceEntryId)
+        .map((record) => [historyReplayCellKey(record), record]));
+      const missing = HISTORY_REPLAY_CELLS.filter((key) => {
+        const record = byCell.get(key);
+        return record == null
+          || record.n < HISTORY_REPLAY_SPEC.minimumReps
+          || record.dnfCount > 0
+          || !Number.isFinite(record.median);
+      });
+      if (missing.length > 0) {
+        throw new Error(
+          `history replay ${checkpoint.id}/${entryId} is incomplete: ${missing.join(', ')}`,
+        );
+      }
+      for (const key of HISTORY_REPLAY_CELLS) {
+        const record = byCell.get(key);
+        const mapped = historyRecord(
+          run,
+          file,
+          record,
+          'historical-replay',
+          `replay:${HISTORY_REPLAY_SPEC.id}:${checkpoint.id}`,
+        );
+        mapped.entry = entryId;
+        if (sourceEntryId === entryId) delete mapped.sourceEntry;
+        else mapped.sourceEntry = sourceEntryId;
+        activeRecordIndexes.push(records.push(mapped) - 1);
+      }
+    }
+    replayCheckpoints.push({
+      checkpointId: checkpoint.id,
+      activeRecordIndexes,
+      entryIds: cohort.entryIds,
+      sourceByEntry,
+    });
+  }
+
+  return [{
+    id: HISTORY_REPLAY_SPEC.id,
+    label: HISTORY_REPLAY_SPEC.label,
+    description: 'The exact historical bundles are replayed together on one machine with one '
+      + 'current black-box workload contract. Stable React/Vue artifacts are measured once and '
+      + 'reused at every checkpoint; every weighted history score therefore uses the same 9/9 cells.',
+    runFile: file,
+    generatedAt: run.meta.generatedAt,
+    machineId: run.meta.machine.id,
+    machine: run.meta.machine,
+    calibration: run.meta.calibration,
+    minimumReps: HISTORY_REPLAY_SPEC.minimumReps,
+    cellKeys: HISTORY_REPLAY_CELLS,
+    records,
+    checkpoints: replayCheckpoints,
+  }];
+};
+
 const buildHistory = ({
   runs, featuredIds, nativeFeaturedIds, featuredEntries, entries, checkpointSpecs, current,
 }) => {
@@ -1023,7 +1139,12 @@ const buildHistory = ({
   });
 
   checkpoints.sort((a, b) => a.generatedAt.localeCompare(b.generatedAt) || a.id.localeCompare(b.id));
-  return { records, sources, checkpoints };
+  return {
+    records,
+    sources,
+    checkpoints,
+    replays: buildHistoryReplays({ runs, checkpoints }),
+  };
 };
 
 const assertCurrentEntryCommit = (run, entryId, entry, label) => {

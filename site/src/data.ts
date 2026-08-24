@@ -42,7 +42,7 @@ export interface BenchRecord {
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
   comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
@@ -261,10 +261,33 @@ export interface HistorySource {
   reason: string;
 }
 
+export interface HistoryReplayCheckpoint {
+  checkpointId: string;
+  activeRecordIndexes: number[];
+  entryIds: string[];
+  sourceByEntry: Record<string, string>;
+}
+
+export interface HistoryReplay {
+  id: string;
+  label: string;
+  description: string;
+  runFile: string;
+  generatedAt: string;
+  machineId: string;
+  machine: Machine;
+  calibration: { probeVersion: number; score: number } | null;
+  minimumReps: number;
+  cellKeys: string[];
+  records: HistoryRecord[];
+  checkpoints: HistoryReplayCheckpoint[];
+}
+
 export interface BenchmarkHistory {
   records: HistoryRecord[];
   sources: HistorySource[];
   checkpoints: HistoryCheckpoint[];
+  replays: HistoryReplay[];
 }
 
 export interface EntryMeta {
@@ -308,6 +331,14 @@ const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
 };
 export function historyRecordsForCheckpoint(checkpoint: HistoryCheckpoint): HistoryRecord[] {
   return checkpoint.activeRecordIndexes.map((index) => BENCHMARK_HISTORY.records[index]);
+}
+export function historyReplayRecordsForCheckpoint(
+  replay: HistoryReplay,
+  checkpoint: HistoryCheckpoint,
+): HistoryRecord[] {
+  const replayCheckpoint = replay.checkpoints.find((item) =>
+    item.checkpointId === checkpoint.id);
+  return replayCheckpoint?.activeRecordIndexes.map((index) => replay.records[index]) ?? [];
 }
 export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoints.map((checkpoint) => {
   // Incomparable observations stay in historyRecordsForCheckpoint() for the
