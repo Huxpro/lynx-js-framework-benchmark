@@ -1103,6 +1103,13 @@ table.heat td.null {
 table.heat td.ref { border: 1px dashed var(--border); color: var(--text-muted); }
 table.heat td.fastest { outline: 2px solid var(--accent); outline-offset: -2px; font-weight: 700; }
 table.heat td.data:hover { filter: brightness(1.12); }
+table.heat tbody tr { transition: opacity 140ms ease-out; }
+table.heat tbody tr.is-score-muted { opacity: 0.18; }
+table.heat tbody tr.is-score-source .rowhead {
+  color: var(--text-primary);
+  box-shadow: inset 3px 0 var(--accent);
+}
+table.heat tbody tr.is-score-source td { filter: saturate(1.15) brightness(1.04); }
 table.heat .rowhead {
   position: sticky;
   z-index: 1;
@@ -1113,6 +1120,32 @@ table.heat .rowhead {
   white-space: nowrap;
   word-break: keep-all;
 }
+table.heat .score-summary-row td,
+table.heat .score-summary-row th { transition: background 140ms ease-out, color 140ms ease-out; }
+table.heat .score-summary-row.is-active .rowhead { color: var(--text-primary); }
+table.heat .score-summary-row.is-active td { box-shadow: inset 0 0 0 1px var(--accent); }
+.score-summary-trigger {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 2rem;
+  padding: 0.18rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.score-summary-trigger span {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 550;
+}
+.score-summary-trigger[aria-pressed='true'] span { color: var(--accent); }
 
 /* details table */
 details.data-table {
@@ -1234,7 +1267,10 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .history-legend button,
   .history-series path,
   .history-series circle,
-  .history-series text { transition: none; }
+  .history-series text,
+  table.heat tbody tr,
+  table.heat .score-summary-row td,
+  table.heat .score-summary-row th { transition: none; }
 }
 @media (pointer: coarse) {
   .history-choice-scroll button { min-height: 2.75rem; padding-inline: 0.72rem; }

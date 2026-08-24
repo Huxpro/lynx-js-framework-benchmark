@@ -7,6 +7,7 @@ const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import
 const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', import.meta.url), 'utf8');
 const scaleCompositeSource = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const interactionScoreSource = fs.readFileSync(new URL('./interaction-score.ts', import.meta.url), 'utf8');
+const heatGridSource = fs.readFileSync(new URL('./components/HeatGrid.tsx', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -94,6 +95,25 @@ test('interaction workloads share one module with three formula modes and one de
   assert.match(rankedBarsSource, /showEquation\(mode\)/);
   assert.match(rankedBarsSource, /onFocus=\{\(event\) =>/);
   assert.match(rankedBarsSource, /'ArrowLeft', 'ArrowRight', 'Home', 'End'/);
+});
+
+test('at-a-glance summaries reuse the three published interaction equations', () => {
+  assert.equal(source.match(/<HeatGrid[^>]*scoreModes=\{interactionModes\}/g)?.length, 2);
+  assert.match(heatGridSource, /scoreModes: ScoreModeSpec\[\]/);
+  assert.match(heatGridSource, /completeEntryScores/);
+  assert.doesNotMatch(heatGridSource, /completeRowGeomeans|>geomean<|'geomean', '几何平均'/);
+  assert.match(heatGridSource, /scoreMode\.scoreWeights/);
+  assert.match(heatGridSource, /scoreMode\.ops\.map\(\(op\) => op\.key\)/);
+  assert.match(heatGridSource, /scoreInputKey\(row\.spec\)/);
+});
+
+test('at-a-glance equations expose pointer, keyboard, and pinned row tracing', () => {
+  assert.match(heatGridSource, /onPointerEnter=\{showEquation\}/);
+  assert.match(heatGridSource, /onFocus=\{showEquation\}/);
+  assert.match(heatGridSource, /aria-pressed=\{isPinned\}/);
+  assert.match(heatGridSource, /setPinnedScore/);
+  assert.match(heatGridSource, /is-score-source/);
+  assert.match(heatGridSource, /is-score-muted/);
 });
 
 test('Scale leads with one scale-comparable interaction composite instead of misusing the upstream mixed-scale score', () => {

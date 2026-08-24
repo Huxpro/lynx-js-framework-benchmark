@@ -35,26 +35,6 @@ export function completeEntryScores(ids, cells, weights = cells.map(() => 1)) {
   };
 }
 
-/** Geomeans over rows that are complete for every selected entry. */
-export function completeRowGeomeans(ids, cells, baselineId = null) {
-  if (!ids.length) return { values: new Map(), rowCount: 0 };
-  const complete = cells.filter((cell) => {
-    if (!ids.every((id) => valid(cell.values[id]))) return false;
-    return baselineId == null || valid(cell.values[baselineId]);
-  });
-  const ratios = new Map(ids.map((id) => [id, []]));
-  for (const cell of complete) {
-    const baseline = baselineId == null
-      ? Math.min(...ids.map((id) => cell.values[id]))
-      : cell.values[baselineId];
-    for (const id of ids) ratios.get(id).push(cell.values[id] / baseline);
-  }
-  return {
-    values: new Map(ids.map((id) => [id, geomean(ratios.get(id))])),
-    rowCount: complete.length,
-  };
-}
-
 export function slopeFit(points) {
   const pts = points.filter(([x, y]) => x > 0 && y > 0)
     .map(([x, y]) => [Math.log10(x), Math.log10(y)]);

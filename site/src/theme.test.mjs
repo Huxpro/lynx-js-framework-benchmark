@@ -86,6 +86,14 @@ test('heat matrix preserves readable labels and delegates narrow width to scroll
   assert.match(row, /white-space\s*:\s*nowrap/);
 });
 
+test('heat score tracing emphasizes formula inputs without hiding source rows', () => {
+  assert.match(css, /table\.heat tbody tr\.is-score-muted\s*\{\s*opacity: 0\.18/);
+  assert.match(css, /table\.heat tbody tr\.is-score-source \.rowhead/);
+  assert.match(css, /\.score-summary-trigger\s*\{/);
+  assert.match(css, /\.score-summary-trigger\[aria-pressed='true'\]/);
+  assert.doesNotMatch(css.match(/\.score-summary-trigger\s*\{([^}]*)\}/)?.[1] ?? '', /border-radius/);
+});
+
 test('compact prose uses native progressive disclosure without hiding primary results', () => {
   assert.match(responsiveCopy, /useMediaQuery\('\(max-width: 48rem\)'\)/);
   assert.match(responsiveCopy, /<details className=/);

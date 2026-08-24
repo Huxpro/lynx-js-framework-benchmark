@@ -266,7 +266,7 @@ function AppContent({
                 '此快照没有可发布的完整 Native 对比 cohort。概览矩阵仍展示合约中的每个单元，但不会把归档观察值转成排名。',
               )}
             </ResponsiveCopy>
-            <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+            <HeatGrid rows={heatRows} scoreModes={interactionModes} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
             <div className="empty-state">
               <p><b>{text('No publishable Native comparison cohort for this snapshot.', '此快照没有可发布的 Native 对比 cohort。')}</b></p>
               <p style={{ maxWidth: '62ch', margin: '0.5rem auto' }}>
@@ -303,7 +303,7 @@ function AppContent({
               '结果取中位数，越低越好；DNF 会明确标出。可选择条目、悬停任意图形，并展开卡片数据表查看精确值。',
             )}
           </ResponsiveCopy>
-          <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
+          <HeatGrid rows={heatRows} scoreModes={interactionModes} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
           <RankedBars
             title={text('interaction benchmark', '交互基准测试')}

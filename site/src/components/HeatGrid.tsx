@@ -5,10 +5,11 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
 import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
-import { completeRowGeomeans } from '../derive.mjs';
+import { completeEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 import { useI18n } from '../i18n';
 import { Legend } from './Legend';
+import type { ScoreModeSpec } from './RankedBars';
 
 function tintFor(v: number): string {
   const t = Math.max(-1, Math.min(1, Math.log(v) / Math.log(4)));
@@ -26,14 +27,20 @@ interface RowSpec {
   metric: string;
 }
 
+const scoreInputKey = (row: RowSpec) => row.suite === 'table' && row.metric === 'latency'
+  ? `${row.workload}@${row.scale}`
+  : row.key;
+
 export function HeatGrid({
   rows,
+  scoreModes,
   harness,
   theme,
   selected,
   onToggle,
 }: {
   rows: RowSpec[];
+  scoreModes: ScoreModeSpec[];
   harness: string;
   theme: 'light' | 'dark';
   selected: Set<string>;
@@ -43,11 +50,19 @@ export function HeatGrid({
   const { select } = useBenchmarkData();
   const ids = ENTRIES.map((e) => e.id).filter((id) => selected.has(id));
   const [mode, setMode] = useState<'fastest' | string>('fastest');
+  const [previewScore, setPreviewScore] = useState<string | null>(null);
+  const [pinnedScore, setPinnedScore] = useState<string | null>(null);
   const activeMode = mode === 'fastest' || selected.has(mode) ? mode : 'fastest';
-  const { setTip, onMove, tipNode } = useTooltip();
+  const activeScore = previewScore ?? pinnedScore;
+  const { setTip, onMove, place, tipNode } = useTooltip();
   useEffect(() => {
     if (mode !== 'fastest' && !selected.has(mode)) setMode('fastest');
   }, [mode, selected]);
+  useEffect(() => {
+    const keys = new Set(scoreModes.map((scoreMode) => scoreMode.key));
+    if (previewScore != null && !keys.has(previewScore)) setPreviewScore(null);
+    if (pinnedScore != null && !keys.has(pinnedScore)) setPinnedScore(null);
+  }, [pinnedScore, previewScore, scoreModes]);
 
   const grid = useMemo(() => {
     return rows.map((spec) => {
@@ -63,12 +78,35 @@ export function HeatGrid({
     });
   }, [rows, harness, ids.join(','), select]);
 
-  const geo = useMemo(() => {
-    return completeRowGeomeans(ids, grid.map((row) => ({
-      key: row.spec.key,
-      values: Object.fromEntries(ids.map((id, index) => [id, row.values[index]])),
-    })), activeMode === 'fastest' ? null : activeMode);
-  }, [grid, activeMode, ids.join(',')]);
+  const scoreRows = useMemo(() => {
+    const byKey = new Map(grid.map((row) => [scoreInputKey(row.spec), row]));
+    return scoreModes.filter((scoreMode) => scoreMode.ops.length > 0).map((scoreMode) => {
+      const cells = scoreMode.ops.map((op) => {
+        const row = byKey.get(op.key);
+        return {
+          key: op.key,
+          values: Object.fromEntries(ids.map((id, index) => [id, row?.values[index]])),
+        };
+      });
+      const weights = scoreMode.scoreWeights == null ? undefined : scoreMode.ops.map((op) => {
+        const weight = scoreMode.scoreWeights?.[op.key];
+        if (weight == null) throw new Error(`Missing score weight for ${op.key}`);
+        return weight;
+      });
+      const score = completeEntryScores(
+        ids,
+        cells,
+        weights,
+      );
+      return {
+        ...scoreMode,
+        cellCount: score.cellCount,
+        rowKeys: new Set(scoreMode.ops.map((op) => op.key)),
+        values: new Map(score.scores.map(({ id, value }) => [id, value])),
+      };
+    });
+  }, [grid, ids.join(','), scoreModes]);
+  const activeScoreRow = scoreRows.find((row) => row.key === activeScore) ?? null;
 
   return (
     <div className="card" onMouseMove={onMove}>
@@ -102,7 +140,14 @@ export function HeatGrid({
           </thead>
           <tbody>
             {grid.map((row) => (
-              <tr key={row.spec.key}>
+              <tr
+                key={row.spec.key}
+                className={activeScoreRow == null
+                  ? undefined
+                  : activeScoreRow.rowKeys.has(scoreInputKey(row.spec))
+                    ? 'is-score-source'
+                    : 'is-score-muted'}
+              >
                 <th className="rowhead">{row.spec.label}</th>
                 {ids.map((id, i) => {
                   const v = row.values[i];
@@ -143,40 +188,83 @@ export function HeatGrid({
               </tr>
             ))}
           </tbody>
-          <tfoot>
-            <tr>
-              <th className="rowhead" style={{ borderTop: '2px solid var(--border)' }}>{text('geomean', '几何平均')}</th>
-              {ids.map((id) => {
-                const g = geo.values.get(id);
-                const isRef = activeMode !== 'fastest' && id === activeMode;
+          {scoreRows.length > 0 && (
+            <tfoot>
+              {scoreRows.map((scoreRow, scoreIndex) => {
+                const isPinned = pinnedScore === scoreRow.key;
+                const showEquation = () => {
+                  setPreviewScore(scoreRow.key);
+                  setTip(scoreRow.equation);
+                };
+                const clearPreview = () => {
+                  setPreviewScore(null);
+                  setTip(null);
+                };
                 return (
-                  <td
-                    key={id}
-                    className={isRef ? 'ref' : 'data'}
-                    style={{
-                      borderTop: '2px solid var(--border)',
-                      ...(isRef || g == null ? {} : { background: tintFor(g) }),
-                      fontWeight: 700,
+                  <tr
+                    key={scoreRow.key}
+                    className={`score-summary-row${activeScore === scoreRow.key ? ' is-active' : ''}`}
+                    onPointerEnter={showEquation}
+                    onPointerLeave={(event) => {
+                      if (!event.currentTarget.contains(document.activeElement)) clearPreview();
+                    }}
+                    onFocus={showEquation}
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) clearPreview();
                     }}
                   >
-                    {g == null ? '—' : fmtX(g)}
-                  </td>
+                    <th className="rowhead" style={scoreIndex === 0 ? { borderTop: '2px solid var(--border)' } : undefined}>
+                      <button
+                        type="button"
+                        className="score-summary-trigger"
+                        aria-pressed={isPinned}
+                        aria-label={`${scoreRow.equation.head}. ${scoreRow.equation.lines.join(' ')}`}
+                        onClick={() => setPinnedScore((current) => current === scoreRow.key ? null : scoreRow.key)}
+                        onFocus={(event) => {
+                          const rect = event.currentTarget.getBoundingClientRect();
+                          requestAnimationFrame(() => place({
+                            clientX: rect.left + rect.width / 2,
+                            clientY: rect.bottom,
+                          }));
+                        }}
+                      >
+                        {scoreRow.label}
+                        <span aria-hidden="true">{text(`${scoreRow.cellCount} rows`, `${scoreRow.cellCount} 行`)}</span>
+                      </button>
+                    </th>
+                    {ids.map((id) => {
+                      const value = scoreRow.values.get(id);
+                      return (
+                        <td
+                          key={id}
+                          className="data"
+                          style={{
+                            ...(scoreIndex === 0 ? { borderTop: '2px solid var(--border)' } : {}),
+                            ...(value == null ? {} : { background: tintFor(value) }),
+                            fontWeight: 700,
+                          }}
+                        >
+                          {value == null ? '—' : fmtX(value)}
+                        </td>
+                      );
+                    })}
+                  </tr>
                 );
               })}
-            </tr>
-          </tfoot>
+            </tfoot>
+          )}
         </table>
       </div>
       <div className="note" style={{ marginTop: '0.5rem' }}>
-        {geo.rowCount === 0 ? (
+        {scoreRows.length === 0 ? (
           <>{text(
-            'No row has complete data for every selected entry in this snapshot. Blank cells remain visible, but are excluded from ratios, geomeans, and rankings.',
-            '此快照中没有任何一行对所有已选条目都具备完整数据。空白单元仍会展示，但不参与比率、几何平均和排名。',
+            'No published interaction equation is available for this snapshot. Blank cells remain visible, but do not produce an aggregate score.',
+            '此快照没有可用的正式交互公式。空白单元仍会展示，但不会生成聚合得分。',
           )}</>
         ) : (
           <>{text(
-            `Each cell is that entry's median relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}, per case. Green is faster, red is slower; tint saturates at 4× either way. Hover for exact numbers; the geomean is recomputed over ${geo.rowCount} rows with complete data for every selected entry. Per-case cards below carry the full data tables.`,
-            `每个单元都是该条目中位数相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}的比值，逐 case 计算。绿色更快，红色更慢；双向色深都在 4× 饱和。悬停可查看精确值；几何平均会基于 ${geo.rowCount} 行对所有已选条目都完整的数据重新计算。下方逐 case 卡片包含完整数据表。`,
+            `Each case cell is relative to the ${activeMode === 'fastest' ? "row's fastest entry" : `${shortLabel(activeMode)} baseline`}. The three score rows mirror the published interaction equations below and always normalize each input to its row's fastest selected entry. Hover or focus a score row to trace its inputs; click to keep them highlighted. Incomplete entries receive no score.`,
+            `每个 case 单元都相对${activeMode === 'fastest' ? '该行最快项' : `${shortLabel(activeMode)} 基线`}显示。底部三行得分与下方正式交互公式完全一致，并始终把每项输入归一化到该行已选条目中的最快项。悬停或聚焦得分行可追踪输入，点击可固定高亮；数据不完整的条目不生成得分。`,
           )}</>
         )}
       </div>
