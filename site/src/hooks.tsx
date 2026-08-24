@@ -64,6 +64,28 @@ export function useTheme(): ['light' | 'dark', () => void] {
   return [theme, toggle];
 }
 
+export type HeatPalette = 'standard' | 'colorblind';
+
+/** Persists the heatmap palette independently from light/dark appearance. */
+export function useHeatPalette(): [HeatPalette, () => void] {
+  const get = (): HeatPalette => document.documentElement.dataset.heatPalette === 'colorblind'
+    ? 'colorblind'
+    : 'standard';
+  const [palette, setPalette] = useState<HeatPalette>(get);
+  const toggle = useCallback(() => {
+    const next: HeatPalette = get() === 'colorblind' ? 'standard' : 'colorblind';
+    if (next === 'colorblind') {
+      document.documentElement.dataset.heatPalette = next;
+      localStorage.setItem('heat-palette', next);
+    } else {
+      delete document.documentElement.dataset.heatPalette;
+      localStorage.removeItem('heat-palette');
+    }
+    setPalette(next);
+  }, []);
+  return [palette, toggle];
+}
+
 export interface TipContent {
   head: string;
   lines: string[];
