@@ -7,6 +7,7 @@ import {
   rankHistoryAggregate,
   rankHistoryCell,
   slopeFit,
+  weightedGeomean,
 } from './derive.mjs';
 
 test('interactive scores exclude entries with stale/incomplete matrices', () => {
@@ -19,6 +20,18 @@ test('interactive scores exclude entries with stale/incomplete matrices', () => 
   assert.deepEqual(result.scores.map(({ id }) => id), ['a', 'b']);
   assert.ok(Math.abs(result.scores[0].value - Math.sqrt(2)) < 1e-12);
   assert.ok(Math.abs(result.scores[1].value - Math.sqrt(2)) < 1e-12);
+});
+
+test('weighted scores use one strict complete matrix and the supplied formula weights', () => {
+  assert.ok(Math.abs(weightedGeomean([2, 8], [3, 1]) - Math.pow(64, 0.25)) < 1e-12);
+  const result = completeEntryScores(['a', 'b', 'partial'], [
+    { key: 'heavy', values: { a: 10, b: 20, partial: 5 } },
+    { key: 'light', values: { a: 40, b: 10, partial: null } },
+  ], [3, 1]);
+  assert.deepEqual(result.missing, ['partial']);
+  assert.ok(Math.abs(result.scores[0].value - Math.pow(4, 0.25)) < 1e-12);
+  assert.ok(Math.abs(result.scores[1].value - Math.pow(8, 0.25)) < 1e-12);
+  assert.throws(() => completeEntryScores(['a'], [], [1]), /one positive weight per cell/);
 });
 
 test('heatmap geomeans give every entry the same complete-row denominator', () => {

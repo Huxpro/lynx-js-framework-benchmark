@@ -125,7 +125,7 @@ function ChoiceRail({
 
 function workloadLabel(workload: string): string {
   const labels: Record<string, string> = {
-    interactive: 'interactive score',
+    interactive: 'equal-weight interaction',
     append1k: 'append 1k',
     update10th: 'update every 10th',
     updateStorm: 'update storm',
@@ -169,7 +169,9 @@ export function HistoryRanking({
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
   const allRecords = useMemo(() => BENCHMARK_HISTORY.records.filter((record) =>
     record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry)), [harness]);
-  const rawWorkloads = [...new Set(allRecords.map((record) => record.workload))].sort((a, b) => {
+  const rawWorkloads = [...new Set(allRecords
+    .filter((record) => record.workload !== 'selectInitial')
+    .map((record) => record.workload))].sort((a, b) => {
     const preferred = ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm', 'memory', 'startup'];
     return preferred.indexOf(a) - preferred.indexOf(b) || a.localeCompare(b);
   });
@@ -439,9 +441,9 @@ export function HistoryRanking({
           <h2 id="history-ranking-title">Rank by dataset</h2>
           <p>
             Each node is one retained dataset. Solid lines share one comparison cohort; dashed
-            bridges preserve the framework story across a cohort change. Interactive score is this
-            lab's unweighted geomean over a complete table-operation matrix, not krausest's weighted
-            overall score.
+            bridges preserve the framework story across a cohort change. Equal-weight interaction
+            is this lab's geomean over one complete scale slice; it is separate from the nine-case
+            js-framework weighted score on the current Web overview.
           </p>
         </div>
       </div>

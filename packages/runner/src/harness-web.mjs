@@ -184,7 +184,6 @@ async function resolvePredicate(page, kase, scale) {
 const RESET_EACH_SAMPLE = new Set([
   'create',
   'append1k',
-  'selectInitial',
   'remove',
   'clear',
 ]);

@@ -4,7 +4,8 @@ export interface DerivedCell {
 }
 
 export function geomean(values: number[]): number | null;
-export function completeEntryScores(ids: string[], cells: DerivedCell[]): {
+export function weightedGeomean(values: number[], weights: number[]): number | null;
+export function completeEntryScores(ids: string[], cells: DerivedCell[], weights?: number[]): {
   scores: { id: string; value: number | null }[];
   missing: string[];
   cellCount: number;

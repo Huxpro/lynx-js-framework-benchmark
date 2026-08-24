@@ -57,6 +57,25 @@ type Page = 'overview' | 'scale';
 
 const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 
+// Exact CPU-score order and weights from js-framework-benchmark's results UI.
+// The operations are measured at this lab's pointerdown → composed-DOM boundary;
+// matching the upstream formula does not turn them into Chrome trace durations.
+const JS_FRAMEWORK_SCORE_OPS = [
+  { key: 'create@1000', label: 'create 1k', workload: 'create', scale: 1000, weight: 0.64280248137063 },
+  { key: 'replace@1000', label: 'replace 1k', workload: 'replace', scale: 1000, weight: 0.5607178150466176 },
+  { key: 'update10th@1000', label: 'update 10th', workload: 'update10th', scale: 1000, weight: 0.5643800750716564 },
+  { key: 'select@1000', label: 'select row', workload: 'select', scale: 1000, weight: 0.1925635870170522 },
+  { key: 'swap@1000', label: 'swap rows', workload: 'swap', scale: 1000, weight: 0.13200612879341714 },
+  { key: 'remove@1000', label: 'remove row', workload: 'remove', scale: 1000, weight: 0.5277091212292658 },
+  { key: 'create@10000', label: 'create 10k', workload: 'create', scale: 10000, weight: 0.5644449600965534 },
+  { key: 'append1k@1000', label: 'append 1k', workload: 'append1k', scale: 1000, weight: 0.5508359820582848 },
+  { key: 'clear@1000', label: 'clear 1k', workload: 'clear', scale: 1000, weight: 0.4225836631419211 },
+];
+
+const JS_FRAMEWORK_SCORE_WEIGHTS = Object.fromEntries(
+  JS_FRAMEWORK_SCORE_OPS.map((op) => [op.key, op.weight]),
+);
+
 function initialSnapshotIndex(): number {
   const id = new URLSearchParams(location.search).get('snapshot');
   const index = TIMELINE_SNAPSHOTS.findIndex((snapshot) => snapshot.id === id);
@@ -140,7 +159,7 @@ function AppContent({
       }
       return rows;
     }
-    for (const w of ['create', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
+    for (const w of ['create', 'replace', 'append1k', 'update10th', 'select', 'swap', 'remove', 'clear', 'updateStorm', 'selectStorm']) {
       for (const s of workloadScales({ suite: 'table', harness, workload: w, metric: 'latency' })) {
         if (select({ suite: 'table', harness, workload: w, scale: s, metric: 'latency' }).length >= 2) {
           rows.push({ key: `${w}@${s}`, label: `${w} @${scaleLabel(s)}`, suite: 'table', workload: w, scale: s, metric: 'latency' });
@@ -224,24 +243,40 @@ function AppContent({
           </p>
           <HeatGrid rows={heatRows} harness={harness} theme={theme} selected={activeSelected} onToggle={toggleEntry} />
           {harness === 'native' && <NativeObservations theme={theme} />}
+          {harness === 'web' && (
+            <RankedBars
+              title="js-framework weighted score"
+              description={<>The upstream nine-case CPU formula, applied strictly to this lab's Web latency medians. All 9 cells must exist for an entry to rank. Workloads and weights follow <KrausestBenchmarkLink />; the Lynx measurement boundary remains pointerdown → composed DOM.</>}
+              suite="table"
+              ops={JS_FRAMEWORK_SCORE_OPS}
+              scoreWeights={JS_FRAMEWORK_SCORE_WEIGHTS}
+              overallLabel="weighted score"
+              overallCaption="weighted geometric mean of all 9 upstream CPU workload ratios × vs each workload's fastest entry — 1× is the per-workload oracle; incomplete entries are excluded"
+              harness={harness}
+              theme={theme}
+              selected={activeSelected}
+            />
+          )}
           <RankedBars
-            title="interactive @1k"
+            title="interaction latency @1k"
             description={harness === 'web'
-              ? <>Table operations adapted from <KrausestBenchmarkLink />: tap → all mutations visible in the composed DOM. “Overall” is this lab's unweighted complete-matrix geomean, not krausest's weighted score.</>
-              : <>Table operations adapted from <KrausestBenchmarkLink />: native input handler → second native animation frame. “Overall” is this lab's unweighted complete-matrix geomean.</>}
+              ? <>Table operations adapted from <KrausestBenchmarkLink />: tap → all mutations visible in the composed DOM. The equal summary describes this 1k slice; it is separate from the nine-case weighted score above.</>
+              : <>Table operations adapted from <KrausestBenchmarkLink />: native input handler → second native animation frame. The equal summary covers the complete Native 1k slice.</>}
             suite="table"
             ops={tableOps([1000])}
+            overallLabel="equal summary"
             harness={harness}
             theme={theme}
             selected={activeSelected}
           />
           <RankedBars
-            title="interactive @10k"
+            title="interaction latency @10k"
             description={harness === 'web'
               ? <>The same <KrausestBenchmarkLink />-style operations at 10,000 rows — where wire cost and reconciliation strategy separate.</>
               : <>The same <KrausestBenchmarkLink />-style Native operations at 10,000 rows; input/session timeouts remain visible as DNF.</>}
             suite="table"
             ops={tableOps([10000])}
+            overallLabel="equal summary"
             harness={harness}
             theme={theme}
             selected={activeSelected}

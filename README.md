@@ -152,8 +152,8 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
 
 Cases: the krausest superset (`create` 1k/3k/5k/10k/20k/30k, `replace`, `append1k`,
-`update10th`, standard `selectInitial@1k`, steady-state `select`, `swap`, `remove`,
-standard `clear@1k` plus `clear@10k`) + storms (50 update / 30 select sequential
+`update10th`, standard preselected-row `select`, `swap`, `remove`, standard `clear@1k`
+plus `clear@10k`) + storms (50 update / 30 select sequential
 ticks) at 1k/3k/5k/10k/20k/30k +
 startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
 post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these

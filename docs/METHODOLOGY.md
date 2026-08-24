@@ -46,11 +46,32 @@ had a documented weakness, the fix is noted.
 - Update/select storms are archived experiments, not featured workload cases. Existing apps differ
   in whether intermediate ticks must commit or may coalesce to the same final state; until one
   framework-neutral contract exists, storm values do not enter current runs or rankings.
-- Web carries both selection states explicitly: `selectInitial@1k` starts from 1,000 unselected
-  rows and matches js-framework-benchmark's select workload; `select@1k/@10k` moves an existing
-  selection and remains a steady-state Lynx extension. Likewise, Web `clear` covers the standard
-  1k workload and the existing 10k scale/memory extension. These Web parity additions do not
-  change the published Native matrix.
+- The standard `select@1k` preselects one row, then measures moving selection to another row. That
+  matches js-framework-benchmark's Playwright `init()`/`run()` sequence; an unselected-to-selected
+  variant is not substituted. Web `select@10k` remains the larger-scale Lynx extension. Likewise,
+  Web `clear` covers the standard 1k workload and the existing 10k scale/memory extension. The Web
+  clear addition does not change the published Native matrix.
+
+### js-framework weighted score
+
+The Web results expose one strict, formula-compatible score over the nine CPU workloads in
+[js-framework-benchmark's current order](https://github.com/krausest/js-framework-benchmark/blob/afe7c118dd217ccae4c10813613ac0d7566b1ef1/webdriver-ts/src/benchmarksCommon.ts):
+create 1k, replace 1k, update every tenth row, move selection, swap, remove, create 10k,
+append 1k to 1k, and clear 1k. For each workload, every featured entry's median is divided by
+the fastest featured median for that workload. The score is the weighted geometric mean
+
+`exp(sum(weight[i] * ln(ratio[i])) / sum(weight))`
+
+using the nine weights from
+[the upstream results implementation](https://github.com/krausest/js-framework-benchmark/blob/afe7c118dd217ccae4c10813613ac0d7566b1ef1/webdriver-ts-results/src/Common.ts).
+An entry missing any one of the nine cells is not scored; a partial matrix is never divided by
+the full weight denominator.
+
+This is **formula and operation-set parity, not measurement-protocol identity**. Upstream measures
+Chrome trace duration and applies case-specific CPU throttling (4× for update/select/swap/clear,
+2× for remove) plus its own warmup schedule. This lab applies the same formula to medians from
+the framework-neutral Lynx for Web boundary: input `pointerdown` until the composed-DOM predicate
+is true. The label therefore says `js-framework weighted score`, not `official js-framework-benchmark score`.
 
 ## Dual-thread metrics
 

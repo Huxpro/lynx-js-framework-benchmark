@@ -6,8 +6,21 @@ export function geomean(values) {
   return Math.exp(clean.reduce((sum, value) => sum + Math.log(value), 0) / clean.length);
 }
 
+export function weightedGeomean(values, weights) {
+  if (values.length !== weights.length || values.length === 0) return null;
+  if (!values.every(valid) || !weights.every(valid)) return null;
+  const weight = weights.reduce((sum, value) => sum + value, 0);
+  return Math.exp(values.reduce(
+    (sum, value, index) => sum + weights[index] * Math.log(value),
+    0,
+  ) / weight);
+}
+
 /** Score entries over one identical, complete set of cells. */
-export function completeEntryScores(ids, cells) {
+export function completeEntryScores(ids, cells, weights = cells.map(() => 1)) {
+  if (weights.length !== cells.length || !weights.every(valid)) {
+    throw new Error('completeEntryScores requires one positive weight per cell');
+  }
   const completeIds = ids.filter((id) => cells.length > 0
     && cells.every((cell) => valid(cell.values[id])));
   const ratios = new Map(completeIds.map((id) => [id, []]));
@@ -16,7 +29,7 @@ export function completeEntryScores(ids, cells) {
     for (const id of completeIds) ratios.get(id).push(cell.values[id] / fastest);
   }
   return {
-    scores: completeIds.map((id) => ({ id, value: geomean(ratios.get(id)) })),
+    scores: completeIds.map((id) => ({ id, value: weightedGeomean(ratios.get(id), weights) })),
     missing: ids.filter((id) => !completeIds.includes(id)),
     cellCount: cells.length,
   };

@@ -42,6 +42,9 @@ export function RankedBars({
   theme,
   selected,
   unitFmt = fmtMs,
+  scoreWeights,
+  overallLabel = 'overall',
+  overallCaption,
 }: {
   title: string;
   description: ReactNode;
@@ -52,6 +55,9 @@ export function RankedBars({
   theme: 'light' | 'dark';
   selected: Set<string>;
   unitFmt?: (v: number | null) => string;
+  scoreWeights?: Record<string, number>;
+  overallLabel?: string;
+  overallCaption?: string;
 }) {
   const { select, snapshot } = useBenchmarkData();
   const firstOp = ops[0]?.key ?? 'overall';
@@ -94,7 +100,7 @@ export function RankedBars({
       const score = completeEntryScores(ids, ops.map((spec) => ({
         key: spec.key,
         values: Object.fromEntries(ids.map((id) => [id, byOp.get(spec.key)?.get(id)?.median])),
-      })));
+      })), scoreWeights == null ? undefined : ops.map((spec) => scoreWeights[spec.key]));
       const rows = score.scores
         .filter((row): row is { id: string; value: number } => row.value != null)
         .map((row) => ({ ...row, dnf: false }));
@@ -109,7 +115,8 @@ export function RankedBars({
         }),
         fmt: fmtX,
         scoreOps: score.cellCount,
-        caption: `unweighted geometric mean of the complete ${score.cellCount}-op matrix × vs the fastest entry — lower is better, 1× = fastest`,
+        caption: overallCaption
+          ?? `equal-weight geometric mean of the complete ${score.cellCount}-op matrix × vs each operation's fastest entry — 1× is the per-operation oracle, so the best aggregate can exceed 1×`,
       };
     }
     const spec = ops.find((o) => o.key === activeOp)!;
@@ -134,7 +141,7 @@ export function RankedBars({
       coverage: missingCoverage(r.id, spec),
     }));
     return { rows: present, missing, fmt: unitFmt, scoreOps: 1, caption: `median ${spec.label} — lower is better` };
-  }, [activeOp, byOp, selected, ops, unitFmt]);
+  }, [activeOp, byOp, selected, ops, unitFmt, scoreWeights, overallCaption]);
 
   const scaleMax = Math.max(1e-9, ...view.rows.map((r) => r.value as number)) * 1.08;
   const refValue = activeOp === 'overall' ? 1 : null;
@@ -147,7 +154,7 @@ export function RankedBars({
         <div className="card-desc">{description}</div>
       </figcaption>
       <div className="chips" role="group" aria-label="Operation">
-        <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>overall</button>
+        <button className="chip" aria-pressed={activeOp === 'overall'} onClick={() => setOp('overall')}>{overallLabel}</button>
         {ops.map((o) => (
           <button key={o.key} className="chip" aria-pressed={activeOp === o.key} onClick={() => setOp(o.key)}>
             {o.label}
@@ -167,7 +174,7 @@ export function RankedBars({
                 setTip({
                   head: shortLabel(r.id),
                   lines: activeOp === 'overall'
-                    ? [`${fmtX(r.value as number)} vs fastest (geomean across ${view.scoreOps} complete ops)`]
+                    ? [`${fmtX(r.value as number)} vs the per-operation fastest values (${view.scoreOps} complete ops)`]
                     : [
                       `${unitFmt(r.value as number)} median${rec?.ci95 != null ? ` ± ${unitFmt(rec.ci95)}` : ''}`,
                       `n = ${rec?.n ?? '?'}${rec?.dnfCount ? `, ${rec.dnfCount} DNF` : ''}`,

@@ -62,18 +62,8 @@ export const TABLE_CASES = [
     defaultScales: [1000, 10000],
   },
   {
-    // Web js-framework-benchmark parity: select a row from an unselected 1k
-    // table. Keep the existing `select` case below as the steady-state Lynx
-    // extension, where moving selection changes both the old and new rows.
-    name: 'selectInitial',
-    pre: 'rows',
-    trigger: { cell: { rowIndex: 1, cls: 'col-label' } },
-    predicate: () => ({ type: 'dangerAt', index: 1 }),
-    scales: [1000],
-    defaultScales: [1000],
-    harnesses: ['web'],
-  },
-  {
+    // js-framework-benchmark selects row 5 during init, then times moving the
+    // selection to row 2. This pre-selected state matches that measured work.
     name: 'select',
     pre: 'rows+preselect',
     trigger: { cell: { rowIndex: 1, cls: 'col-label' } },

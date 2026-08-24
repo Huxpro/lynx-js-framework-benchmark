@@ -44,7 +44,8 @@ test('history ranking keeps cohort transitions visible and puts rank context ins
   assert.doesNotMatch(rankingSource, /<select/);
   assert.match(rankingSource, /INTERACTIVE_CASE = 'interactive'/);
   assert.match(rankingSource, /rankHistoryAggregate\(cohort\.entryIds/);
-  assert.match(rankingSource, /unweighted geomean over a complete table-operation matrix/);
+  assert.match(rankingSource, /Equal-weight interaction/);
+  assert.match(rankingSource, /separate from the nine-case/);
 });
 
 test('history ranking exposes every series to hover and legend focus highlighting', () => {

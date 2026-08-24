@@ -73,9 +73,14 @@ test('Native empty checkpoints preserve the selected Scale view', () => {
   assert.match(emptyState, /How does Native cost grow with scale/);
 });
 
-test('interactive cards distinguish the lab score from krausest weighted overall', () => {
+test('Web overview exposes the strict upstream-weighted score separately from scale summaries', () => {
   assert.match(source, /https:\/\/github\.com\/krausest\/js-framework-benchmark/);
   assert.match(source, /className="external-link benchmark-source-link"/);
-  assert.match(source, /unweighted complete-matrix geomean, not krausest's weighted score/);
-  assert.match(source, /\['create', 'replace', 'append1k'/);
+  assert.match(source, /title="js-framework weighted score"/);
+  assert.match(source, /All 9 cells must exist for an entry to rank/);
+  assert.match(source, /select@1000/);
+  assert.match(source, /clear@1000/);
+  assert.match(source, /scoreWeights=\{JS_FRAMEWORK_SCORE_WEIGHTS\}/);
+  assert.match(source, /title="interaction latency @1k"/);
+  assert.match(source, /overallLabel="equal summary"/);
 });
