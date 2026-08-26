@@ -184,8 +184,9 @@ an ablation have matched hand-written ceilings, `target ceiling − base ceiling
 axis effect while `point − own ceiling` reports implementation residue separately. With only one
 ceiling, only that endpoint's residue is reported. The first Lab cohort backfills Octane #163 C7
 raw observations and classifies the Vue Vapor/IFR matrix; their known coupled changes stay
-descriptive. Axis ④'s ElementPAPI segment view depends on #200 and remains explicitly pending until
-an attributable controlled pair exercises it—no proxy instrument is substituted.
+descriptive. Axis ④'s ElementPAPI segment view depends on #200. Instrument readiness is reported
+separately from effect availability: #200 sources make the instrument ready, but its effect table
+stays empty until an attributable controlled pair exercises it. No proxy instrument is substituted.
 
 ## Fairness
 

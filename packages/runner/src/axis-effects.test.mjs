@@ -105,6 +105,28 @@ test('only a controlled same-codebase single-axis pair becomes attributable', ()
   assert.equal(JSON.stringify(view).includes('regression'), false);
 });
 
+test('#200 pipeline sources make the instrument ready without inventing an axis effect', () => {
+  const baseline = entry('baseline', {
+    provenance: { ...entry('x').provenance, buildParameters: { mode: 'ops' } },
+  });
+  const candidate = entry('candidate', {
+    coordinates: coordinates({ staging: 'code' }),
+    provenance: { ...entry('x').provenance, buildParameters: { mode: 'code' } },
+    ablation: ablation('baseline', 'staging', 'ops→code'),
+  });
+  const view = buildAxisEffectView({
+    entries: [baseline, candidate],
+    runs: [
+      run([record('baseline', [10]), record('candidate', [8])]),
+      run([{ entry: 'instrument-only', suite: 'pipeline', metric: 'papiCreateTime' }], 'pipeline.json'),
+    ],
+  });
+  const instrument = view.axes.find((axis) => axis.axis === 'staging').instrument;
+  assert.equal(instrument.status, 'ready');
+  assert.equal(instrument.sourceRecordCount, 1);
+  assert.equal(instrument.effectCount, 0);
+});
+
 test('cross-codebase, uncontrolled, and mismatched matrices are retained but excluded', () => {
   const baseline = entry('baseline', {
     provenance: { ...entry('x').provenance, buildParameters: { mode: 'ops' } },

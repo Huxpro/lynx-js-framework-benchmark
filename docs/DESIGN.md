@@ -324,9 +324,10 @@ rankings. The view follows four hard rules:
    `measured point − its own ceiling`. A missing endpoint ceiling leaves the axis estimate empty
    rather than folding residue into it.
 
-Axis ④ additionally reports the status of its required ElementPAPI instrument from #200. Until an
-attributable pair carries those segment measurements, the UI renders a pending placeholder and
-does not substitute latency, CPU, or another proxy.
+Axis ④ reports instrument readiness separately from effect availability. When #200 source records
+exist but no attributable pair carries segment measurements, the UI says the instrument is ready
+while leaving the effect table empty. Before #200 exists it reports pending. Neither state
+substitutes latency, CPU, or another proxy.
 
 ## Runs, incremental collection, calibration
 

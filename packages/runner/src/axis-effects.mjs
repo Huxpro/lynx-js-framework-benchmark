@@ -595,6 +595,10 @@ export function buildAxisEffectView({ entries, runs, root = null }) {
     const axisPairs = pairs.filter((pair) => pair.axis === axis);
     const pipelineEffects = axisPairs.flatMap((pair) => pair.effects)
       .filter((effect) => effect.suite === 'pipeline');
+    const pipelineSourceRecordCount = runs
+      .filter((runSource) => !runSource.file.startsWith('axis-runs/'))
+      .flatMap((runSource) => runSource.run.records)
+      .filter((record) => record.suite === 'pipeline').length;
     return {
       axis,
       pairCount: axisPairs.length,
@@ -603,8 +607,11 @@ export function buildAxisEffectView({ entries, runs, root = null }) {
       directionConsistency: directionConsistency(axisPairs),
       instrument: axis === 'staging' ? {
         issue: 'https://github.com/Huxpro/octane/issues/200',
-        status: pipelineEffects.length > 0 ? 'observed' : 'pending',
+        status: pipelineEffects.length > 0
+          ? 'observed'
+          : pipelineSourceRecordCount > 0 ? 'ready' : 'pending',
         effectCount: pipelineEffects.length,
+        sourceRecordCount: pipelineSourceRecordCount,
       } : null,
     };
   });

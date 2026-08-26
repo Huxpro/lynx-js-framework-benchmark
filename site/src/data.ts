@@ -587,7 +587,12 @@ export interface AxisEffectView {
       zero: number;
       consistent: boolean;
     }[];
-    instrument: { issue: string; status: 'observed' | 'pending'; effectCount: number } | null;
+    instrument: {
+      issue: string;
+      status: 'observed' | 'ready' | 'pending';
+      effectCount: number;
+      sourceRecordCount: number;
+    } | null;
   }[];
 }
 
