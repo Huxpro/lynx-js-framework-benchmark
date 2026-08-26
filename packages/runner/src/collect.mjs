@@ -870,6 +870,33 @@ const annotate = (run, file, record, comparisonKind = 'archive') => ({
   comparisonKind,
 });
 
+// Raw pipeline files deliberately repeat controls beside every source metric
+// so each record is independently auditable. The materialized site dataset is
+// not another source archive: keep full controls on operationTime, then retain
+// only aligned samples/accounting on its segment and residual siblings.
+const compactPipelineOutputRecord = (record) => {
+  if (record.suite !== 'pipeline') return record;
+  if (record.metric === 'operationTime') {
+    const compactDetail = (detail) => {
+      if (detail == null) return detail;
+      const { surfaceNames: _surfaceNames, ...rest } = detail;
+      return rest;
+    };
+    return {
+      ...record,
+      detail: compactDetail(record.detail),
+      detailSamples: record.detailSamples?.map(compactDetail) ?? record.detailSamples,
+    };
+  }
+  const {
+    detail: _detail,
+    detailSamples: _detailSamples,
+    pipelineControl: _pipelineControl,
+    ...compact
+  } = record;
+  return compact;
+};
+
 const annotateStatic = (entry, record) => ({
   ...deriveRecord(record),
   machineId: null,
@@ -1545,7 +1572,9 @@ export function collectRuns({
   });
   const pipelineCampaign = currentPipelineCampaign(runs, featuredIds, entryById);
   const pipelineSourceRecords = pipelineCampaign == null ? [] : pipelineCampaign.records.map(
-    (record) => annotate(pipelineCampaign.run, pipelineCampaign.file, record, 'same-run'),
+    (record) => compactPipelineOutputRecord(
+      annotate(pipelineCampaign.run, pipelineCampaign.file, record, 'same-run'),
+    ),
   );
   const pipelineCoverage = pipelineCampaign?.coverage ?? classifyPipelineCoverage({
     entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
@@ -1710,6 +1739,7 @@ export function collectRuns({
     },
     machines,
     records: [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile))
+      .map(compactPipelineOutputRecord)
       .concat(archiveStaticRecords),
     comparison,
     comparisonRecords,

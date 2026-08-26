@@ -1347,6 +1347,8 @@ test('history audits every run but publishes only complete source-defined featur
     checkpoint.id === 'current-main');
   const pipelineOperations = currentRecords.filter((record) =>
     record.suite === 'pipeline' && record.metric === 'operationTime');
+  const materializedPipeline = out.comparisonRecords.filter((record) =>
+    record.suite === 'pipeline');
   assert.equal(currentCheckpoint.pipelineCoverage.expectedCellCount, 84);
   assert.equal([0, 84].includes(pipelineOperations.length), true);
   if (pipelineOperations.length === 0) {
@@ -1364,6 +1366,13 @@ test('history audits every run but publishes only complete source-defined featur
     && record.detailSamples.length === record.samples.length
     && !record.rankEligible
     && record.descriptiveEligible), true);
+  assert.equal(materializedPipeline.filter((record) =>
+    record.metric !== 'operationTime').every((record) =>
+    record.detailSamples == null && record.pipelineControl == null), true);
+  assert.equal(materializedPipeline.filter((record) =>
+    record.metric === 'operationTime').every((record) =>
+    record.detailSamples.every((detail) => detail.surfaceNames == null)
+    && record.pipelineControl.surfaceNames.includes('__FlushElementTree')), true);
 
   const aug8File = '2026-08-08T07-22-33-b0fcfd511132-full.json';
   const aug8 = out.history.checkpoints.find((checkpoint) =>
