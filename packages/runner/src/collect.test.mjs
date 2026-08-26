@@ -1343,11 +1343,24 @@ test('history audits every run but publishes only complete source-defined featur
 
   const currentRecords = out.history.checkpoints.find((checkpoint) => checkpoint.id === 'current-main')
     .activeRecordIndexes.map((index) => out.history.records[index]);
+  const currentCheckpoint = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.id === 'current-main');
   const pipelineOperations = currentRecords.filter((record) =>
     record.suite === 'pipeline' && record.metric === 'operationTime');
-  assert.deepEqual(pipelineOperations.map((record) => record.entry).sort(), ['react', 'vue-vdom']);
+  assert.equal(currentCheckpoint.pipelineCoverage.expectedCellCount, 84);
+  assert.equal([0, 84].includes(pipelineOperations.length), true);
+  if (pipelineOperations.length === 0) {
+    assert.deepEqual(currentCheckpoint.pipelineCoverage.summary, { unscheduled: 84 });
+  } else {
+    assert.deepEqual(
+      [...new Set(pipelineOperations.map((record) => record.entry))].sort(),
+      ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+    );
+    assert.equal(new Set(pipelineOperations.map((record) =>
+      `${record.entry}|${record.workload}|${record.scale}`)).size, 84);
+  }
   assert.equal(pipelineOperations.every((record) =>
-    record.samples.length > 0
+    (record.samples.length > 0 || record.dnfCount > 0)
     && record.detailSamples.length === record.samples.length
     && !record.rankEligible
     && record.descriptiveEligible), true);

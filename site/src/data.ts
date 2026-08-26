@@ -186,6 +186,47 @@ export interface NativeCoverage {
   cells: NativeCoverageCell[];
 }
 
+export type PipelineCoverageStatus =
+  | 'measured'
+  | 'measured-with-dnf'
+  | 'dnf'
+  | 'unscheduled'
+  | 'invalid-incomparable'
+  | 'display-derivation-bug';
+
+export interface PipelineCoverageCell {
+  entry: string;
+  suite: 'pipeline';
+  harness: 'web';
+  workload: string;
+  scale: number;
+  metric: 'operationTime';
+  unit: 'ms';
+  boundary: string;
+  key: string;
+  status: PipelineCoverageStatus;
+  reason: string | null;
+  record: {
+    n: number;
+    dnfCount: number;
+    attemptedCount: number | null;
+    acceptedCount: number | null;
+    median: number | null;
+    runFile: string | null;
+    machineId: string | null;
+    failureCategories: string[];
+  } | null;
+}
+
+export interface PipelineCoverage {
+  version: string;
+  contractSha256: string;
+  expectedCellCount: number;
+  entryIds: string[];
+  summary: Partial<Record<PipelineCoverageStatus, number>>;
+  cells: PipelineCoverageCell[];
+}
+
 export interface NativeObservation {
   entryId: string;
   harness: 'native';
@@ -208,6 +249,7 @@ export interface TimelineSnapshot {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
+  pipelineCoverage: PipelineCoverage;
 }
 
 export interface HistoryTransportEvidence {
@@ -264,6 +306,7 @@ export interface HistoryCheckpoint {
   sourceIndexes: number[];
   harnesses: HistoryCohort[];
   nativeCoverage?: NativeCoverage;
+  pipelineCoverage?: PipelineCoverage;
 }
 
 export interface HistorySource {
@@ -339,11 +382,20 @@ const collected = latest as unknown as {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
+  pipelineCoverage: PipelineCoverage;
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
 const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   version: 'history-no-native-data',
+  contractSha256: '',
+  expectedCellCount: 0,
+  entryIds: [],
+  summary: {},
+  cells: [],
+};
+const EMPTY_PIPELINE_COVERAGE: PipelineCoverage = {
+  version: 'history-no-pipeline-data',
   contractSha256: '',
   expectedCellCount: 0,
   entryIds: [],
@@ -408,6 +460,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     nativeObservations: [],
     nativeObservationRecords: [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
+    pipelineCoverage: checkpoint.pipelineCoverage ?? EMPTY_PIPELINE_COVERAGE,
   };
 });
 

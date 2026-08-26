@@ -28,6 +28,10 @@ import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
 import {
+  assertPipelineCoverage,
+  classifyPipelineCoverage,
+} from './pipeline-coverage.mjs';
+import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   assertNativeDeviceCohort,
   assertNativeLeaseChain,
@@ -642,28 +646,30 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
 
 const currentPipelineCampaign = (runs, featuredIds, entryById) => {
   let selected = null;
+  const entries = [...featuredIds].map((id) => entryById.get(id)).filter(Boolean);
   for (const candidate of runs) {
     const records = candidate.run.records.filter((record) =>
       featuredIds.has(record.entry)
       && record.harness === 'web'
       && record.suite === 'pipeline'
       && isBenchmarkRecord(record)
-      && isComparisonVisible(record)
       && isPublishableRecord(candidate.run, record)
       && commitMatchesManifest(candidate.run, record, entryById));
     if (!records.length) continue;
-    const score = [
-      new Set(records.map((record) => record.entry)).size,
-      new Set(records.map(cellKey)).size,
-      candidate.run.meta.generatedAt ?? candidate.file,
-      candidate.file,
-    ];
+    const coverage = classifyPipelineCoverage({
+      entries,
+      sourceRecords: records,
+      publishedRecords: records,
+    });
+    try {
+      assertPipelineCoverage(coverage);
+    } catch {
+      continue;
+    }
+    const score = [candidate.run.meta.generatedAt ?? candidate.file, candidate.file];
     if (!selected || score[0] > selected.score[0]
-      || (score[0] === selected.score[0] && score[1] > selected.score[1])
-      || (score[0] === selected.score[0] && score[1] === selected.score[1]
-        && (score[2] > selected.score[2]
-          || (score[2] === selected.score[2] && score[3] > selected.score[3])))) {
-      selected = { ...candidate, records, score };
+      || (score[0] === selected.score[0] && score[1] > selected.score[1])) {
+      selected = { ...candidate, records, coverage, score };
     }
   }
   return selected;
@@ -1364,6 +1370,7 @@ const buildHistory = ({
       + 'seven-entry cohort; storm experiments remain archive evidence.',
     current: true,
     nativeCoverage: current.nativeCoverage,
+    pipelineCoverage: current.pipelineCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
     identityPointers: identityPointers(currentHistoryRecords, entryById),
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
@@ -1533,6 +1540,9 @@ export function collectRuns({
   const pipelineSourceRecords = pipelineCampaign == null ? [] : pipelineCampaign.records.map(
     (record) => annotate(pipelineCampaign.run, pipelineCampaign.file, record, 'same-run'),
   );
+  const pipelineCoverage = pipelineCampaign?.coverage ?? classifyPipelineCoverage({
+    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+  });
   const comparisonRecords = [
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
     ...pipelineSourceRecords,
@@ -1700,6 +1710,7 @@ export function collectRuns({
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
     nativeCoverage,
+    pipelineCoverage,
   };
   out.history = buildHistory({
     runs: retainedRuns,
@@ -1716,6 +1727,7 @@ export function collectRuns({
       nativeObservations: out.nativeObservations,
       nativeObservationRecords: out.nativeObservationRecords,
       nativeCoverage: out.nativeCoverage,
+      pipelineCoverage: out.pipelineCoverage,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
