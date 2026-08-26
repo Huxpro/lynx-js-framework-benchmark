@@ -100,6 +100,7 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | **wire** | `wireUpMsgs/wireUpBytes` (MTS→BTS), `wireDownMsgs/wireDownBytes` (BTS→MTS), per-endpoint histogram | the real `MessageChannel` between web-core's UI realm and the background worker | `MessagePort.prototype` patch installed before web-core boots |
 | **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
 | **storm semantics** | source: operation time, pointer ticks, rAF-observable committed frames, CPU/wire totals; derived: contract outcome, coalescing ratio, bytes/messages per tick | first real pointerdown → terminal observed frame | dedicated `/storm` driver repeatedly issues standard actions; Web-only |
+| **list virtualization** | source: first visible content, recycle elapsed/cell/wire totals, fling elapsed/materialized cells/blank frames/materialization samples; derived: per-cell time/wire, materialized/s, p50/p99 | versioned visible-cell boundary for each harness | separate declarative `list` + keyed `list-item` fixture; Web composed-tree and Native visible-cell-tree observers never cross-rank |
 | **static** | `bundleWebRaw/Gzip`, `bundleLynxRaw/Gzip`, `mtsSectionGzip`, `btsSectionGzip` | — | bundle inspection (JSON-format bundles expose `lepusCode.root` = MTS and `manifest['/app-service.js']` = BTS; binary bundles report whole-bundle only) |
 
 Why this is neutral: ReactLynx, Vue-Lynx (vdom/vapor), and Octane-on-Lynx all ride the same
@@ -125,7 +126,7 @@ dimensions. One record per (entry × workload × scale × metric):
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
   "records": [{
-    "suite": "table" | "startup" | "pipeline" | "storm",
+    "suite": "table" | "startup" | "pipeline" | "storm" | "list",
     "harness": "web" | "native",
     "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
     "entry": "vue-vdom",
@@ -146,6 +147,27 @@ dimensions. One record per (entry × workload × scale × metric):
 `harness`, `environment`, `workload`, `scale`, `metric`, `boundary`, and `unit` all agree.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
+
+The list contract is additionally capability-gated. The source is the optional `listFixture`
+declaration plus its exact bundle artifact; `collect` derives a complete entry × harness × case
+ledger. Missing declarations, protocol/hash mismatches, and absent artifacts are `unsupported`,
+not DNF. A valid fixture with no run is `unscheduled`. Blank-frame counts are ordinary source
+observations—even a non-zero count—while only driver/capture failure increments DNF.
+
+An entry opts in without changing the driver:
+
+```jsonc
+"listFixture": {
+  "protocol": "lynx-list-fixture-v1",
+  "contractSha256": "<reported by pnpm bench list-coverage>",
+  "bundles": { "web": "dist/list/main.web.bundle", "native": "dist/list/main.lynx.bundle" },
+  "sha256": { "web": "<64 hex>", "native": "<64 hex>" }
+}
+```
+
+Each declared artifact must stay inside its entry directory and match its manifest checksum. The
+same case data, viewport receipt, item-key semantics, and stimulus schedule drive every framework;
+the only harness-specific fields are the declared input and observation mechanisms.
 
 ## Harnesses
 

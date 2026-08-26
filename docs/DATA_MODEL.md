@@ -43,7 +43,7 @@ legacy final endpoint sample. It never treats stored aggregate statistics as aut
 ### When an entry is built or vendored
 
 - `entries/*/entry.json`: entry identity, tier, presentation color, provenance, commit, and bundle
-  checksums;
+  checksums, plus an optional versioned `listFixture` capability declaration;
 - `entries/*/dist/**`: the actual web/native bundles.
 
 Bundle byte/gzip/section metrics are **not** benchmark observations. They are recalculated from
@@ -75,6 +75,12 @@ Everything else is derived, including:
 - the Native 115-cell coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
+- the list-workload capability ledger. Its 7 featured entries × 2 isolated harnesses × 4
+  startup/recycle/fling cases are derived from manifest declarations, contract hashes, fixture
+  artifacts, and list-suite source records. An absent fixture is `unsupported`; it is never a
+  table proxy or DNF. Per-cell recycle costs/rates and fling p50/p99/materialized-per-second values
+  are derived from aligned raw elapsed/count/wire/materialization observations. Blank frames remain
+  source data regardless of value;
 - the editorial exact-source history index. Every valid run has a source audit row, but only the
   small explicit checkpoint list becomes Dataset Time Machine stops. A Web checkpoint additionally
   requires one unscoped physical run and publishes only the complete intersection of eligible cells
@@ -128,6 +134,9 @@ Everything else is derived, including:
     prefix-compatible multi-lease continuation.
 13. History source coverage equals the full valid run-file list, and each checkpoint references
    exact source records rather than a date cutoff or newest-per-cell archive.
+14. List records never enter table/startup rankings. Web and Native use separate observers and
+    remain separate cohorts; missing fixture capability is explicit `unsupported`, while DNF is
+    reserved for an attempted fixture whose driver or capture failed.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

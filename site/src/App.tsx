@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
+import { ListCoverage } from './components/ListCoverage';
 import { HeatGrid } from './components/HeatGrid';
 import { HistoryRanking } from './components/HistoryRanking';
 import { InteractionScaleComposite } from './components/InteractionScaleComposite';
@@ -282,6 +283,7 @@ function AppContent({
               </p>
             </div>
             <NativeObservations theme={theme} />
+            <ListCoverage harness={harness} />
             <NativeCoverage />
           </>
         ) : (
@@ -395,6 +397,7 @@ function AppContent({
             {harness === 'web' && <PipelineAttribution theme={theme} selected={activeSelected} />}
             {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
+          <ListCoverage harness={harness} />
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (

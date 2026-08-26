@@ -113,7 +113,10 @@ export function workloadReceipt(root = repoRoot()) {
     'packages/shared/src/driver-client.mjs',
     'packages/shared/src/page-instrument.mjs',
     'packages/shared/src/pipeline.mjs',
+    'packages/shared/src/list-workloads.mjs',
     'packages/runner/src/pipeline-attribution.mjs',
+    'packages/runner/src/list-coverage.mjs',
+    'packages/runner/src/list-derivation.mjs',
     'packages/runner/src/storm-contract.mjs',
   ];
   const hashes = Object.fromEntries(files.map((relative) => [

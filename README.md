@@ -119,6 +119,7 @@ pnpm bench run --suite startup                                           # one s
 pnpm bench run --suite pipeline --case select --scale 1000 --reps 20     # host-boundary attribution
 pnpm bench run --suite storm --case selectStorm --commit final-state      # neutral coalescing contract
 pnpm bench list                                                          # entries & cases
+pnpm bench list-coverage                                                 # versioned list-fixture capability ledger
 pnpm bench preflight                                                     # machine calibration only
 ```
 
@@ -152,6 +153,7 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | time | Web `latency`/`fcp`/`settled`; Native `latency` and pipeline startup where available | real input; harness-specific boundaries are stored on every record |
 | element pipeline | Web-only synchronous ElementPAPI segment self-time/calls + outside-PAPI residual | dedicated capture page; raw tree/call controls gate derived comparisons; Native is unsupported |
 | storm semantics | Web-only elapsed time, observable frames/ticks, contract outcome, wire bytes/tick | dedicated shared-driver page; every-tick failure is descriptive data, final-state permits coalescing |
+| list virtualization | startup, one-viewport recycle, fixed-velocity fling; raw counts/times/wire plus derived per-cell rates | separate declarative `list`/`list-item` fixture; Web and Native observers are isolated; absent fixtures are unsupported |
 | dual-thread | `btsCpu` / `mtsCpu` | CDP sampling profiler attached per realm (page + `lynx-bg` worker) |
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
@@ -181,7 +183,7 @@ are never ranked as FCP. See
 
 ```
 entries/<id>/
-  entry.json        # label, framework, config, provenance (+ sha256), bundle paths
+  entry.json        # label, framework, provenance, eager bundles; optional versioned listFixture
   dist/rows-<n>/    # main.web.bundle (+ main.lynx.bundle), n ∈ {0, 1000, 10000, 30000}
 ```
 
@@ -195,7 +197,9 @@ is addressable, for example `/?entries=octane,octane-prior,octane-hux1,octane-hu
 Bundles are vendored with provenance (source repo, commit, build command, checksums);
 `scripts/vendor-entries.mjs` rebuilds them from checkouts of the source repos. The app must
 speak the shared workload contract (`packages/shared/src/workloads.mjs`): same buttons, same
-class structure, same storm semantics.
+class structure, same storm semantics. List measurements additionally require an independent
+`listFixture` manifest declaration whose bundle implements the exact contract hash from
+`packages/shared/src/list-workloads.mjs`; eager table bundles are never accepted as a substitute.
 
 **Dataset Time Machine.** The slider is a short editorial list of meaningful checkpoints, not an
 Octane-commit timeline. Every checkpoint links each framework identity to its recorded commit or

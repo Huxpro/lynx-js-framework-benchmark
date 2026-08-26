@@ -1242,12 +1242,20 @@ test('history keeps a complete past entry set without requiring future featured 
 test('history audits every run but publishes only complete source-defined featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
+  assert.equal(out.listCoverage.expectedCellCount, 56);
+  assert.deepEqual(out.listCoverage.summary, { unsupported: 56 });
+  assert.ok(out.listCoverage.cells.every((cell) =>
+    cell.fixture.kind === 'entry-manifest'
+    && cell.fixture.declared === false
+    && cell.reason === 'list-fixture-not-declared'));
+  assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
   assert.equal(out.history.sources.length, out.sources.runFiles.length);
   assert.deepEqual(
     out.history.sources.map((source) => source.runFile),
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
+  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 56);
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );

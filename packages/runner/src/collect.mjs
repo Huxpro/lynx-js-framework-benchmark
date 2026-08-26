@@ -40,6 +40,12 @@ import {
   assertNativeMethodRevisionChain,
 } from './native-protocol.mjs';
 import { stormContractPass } from './storm-contract.mjs';
+import {
+  assertListCoverage,
+  buildListCoverage,
+  selectListCampaignRecords,
+} from './list-coverage.mjs';
+import { deriveListRecords } from './list-derivation.mjs';
 
 const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
@@ -877,10 +883,10 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
-    // Exact-observation suites have their own campaign selectors below. They
-    // are descriptive evidence and must never replace or inflate the main
+    // Exact-observation suites have dedicated selectors below. They are
+    // descriptive evidence and must never replace or inflate the main
     // table/startup comparison cohort.
-    && !['pipeline', 'storm'].includes(record.suite)
+    && !['pipeline', 'storm', 'list'].includes(record.suite)
     && record.harness === harness
     && isComparisonVisible(record)
     && isPublishableRecord(run, record)
@@ -1696,6 +1702,7 @@ const buildHistory = ({
     current: true,
     nativeCoverage: current.nativeCoverage,
     pipelineCoverage: current.pipelineCoverage,
+    listCoverage: current.listCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
     identityPointers: identityPointers(currentHistoryRecords, entryById),
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
@@ -1920,6 +1927,16 @@ export function collectRuns({
       && retainedRunFiles.has(record.runFile)),
   });
   if (nativeCohort) assertNativeCoverage(nativeCoverage);
+  const listSourceRecords = selectListCampaignRecords(
+    [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile)),
+    currentEntries,
+  );
+  const listCoverage = buildListCoverage({
+    entries: currentEntries,
+    sourceRecords: listSourceRecords,
+  });
+  assertListCoverage(listCoverage);
+  const listDerivedRecords = deriveListRecords(listSourceRecords);
   if (nativeCohort) {
     const sources = [...nativeCohort.entries.values()].flatMap((entry) =>
       [...entry.cells.values()]);
@@ -2053,6 +2070,8 @@ export function collectRuns({
     nativeObservationRecords: nativeObservations.records,
     nativeCoverage,
     pipelineCoverage,
+    listCoverage,
+    listDerivedRecords,
   };
   out.history = buildHistory({
     runs: retainedRuns,
@@ -2070,6 +2089,7 @@ export function collectRuns({
       nativeObservationRecords: out.nativeObservationRecords,
       nativeCoverage: out.nativeCoverage,
       pipelineCoverage: out.pipelineCoverage,
+      listCoverage: out.listCoverage,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

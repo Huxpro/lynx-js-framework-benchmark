@@ -47,6 +47,9 @@ export const BOUNDARIES = {
   stormContract: 'storm-observed-commit-contract-outcome',
   stormCoalescing: 'storm-committed-frames-divided-by-issued-ticks',
   stormPerTick: 'storm-total-divided-by-issued-ticks',
+  listRecyclePerCell: 'list-one-viewport-scroll-total-divided-by-recycled-cells',
+  listFlingRate: 'list-fixed-velocity-fling-materialized-cells-divided-by-elapsed',
+  listMaterializationDistribution: 'list-visible-cell-materialization-distribution',
   bundle: 'static',
 };
 
