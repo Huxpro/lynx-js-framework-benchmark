@@ -59,6 +59,7 @@ export interface BenchRecord {
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
+  descriptiveEligible?: boolean;
   workClassification?: {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;
@@ -365,7 +366,8 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
   // evidence chart, but comparison consumers see a real gap rather than a
   // deceptively fast value.
   const records = historyRecordsForCheckpoint(checkpoint)
-    .filter((record) => record.rankEligible !== false);
+    .filter((record) => record.rankEligible !== false
+      || record.descriptiveEligible === true);
   const harnesses = checkpoint.harnesses.map((cohort) => ({
     harness: cohort.harness,
     environment: cohort.environment,
@@ -460,6 +462,7 @@ export interface RecordFilter {
 export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
   return records.filter((r) =>
     (r.rankingEligible !== false
+      || r.descriptiveEligible === true
       || (r.comparabilityStatus === 'incomplete-work' && r.n === 0 && r.dnfCount > 0))
     && (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)

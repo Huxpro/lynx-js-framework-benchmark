@@ -1329,7 +1329,8 @@ test('history audits every run but publishes only complete source-defined featur
     const records = checkpoint.activeRecordIndexes.map((index) => out.history.records[index]);
     for (const cohort of checkpoint.harnesses) {
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment);
+        && record.environment === cohort.environment
+        && record.rankEligible);
       const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [
@@ -1339,6 +1340,17 @@ test('history audits every run but publishes only complete source-defined featur
       for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
     }
   }
+
+  const currentRecords = out.history.checkpoints.find((checkpoint) => checkpoint.id === 'current-main')
+    .activeRecordIndexes.map((index) => out.history.records[index]);
+  const pipelineOperations = currentRecords.filter((record) =>
+    record.suite === 'pipeline' && record.metric === 'operationTime');
+  assert.deepEqual(pipelineOperations.map((record) => record.entry).sort(), ['react', 'vue-vdom']);
+  assert.equal(pipelineOperations.every((record) =>
+    record.samples.length > 0
+    && record.detailSamples.length === record.samples.length
+    && !record.rankEligible
+    && record.descriptiveEligible), true);
 
   const aug8File = '2026-08-08T07-22-33-b0fcfd511132-full.json';
   const aug8 = out.history.checkpoints.find((checkpoint) =>
@@ -1402,8 +1414,9 @@ test('history audits every run but publishes only complete source-defined featur
       '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
     )));
   assert.ok(native);
-  assert.equal(native.harnesses[0].rankEligible, true);
-  assert.equal(native.harnesses[0].sourceRunFiles.length, 1);
+  const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');
+  assert.equal(nativeCohort.rankEligible, true);
+  assert.equal(nativeCohort.sourceRunFiles.length, 1);
   assert.equal(out.history.checkpoints.some((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',

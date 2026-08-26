@@ -640,6 +640,35 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
     && commitMatchesManifest(run, record, entryById)),
 });
 
+const currentPipelineCampaign = (runs, featuredIds, entryById) => {
+  let selected = null;
+  for (const candidate of runs) {
+    const records = candidate.run.records.filter((record) =>
+      featuredIds.has(record.entry)
+      && record.harness === 'web'
+      && record.suite === 'pipeline'
+      && isBenchmarkRecord(record)
+      && isComparisonVisible(record)
+      && isPublishableRecord(candidate.run, record)
+      && commitMatchesManifest(candidate.run, record, entryById));
+    if (!records.length) continue;
+    const score = [
+      new Set(records.map((record) => record.entry)).size,
+      new Set(records.map(cellKey)).size,
+      candidate.run.meta.generatedAt ?? candidate.file,
+      candidate.file,
+    ];
+    if (!selected || score[0] > selected.score[0]
+      || (score[0] === selected.score[0] && score[1] > selected.score[1])
+      || (score[0] === selected.score[0] && score[1] === selected.score[1]
+        && (score[2] > selected.score[2]
+          || (score[2] === selected.score[2] && score[3] > selected.score[3])))) {
+      selected = { ...candidate, records, score };
+    }
+  }
+  return selected;
+};
+
 const isBetterComparisonRun = (candidate, current, featuredIds) => {
   if (!current) return true;
   const a = comparisonRank(candidate.run, featuredIds);
@@ -909,7 +938,9 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     median: record.median,
     ci95: record.ci95,
     dnfCount: record.dnfCount,
-    detail: record.detail,
+    detail: record.suite === 'pipeline' && record.metric !== 'operationTime'
+      ? null
+      : record.detail,
     detailKind: record.detailKind,
     ...(record.failures?.length ? { failures: record.failures } : {}),
     machineId: run.meta.machine.id,
@@ -918,8 +949,18 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     entryCommit: sourceCommit(run, record),
     comparisonKind,
     cohortId,
-    rankEligible: transport?.comparable ?? true,
+    rankEligible: isRankingEligible(record) && (transport?.comparable ?? true),
+    ...(record.descriptiveEligible ? { descriptiveEligible: true } : {}),
+    ...(record.comparabilityStatus ? { comparabilityStatus: record.comparabilityStatus } : {}),
     ...(transport ? { transport } : {}),
+    ...(record.suite === 'pipeline' ? {
+      samples: record.samples,
+      attemptedCount: record.attemptedCount,
+      acceptedCount: record.acceptedCount,
+      ...(record.metric === 'operationTime' ? { detailSamples: record.detailSamples } : {}),
+      ...(record.derivedFrom ? { derivedFrom: record.derivedFrom } : {}),
+      ...(record.pipelineControl ? { pipelineControl: record.pipelineControl } : {}),
+    } : {}),
   };
 };
 
@@ -1278,16 +1319,37 @@ const buildHistory = ({
     }
   }
 
-  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) =>
-    completeMatrixRecords(
-      current.records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment),
-      cohort.entryIds,
-    ).map((record) => ({
-      ...record,
-      cohortId: `current:${cohort.harness}:${cohort.machineId}`,
-      rankEligible: true,
-    })));
+  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
+    const cohortRecords = current.records.filter((record) => record.harness === cohort.harness
+      && record.environment === cohort.environment);
+    const matrixRecords = completeMatrixRecords(cohortRecords, cohort.entryIds);
+    const matrixSet = new Set(matrixRecords);
+    const pipelineRecords = cohortRecords.filter((record) =>
+      !matrixSet.has(record) && record.suite === 'pipeline' && isComparisonVisible(record));
+    return [...matrixRecords, ...pipelineRecords].map((record) => {
+      const sourceEntry = record.sourceEntry ?? record.entry;
+      const syntheticRun = {
+        meta: {
+          machine: { id: record.machineId },
+          generatedAt: record.runGeneratedAt,
+          entryCommits: { [sourceEntry]: record.entryCommit },
+        },
+        records: cohortRecords,
+      };
+      const history = historyRecord(
+        syntheticRun,
+        record.runFile,
+        record,
+        record.comparisonKind,
+        `current:${cohort.harness}:${cohort.machineId}`,
+      );
+      return matrixSet.has(record) ? history : {
+        ...history,
+        rankEligible: false,
+        descriptiveEligible: true,
+      };
+    });
+  });
   const currentActiveRecordIndexes = currentHistoryRecords.map(
     (_, index) => records.length + index,
   );
@@ -1467,8 +1529,13 @@ export function collectRuns({
     const entry = entryById.get(entryId);
     return entry ? (staticByEntry.get(entryId) ?? []).map((record) => annotateStatic(entry, record)) : [];
   });
+  const pipelineCampaign = currentPipelineCampaign(runs, featuredIds, entryById);
+  const pipelineSourceRecords = pipelineCampaign == null ? [] : pipelineCampaign.records.map(
+    (record) => annotate(pipelineCampaign.run, pipelineCampaign.file, record, 'same-run'),
+  );
   const comparisonRecords = [
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
+    ...pipelineSourceRecords,
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
@@ -1556,10 +1623,15 @@ export function collectRuns({
         generatedAt: comparisonRun.run.meta.generatedAt,
         machineId: comparisonRun.run.meta.machine.id,
         calibration: comparisonRun.run.meta.calibration,
-        sourceRunFiles: [comparisonRun.file],
+        sourceRunFiles: [...new Set([
+          comparisonRun.file,
+          ...(pipelineCampaign ? [pipelineCampaign.file] : []),
+        ])],
         entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
         sourceRecordCount: comparisonSourceRecords.length,
-        recordCount: comparisonSourceRecords.length + comparisonStaticRecords.length,
+        recordCount: comparisonSourceRecords.length
+          + pipelineSourceRecords.length
+          + comparisonStaticRecords.length,
       },
       ...(nativeComparison ? [nativeComparison] : []),
     ],
