@@ -127,6 +127,15 @@ metric rather than silently changing the upstream interaction formula.
   Existing eager-table artifacts declare no list fixture, so their cells are explicitly
   unsupported instead of being proxied. A non-zero blank-frame count is valid measured data; only
   driver/capture failure is DNF.
+- **Staging Pareto (derived-only)**: for each startup scale, collection reads the matching
+  `rows-N/main.web.bundle` or `main.lynx.bundle`, derives raw/gzip bytes, and retains the artifact
+  path and SHA-256 beside the static record. The total axis uses the whole selected-harness
+  artifact. The MTS axis is emitted only when `lepusCode.root` is structurally readable; binary
+  formats are labelled unavailable. The site joins those bytes to FCP from the same entry, harness,
+  and scale, draws its existing 95% CI vertically, and connects exactly the points for which no
+  peer is both no larger and no slower (with at least one strict improvement). It is not a score.
+  Current manifests are not applied retroactively to historical commits that did not retain their
+  exact per-scale bytes.
 - **CPU**: the CDP sampling profiler (200µs) attached separately to the page (MTS + harness
   overhead; the UI thread) and the `lynx-bg` worker (BTS), summing non-idle sample time.
   Includes GC and microtasks. The two threads run concurrently — per-realm CPU values are

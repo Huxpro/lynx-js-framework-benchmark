@@ -152,7 +152,7 @@ test('startup FCP states its local bundle and non-network boundary everywhere it
   assert.match(source, /Local\/cached startup: view attach/);
   assert.match(source, /Production network transfer is outside this comparison/);
   assert.match(source, /bundle parse\/eval, framework boot, initial create and paint/);
-  assert.match(costSpaceSource, /x-axis is a separate shipping-cost proxy/);
+  assert.match(costSpaceSource, /x-axis is a separate static shipping cost/);
   assert.match(costSpaceSource, /production network transfer is not inside FCP/);
   assert.match(scaleTrendsSource, /Local\/cached bundle: view attach/);
   assert.match(methodSource, /workload-defined content boundary, not cold browser-navigation FCP/);

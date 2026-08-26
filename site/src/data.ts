@@ -78,6 +78,12 @@ export interface BenchRecord {
   contractVersion?: number | string | null;
   commitPolicy?: 'every-tick' | 'final-state' | null;
   derivedFrom?: { kind: string; metrics: string[] };
+  artifact?: {
+    path: string;
+    sha256: string;
+    flavor: 'web' | 'lynx';
+    section: 'whole-artifact' | 'lepusCode.root';
+  };
   workClassification?: {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;

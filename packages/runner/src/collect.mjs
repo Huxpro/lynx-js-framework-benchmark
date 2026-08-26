@@ -51,7 +51,7 @@ const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
-const isBenchmarkRecord = (r) => r.suite !== 'bundle';
+const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite);
 const isRankingEligible = (record) => record.rankingEligible !== false;
 const isComparisonVisible = (record) => isRankingEligible(record)
   || record.descriptiveEligible === true
@@ -1652,7 +1652,7 @@ const buildHistory = ({
 
   const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
     const cohortRecords = current.records.filter((record) => record.harness === cohort.harness
-      && record.environment === cohort.environment);
+      && (record.environment === cohort.environment || record.suite === 'bundle-scale'));
     const matrixRecords = completeMatrixRecords(
       cohortRecords.filter((record) => !['pipeline', 'storm'].includes(record.suite)),
       cohort.entryIds,
@@ -1662,7 +1662,9 @@ const buildHistory = ({
       !matrixSet.has(record)
       && ['pipeline', 'storm'].includes(record.suite)
       && isComparisonVisible(record));
-    return [...matrixRecords, ...descriptiveExactRecords].map((record) => {
+    const descriptiveStaticRecords = cohortRecords.filter((record) =>
+      record.suite === 'bundle-scale' && record.descriptiveEligible === true);
+    return [...matrixRecords, ...descriptiveExactRecords, ...descriptiveStaticRecords].map((record) => {
       const sourceEntry = record.sourceEntry ?? record.entry;
       const syntheticRun = {
         meta: {

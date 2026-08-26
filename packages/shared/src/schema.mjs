@@ -51,6 +51,7 @@ export const BOUNDARIES = {
   listFlingRate: 'list-fixed-velocity-fling-materialized-cells-divided-by-elapsed',
   listMaterializationDistribution: 'list-visible-cell-materialization-distribution',
   bundle: 'static',
+  bundleScale: 'static-bundle-artifact-at-startup-scale',
 };
 
 const STAT_FIELDS = ['n', 'median', 'mean', 'std', 'min', 'max', 'p95', 'ci95'];

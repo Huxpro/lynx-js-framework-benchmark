@@ -1249,6 +1249,13 @@ test('history audits every run but publishes only complete source-defined featur
     && cell.fixture.declared === false
     && cell.reason === 'list-fixture-not-declared'));
   assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
+  const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
+  assert.equal(bundleScale.length, 144);
+  assert.equal(out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale').length, 1423);
+  assert.ok(bundleScale.every((record) => record.rankingEligible === false
+    && record.descriptiveEligible === true
+    && record.runFile === null
+    && record.artifact?.sha256?.length === 64));
   assert.equal(out.history.sources.length, out.sources.runFiles.length);
   assert.deepEqual(
     out.history.sources.map((source) => source.runFile),
@@ -1271,6 +1278,9 @@ test('history audits every run but publishes only complete source-defined featur
     file.includes('2026-08-26T11-5') && file.includes('issue-30-')), false);
   const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
     .map((index) => out.history.records[index]);
+  assert.equal(currentRecords.filter((record) => record.suite === 'bundle-scale').length, 144);
+  assert.ok(currentRecords.filter((record) => record.suite === 'bundle-scale')
+    .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
   const stormOperations = currentRecords.filter((record) =>
     record.suite === 'storm' && record.metric === 'operationTime');
   assert.equal(stormOperations.length, 28);
