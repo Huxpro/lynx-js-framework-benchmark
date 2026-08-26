@@ -22,7 +22,8 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
+- record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit,
+  plus nullable contract version / commit policy dimensions;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
@@ -30,6 +31,8 @@ These are the only files/fields that require an update when their real-world inp
 - per-repetition wire endpoint observations: `detailSamples`;
 - per-repetition pipeline controls in `detailSamples`: requested/committed rows, the complete
   ElementPAPI call multiset, and the intercepted host-surface receipt;
+- per-repetition storm controls in `detailSamples`: the versioned declared stimulus, actual pointer
+  issue offsets, rAF-observed state transitions, and terminal state;
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
@@ -53,6 +56,9 @@ Everything else is derived, including:
 - `n`, min/max, mean, median, standard deviation, p95, and 95% confidence interval;
 - `outsidePapiTime`, materialized only by `collect` by subtracting the six synchronous
   ElementPAPI self-time series from each aligned `operationTime` source sample;
+- storm `contractPass`, `coalescingRatio`, and wire-per-tick metrics, materialized only by `collect`
+  from aligned raw schedules, transitions, counts, and wire totals. A semantic every-tick miss is
+  descriptive `contract-failed` data with `dnfCount: 0`; timeouts and driver failures are DNF;
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;

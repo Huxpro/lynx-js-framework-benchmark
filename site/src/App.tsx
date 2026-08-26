@@ -9,6 +9,7 @@ import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
 import { PipelineAttribution } from './components/PipelineAttribution';
+import { StormCoalescing } from './components/StormCoalescing';
 import { RankedBars } from './components/RankedBars';
 import { ResponsiveCopy } from './components/ResponsiveCopy';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
@@ -392,6 +393,7 @@ function AppContent({
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
             {harness === 'web' && <PipelineAttribution theme={theme} selected={activeSelected} />}
+            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
           {harness === 'native' && <NativeCoverage />}
         </>

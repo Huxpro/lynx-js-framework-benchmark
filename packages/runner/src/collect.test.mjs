@@ -1253,6 +1253,33 @@ test('history audits every run but publishes only complete source-defined featur
   );
   assert.equal(currentWeb.entryIds.length, 7);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
+  assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-08-26T11-52-48-65160668d8d9-issue-30-final-state-acceptance-v2.json',
+  ), true);
+  assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-08-26T11-53-17-65160668d8d9-issue-30-every-tick-evidence-v2.json',
+  ), true);
+  const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
+    .map((index) => out.history.records[index]);
+  const stormOperations = currentRecords.filter((record) =>
+    record.suite === 'storm' && record.metric === 'operationTime');
+  assert.equal(stormOperations.length, 28);
+  assert.equal(stormOperations.filter((record) =>
+    record.commitPolicy === 'final-state'
+    && record.rankEligible
+    && record.comparabilityStatus === 'comparable'
+    && record.dnfCount === 0).length, 14);
+  assert.equal(stormOperations.filter((record) =>
+    record.commitPolicy === 'every-tick'
+    && !record.rankEligible
+    && record.descriptiveEligible
+    && record.comparabilityStatus === 'contract-failed'
+    && record.dnfCount === 0).length, 14);
+  assert.equal(stormOperations.every((record) =>
+    record.samples.length === 1 && record.detailSamples.length === 1), true);
+  assert.equal(currentRecords.filter((record) =>
+    record.suite === 'storm' && record.metric !== 'operationTime')
+    .every((record) => record.samples.length === 1 && record.detailSamples == null), true);
   assert.equal(out.history.sources.some((source) =>
     source.entryIds.includes('octane-pr-791')), true);
 

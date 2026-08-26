@@ -2,6 +2,21 @@
 // run observations first; entry manifests are discovered automatically.
 import latest from '../../results/latest.json';
 
+export interface StormDetail {
+  contractVersion?: number;
+  commitPolicy?: 'every-tick' | 'final-state';
+  ticks?: number;
+  tickIntervalMs?: number;
+  scheduleToleranceMs?: number;
+  mutationWidth?: Record<string, unknown>;
+  observation?: Record<string, unknown>;
+  action?: Record<string, unknown>;
+  actualIssueOffsetsMs?: number[];
+  transitions?: { atMs: number; state: unknown; issuedTicks: number }[];
+  finalState?: unknown;
+  expectedFinalState?: unknown;
+}
+
 export interface BenchRecord {
   suite: string;
   harness: string;
@@ -22,20 +37,20 @@ export interface BenchRecord {
   max?: number | null;
   value?: number | null;
   samples: number[] | null;
-  detail: {
+  detail: ({
     byName?: Record<string, { messages: number; bytes: number }>;
     requestedRows?: number;
     committedRows?: number;
     callMultiset?: Record<string, number>;
     surfaceNames?: string[];
-  } | null;
-  detailSamples?: {
+  } & StormDetail) | null;
+  detailSamples?: ({
     byName?: Record<string, { messages: number; bytes: number }>;
     requestedRows?: number;
     committedRows?: number;
     callMultiset?: Record<string, number>;
     surfaceNames?: string[];
-  }[] | null;
+  } & StormDetail)[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
   attemptedCount?: number;
@@ -55,11 +70,14 @@ export interface BenchRecord {
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
   comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
-  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work';
+  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work' | 'contract-failed';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
   descriptiveEligible?: boolean;
+  contractVersion?: number | null;
+  commitPolicy?: 'every-tick' | 'final-state' | null;
+  derivedFrom?: { kind: string; metrics: string[] };
   workClassification?: {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;
@@ -72,6 +90,12 @@ export interface BenchRecord {
     committedRows?: number;
     callMultiset?: Record<string, number>;
     surfaceNames?: string[];
+  };
+  stormControl?: StormDetail & {
+    status: 'controlled' | 'invalid' | 'incomplete' | 'contract-failed';
+    reason?: string;
+    passedSamples?: number;
+    observedSamples?: number;
   };
   sourceEntry?: string;
   sourceMedian?: number | null;
@@ -419,7 +443,10 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
   // deceptively fast value.
   const records = historyRecordsForCheckpoint(checkpoint)
     .filter((record) => record.rankEligible !== false
-      || record.descriptiveEligible === true);
+      || record.descriptiveEligible === true
+      || (record.comparabilityStatus === 'incomplete-work'
+        && record.n === 0
+        && record.dnfCount > 0)) as BenchRecord[];
   const harnesses = checkpoint.harnesses.map((cohort) => ({
     harness: cohort.harness,
     environment: cohort.environment,
@@ -510,6 +537,8 @@ export interface RecordFilter {
   environment?: string;
   boundary?: string;
   unit?: string;
+  contractVersion?: number;
+  commitPolicy?: 'every-tick' | 'final-state';
 }
 
 export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
@@ -525,7 +554,9 @@ export function filterRecords(records: BenchRecord[], filter: RecordFilter): Ben
     && (filter.metric == null || r.metric === filter.metric)
     && (filter.environment == null || r.environment === filter.environment)
     && (filter.boundary == null || r.boundary === filter.boundary)
-    && (filter.unit == null || r.unit === filter.unit),
+    && (filter.unit == null || r.unit === filter.unit)
+    && (filter.contractVersion == null || r.contractVersion === filter.contractVersion)
+    && (filter.commitPolicy == null || r.commitPolicy === filter.commitPolicy),
   );
 }
 

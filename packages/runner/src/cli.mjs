@@ -2,7 +2,8 @@
 // lynx-bench CLI.
 //
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
-//                  [--suite table,startup,pipeline] [--reps N] [--quick] [--label x]
+//                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
+//                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
 //   lynx-bench preflight
 //   lynx-bench collect
@@ -11,7 +12,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-import { TABLE_CASES } from '@lynx-bench/shared/workloads';
+import {
+  STORM_CASES,
+  STORM_COMMIT_POLICIES,
+  TABLE_CASES,
+} from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
@@ -92,15 +97,30 @@ async function cmdRun(args) {
   const cases = caseNames
     ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
     : TABLE_CASES;
+  const commitPolicies = list(args.commit) ?? STORM_COMMIT_POLICIES;
+  const unknownPolicies = commitPolicies.filter((policy) =>
+    !STORM_COMMIT_POLICIES.includes(policy));
+  if (unknownPolicies.length) {
+    throw new Error(`unknown storm commit policy/policies: ${unknownPolicies.join(', ')}`);
+  }
+  const stormCases = STORM_CASES.filter((kase) =>
+    (caseNames == null || caseNames.includes(kase.name))
+    && commitPolicies.includes(kase.commitPolicy));
+  if (caseNames) {
+    const knownCases = new Set([...TABLE_CASES, ...STORM_CASES].map((kase) => kase.name));
+    const unknownCases = caseNames.filter((name) => !knownCases.has(name));
+    if (unknownCases.length) throw new Error(`unknown case(s): ${unknownCases.join(', ')}`);
+  }
   const suites = list(args.suite)
-    ?? (harness === 'web' ? ['table', 'startup', 'pipeline'] : ['table', 'startup']);
-  const unknownSuites = suites.filter((suite) => !['table', 'startup', 'pipeline'].includes(suite));
+    ?? (harness === 'web' ? ['table', 'startup', 'pipeline', 'storm'] : ['table', 'startup']);
+  const unknownSuites = suites.filter((suite) =>
+    !['table', 'startup', 'pipeline', 'storm'].includes(suite));
   if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
   if (harness === 'native') {
-    if (suites.includes('pipeline')) {
+    if (suites.includes('pipeline') || suites.includes('storm')) {
       throw new Error(
-        'The pipeline suite is unsupported on Native: no framework-neutral ElementPAPI seam exists.',
+        'The pipeline and storm suites are Web-only; use the standard Native table/startup matrix.',
       );
     }
     if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
@@ -343,7 +363,11 @@ async function cmdRun(args) {
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
 
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
-  console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
+  console.log(
+    `[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; `
+    + `storm: ${stormCases.map((c) => `${c.name}/${c.commitPolicy}`).join(', ')}; `
+    + `scales: ${scales.join(', ')}; reps=${reps}; stormReps=${stormReps}`,
+  );
 
   // Preflight in the same browser configuration that will measure.
   const preflight = await (async () => {
@@ -365,7 +389,7 @@ async function cmdRun(args) {
   });
 
   const { records, executablePath, browserVersion } = await runWebHarness({
-    entries, cases, suites, scales, reps, stormReps, startupReps,
+    entries, cases, stormCases, suites, scales, reps, stormReps, startupReps,
   });
   if (browserVersion !== preflight.browser.version
     || executablePath !== preflight.browser.executablePath) {
@@ -423,7 +447,11 @@ function cmdList() {
       : 'no dist';
     console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}`);
   }
-  console.log('\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ') + ', startup, pipeline');
+  console.log(
+    '\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ')
+    + ', updateStorm, selectStorm, startup, pipeline; storm policies: '
+    + STORM_COMMIT_POLICIES.join(', '),
+  );
 }
 
 const args = parseArgs(process.argv.slice(2));

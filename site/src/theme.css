@@ -1411,6 +1411,23 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 .pipeline-methodology { margin-top: 0.35rem; color: var(--text-secondary); font-size: 0.72rem; }
 .pipeline-methodology summary { width: fit-content; min-height: 2rem; padding: 0.35rem 0; cursor: pointer; font-weight: 650; }
 .pipeline-methodology p { max-width: var(--measure-copy); margin: 0.1rem 0 0; line-height: 1.55; }
+.storm-coalescing { margin-top: 1.35rem; }
+.storm-cell-rail { margin-block: 0.7rem 0.9rem; }
+.storm-policy-grid { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.storm-policy { min-width: 0; border-top: 2px solid var(--border); padding-top: 0.55rem; }
+.storm-policy > header { display: flex; align-items: baseline; justify-content: space-between; gap: 0.7rem; margin-bottom: 0.45rem; }
+.storm-policy > header b { font: 0.76rem/1.2 ui-monospace, Menlo, monospace; color: var(--text-primary); }
+.storm-policy > header span { color: var(--text-secondary); font-size: 0.7rem; text-align: right; }
+.storm-table-wrap { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+.storm-table { width: 100%; min-width: 43rem; border-collapse: collapse; font-size: 0.7rem; }
+.storm-table th, .storm-table td { padding: 0.38rem 0.45rem; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+.storm-table thead th { color: var(--text-muted); font-weight: 600; }
+.storm-table th:first-child { text-align: left; }
+.storm-table tbody th { color: var(--text-primary); font-weight: 600; }
+.storm-table tbody th i { display: inline-block; width: 0.48rem; height: 0.48rem; margin-right: 0.35rem; border-radius: 2px; }
+.storm-table small { color: var(--text-muted); margin-left: 0.2rem; }
+.storm-table tr[data-outcome='pass'] strong { color: var(--good); }
+.storm-table tr[data-outcome='fail'] strong, .storm-table tr[data-outcome='dnf'] strong { color: var(--bad); }
 .visualization-appendix {
   margin-top: 0.42rem;
   border-top: 1px solid var(--border);
@@ -1875,6 +1892,7 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .coverage-ledger summary > span:last-child { text-align: left; }
   .coverage-cells { grid-template-columns: 1fr; padding-left: 0.25rem; }
   .bar-label { max-width: 6.5rem; }
+  .storm-policy-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 25rem) {

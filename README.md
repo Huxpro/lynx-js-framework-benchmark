@@ -16,7 +16,7 @@ See [docs/DATA_MODEL.md](./docs/DATA_MODEL.md).
 
 ```bash
 pnpm install
-pnpm bench run            # Web table + startup + pipeline → results/runs/<stamp>-<machine>.json
+pnpm bench run            # Web table + startup + pipeline + storm → results/runs/<stamp>-<machine>.json
 pnpm bench collect        # explicitly regenerate the derived results/latest.json cache
 pnpm site:dev             # regenerates the cache, then starts the results site
 ```
@@ -117,6 +117,7 @@ pnpm bench run --entry vue-vapor --case select --scale 10000 --reps 20   # one c
 pnpm bench run --quick                                                   # fast full sweep
 pnpm bench run --suite startup                                           # one suite
 pnpm bench run --suite pipeline --case select --scale 1000 --reps 20     # host-boundary attribution
+pnpm bench run --suite storm --case selectStorm --commit final-state      # neutral coalescing contract
 pnpm bench list                                                          # entries & cases
 pnpm bench preflight                                                     # machine calibration only
 ```
@@ -124,10 +125,11 @@ pnpm bench preflight                                                     # machi
 Every `run` writes an independent source run file stamped with a machine fingerprint and
 **preflight calibration score** (a fixed CPU probe in the same browser); `collect` merges any
 number of run files — from any machines — into `results/latest.json`, newest-per-cell,
-per-machine, with source-run calibration attached to every record. Charts use
-`comparisonRecords`, selected from the single run with the broadest **featured-entry** coverage
-(then featured matrix coverage), so Lab-heavy, partial, or cross-machine runs cannot replace the
-public ranking. Opt-in Lab entries use one complete historical run per entry; millisecond fields
+per-machine, with source-run calibration attached to every record. The weighted charts use the
+single run with the broadest **featured-entry** coverage (then featured matrix coverage), so
+Lab-heavy, partial, or cross-machine runs cannot replace the public ranking. Dedicated pipeline
+and storm views additionally attach one coherent current campaign per exact contract; those
+records cannot enter the weighted score. Opt-in Lab entries use one complete historical run per entry; millisecond fields
 are scaled by source-score / comparison-score and marked as estimates. Non-time fields remain
 explicitly historical because the CPU probe cannot calibrate them.
 `run` refreshes the derived cache immediately; site dev/build refresh it again before loading.
@@ -149,14 +151,15 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | --- | --- | --- |
 | time | Web `latency`/`fcp`/`settled`; Native `latency` and pipeline startup where available | real input; harness-specific boundaries are stored on every record |
 | element pipeline | Web-only synchronous ElementPAPI segment self-time/calls + outside-PAPI residual | dedicated capture page; raw tree/call controls gate derived comparisons; Native is unsupported |
+| storm semantics | Web-only elapsed time, observable frames/ticks, contract outcome, wire bytes/tick | dedicated shared-driver page; every-tick failure is descriptive data, final-state permits coalescing |
 | dual-thread | `btsCpu` / `mtsCpu` | CDP sampling profiler attached per realm (page + `lynx-bg` worker) |
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
 
 Cases: the krausest superset (`create` 1k/3k/5k/10k/20k/30k, `replace`, `append1k`,
 `update10th`, standard preselected-row `select`, `swap`, `remove`, standard `clear@1k`
-plus `clear@10k`) + storms (50 update / 30 select sequential
-ticks) at 1k/3k/5k/10k/20k/30k +
+plus `clear@10k`) + shared-driver Web storms (50 update / 30 select pointer ticks,
+both every-tick and final-state policies) at 1k/10k + the separately versioned Native matrix +
 startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
 post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these
 are never ranked as FCP. See

@@ -20,6 +20,12 @@ import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
 import { derivePipelineSample, emitPipelineRecords } from './pipeline-attribution.mjs';
+import {
+  deriveStormSample,
+  emitStormRecords,
+  stormContractPass,
+  stormContractReceipt,
+} from './storm-contract.mjs';
 
 const SETTLE_MS = 30;
 
@@ -216,6 +222,64 @@ async function measurePipelineOnce({ page, kase, spec, scale, timeoutMs }) {
     requestedRows: scale,
     committedRows,
   });
+}
+
+const waitMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function stormClickTargets(page, kase) {
+  if (kase.action.kind === 'button') {
+    const rect = await evalX(page, `x.buttonRect(${JSON.stringify(kase.action.label)})`);
+    if (!rect) throw new Error(`no storm button geometry for ${kase.action.label}`);
+    return [rect];
+  }
+  if (kase.action.kind === 'alternating-cells') {
+    const targets = [];
+    for (const rowIndex of kase.action.rowIndices) {
+      const rect = await evalX(page, `x.cellRect(${rowIndex}, ${JSON.stringify(kase.action.cls)})`);
+      if (!rect) throw new Error(`no storm cell geometry for row ${rowIndex}`);
+      targets.push(rect);
+    }
+    return targets;
+  }
+  throw new Error(`unknown storm action ${kase.action.kind}`);
+}
+
+async function measureStormOnce({ page, profiler, kase }) {
+  const targets = await stormClickTargets(page, kase);
+  const baseline = kase.observation.kind === 'label-suffix'
+    ? await evalX(page, `x.labelAt(${kase.observation.rowIndex})`)
+    : null;
+  const config = { ...stormContractReceipt(kase), baseline };
+  const wireBefore = await wireSnapshot(page);
+  await profiler.start();
+  const armed = page.evaluate(
+    ({ stormConfig, timeoutMs }) => globalThis.__x.armStorm(stormConfig, timeoutMs),
+    { stormConfig: config, timeoutMs: kase.timeoutMs },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const scheduleStart = performance.now();
+  let capture;
+  let cpu;
+  try {
+    try {
+      for (let tick = 0; tick < kase.ticks; tick++) {
+        if (tick > 0) {
+          const remaining = tick * kase.tickIntervalMs - (performance.now() - scheduleStart);
+          if (remaining > 0) await waitMs(remaining);
+        }
+        await clickAt(page, targets[tick % targets.length], `storm tick ${tick + 1}`);
+      }
+      capture = await armed;
+    } catch (error) {
+      await page.evaluate(() => globalThis.__x.abortStorm());
+      capture = await armed;
+      capture.driverError = String(error);
+    }
+  } finally {
+    cpu = await profiler.stop();
+  }
+  const wire = wireDelta(wireBefore, await wireSnapshot(page));
+  return { capture, cpu, wire };
 }
 
 async function measureOnce({ page, profiler, kase, spec, timeoutMs }) {
@@ -490,6 +554,101 @@ export async function runPipelineSuite({
   return records;
 }
 
+export async function runStormSuite({
+  entry,
+  cases,
+  scales,
+  reps,
+  browser,
+  origin,
+  cdp,
+  log,
+}) {
+  const records = [];
+  const bundle = bundleFor(entry, { rows: 0 });
+  if (!bundle) {
+    log(`  [unsupported] ${entry.id} storm: no rows-0 web bundle`);
+    return records;
+  }
+  const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
+  for (const kase of cases) {
+    for (const scale of kase.scales.filter((candidate) => scales.includes(candidate))) {
+      const samples = [];
+      const failures = [];
+      let dnfCount = 0;
+      for (let rep = 0; rep < reps; rep++) {
+        const fresh = await openBenchPage({
+          browser,
+          origin,
+          bundleUrl,
+          cdp,
+          harnessPath: '/storm',
+        });
+        let measured = null;
+        try {
+          await waitReady(fresh.page);
+          await ensurePre(fresh.page, kase, scale);
+          await gc(fresh.page);
+          const profiler = await profilerFor(fresh.page, fresh.attach);
+          measured = await measureStormOnce({ page: fresh.page, profiler, kase });
+          if (measured.capture?.driverError) {
+            dnfCount += 1;
+            failures.push({
+              rep,
+              category: 'storm-input-driver-failure',
+              phase: 'storm',
+              evidence: measured,
+              message: measured.capture.driverError,
+            });
+            continue;
+          }
+          if (measured.capture?.timedOut) {
+            dnfCount += 1;
+            failures.push({
+              rep,
+              category: 'storm-terminal-timeout',
+              phase: 'storm',
+              timeoutMs: kase.timeoutMs,
+              evidence: measured,
+              message: `storm terminal state timed out after ${kase.timeoutMs}ms`,
+            });
+            continue;
+          }
+          samples.push(deriveStormSample({ kase, ...measured }));
+        } catch (error) {
+          dnfCount += 1;
+          failures.push({
+            rep,
+            category: 'storm-driver-or-capture-failure',
+            phase: 'storm',
+            message: String(error),
+            ...(measured ? { evidence: measured } : {}),
+          });
+        } finally {
+          await fresh.page.close();
+        }
+      }
+      records.push(...emitStormRecords({
+        entry,
+        kase,
+        scale,
+        samples,
+        dnfCount,
+        failures,
+        attemptedCount: reps,
+      }));
+      const passed = samples.filter((sample) => stormContractPass(sample.control)).length;
+      const summary = summarize(samples.map((sample) => sample.operationMs));
+      log(
+        `  ${entry.id} storm ${kase.name}/${kase.commitPolicy}@${scale}: `
+        + `${summary ? `${summary.median.toFixed(1)}ms` : 'DNF'} `
+        + `(pass=${passed}/${samples.length}${dnfCount ? `, dnf=${dnfCount}` : ''})`,
+      );
+    }
+  }
+  return records;
+}
+
 async function runStormCases({
   entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
 }) {
@@ -733,6 +892,7 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
 export async function runWebHarness({
   entries,
   cases,
+  stormCases = [],
   suites,
   scales,
   reps = 7,
@@ -762,6 +922,18 @@ export async function runWebHarness({
           cases,
           scales,
           reps,
+          browser,
+          origin: server.origin,
+          cdp,
+          log,
+        }));
+      }
+      if (suites.includes('storm')) {
+        records.push(...await runStormSuite({
+          entry,
+          cases: stormCases,
+          scales,
+          reps: stormReps,
           browser,
           origin: server.origin,
           cdp,

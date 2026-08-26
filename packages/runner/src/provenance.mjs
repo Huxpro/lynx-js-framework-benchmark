@@ -7,7 +7,12 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workloads';
+import {
+  STORM_CASES,
+  STORM_CONTRACT_VERSION,
+  STORM_SELECT_TICKS,
+  STORM_UPDATE_TICKS,
+} from '@lynx-bench/shared/workloads';
 
 import { repoRoot } from './entries.mjs';
 
@@ -105,9 +110,11 @@ export function runtimeReceipt(root = repoRoot()) {
 export function workloadReceipt(root = repoRoot()) {
   const files = [
     'packages/shared/src/workloads.mjs',
+    'packages/shared/src/driver-client.mjs',
     'packages/shared/src/page-instrument.mjs',
     'packages/shared/src/pipeline.mjs',
     'packages/runner/src/pipeline-attribution.mjs',
+    'packages/runner/src/storm-contract.mjs',
   ];
   const hashes = Object.fromEntries(files.map((relative) => [
     relative, fileSha256(path.join(root, relative)),
@@ -116,6 +123,19 @@ export function workloadReceipt(root = repoRoot()) {
     files: hashes,
     sha256: sha256(JSON.stringify(hashes)),
     stormTicks: { updateStorm: STORM_UPDATE_TICKS, selectStorm: STORM_SELECT_TICKS },
+    stormContract: {
+      version: STORM_CONTRACT_VERSION,
+      cases: STORM_CASES.map((kase) => ({
+        name: kase.name,
+        commitPolicy: kase.commitPolicy,
+        ticks: kase.ticks,
+        tickIntervalMs: kase.tickIntervalMs,
+        scheduleToleranceMs: kase.scheduleToleranceMs,
+        mutationWidth: kase.mutationWidth,
+        observation: kase.observation,
+        action: kase.action,
+      })),
+    },
   };
 }
 
@@ -150,7 +170,7 @@ export function samplingPolicy({ reps, stormReps, startupReps }) {
     acceptance: {
       table: 'dom-predicate-completed-before-timeout',
       pipeline: 'dom-predicate-completed-with-tree-and-call-multiset-controls',
-      storm: 'dom-predicate-and-minimum-one-rpc-message-each-direction-per-tick',
+      storm: 'terminal-state-observed-with-explicit-commit-outcome-and-input-schedule-controls',
       startup: 'first-content-observed-before-timeout',
     },
     aggregation: 'median-with-t-distribution-ci95',
