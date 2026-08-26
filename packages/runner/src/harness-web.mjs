@@ -19,6 +19,7 @@ import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
+import { derivePipelineSample, emitPipelineRecords } from './pipeline-attribution.mjs';
 
 const SETTLE_MS = 30;
 
@@ -114,10 +115,18 @@ async function profilerFor(page, attach) {
   return new RealmProfiler(attach.client ?? attach._client, sessions);
 }
 
-async function openBenchPage({ browser, origin, bundleUrl, cdp, viewW = 800, viewH = 640 }) {
+async function openBenchPage({
+  browser,
+  origin,
+  bundleUrl,
+  cdp,
+  viewW = 800,
+  viewH = 640,
+  harnessPath = '/',
+}) {
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   page.on('pageerror', (err) => console.error('  [pageerror]', String(err).slice(0, 200)));
-  await page.goto(`${origin}/`, { waitUntil: 'load' });
+  await page.goto(`${origin}${harnessPath}`, { waitUntil: 'load' });
   const attach = await attachToPageAndWorkers(cdp, origin);
   attach.client = cdp;
   await page.evaluate(
@@ -187,6 +196,27 @@ const RESET_EACH_SAMPLE = new Set([
   'remove',
   'clear',
 ]);
+
+async function measurePipelineOnce({ page, kase, spec, scale, timeoutMs }) {
+  const armed = page.evaluate(
+    ({ spec: predicate, timeout }) => globalThis.__x.armPipeline(predicate, timeout),
+    { spec, timeout: timeoutMs },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  if (kase.trigger.button) {
+    await clickButton(page, kase.trigger.button(scale));
+  } else {
+    await clickCell(page, kase.trigger.cell.rowIndex, kase.trigger.cell.cls);
+  }
+  const { ms, pipeline } = await armed;
+  const committedRows = await evalX(page, 'x.rowCount()');
+  return derivePipelineSample({
+    operationMs: ms,
+    capture: pipeline,
+    requestedRows: scale,
+    committedRows,
+  });
+}
 
 async function measureOnce({ page, profiler, kase, spec, timeoutMs }) {
   const wireBefore = await wireSnapshot(page);
@@ -357,6 +387,107 @@ export async function runTableSuite({
   return runStormCases({
     entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
   });
+}
+
+export async function runPipelineSuite({
+  entry,
+  cases,
+  scales,
+  reps,
+  browser,
+  origin,
+  cdp,
+  log,
+}) {
+  const records = [];
+  const bundle = bundleFor(entry, { rows: 0 });
+  if (!bundle) {
+    log(`  [unsupported] ${entry.id} pipeline: no rows-0 web bundle`);
+    return records;
+  }
+  const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
+  const { page } = await openBenchPage({
+    browser,
+    origin,
+    bundleUrl,
+    cdp,
+    harnessPath: '/pipeline',
+  });
+  try {
+    await waitReady(page);
+
+    // Match the table suite's steady-state warmup, but keep every warmup call
+    // outside an active PAPI capture.
+    for (let i = 0; i < 2; i++) {
+      await clickButton(page, CREATE_BUTTON[1000]);
+      await untilPredicate(page, { type: 'rowCount', value: 1000 });
+      await clickButton(page, 'Clear');
+      await untilPredicate(page, { type: 'rowCount', value: 0 });
+    }
+    await settle(page);
+
+    for (const kase of cases) {
+      if (kase.freshPage) continue;
+      for (const scale of kase.scales.filter((candidate) => scales.includes(candidate))) {
+        const samples = [];
+        const failures = [];
+        let dnfCount = 0;
+        for (let rep = 0; rep < reps; rep++) {
+          if (rep === 0 || RESET_EACH_SAMPLE.has(kase.name)) {
+            if (RESET_EACH_SAMPLE.has(kase.name) && kase.pre !== 'empty') {
+              await clickButton(page, 'Clear');
+              await untilPredicate(page, { type: 'rowCount', value: 0 });
+            }
+            await ensurePre(page, kase, scale);
+          } else if (kase.name === 'select') {
+            await clickCell(page, 5, 'col-label');
+            await untilPredicate(page, { type: 'dangerAt', index: 5 });
+            await settle(page);
+          }
+          await gc(page);
+          const spec = await resolvePredicate(page, kase, scale);
+          try {
+            samples.push(await measurePipelineOnce({
+              page,
+              kase,
+              spec,
+              scale,
+              timeoutMs: kase.timeoutMs ?? 120000,
+            }));
+          } catch (error) {
+            if (!String(error).includes('timeout')) throw error;
+            dnfCount += 1;
+            failures.push({
+              rep,
+              category: 'pipeline-predicate-timeout',
+              phase: 'pipeline',
+              message: String(error),
+            });
+            log(`  [dnf] ${entry.id} pipeline ${kase.name}@${scale} rep${rep}`);
+          }
+          await settle(page);
+        }
+        records.push(...emitPipelineRecords({
+          entry,
+          kase,
+          scale,
+          samples,
+          dnfCount,
+          failures,
+          attemptedCount: reps,
+        }));
+        const operation = summarize(samples.map((sample) => sample.operationMs));
+        log(
+          `  ${entry.id} pipeline ${kase.name}@${scale}: `
+          + `${operation ? `${operation.median.toFixed(1)}ms` : 'DNF'} `
+          + `(n=${operation?.n ?? 0}${dnfCount ? `, dnf=${dnfCount}` : ''})`,
+        );
+      }
+    }
+  } finally {
+    await page.close();
+  }
+  return records;
 }
 
 async function runStormCases({
@@ -623,6 +754,18 @@ export async function runWebHarness({
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
           browser, origin: server.origin, cdp, log, includeMemory,
+        }));
+      }
+      if (suites.includes('pipeline')) {
+        records.push(...await runPipelineSuite({
+          entry,
+          cases,
+          scales,
+          reps,
+          browser,
+          origin: server.origin,
+          cdp,
+          log,
         }));
       }
       if (suites.includes('startup')) {

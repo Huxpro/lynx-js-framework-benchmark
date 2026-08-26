@@ -22,8 +22,20 @@ export interface BenchRecord {
   max?: number | null;
   value?: number | null;
   samples: number[] | null;
-  detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
-  detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
+  detail: {
+    byName?: Record<string, { messages: number; bytes: number }>;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  } | null;
+  detailSamples?: {
+    byName?: Record<string, { messages: number; bytes: number }>;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  }[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
   attemptedCount?: number;
@@ -43,7 +55,7 @@ export interface BenchRecord {
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
   comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
-  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
+  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
@@ -51,6 +63,14 @@ export interface BenchRecord {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;
     observed: Record<string, unknown> | null;
+  };
+  pipelineControl?: {
+    status: 'controlled' | 'invalid' | 'incomplete';
+    reason?: string;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
   };
   sourceEntry?: string;
   sourceMedian?: number | null;

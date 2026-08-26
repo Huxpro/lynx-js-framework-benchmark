@@ -198,3 +198,47 @@ export const DRIVER_CLIENT_JS = `(() => {
     });
   };
 })()`;
+
+const PIPELINE_ARM_JS = `  // Dedicated ElementPAPI capture primitive. This is
+  // injected only in /pipeline; the ordinary latency driver remains byte-for-byte unchanged.
+  x.armPipeline = (spec, timeoutMs) =>
+    new Promise((resolve, reject) => {
+      if (typeof globalThis.__LYNX_PAPI_BEGIN__ !== 'function'
+        || typeof globalThis.__LYNX_PAPI_END__ !== 'function') {
+        reject(new Error('ElementPAPI instrument is unavailable'));
+        return;
+      }
+      let t0 = null;
+      const onDown = () => {
+        t0 = performance.now();
+        globalThis.__LYNX_PAPI_BEGIN__();
+      };
+      window.addEventListener('pointerdown', onDown, { capture: true, once: true });
+      const deadline = performance.now() + (timeoutMs ?? 120000);
+      const tick = () => {
+        if (t0 != null && checkPredicate(spec)) {
+          const finishedAt = performance.now();
+          const pipeline = globalThis.__LYNX_PAPI_END__();
+          resolve({ ms: finishedAt - t0, pipeline });
+          return;
+        }
+        if (performance.now() > deadline) {
+          window.removeEventListener('pointerdown', onDown, { capture: true });
+          globalThis.__LYNX_PAPI_ABORT__?.();
+          reject(new Error('pipeline predicate timeout: ' + JSON.stringify(spec)
+            + ' rowCount=' + x.rowCount()));
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
+`;
+
+// Build the dedicated capture driver from the canonical driver text so it
+// shares exactly the same predicate implementation instead of forking one.
+export const PIPELINE_DRIVER_CLIENT_JS = DRIVER_CLIENT_JS.replace(
+  '  x.until = (spec, timeoutMs = 120000) =>',
+  `${PIPELINE_ARM_JS}  x.until = (spec, timeoutMs = 120000) =>`,
+);

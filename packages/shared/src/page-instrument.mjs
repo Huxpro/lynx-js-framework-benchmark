@@ -1,3 +1,5 @@
+import { classifyPapiMethod, PAPI_SEGMENTS } from './pipeline.mjs';
+
 // Framework-neutral instrumentation installed in the harness page BEFORE
 // @lynx-js/web-core boots. Three independent instruments:
 //
@@ -173,5 +175,108 @@ ${NEUTRALIZE_LYNX_PROFILE};
       // bootstrap URL) back to the worker's real identity (e.g. "lynx-bg").
       stats.workers.push({ url: abs, name: opts && opts.name, blobUrl });
     }
+  };
+})();`;
+
+// ElementPAPI attribution is deliberately separate from PAGE_INSTRUMENT_JS.
+// The ordinary table/startup page must not pay wrapper overhead, because a new
+// capture dimension is never allowed to mutate an already-published timing.
+// server.mjs installs this script only on the dedicated /pipeline page.
+//
+// web-core creates ElementPAPIs in the outer page realm, then Object.assigns
+// them onto a same-origin sandboxed MTS iframe window. Intercept that one
+// recognizable assignment (the source owns __FlushElementTree), wrap every
+// function on the surface, and leave all unrelated Object.assign calls intact.
+const CLASSIFY_PAPI_SOURCE = classifyPapiMethod.toString();
+const PAPI_SEGMENTS_JSON = JSON.stringify(PAPI_SEGMENTS);
+
+export const PAPI_PAGE_INSTRUMENT_JS = `(() => {
+  const segmentNames = ${PAPI_SEGMENTS_JSON};
+  const classify = ${CLASSIFY_PAPI_SOURCE};
+  const originalAssign = Object.assign;
+  const wrapperCache = new WeakMap();
+  let active = null;
+  let surfaceNames = [];
+
+  const emptySegment = () => ({ calls: 0, selfMs: 0, byName: {} });
+  const emptyCapture = () => ({
+    version: 1,
+    surfaceNames: [...surfaceNames],
+    segments: Object.fromEntries(segmentNames.map((name) => [name, emptySegment()])),
+  });
+  const clone = (value) => JSON.parse(JSON.stringify(value));
+
+  globalThis.__LYNX_PAPI_BEGIN__ = () => {
+    if (active != null) throw new Error('ElementPAPI capture is already active');
+    active = emptyCapture();
+  };
+  globalThis.__LYNX_PAPI_END__ = () => {
+    if (active == null) throw new Error('ElementPAPI capture is not active');
+    const result = active;
+    active = null;
+    delete result.stack;
+    result.surfaceNames = [...surfaceNames];
+    return clone(result);
+  };
+  globalThis.__LYNX_PAPI_ABORT__ = () => { active = null; };
+  globalThis.__LYNX_PAPI_SURFACE__ = () => [...surfaceNames];
+
+  const wrap = (name, original) => {
+    let byName = wrapperCache.get(original);
+    if (!byName) {
+      byName = new Map();
+      wrapperCache.set(original, byName);
+    }
+    if (byName.has(name)) return byName.get(name);
+    const wrapped = function (...args) {
+      const capture = active;
+      if (capture == null) return Reflect.apply(original, this, args);
+      const parentFrame = capture.stack?.[capture.stack.length - 1] ?? null;
+      if (!capture.stack) capture.stack = [];
+      const frame = { childMs: 0 };
+      capture.stack.push(frame);
+      const start = performance.now();
+      try {
+        return Reflect.apply(original, this, args);
+      } finally {
+        const elapsed = performance.now() - start;
+        capture.stack.pop();
+        if (parentFrame) parentFrame.childMs += elapsed;
+        const selfMs = Math.max(0, elapsed - frame.childMs);
+        const segment = capture.segments[classify(name)];
+        segment.calls += 1;
+        segment.selfMs += selfMs;
+        const method = segment.byName[name] ?? (segment.byName[name] = { calls: 0, selfMs: 0 });
+        method.calls += 1;
+        method.selfMs += selfMs;
+      }
+    };
+    byName.set(name, wrapped);
+    return wrapped;
+  };
+
+  const instrumentSurface = (source) => {
+    if (!source || typeof source.__FlushElementTree !== 'function') return source;
+    const copy = originalAssign({}, source);
+    surfaceNames = Object.keys(source)
+      .filter((name) => name.startsWith('__') && typeof source[name] === 'function')
+      .sort();
+    for (const name of surfaceNames) copy[name] = wrap(name, source[name]);
+    return copy;
+  };
+
+  Object.assign = function (target, ...sources) {
+    let intercepted = false;
+    const mapped = sources.map((source) => {
+      const instrumented = instrumentSurface(source);
+      if (instrumented !== source) intercepted = true;
+      return instrumented;
+    });
+    const result = originalAssign(target, ...mapped);
+    // web-core installs the complete surface once for this LynxView. Restore
+    // the intrinsic immediately so unrelated framework Object.assign calls
+    // during the measured operation pay no interception overhead.
+    if (intercepted) Object.assign = originalAssign;
+    return result;
   };
 })();`;
