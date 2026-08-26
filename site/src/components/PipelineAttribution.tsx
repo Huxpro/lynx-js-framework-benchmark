@@ -17,6 +17,12 @@ const SEGMENTS = [
 const scaleLabel = (scale: number) => scale >= 1000 ? `${scale / 1000}k` : String(scale);
 const cellKey = (workload: string, scale: number) => `${workload}@${scale}`;
 const fmtShare = (share: number) => `${share < 0.1 ? share.toFixed(2) : share.toFixed(1)}%`;
+const fmtSegmentTime = (value: number) => {
+  if (value === 0) return '0';
+  if (value < 0.01) return `${(value * 1000).toFixed(value < 0.001 ? 2 : 1)}µs`;
+  if (value < 1) return `${value.toFixed(3)}ms`;
+  return fmtMs(value);
+};
 
 export function PipelineAttribution({
   theme,
@@ -220,7 +226,7 @@ export function PipelineAttribution({
                   <span key={segment.name}>
                     <i className={`is-${segment.name}`} />
                     <b>{segment.name}</b>
-                    <strong>{fmtMs(segment.time)}</strong>
+                    <strong>{fmtSegmentTime(segment.time)}</strong>
                     <small>{segment.calls} {text('calls', '次调用')}</small>
                   </span>
                 ))}

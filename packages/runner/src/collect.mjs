@@ -638,6 +638,10 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
+    // ElementPAPI attribution has its own complete-campaign selector below.
+    // It is descriptive evidence and must never replace or inflate the main
+    // table/startup comparison cohort.
+    && record.suite !== 'pipeline'
     && record.harness === harness
     && isComparisonVisible(record)
     && isPublishableRecord(run, record)
@@ -1328,7 +1332,10 @@ const buildHistory = ({
   const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
     const cohortRecords = current.records.filter((record) => record.harness === cohort.harness
       && record.environment === cohort.environment);
-    const matrixRecords = completeMatrixRecords(cohortRecords, cohort.entryIds);
+    const matrixRecords = completeMatrixRecords(
+      cohortRecords.filter((record) => record.suite !== 'pipeline'),
+      cohort.entryIds,
+    );
     const matrixSet = new Set(matrixRecords);
     const pipelineRecords = cohortRecords.filter((record) =>
       !matrixSet.has(record) && record.suite === 'pipeline' && isComparisonVisible(record));
