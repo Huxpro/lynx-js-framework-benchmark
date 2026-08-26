@@ -1,0 +1,46 @@
+{
+  "id": "octane-c163-program",
+  "label": "Octane #163 · compiled program",
+  "framework": "octane",
+  "frameworkVersion": "#163 C7 @ 2afa1266",
+  "config": "compiled main-thread block program with slot-state adoption",
+  "fixture": "octane-lynx-table-v1",
+  "coordinates": {
+    "invalidation": "runtime",
+    "recompute": "block",
+    "sharing": "compile-time-code",
+    "staging": "code",
+    "residency": { "firstFrame": "main", "steadyState": "background" },
+    "handover": "slot-state"
+  },
+  "ablation": {
+    "against": "octane-c163-interpreted",
+    "axis": "staging",
+    "delta": "ops→code",
+    "coupled": ["sharing", "handover"],
+    "provenance": {
+      "kind": "same-build-matrix",
+      "evidence": "https://github.com/Huxpro/octane/blob/2afa126627858c716e821ab9623fdce7a2cc8855/benchmarks/lynx-table/stages/papi-run.mjs",
+      "varyingBuildParameters": ["cell"]
+    }
+  },
+  "tags": ["lab", "axis-backfill", "octane-163"],
+  "tier": "lab",
+  "color": "#6d28d9",
+  "presentation": {
+    "order": 141,
+    "colorLight": "#6d28d9",
+    "colorDark": "#c4b5fd"
+  },
+  "kind": "historical-observation",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "test/lynx-c6-attribution",
+    "commit": "2afa126627858c716e821ab9623fdce7a2cc8855",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "node benchmarks/lynx-table/stages/papi-run.mjs --cells octane,octane-mts-program,octane-direct",
+    "buildParameters": { "cell": "octane-mts-program" },
+    "measurement": "https://github.com/Huxpro/octane/blob/f1792a20525ebc97d20a33e618c0a6daf8aaacca/benchmarks/lynx-table/stages/results/c163-c7-flush-30000.json"
+  }
+}

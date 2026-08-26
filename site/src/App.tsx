@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
+import { AxisEffects } from './components/AxisEffects';
 import { Legend } from './components/Legend';
 import { ListCoverage } from './components/ListCoverage';
 import { HeatGrid } from './components/HeatGrid';
@@ -434,6 +435,7 @@ function AppContent({
             {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
           <ListCoverage harness={harness} />
+          {harness === 'web' && snapshot.id === 'current-main' && <AxisEffects />}
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (

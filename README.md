@@ -224,7 +224,8 @@ entries/<id>/
 Nothing else changes — the runner and site discover entries by scanning `entries/*/entry.json`.
 
 **Tiers.** `"tier": "featured"` entries form the default public view; `"tier": "lab"` entries
-(versions, prior releases, PRs, flag permutations) stay hidden until the site's **⚗ Lab** mode.
+(versions, prior releases, PRs, flag permutations) stay outside the featured ranking. Their
+controlled coordinate experiments appear only in the dedicated Lab-derived axis view.
 Historical Lab entries can remain calibration-only instead of being rerun: time fields are shown
 as `≈ calibrated`, while heap/wire/bundle/count fields retain their historical label. Any subset
 is addressable, for example `/?entries=octane,octane-prior,octane-hux1,octane-hux2&lab=1`.
@@ -254,7 +255,7 @@ contract remains true for the Block core. See
 packages/shared/    workload contract, page driver, wire instrument, stats, schema
 packages/runner/    lynx-bench CLI: run / collect / preflight / list; web + native harnesses
 entries/            one directory per framework×config, vendored bundles + provenance
-results/            runs/ (one file per invocation) + latest.json (collected)
+results/            runs/ + immutable axis-runs/ Lab sources + latest.json (collected)
 site/               the results site (React + Vite + Observable Plot)
 docs/               DESIGN.md, METHODOLOGY.md, DATA_MODEL.md
 ```

@@ -3,6 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { validateCoordinates } from '@lynx-bench/shared/coordinates';
+
 export function repoRoot() {
   let dir = path.dirname(new URL(import.meta.url).pathname);
   while (dir !== '/') {
@@ -22,6 +24,7 @@ export function discoverEntries({ only = null, root = repoRoot() } = {}) {
     if (manifest.id !== id) {
       throw new Error(`entry ${id}: manifest id mismatch (${manifest.id})`);
     }
+    validateCoordinates(manifest.coordinates, id);
     if (only && !only.includes(id)) continue;
     out.push({
       ...manifest,

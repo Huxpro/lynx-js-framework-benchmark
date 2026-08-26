@@ -1289,6 +1289,54 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   padding-top: 1.1rem;
   border-top: 1px solid var(--border);
 }
+
+.axis-effects { margin-top: 3rem; }
+.axis-tabs { margin: 1rem 0; }
+.axis-tabs .chip { display: inline-flex; align-items: center; gap: 0.45rem; }
+.axis-tabs small { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.axis-tabs .chip[aria-selected='true'] { background: var(--surface-2); color: var(--text-primary); font-weight: 650; }
+.axis-summary,
+.axis-instrument-placeholder,
+.axis-pair {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-1);
+}
+.axis-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.25rem;
+  padding: 0.8rem 1rem;
+  color: var(--text-muted);
+}
+.axis-summary b { color: var(--text-primary); }
+.axis-instrument-placeholder { padding: 0.75rem 1rem; border-style: dashed; }
+.axis-pair { margin-top: 1rem; padding: 1rem; }
+.axis-pair-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.axis-pair-head > div { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: center; }
+.axis-status { border-radius: 999px; padding: 0.15rem 0.5rem; font-size: 0.75rem; }
+.axis-status.is-validated { color: #116329; background: #dafbe1; }
+.axis-status.is-coupled { color: #7a4b00; background: #fff8c5; }
+.axis-status.is-invalid { color: #a40e26; background: #ffebe9; }
+:root[data-theme='dark'] .axis-status.is-validated { color: #7ee787; background: #12261a; }
+:root[data-theme='dark'] .axis-status.is-coupled { color: #eac54f; background: #332a13; }
+:root[data-theme='dark'] .axis-status.is-invalid { color: #ff7b72; background: #32171b; }
+.axis-context,
+.axis-source,
+.axis-warning { margin: 0.65rem 0; color: var(--text-muted); }
+.axis-warning { border-left: 3px solid var(--warning, #d29922); padding-left: 0.75rem; }
+.axis-pair details { margin-top: 0.8rem; }
+.axis-pair summary { cursor: pointer; color: var(--text-muted); }
+.axis-effect-table-wrap { overflow-x: auto; margin-top: 0.6rem; }
+.axis-effect-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.axis-effect-table th,
+.axis-effect-table td { border-bottom: 1px solid var(--border); padding: 0.5rem; text-align: left; vertical-align: top; }
+.axis-effect-table small { display: block; color: var(--text-muted); margin-top: 0.18rem; }
+.axis-effect-table .is-negative { color: var(--good, #1a7f37); }
+.axis-effect-table .is-positive { color: var(--danger, #cf222e); }
+.axis-ceiling { margin-top: 1rem; padding: 0.9rem; border: 1px dashed var(--border); border-radius: 8px; }
+.axis-ceiling h4 { margin: 0; }
+.axis-ceiling > p { color: var(--text-muted); max-width: 78ch; }
 .section-heading { max-width: var(--measure-lead); }
 .section-heading h2 { margin: 0.08rem 0 0.18rem; font-size: 1.35rem; line-height: var(--leading-heading); }
 .section-heading .section-copy { margin: 0; max-width: var(--measure-copy); color: var(--text-secondary); line-height: var(--leading-copy); text-wrap: pretty; }

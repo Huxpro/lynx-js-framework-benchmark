@@ -57,10 +57,19 @@ legacy final endpoint sample. The schema-v2 `lynx-for-web-interp` label is norma
 interpreter lane; all other legacy Web labels default to JIT 1×. It never treats stored aggregate
 statistics as authoritative.
 
+Historical attribution campaigns that cannot be expressed as current runner invocations live in
+`results/axis-runs/*.json`. These compact, immutable Lab sources retain the artifact/blob pointer,
+the exact per-cell sample arrays, and the controls captured by that campaign. They do not contain
+statistics or residuals: the collector derives both, including `outsidePapiTime`, from aligned raw
+samples. Axis-run observations feed only the axis-effect view; they never enter the ordinary run
+archive, comparison cohorts, history checkpoints, or rankings.
+
 ### When an entry is built or vendored
 
-- `entries/*/entry.json`: entry identity, tier, presentation color, provenance, commit, and bundle
-  checksums, plus an optional versioned `listFixture` capability declaration;
+- `entries/*/entry.json`: entry identity, tier, presentation color, provenance, commit, optional
+  six-axis coordinates/ablation/ceiling relation, and bundle checksums. Coordinate relations are
+  claims about source configuration; whether they pass control validation is always derived. An
+  optional versioned `listFixture` capability declaration records list-suite support;
 - `entries/*/dist/**`: the actual web/native bundles.
 
 Bundle byte/gzip/section metrics are **not** benchmark observations. They are recalculated from
@@ -81,6 +90,9 @@ Everything else is derived, including:
   uses the selected harness artifact; MTS gzip exists only for a structurally readable
   `lepusCode.root`. Pareto membership and FCP error-bar coordinates are site derivatives. The FCP
   side is selected from exactly one execution regime (Web JIT 1× by default), never pooled;
+- the complete `axisEffects` view: coordinate classification, ablation-control verdicts,
+  descriptive and attributable effect tables, direction consistency, #200 instrument readiness,
+  ceiling-to-ceiling axis effects, and point-to-own-ceiling implementation residue;
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
@@ -172,6 +184,13 @@ Everything else is derived, including:
     join the same entry, harness, scale, and one normalized execution regime; a frontier containing
     more than one regime fails closed. Historical checkpoints cannot reuse a current artifact when
     their exact per-scale bytes were not retained (retroactive only where those bytes exist).
+16. Axis attribution is Lab-only and append-only with respect to published measurements. Its source
+    observations may create only `axisEffects`; deleting that derived view cannot remove or change
+    a comparison record, history record, ranking input, or source sample.
+17. Manifest-declared ablations are never trusted as effects. Only a same-codebase, same-fixture,
+    same-build-matrix pair observed in one controlled run and changing exactly one coordinate can
+    enter an axis-effect table. Coupled, cross-framework, and failed-control pairs remain visible
+    evidence but are non-attributable.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

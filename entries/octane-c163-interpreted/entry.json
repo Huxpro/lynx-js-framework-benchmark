@@ -1,0 +1,35 @@
+{
+  "id": "octane-c163-interpreted",
+  "label": "Octane #163 · interpreted template",
+  "framework": "octane",
+  "frameworkVersion": "#163 C7 @ 2afa1266",
+  "config": "block template interpreted as host operations; pre-inversion adoption handover",
+  "fixture": "octane-lynx-table-v1",
+  "coordinates": {
+    "invalidation": "runtime",
+    "recompute": "block",
+    "sharing": "compile-time-data",
+    "staging": "ops",
+    "residency": { "firstFrame": "main", "steadyState": "background" },
+    "handover": "tree-description"
+  },
+  "tags": ["lab", "axis-backfill", "octane-163"],
+  "tier": "lab",
+  "color": "#8b5cf6",
+  "presentation": {
+    "order": 140,
+    "colorLight": "#7c3aed",
+    "colorDark": "#a78bfa"
+  },
+  "kind": "historical-observation",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "test/lynx-c6-attribution",
+    "commit": "2afa126627858c716e821ab9623fdce7a2cc8855",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "node benchmarks/lynx-table/stages/papi-run.mjs --cells octane,octane-mts-program,octane-direct",
+    "buildParameters": { "cell": "octane" },
+    "measurement": "https://github.com/Huxpro/octane/blob/f1792a20525ebc97d20a33e618c0a6daf8aaacca/benchmarks/lynx-table/stages/results/c163-c7-flush-30000.json"
+  }
+}

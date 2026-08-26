@@ -458,6 +458,15 @@ export interface EntryMeta {
   historyChannel?: string;
   supersededBy?: string;
   configuration?: EntryConfiguration;
+  fixture?: string;
+  coordinates?: AxisCoordinates;
+  ablation?: {
+    against: string;
+    axis: AxisName;
+    delta: string;
+    coupled?: AxisName[];
+  };
+  ceilingFor?: string;
   tags: string[];
   /** featured = default public view; lab = calibrated author-development
    * variants; archive = source evidence that never enters a public cohort. */
@@ -475,6 +484,113 @@ export interface EntryMeta {
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
 }
 
+export type AxisName = 'invalidation' | 'recompute' | 'sharing' | 'staging' | 'residency' | 'handover';
+
+export interface AxisCoordinates {
+  invalidation: string;
+  recompute: string;
+  sharing: string;
+  staging: string;
+  residency: { firstFrame: string; steadyState: string };
+  handover: string;
+}
+
+export interface AxisEffectMetric {
+  suite: string;
+  harness: string;
+  environment: string;
+  workload: string;
+  scale: number;
+  metric: string;
+  boundary: string;
+  unit: string;
+  against: { median: number; ci95: number | null; min: number; max: number; n: number };
+  entry: { median: number; ci95: number | null; min: number; max: number; n: number };
+  medianDelta: number;
+  relativeDelta: number | null;
+  ci95: { low: number; high: number; method: string } | null;
+  rangesDisjoint: boolean | null;
+  direction: 'positive' | 'negative' | 'zero';
+}
+
+export interface AxisEffectPair {
+  id: string;
+  tier: 'lab';
+  against: string;
+  entry: string;
+  axis: AxisName;
+  delta: string;
+  coupled: AxisName[];
+  coordinates: {
+    against: AxisCoordinates | null;
+    entry: AxisCoordinates | null;
+    context: Record<string, string> | null;
+  };
+  validation: {
+    status: 'validated' | 'coupled' | 'invalid';
+    reasons: string[];
+    run: {
+      sourceRunFile: string;
+      generatedAt: string;
+      machineId: string;
+      harnesses: string[];
+      scales: number[];
+      cells: number;
+      minimumReps: number;
+    } | null;
+  };
+  attributable: boolean;
+  effects: AxisEffectMetric[];
+  descriptiveEffects: AxisEffectMetric[];
+  ceiling: {
+    separated: boolean;
+    axisEffect: {
+      againstCeiling: string;
+      entryCeiling: string;
+      sourceRunFile: string;
+      effects: AxisEffectMetric[];
+    } | null;
+    implementationResidue: Partial<Record<'against' | 'entry', {
+      ceilingEntry: string;
+      sourceRunFile: string;
+      effects: AxisEffectMetric[];
+    }>>;
+  };
+}
+
+export interface AxisEffectView {
+  version: string;
+  tier: 'lab';
+  derivedOnly: true;
+  policy: {
+    crossFrameworkPointsAreDescriptiveOnly: true;
+    uncontrolledPairsAreAttributable: false;
+    coupledPairsAreAttributable: false;
+    model: 'effect-tables-only';
+    interactionFitting: false;
+    localCoordinateContextRequired: true;
+    ceilingAndImplementationResidueSeparated: true;
+  };
+  classifiedEntryIds: string[];
+  unclassifiedEntryIds: string[];
+  pairs: AxisEffectPair[];
+  axes: {
+    axis: AxisName;
+    pairCount: number;
+    attributablePairCount: number;
+    pairs: AxisEffectPair[];
+    directionConsistency: {
+      key: string;
+      pairCount: number;
+      positive: number;
+      negative: number;
+      zero: number;
+      consistent: boolean;
+    }[];
+    instrument: { issue: string; status: 'observed' | 'pending'; effectCount: number } | null;
+  }[];
+}
+
 // Featured charts use one physical run. Opt-in Lab records are historical and
 // explicitly tagged; millisecond values are calibrated to that run's probe.
 const collected = latest as unknown as {
@@ -485,9 +601,11 @@ const collected = latest as unknown as {
   nativeCoverage: NativeCoverage;
   pipelineCoverage: PipelineCoverage;
   listCoverage: ListCoverage;
+  axisEffects: AxisEffectView;
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
+export const AXIS_EFFECTS = collected.axisEffects;
 export interface WebRegime {
   jsRegime: 'jit' | 'interp';
   jsFlags: string;

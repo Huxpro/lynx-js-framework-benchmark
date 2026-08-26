@@ -69,6 +69,50 @@ preserved so a native-engine harness can consume Native-eligible entries (see Ha
 `tier` controls public visibility, while `harnesses` independently controls which complete
 comparison matrix the entry joins.
 
+### Six-axis coordinates and ablations
+
+Lab attribution classifies an entry only when its manifest supplies the complete coordinate:
+
+```jsonc
+{
+  "fixture": "js-framework-benchmark-keyed-table-v1",
+  "coordinates": {
+    "invalidation": "runtime",
+    "recompute": "block",
+    "sharing": "compile-time-code",
+    "staging": "code",
+    "residency": { "firstFrame": "main", "steadyState": "background" },
+    "handover": "tree-description"
+  },
+  "ablation": {
+    "against": "base-entry",
+    "axis": "residency",
+    "delta": "background/background→main/background",
+    "coupled": ["staging", "handover"],
+    "provenance": {
+      "kind": "same-build-matrix",
+      "evidence": "scripts/build-example.mjs",
+      "varyingBuildParameters": ["ENABLE_IFR"]
+    }
+  }
+}
+```
+
+The ordered axes are ① invalidation (`runtime | compile-time`), ② recompute granularity
+(`tree | component | block | slot`), ③ sharing (`none | runtime-taught | compile-time-data |
+compile-time-code`), ④ staging (`ops | data | code | native`), ⑤ residency (independent
+`firstFrame` and `steadyState`, each `background | main | native`), and ⑥ handover
+(`none | tree-description | operation-stream | data-delta | slot-state | native`). Missing
+coordinates mean “unclassified”; a present coordinate must be complete and use this vocabulary.
+
+An ablation declaration is a hypothesis, not a result. Collection proves that both sides share a
+framework/source codebase, fixture, source commit and build recipe; that only the declared build
+parameters vary; that one physical run contains an identical measurement cell for both entries;
+and that the coordinate diff is exactly the declared axis plus explicitly named coupled axes. A
+single-axis pair that passes every check is attributable. A controlled pair with coupled axes is
+retained as descriptive evidence. Cross-framework or failed-control pairs are retained with their
+rejection reasons and cannot contribute to an axis effect.
+
 ### Workload contract
 
 All entries implement the same app — a krausest-style table with a fixed **driver contract**
@@ -262,6 +306,27 @@ derived dataset entirely.
 Octane's custom renderer does not expose the common Performance pipeline boundary in the tested
 Explorer build. It therefore publishes no current Native metric; older private-protocol
 observations remain historical appendix evidence only.
+
+## Axis-effect view
+
+`collect` creates a dedicated Lab-only `axisEffects` projection after ordinary cohort selection.
+It consumes controlled current runs plus compact historical sources in `results/axis-runs/`, but
+does not feed data back into `records`, `comparisonRecords`, `labComparisonRecords`, history, or
+rankings. The view follows four hard rules:
+
+1. Cross-framework comparisons are descriptive context, never an axis effect.
+2. An ablation that fails its control proof cannot enter axis attribution.
+3. The output is a per-pair effect table with median delta, relative delta, conservative 95% CI,
+   raw-range overlap, and direction. It fits no regression or interaction model; every estimate is
+   a local derivative in that pair's full coordinate and workload context.
+4. A hand-written ceiling is a separate implementation. Where both endpoints have ceilings, the
+   axis effect is `target ceiling − base ceiling`; implementation residue is independently
+   `measured point − its own ceiling`. A missing endpoint ceiling leaves the axis estimate empty
+   rather than folding residue into it.
+
+Axis ④ additionally reports the status of its required ElementPAPI instrument from #200. Until an
+attributable pair carries those segment measurements, the UI renders a pending placeholder and
+does not substitute latency, CPU, or another proxy.
 
 ## Runs, incremental collection, calibration
 
