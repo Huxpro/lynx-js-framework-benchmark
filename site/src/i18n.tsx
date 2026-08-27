@@ -99,7 +99,7 @@ const CHECKPOINT_ZH: Record<string, { label: string; description: string }> = {
   },
   'current-main': {
     label: '当前 · 已合并上游',
-    description: '上游 Octane 更新到 d5175ca8，Huxpro/new-lynx block core 更新到 07115d67。在 11 个共享交互延迟单元上，上游为 React 的 0.83×，Hux 为上游的 1.00×。两个提交都晚于不可变的统一 replay，因此该 checkpoint 使用本次完整的七项原始 cohort；storm 实验仍仅保留为归档证据。',
+    description: '上游 Octane 更新到 d5175ca8，Huxpro/new-lynx block core 更新到 07115d67。在 11 个共享交互延迟单元上，上游为 React 的 0.85×，Hux 为上游的 0.99×。两个提交都晚于不可变的统一 replay，因此该 checkpoint 使用本次完整的七项原始 cohort；storm 实验仍仅保留为归档证据。',
   },
 };
 

@@ -1133,7 +1133,7 @@ const buildHistory = ({
     generatedAt: current.generatedAt,
     label: 'Current · merged upstream',
     description: 'Upstream Octane advances to d5175ca8 and the Huxpro/new-lynx block core to 07115d67. '
-      + 'Across 11 shared interaction-latency cells upstream is 0.83× React and Hux is 1.00× upstream. '
+      + 'Across 11 shared interaction-latency cells upstream is 0.85× React and Hux is 0.99× upstream. '
       + 'Both commits postdate the immutable unified replay, so this checkpoint uses its complete original '
       + 'seven-entry cohort; storm experiments remain archive evidence.',
     current: true,
