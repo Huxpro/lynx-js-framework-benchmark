@@ -10,6 +10,8 @@
 //   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
 //   OCTANE_NEW_BUILD an optional clean new-lynx checkout built with BENCH_CORE=block
 //   OCTANE_PR_791_BUILD an optional clean octanejs/octane PR #791 checkout
+//   OCTANE_SYNC_BUILD an optional clean Huxpro/octane upstream-sync branch head, built
+//                    with BENCH_CORE=block, measured beside the new-lynx entry it targets
 //
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
@@ -32,6 +34,8 @@ const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
 const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
 const OCTANE_NEW_BUILD = process.env.OCTANE_NEW_BUILD ?? null;
 const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
+const OCTANE_SYNC_BUILD = process.env.OCTANE_SYNC_BUILD ?? null;
+const OCTANE_SYNC_REF = process.env.OCTANE_SYNC_REF || 'chore/sync-upstream';
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
@@ -52,6 +56,7 @@ const PRESENTATION = {
   'octane-hux1': { order: 101, colorLight: '#9f3c0d', colorDark: '#ffaf87' },
   'octane-hux2': { order: 102, colorLight: '#702a08', colorDark: '#ffc09f' },
   'octane-dom': { order: 103, colorLight: '#4f1d05', colorDark: '#ffd6bf' },
+  'octane-sync': { order: 107, colorLight: '#5b21b6', colorDark: '#c4b5fd' },
 };
 
 const sha256 = (file) =>
@@ -553,11 +558,58 @@ if (
   console.log('[vendor] octane-prior skipped (set OCTANE_PRIOR_BUILD to a built checkout)');
 }
 
+// A `new-lynx` sync branch measured beside the `new-lynx` head it targets. The
+// featured `octane-hux` identity is pinned to `new-lynx` by verify-entries, and
+// rightly: the public entry is that branch, not whatever is stacked on it. A
+// sync candidate is still worth measuring in the same physical run as the head
+// it will replace and the upstream release it carries, because that is the only
+// arrangement in which the three numbers share a machine.
+function vendorOctaneSyncCandidate(buildDir) {
+  const id = 'octane-sync';
+  if (!wants(id)) return;
+  const appDir = path.join(buildDir ?? '', 'benchmarks/lynx-table/app');
+  if (!buildDir || !fs.existsSync(path.join(appDir, 'dist-block'))) {
+    console.log(`[vendor] ${id} skipped (set OCTANE_SYNC_BUILD to a block-core build)`);
+    return;
+  }
+  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  const version = JSON.parse(
+    fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id,
+    tier: 'lab',
+    harnesses: ['web'],
+    label: 'Octane (Hux sync)',
+    framework: 'octane',
+    frameworkVersion: version,
+    config: `.tsrx, keyed @for; block core (scoped writes); Huxpro/octane ${OCTANE_SYNC_REF} ${sourceGit.commit.slice(0, 12)}`,
+    historyChannel: null,
+    tags: ['optimized', 'snapshot', 'block-core'],
+    color: '#5b21b6',
+    source: {
+      url: 'https://github.com/Huxpro/octane',
+      commit: sourceGit.commit,
+      dirty: false,
+      builtAt: sourceDate(buildDir),
+      buildEnv: { BENCH_CORE: 'block', BENCH_BLOCK_MODE: 'scoped' },
+    },
+    ref: OCTANE_SYNC_REF,
+    buildCommand: 'BENCH_CORE=block node scripts/build-octane-upstream.mjs <clean-sync-branch-checkout>',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(appDir, rows === 0 ? 'dist-block' : `dist-block-rows${rows}`),
+    })),
+  });
+}
+
 vendorNewLynxBlockSnapshot(
   'octane-hux',
   'Octane (Hux)',
   OCTANE_NEW_BUILD,
 );
+
+vendorOctaneSyncCandidate(OCTANE_SYNC_BUILD);
 
 vendorOctanePr791(OCTANE_PR_791_BUILD);
 

@@ -1,0 +1,50 @@
+{
+  "id": "octane-sync",
+  "label": "Octane (Hux sync)",
+  "framework": "octane",
+  "frameworkVersion": "0.1.47",
+  "config": ".tsrx, keyed @for; block core (scoped writes); Huxpro/octane chore/sync-upstream-v0-1-47 63652cfd69c8",
+  "tags": [
+    "optimized",
+    "snapshot",
+    "block-core"
+  ],
+  "tier": "lab",
+  "harnesses": [
+    "web"
+  ],
+  "color": "#5b21b6",
+  "presentation": {
+    "order": 107,
+    "colorLight": "#5b21b6",
+    "colorDark": "#c4b5fd"
+  },
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/Huxpro/octane",
+    "ref": "chore/sync-upstream-v0-1-47",
+    "commit": "63652cfd69c8476cc07a069b667b5ac86754772a",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_CORE=block node scripts/build-octane-upstream.mjs <clean-sync-branch-checkout>",
+    "builtAt": "2026-08-27T22:10:36+00:00",
+    "buildEnv": {
+      "BENCH_CORE": "block",
+      "BENCH_BLOCK_MODE": "scoped"
+    },
+    "sha256": {
+      "rows-0/main.web.bundle": "d3f324c9b79a4db38e4d33a7d8dcdcfb15d99fdb87406ce9e0610f1309162e28",
+      "rows-0/main.lynx.bundle": "e2c93e54fca64e2eedfd694bb844e65f27821bf806a2c70cfc592717e4dd7d67",
+      "rows-1000/main.web.bundle": "b38311e0bf7807d92a73b9c3f9381babd8b16a9b05d9ce0a09033d506448af2e",
+      "rows-1000/main.lynx.bundle": "96ca080a40a901830a4ddbbed56a123fcbe3a5028ab059e921d24b98ead128c3",
+      "rows-10000/main.web.bundle": "9176e8670561d26bf08370856e55b471c04566eeadc750b47847a00281878d94",
+      "rows-10000/main.lynx.bundle": "a131d2b643eacee45521a88355d06b6474e82231f99970086b524dd274cd439a",
+      "rows-30000/main.web.bundle": "edde854f79924f153b53a55930278ebb30650ea7c2b5b55e667361139b027ca2",
+      "rows-30000/main.lynx.bundle": "b7a6f205a568d6fdb736f57f5ad1645884cc8f147a7e9aa2ea8cd0249a67e0ff"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}
