@@ -10,6 +10,7 @@ const scaleTrends = fs.readFileSync(new URL('./components/ScaleTrends.tsx', impo
 const scaleComposite = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const responsiveCopy = fs.readFileSync(new URL('./components/ResponsiveCopy.tsx', import.meta.url), 'utf8');
 const historyRanking = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
+const pipelineAttribution = fs.readFileSync(new URL('./components/PipelineAttribution.tsx', import.meta.url), 'utf8');
 
 test('expanded exact-data tables scroll inside their card on narrow viewports', () => {
   const rule = css.match(/details\.data-table\s*\{([^}]*)\}/)?.[1] ?? '';
@@ -163,6 +164,20 @@ test('visualization appendices stay compact until their audited table is opened'
   assert.match(css, /\.appendix-table-scroll\s*\{/);
   assert.match(css, /max-height\s*:\s*30rem/);
   assert.match(css, /overflow\s*:\s*auto/);
+});
+
+test('pipeline attribution starts as a compact comparison and reveals one audit row at a time', () => {
+  const rail = css.match(/\.pipeline-cell-rail\s*\{([^}]*)\}/)?.[1] ?? '';
+  const summary = css.match(/\.pipeline-row-summary\s*\{([^}]*)\}/)?.[1] ?? '';
+
+  assert.match(rail, /grid-auto-flow\s*:\s*column/);
+  assert.match(rail, /overflow-x\s*:\s*auto/);
+  assert.match(summary, /min-height\s*:\s*2\.8rem/);
+  assert.match(pipelineAttribution, /const \[expandedEntry, setExpandedEntry\]/);
+  assert.match(pipelineAttribution, /aria-expanded=\{expanded\}/);
+  assert.match(pipelineAttribution, /expanded \? \(/);
+  assert.doesNotMatch(pipelineAttribution, /pipeline-lane-group|pipeline-track/);
+  assert.match(css, /grid-template-areas:[\s\S]*?'entry total toggle'/);
 });
 
 test('page and prose measures use the wide data workspace without losing readable line length', () => {
