@@ -1284,7 +1284,8 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(replay.minimumReps, 11);
   assert.equal(replay.cellKeys.length, 12);
   assert.equal(replay.cellKeys.includes('clear@1000'), true);
-  assert.equal(replay.checkpoints.length, webCheckpointIds.length);
+  assert.equal(replay.checkpoints.length, webCheckpointIds.length - 1);
+  assert.equal(replay.checkpoints.some(({ checkpointId }) => checkpointId === 'current-main'), false);
   const stablePeerCells = [];
   for (const replayCheckpoint of replay.checkpoints) {
     const checkpoint = out.history.checkpoints.find((candidate) =>

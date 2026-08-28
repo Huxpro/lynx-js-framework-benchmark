@@ -852,16 +852,27 @@ const buildHistoryReplays = ({ runs, checkpoints }) => {
     if (cohort.entryIds.includes('octane') && !sourceByEntry.octane) {
       throw new Error(`history replay has no Octane source for ${checkpoint.id}`);
     }
-    const activeRecordIndexes = [];
-    for (const [entryId, sourceEntryId] of Object.entries(sourceByEntry)) {
+    const replayCommitMismatch = Object.entries(sourceByEntry).find(([entryId, sourceEntryId]) => {
       const pointer = checkpoint.identityPointers.find((item) => item.entryId === entryId);
       const replayCommit = run.meta.entryCommits?.[sourceEntryId] ?? null;
-      if (!pointer || pointer.commit !== replayCommit) {
-        throw new Error(
-          `history replay commit mismatch for ${checkpoint.id}/${entryId}: `
-          + `${replayCommit ?? 'missing'} != ${pointer?.commit ?? 'missing checkpoint identity'}`,
-        );
-      }
+      return !pointer || pointer.commit !== replayCommit;
+    });
+    if (replayCommitMismatch) {
+      const [entryId, sourceEntryId] = replayCommitMismatch;
+      const pointer = checkpoint.identityPointers.find((item) => item.entryId === entryId);
+      const replayCommit = run.meta.entryCommits?.[sourceEntryId] ?? null;
+      // The rolling current checkpoint can legitimately advance beyond the
+      // immutable unified replay. In that case the site falls back to this
+      // checkpoint's complete original cohort. Historical checkpoints remain
+      // strict: a mismatch there means the replay mapping is wrong.
+      if (checkpoint.current) continue;
+      throw new Error(
+        `history replay commit mismatch for ${checkpoint.id}/${entryId}: `
+        + `${replayCommit ?? 'missing'} != ${pointer?.commit ?? 'missing checkpoint identity'}`,
+      );
+    }
+    const activeRecordIndexes = [];
+    for (const [entryId, sourceEntryId] of Object.entries(sourceByEntry)) {
       const byCell = new Map(replayRecords
         .filter((record) => record.entry === sourceEntryId)
         .map((record) => [historyReplayCellKey(record), record]));
@@ -1121,10 +1132,10 @@ const buildHistory = ({
     id: 'current-main',
     generatedAt: current.generatedAt,
     label: 'Current · merged upstream',
-    description: 'Upstream Octane advances from 0fc84da0 to 5227d7ba and now contains merged PR #791; '
-      + 'the seven-entry cohort still keeps Octane (Hux) fb8426e9 as a separate source identity. Across '
-      + '11 shared interaction cells upstream moves from 1.09× to 0.88× React. The public comparison '
-      + 'also uses the standards-aligned black-box workload, with storm experiments left as archive evidence.',
+    description: 'Upstream Octane advances to d5175ca8 and the Huxpro/new-lynx block core to 07115d67. '
+      + 'Across 11 shared interaction-latency cells upstream is 0.85× React and Hux is 0.99× upstream. '
+      + 'Both commits postdate the immutable unified replay, so this checkpoint uses its complete original '
+      + 'seven-entry cohort; storm experiments remain archive evidence.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
