@@ -118,7 +118,7 @@ dimensions. One record per (entry × workload × scale × metric):
 
 ```jsonc
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "meta": { "generatedAt": "…", "machine": { "id": "…", "platform": "…", "cpuModel": "…",
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
@@ -126,6 +126,8 @@ dimensions. One record per (entry × workload × scale × metric):
     "suite": "table" | "startup",
     "harness": "web" | "native",
     "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
+    "jsRegime": "jit",                  // Web: jit | jitless; Native: null
+    "cpuThrottle": 1,                    // Web CDP CPU multiplier; Native: null
     "entry": "vue-vdom",
     "workload": "update10th",
     "scale": 10000,
@@ -141,7 +143,8 @@ dimensions. One record per (entry × workload × scale × metric):
 ```
 
 **Comparability policy** (inherited): two records may be charted against each other only when
-`harness`, `environment`, `workload`, `scale`, `metric`, `boundary`, and `unit` all agree.
+`harness`, `environment`, `jsRegime`, `cpuThrottle`, `workload`, `scale`, `metric`, `boundary`,
+and `unit` all agree. Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
 
@@ -226,11 +229,15 @@ calibration output, `latest.json`, and every site score/visual are derived.
   score are embedded. Native files are atomically rewritten after every completed cell; the
   `meta.checkpoint` marker, `checkpointComplete`, stable device cohort, ordered lease chain,
   per-cell lease attribution, and 115-cell coverage ledger identify this resumable format.
+- Each Web run contains exactly one JS regime. Collection groups by physical machine × regime and
+  selects a coherent comparison run independently for each lane; no ranking table contains records
+  from more than one regime.
 - `bench preflight` (also auto-run before `run`) executes a fixed, versioned CPU probe in the
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
-  (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
+  (harness, environment, jsRegime, cpuThrottle, entry, workload, scale, metric, machineId);
+  cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
   one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured
   matrix coverage, then newest). Native comparison records require one complete current-commit

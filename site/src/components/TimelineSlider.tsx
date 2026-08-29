@@ -1,4 +1,9 @@
-import { BENCHMARK_HISTORY, TimelineSnapshot } from '../data';
+import {
+  BENCHMARK_HISTORY,
+  TimelineSnapshot,
+  WEB_REGIMES,
+  WebRegime,
+} from '../data';
 import { localizedCheckpoint, useI18n } from '../i18n';
 
 export function TimelineSlider({
@@ -9,6 +14,8 @@ export function TimelineSlider({
   onPageChange,
   harness,
   onHarnessChange,
+  regime,
+  onRegimeChange,
   theme,
   onThemeToggle,
   heatPalette,
@@ -21,6 +28,8 @@ export function TimelineSlider({
   onPageChange: (page: 'overview' | 'scale') => void;
   harness: string;
   onHarnessChange: (harness: string) => void;
+  regime: WebRegime;
+  onRegimeChange: (regime: WebRegime) => void;
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
   heatPalette: 'standard' | 'colorblind';
@@ -31,8 +40,12 @@ export function TimelineSlider({
   const checkpoint = BENCHMARK_HISTORY.checkpoints[index];
   const checkpointCopy = localizedCheckpoint(checkpoint, locale);
   const progress = snapshots.length > 1 ? (index / (snapshots.length - 1)) * 100 : 0;
-  const cohorts = checkpoint.harnesses.map((cohort) =>
-    `${cohort.harness === 'web' ? 'Web' : 'Native'} ${cohort.entryIds.length}${cohort.rankEligible ? '' : text(' observation', '（观察值）')}`);
+  const cohorts = checkpoint.harnesses.map((cohort) => {
+    const environment = cohort.harness === 'web'
+      ? `Web ${cohort.jsRegime === 'jitless' ? 'JITless' : 'JIT'} ${cohort.cpuThrottle ?? 1}×`
+      : 'Native';
+    return `${environment} ${cohort.entryIds.length}${cohort.rankEligible ? '' : text(' observation', '（观察值）')}`;
+  });
   return (
     <div className="timeline-sticky">
       <div className="timeline-workspace">
@@ -59,6 +72,28 @@ export function TimelineSlider({
                 >{candidate === 'web' ? 'Web' : 'Native'}</button>
               ))}
             </div>
+            {harness === 'web' && (
+              <div className="regime-switch" role="group" aria-label={text('JavaScript execution regime', 'JavaScript 执行政权')}>
+                {WEB_REGIMES.map((candidate) => {
+                  const available = checkpoint.harnesses.some((cohort) => cohort.harness === 'web'
+                    && cohort.jsRegime === candidate.jsRegime
+                    && cohort.cpuThrottle === candidate.cpuThrottle);
+                  return (
+                    <button
+                      key={candidate.id}
+                      type="button"
+                      aria-pressed={regime.jsRegime === candidate.jsRegime
+                        && regime.cpuThrottle === candidate.cpuThrottle}
+                      disabled={!available}
+                      onClick={() => onRegimeChange({
+                        jsRegime: candidate.jsRegime,
+                        cpuThrottle: candidate.cpuThrottle,
+                      })}
+                    >{candidate.label}</button>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="workspace-preferences">
             <button

@@ -22,7 +22,8 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit;
+- record identity: suite, harness, environment, Web-only `jsRegime` / `cpuThrottle`, entry,
+  workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
@@ -30,6 +31,12 @@ These are the only files/fields that require an update when their real-world inp
 - per-repetition wire endpoint observations: `detailSamples`;
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
+
+Schema v3 adds the Web JS-execution regime. Every schema-v3 Web record names `jsRegime` (`jit` or
+`jitless`) and `cpuThrottle` (a finite multiplier ≥1); Native records carry nulls and can never be
+assigned a Web regime. Schema-v2 Web records normalize to `{ jsRegime: "jit", cpuThrottle: 1 }`.
+The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
+keyed by machine × regime so the three Web lanes cannot overwrite, average, or rank together.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
@@ -52,6 +59,7 @@ Everything else is derived, including:
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
+- newest-per-cell archives and calibration metadata grouped by physical machine × Web regime;
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
 - comparability/work classification. Incomplete or unverified work and prospective
   sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in

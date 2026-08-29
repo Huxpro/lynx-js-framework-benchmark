@@ -200,6 +200,35 @@ summary:focus-visible,
 .harness-switch button + button { border-left: 1px solid var(--border); }
 .harness-switch button[aria-pressed='true'] { background: var(--text-primary); color: var(--surface-1); }
 
+.regime-switch {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.regime-switch button {
+  min-height: 1.9rem;
+  border: 0;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font: 600 0.7rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.22rem 0.48rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.regime-switch button + button { border-left: 1px solid var(--border); }
+.regime-switch button[aria-pressed='true'] { background: var(--text-primary); color: var(--surface-1); }
+.regime-switch button:disabled { cursor: not-allowed; opacity: 0.38; }
+.regime-disclaimer {
+  margin: -0.25rem 0 1.1rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface-1));
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
 .workspace-preferences {
   display: flex;
   align-items: center;
@@ -1522,12 +1551,15 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .site-title { font-size: 0.92rem; }
   .timeline-sticky { top: 0.2rem; margin-left: -0.25rem; margin-right: -0.25rem; }
   .timeline-workspace { border-radius: 0.65rem; }
-  .workspace-toolbar { min-height: 2.45rem; gap: 0.35rem; padding: 0.28rem 0.4rem; }
+  .workspace-toolbar { min-height: 2.45rem; flex-wrap: wrap; gap: 0.35rem; padding: 0.28rem 0.4rem; }
   .view-switch { min-width: 0; }
   .view-switch button { font-size: 0.74rem; padding-inline: 0.42rem; }
   .view-switch button::after { right: 0.38rem; left: 0.38rem; bottom: -0.31rem; }
-  .workspace-environment { gap: 0.3rem; font-size: 0.7rem; }
+  .workspace-environment { order: 3; width: 100%; margin-left: 0; gap: 0.3rem; font-size: 0.7rem; }
   .harness-switch button { min-height: 1.8rem; padding-inline: 0.48rem; font-size: 0.7rem; }
+  .regime-switch { margin-left: auto; }
+  .regime-switch button { min-height: 1.8rem; padding-inline: 0.4rem; font-size: 0.65rem; }
+  .workspace-preferences { margin-left: auto; }
   .theme-toggle,
   .palette-toggle { width: 1.85rem; min-height: 1.8rem; }
   .locale-toggle { min-width: 3.1rem; min-height: 1.8rem; padding-inline: 0.28rem; }

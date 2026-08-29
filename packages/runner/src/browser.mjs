@@ -59,7 +59,20 @@ async function freePort() {
   });
 }
 
-export async function launchBrowser({ headless = true } = {}) {
+export function chromiumArgs({ jit = 'jit' } = {}) {
+  if (jit !== 'jit' && jit !== 'jitless') throw new Error(`invalid jit regime: ${jit}`);
+  return [
+    jit === 'jit'
+      ? '--js-flags=--expose-gc'
+      : '--js-flags=--expose-gc --jitless',
+    '--enable-precise-memory-info',
+    '--disable-background-timer-throttling',
+    '--disable-renderer-backgrounding',
+    '--disable-backgrounding-occluded-windows',
+  ];
+}
+
+export async function launchBrowser({ headless = true, jit = 'jit' } = {}) {
   const executablePath = resolveChromium();
   const cdpPort = await freePort();
   const browser = await chromium.launch({
@@ -67,11 +80,7 @@ export async function launchBrowser({ headless = true } = {}) {
     executablePath,
     args: [
       `--remote-debugging-port=${cdpPort}`,
-      '--js-flags=--expose-gc',
-      '--enable-precise-memory-info',
-      '--disable-background-timer-throttling',
-      '--disable-renderer-backgrounding',
-      '--disable-backgrounding-occluded-windows',
+      ...chromiumArgs({ jit }),
     ],
   });
   return { browser, cdpPort, executablePath, browserVersion: browser.version() };

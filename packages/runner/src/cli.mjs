@@ -4,6 +4,7 @@
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
 //                  [--suite table,startup] [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
+//                  [--jit jit|jitless] [--cpu-throttle N]
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
@@ -81,6 +82,15 @@ const sha256Json = (value) => crypto.createHash('sha256')
 async function cmdRun(args) {
   const harness = args.harness ?? 'web';
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
+  const jit = args.jit ?? 'jit';
+  const cpuThrottle = args['cpu-throttle'] == null ? 1 : Number(args['cpu-throttle']);
+  if (jit !== 'jit' && jit !== 'jitless') throw new Error(`unknown jit regime: ${jit}`);
+  if (!Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
+    throw new Error(`--cpu-throttle must be a finite number >= 1; received ${args['cpu-throttle']}`);
+  }
+  if (harness === 'native' && (args.jit != null || args['cpu-throttle'] != null)) {
+    throw new Error('--jit and --cpu-throttle are Web-only; Native cohort policy is unchanged.');
+  }
 
   let entries = discoverEntries({ only: list(args.entry) });
   if (harness === 'native' && args.entry == null) {
@@ -330,6 +340,8 @@ async function cmdRun(args) {
   const quick = Boolean(args.quick);
   const scales = numList(args.scale)
     ?? (quick ? [1000] : [1000, 10000]);
+  const startupScales = numList(args['startup-scale'])
+    ?? [0, ...scales, 30000].filter((value, index, values) => values.indexOf(value) === index);
   const reps = args.reps ? Number(args.reps) : quick ? 3 : 7;
   const stormReps = args['storm-reps'] ? Number(args['storm-reps']) : quick ? 1 : 3;
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
@@ -339,10 +351,10 @@ async function cmdRun(args) {
 
   // Preflight in the same browser configuration that will measure.
   const preflight = await (async () => {
-    const { browser, executablePath, browserVersion } = await launchBrowser();
+    const { browser, executablePath, browserVersion } = await launchBrowser({ jit });
     try {
       return {
-        probe: await runPreflight(browser),
+        probe: await runPreflight(browser, { cpuThrottle }),
         browser: { name: 'chromium', version: browserVersion, executablePath },
       };
     } finally {
@@ -353,17 +365,24 @@ async function cmdRun(args) {
   console.log(`[preflight] score=${probe.score} (probe v${probe.probeVersion})`);
   const receipt = runReceipt({
     entries, reps, stormReps, startupReps,
-    execution: { harness: 'web', browser: preflight.browser },
+    execution: {
+      harness: 'web', browser: preflight.browser, jsRegime: jit, cpuThrottle,
+    },
   });
 
   const { records, executablePath, browserVersion } = await runWebHarness({
-    entries, cases, suites, scales, reps, stormReps, startupReps,
+    entries, cases, suites, scales, startupScales, reps, stormReps, startupReps,
+    jit, cpuThrottle,
   });
   if (browserVersion !== preflight.browser.version
     || executablePath !== preflight.browser.executablePath) {
     throw new Error('browser identity changed between preflight and benchmark execution');
   }
-  for (const entry of entries) records.push(...bundleRecords(entry));
+  for (const entry of entries) records.push(...bundleRecords(entry).map((record) => ({
+    ...record,
+    jsRegime: jit,
+    cpuThrottle,
+  })));
 
   const machine = machineFingerprint();
   const now = new Date();
@@ -376,6 +395,7 @@ async function cmdRun(args) {
       calibration: probe,
       chromium: executablePath,
       browser: { name: 'chromium', version: browserVersion, executablePath },
+      environment: { jsRegime: jit, cpuThrottle },
       argv: process.argv.slice(2),
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),
@@ -396,12 +416,22 @@ async function cmdRun(args) {
   collectRuns();
 }
 
-async function cmdPreflight() {
-  const { browser } = await launchBrowser();
+async function cmdPreflight(args) {
+  const jit = args.jit ?? 'jit';
+  const cpuThrottle = args['cpu-throttle'] == null ? 1 : Number(args['cpu-throttle']);
+  if (jit !== 'jit' && jit !== 'jitless') throw new Error(`unknown jit regime: ${jit}`);
+  if (!Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
+    throw new Error(`--cpu-throttle must be a finite number >= 1; received ${args['cpu-throttle']}`);
+  }
+  const { browser } = await launchBrowser({ jit });
   try {
-    const probe = await runPreflight(browser);
+    const probe = await runPreflight(browser, { cpuThrottle });
     const machine = machineFingerprint();
-    console.log(JSON.stringify({ machine, calibration: probe }, null, 2));
+    console.log(JSON.stringify({
+      machine,
+      environment: { jsRegime: jit, cpuThrottle },
+      calibration: probe,
+    }, null, 2));
   } finally {
     await browser.close();
   }
@@ -422,7 +452,7 @@ const args = parseArgs(process.argv.slice(2));
 const cmd = args._[0] ?? 'run';
 try {
   if (cmd === 'run') await cmdRun(args);
-  else if (cmd === 'preflight') await cmdPreflight();
+  else if (cmd === 'preflight') await cmdPreflight(args);
   else if (cmd === 'collect') collectRuns();
   else if (cmd === 'list') cmdList();
   else {

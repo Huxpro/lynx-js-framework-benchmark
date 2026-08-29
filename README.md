@@ -21,6 +21,17 @@ pnpm bench collect        # explicitly regenerate the derived results/latest.jso
 pnpm site:dev             # regenerates the cache, then starts the results site
 ```
 
+Web runs default to the historical V8 JIT / unthrottled regime. The directional interpreter
+probes are explicit and remain Web-only:
+
+```bash
+pnpm bench run --harness web --jit=jitless --cpu-throttle=1 --label web-jitless
+pnpm bench run --harness web --jit=jitless --cpu-throttle=4 --label web-jitless-4x
+```
+
+`--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;
+the default remains `0,1000,10000,30000`.
+
 Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
 `npx playwright install chromium`, or `PLAYWRIGHT_CHROMIUM_PATH`).
 

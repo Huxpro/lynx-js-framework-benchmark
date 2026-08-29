@@ -15,11 +15,32 @@
 
 import { summarize } from './stats.mjs';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
+export const LEGACY_SCHEMA_VERSIONS = [2];
+
+export const DEFAULT_WEB_REGIME = Object.freeze({
+  jsRegime: 'jit',
+  cpuThrottle: 1,
+});
+
+export function normalizeWebRegime(record) {
+  if (record.harness !== 'web') return { jsRegime: null, cpuThrottle: null };
+  return {
+    jsRegime: record.jsRegime ?? DEFAULT_WEB_REGIME.jsRegime,
+    cpuThrottle: record.cpuThrottle ?? DEFAULT_WEB_REGIME.cpuThrottle,
+  };
+}
+
+export function webRegimeKey(record) {
+  const { jsRegime, cpuThrottle } = normalizeWebRegime(record);
+  return record.harness === 'web' ? `${jsRegime}:${cpuThrottle}` : 'native';
+}
 
 export const COMPARABILITY_KEYS = [
   'harness',
   'environment',
+  'jsRegime',
+  'cpuThrottle',
   'workload',
   'scale',
   'metric',
@@ -99,6 +120,8 @@ export function makeRecord({
   suite,
   harness = 'web',
   environment = 'lynx-for-web',
+  jsRegime = harness === 'web' ? DEFAULT_WEB_REGIME.jsRegime : null,
+  cpuThrottle = harness === 'web' ? DEFAULT_WEB_REGIME.cpuThrottle : null,
   entry,
   workload,
   scale,
@@ -117,10 +140,22 @@ export function makeRecord({
   if (!suite || !entry || !workload || !metric || !boundary || !unit) {
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
   }
+  if (harness === 'web') {
+    if (jsRegime !== 'jit' && jsRegime !== 'jitless') {
+      throw new Error(`invalid Web jsRegime: ${jsRegime}`);
+    }
+    if (typeof cpuThrottle !== 'number' || !Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
+      throw new Error(`invalid Web cpuThrottle: ${cpuThrottle}`);
+    }
+  } else if (jsRegime != null || cpuThrottle != null) {
+    throw new Error('JS execution regimes are Web-only and cannot be attached to Native records');
+  }
   const record = {
     suite,
     harness,
     environment,
+    jsRegime,
+    cpuThrottle,
     entry,
     workload,
     scale,

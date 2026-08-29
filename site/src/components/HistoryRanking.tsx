@@ -12,6 +12,7 @@ import {
   HistoryCheckpoint,
   HistoryRecord,
   HistoryReplay,
+  WebRegime,
   historyReplayRecordsForCheckpoint,
   historyRecordsForCheckpoint,
   shortLabel,
@@ -235,12 +236,14 @@ const datasetAxisLabel = (id: string, locale: Locale) => {
 
 export function HistoryRanking({
   harness,
+  regime,
   onHarnessChange,
   theme,
   snapshotIndex,
   onSnapshotChange,
 }: {
   harness: string;
+  regime: WebRegime;
   onHarnessChange: (harness: string) => void;
   theme: 'light' | 'dark';
   snapshotIndex: number;
@@ -251,8 +254,14 @@ export function HistoryRanking({
   const ref = useRef<HTMLDivElement>(null);
   const plotWidth = useElementWidth(ref);
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
+  const matchesRegime = (record: HistoryRecord) => harness !== 'web'
+    || (record.jsRegime === regime.jsRegime && record.cpuThrottle === regime.cpuThrottle);
+  const matchesCohort = (cohort: HistoryCheckpoint['harnesses'][number]) =>
+    cohort.harness === harness && (harness !== 'web'
+      || (cohort.jsRegime === regime.jsRegime && cohort.cpuThrottle === regime.cpuThrottle));
   const allRecords = useMemo(() => BENCHMARK_HISTORY.records.filter((record) =>
-    record.harness === harness && HISTORY_ENTRY_IDS.includes(record.entry)), [harness]);
+    record.harness === harness && matchesRegime(record)
+      && HISTORY_ENTRY_IDS.includes(record.entry)), [harness, regime]);
   const rawWorkloads = [...new Set(allRecords
     .filter((record) => record.workload !== 'selectInitial')
     .map((record) => record.workload))].sort((a, b) => {
@@ -332,6 +341,7 @@ export function HistoryRanking({
   const [scale, setScale] = useState(() => Number(param('historyScale') ?? 1000));
   const activeScale = scales.includes(scale) ? scale : (scales.includes(1000) ? 1000 : scales[0]);
   const replayAvailable = harness === 'web'
+    && regime.jsRegime === 'jit' && regime.cpuThrottle === 1
     && WEB_HISTORY_REPLAY != null
     && (isAggregate || activeMetric === 'latency');
   const activeHistoryBasis: HistoryBasis = replayAvailable
@@ -347,10 +357,10 @@ export function HistoryRanking({
   const points = useMemo(() => {
     const out: RankedPoint[] = [];
     for (const [index, checkpoint] of BENCHMARK_HISTORY.checkpoints.entries()) {
-      const cohort = checkpoint.harnesses.find((candidate) => candidate.harness === harness);
+      const cohort = checkpoint.harnesses.find(matchesCohort);
       if (!cohort) continue;
       const originalRecords = historyRecordsForCheckpoint(checkpoint)
-        .filter((record) => record.harness === harness) as HistoryRecord[];
+        .filter((record) => record.harness === harness && matchesRegime(record)) as HistoryRecord[];
       const replayRecords = WEB_HISTORY_REPLAY && harness === 'web'
         ? historyReplayRecordsForCheckpoint(WEB_HISTORY_REPLAY, checkpoint)
         : [];
@@ -440,7 +450,7 @@ export function HistoryRanking({
       }
     }
     return out;
-  }, [harness, activeWorkload, activeScale, activeMetric, isAggregate, activeScoreMode,
+  }, [harness, regime, activeWorkload, activeScale, activeMetric, isAggregate, activeScoreMode,
     activeHistoryBasis]);
 
   const checkpointAudits = useMemo(() => {
@@ -453,7 +463,7 @@ export function HistoryRanking({
       machineId: string;
     } | null = null;
     for (const checkpoint of BENCHMARK_HISTORY.checkpoints) {
-      const cohort = checkpoint.harnesses.find((candidate) => candidate.harness === harness);
+      const cohort = checkpoint.harnesses.find(matchesCohort);
       if (!cohort) continue;
       const checkpointPoints = points.filter((point) => point.checkpoint.id === checkpoint.id);
       const sample = checkpointPoints[0];
@@ -572,7 +582,7 @@ export function HistoryRanking({
       const record = point.record;
       const checkpointCopy = localizedCheckpoint(point.checkpoint, locale);
       const cohortSize = point.checkpoint.harnesses
-        .find((cohort) => cohort.harness === harness)?.entryIds.length ?? '?';
+        .find(matchesCohort)?.entryIds.length ?? '?';
       const status = point.status === 'ranked'
         ? text(`rank ${point.rank} of ${cohortSize}`, `第 ${point.rank} 名，共 ${cohortSize} 项`)
         : point.status === 'incomparable' ? text('not ranked — incomparable transport work', '未排名——transport 工作不可比')

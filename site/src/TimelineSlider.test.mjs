@@ -6,6 +6,8 @@ const source = fs.readFileSync(new URL('./components/TimelineSlider.tsx', import
 const legendSource = fs.readFileSync(new URL('./components/Legend.tsx', import.meta.url), 'utf8');
 const receiptSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
 const rankingSource = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
+const appSource = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
+const contextSource = fs.readFileSync(new URL('./data-context.tsx', import.meta.url), 'utf8');
 const entry = (id) => JSON.parse(fs.readFileSync(
   new URL(`../../entries/${id}/entry.json`, import.meta.url),
   'utf8',
@@ -110,6 +112,18 @@ test('sticky workspace owns view and environment navigation', () => {
   assert.match(source, /<span>\{text\('Lynx for', 'Lynx 环境'\)\}<\/span>/);
   assert.match(source, /candidate === 'web' \? 'Web' : 'Native'/);
   assert.doesNotMatch(source, /Native engine/);
+});
+
+test('Web regime facet is explicit, URL-addressable, and cannot mix ranking records', () => {
+  assert.match(source, /JavaScript execution regime/);
+  assert.match(source, /WEB_REGIMES\.map/);
+  assert.match(source, /cohort\.jsRegime === candidate\.jsRegime/);
+  assert.match(source, /cohort\.cpuThrottle === candidate\.cpuThrottle/);
+  assert.match(appSource, /params\.set\('regime', id\)/);
+  assert.match(appSource, /Directional probe — interpreter regime under V8; not Native, not PrimJS\./);
+  assert.match(contextSource, /recordMatchesWebRegime\(record, regime\)/);
+  assert.match(rankingSource, /record\.jsRegime === regime\.jsRegime/);
+  assert.match(rankingSource, /record\.cpuThrottle === regime\.cpuThrottle/);
 });
 
 test('sticky workspace gives its second row entirely to the dataset slider', () => {

@@ -114,11 +114,13 @@ async function profilerFor(page, attach) {
   return new RealmProfiler(attach.client ?? attach._client, sessions);
 }
 
-async function openBenchPage({ browser, origin, bundleUrl, cdp, viewW = 800, viewH = 640 }) {
+async function openBenchPage({
+  browser, origin, bundleUrl, cdp, cpuThrottle = 1, viewW = 800, viewH = 640,
+}) {
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   page.on('pageerror', (err) => console.error('  [pageerror]', String(err).slice(0, 200)));
   await page.goto(`${origin}/`, { waitUntil: 'load' });
-  const attach = await attachToPageAndWorkers(cdp, origin);
+  const attach = await attachToPageAndWorkers(cdp, origin, { cpuThrottle });
   attach.client = cdp;
   await page.evaluate(
     ({ url, w, h }) => globalThis.__x.createView(url, w, h),
@@ -219,6 +221,8 @@ export async function runTableSuite({
   cdp,
   log,
   includeMemory = true,
+  jsRegime = 'jit',
+  cpuThrottle = 1,
 }) {
   const records = [];
   const bundle = bundleFor(entry, { rows: 0 });
@@ -229,7 +233,9 @@ export async function runTableSuite({
   const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
 
   // Warm page shared by non-storm cases.
-  const { page, attach } = await openBenchPage({ browser, origin, bundleUrl, cdp });
+  const { page, attach } = await openBenchPage({
+    browser, origin, bundleUrl, cdp, cpuThrottle,
+  });
   await waitReady(page);
   const profiler = await profilerFor(page, attach);
 
@@ -288,6 +294,7 @@ export async function runTableSuite({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, attemptedCount: reps,
+        jsRegime, cpuThrottle,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -301,8 +308,9 @@ export async function runTableSuite({
   try {
     if (!includeMemory) return await runStormCases({
       entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+      jsRegime, cpuThrottle,
     });
-    const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
+    const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp, cpuThrottle });
     memoryPage = fresh.page;
     await waitReady(memoryPage);
     await clickButton(memoryPage, CREATE_BUTTON[10000]);
@@ -326,6 +334,8 @@ export async function runTableSuite({
         boundary: 'gc-heap-with-10k-rows',
         unit: 'bytes',
         value: usedSize,
+        jsRegime,
+        cpuThrottle,
       }));
     }
     await clickButton(memoryPage, 'Clear');
@@ -343,6 +353,8 @@ export async function runTableSuite({
         boundary: 'gc-heap-after-clearing-10k-rows',
         unit: 'bytes',
         value: usedSize,
+        jsRegime,
+        cpuThrottle,
       }));
     }
     log(
@@ -356,11 +368,13 @@ export async function runTableSuite({
 
   return runStormCases({
     entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+    jsRegime, cpuThrottle,
   });
 }
 
 async function runStormCases({
   entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+  jsRegime, cpuThrottle,
 }) {
   // Storm cases: fresh page per rep.
   for (const kase of cases) {
@@ -371,7 +385,7 @@ async function runStormCases({
       let dnfCount = 0;
       const failures = [];
       for (let rep = 0; rep < stormReps; rep++) {
-        const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
+        const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp, cpuThrottle });
         try {
           await waitReady(fresh.page);
           const freshProfiler = await profilerFor(fresh.page, fresh.attach);
@@ -419,6 +433,7 @@ async function runStormCases({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, failures, attemptedCount: stormReps,
+        jsRegime, cpuThrottle,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -434,9 +449,12 @@ function fmtSummary(samples) {
 
 function emitOpRecords({
   entry, kase, scale, samples, dnfCount, failures = [], attemptedCount,
+  jsRegime = 'jit', cpuThrottle = 1,
 }) {
   const records = [];
-  const base = { suite: 'table', entry: entry.id, workload: kase.name, scale };
+  const base = {
+    suite: 'table', entry: entry.id, workload: kase.name, scale, jsRegime, cpuThrottle,
+  };
   records.push(makeRecord({
     ...base,
     metric: 'latency',
@@ -494,7 +512,9 @@ function emitOpRecords({
   return records;
 }
 
-export async function runStartupSuite({ entry, scales, reps, browser, origin, cdp, log }) {
+export async function runStartupSuite({
+  entry, scales, reps, browser, origin, cdp, log, jsRegime = 'jit', cpuThrottle = 1,
+}) {
   const records = [];
   const kase = STARTUP_CASES[0];
   for (const scale of kase.scales.filter((s) => scales.includes(s))) {
@@ -510,7 +530,7 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
       try {
         await page.goto(`${origin}/`, { waitUntil: 'load' });
-        const attach = await attachToPageAndWorkers(cdp, origin);
+        const attach = await attachToPageAndWorkers(cdp, origin, { cpuThrottle });
         attach.client = cdp;
         // Profile from before view attach; the bg worker session joins on boot.
         const pageProfiler = new RealmProfiler(cdp, [{ key: 'mts', sessionId: attach.pageSession }]);
@@ -545,7 +565,9 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         await page.close();
       }
     }
-    const base = { suite: 'startup', entry: entry.id, workload: 'startup', scale };
+    const base = {
+      suite: 'startup', entry: entry.id, workload: 'startup', scale, jsRegime, cpuThrottle,
+    };
     records.push(makeRecord({
       ...base,
       metric: 'fcp',
@@ -604,16 +626,19 @@ export async function runWebHarness({
   cases,
   suites,
   scales,
+  startupScales = null,
   reps = 7,
   stormReps = 3,
   startupReps = 5,
   log = console.log,
   includeMemory = true,
+  jit = 'jit',
+  cpuThrottle = 1,
 }) {
   const bundleRoots = {};
   for (const e of entries) bundleRoots[e.id] = e.distDir;
   const server = await startServer({ bundleRoots });
-  const { browser, cdpPort, executablePath, browserVersion } = await launchBrowser();
+  const { browser, cdpPort, executablePath, browserVersion } = await launchBrowser({ jit });
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
   try {
@@ -623,14 +648,17 @@ export async function runWebHarness({
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
           browser, origin: server.origin, cdp, log, includeMemory,
+          jsRegime: jit, cpuThrottle,
         }));
       }
       if (suites.includes('startup')) {
         records.push(...await runStartupSuite({
           entry,
-          scales: [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
+          scales: startupScales
+            ?? [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
+          jsRegime: jit, cpuThrottle,
         }));
       }
     }

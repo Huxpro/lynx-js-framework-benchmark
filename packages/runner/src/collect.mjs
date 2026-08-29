@@ -10,7 +10,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import {
+  comparisonKey,
+  deriveRecord,
+  LEGACY_SCHEMA_VERSIONS,
+  normalizeWebRegime,
+  SCHEMA_VERSION,
+  webRegimeKey,
+} from '@lynx-bench/shared/schema';
 import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
@@ -269,7 +276,19 @@ const normalizedEntryId = (run, entry) => {
 
 const normalizeRecord = (run, record) => {
   const entry = normalizedEntryId(run, record.entry);
-  const normalized = entry === record.entry ? record : { ...record, entry, sourceEntry: record.entry };
+  const regime = normalizeWebRegime(record);
+  const withRegime = { ...record, ...regime };
+  if (record.harness === 'web') {
+    if (regime.jsRegime !== 'jit' && regime.jsRegime !== 'jitless') {
+      throw new Error(`invalid Web jsRegime: ${regime.jsRegime}`);
+    }
+    if (!Number.isFinite(regime.cpuThrottle) || regime.cpuThrottle < 1) {
+      throw new Error(`invalid Web cpuThrottle: ${regime.cpuThrottle}`);
+    }
+  }
+  const normalized = entry === record.entry
+    ? withRegime
+    : { ...withRegime, entry, sourceEntry: record.entry };
   return deriveRecord(normalized);
 };
 
@@ -280,6 +299,14 @@ const normalizeRun = (rawRun, file) => {
   }
   if (!Array.isArray(rawRun.records)) throw new Error(`${file}: records must be an array`);
   const normalizedRecords = rawRun.records.map((record, index) => {
+    if (rawRun.schemaVersion === SCHEMA_VERSION && record.harness === 'web'
+      && (!Object.hasOwn(record, 'jsRegime') || !Object.hasOwn(record, 'cpuThrottle'))) {
+      throw new Error(`${file}: schema v${SCHEMA_VERSION} Web record ${index} is missing its JS regime`);
+    }
+    if (record.harness !== 'web'
+      && (record.jsRegime != null || record.cpuThrottle != null)) {
+      throw new Error(`${file}: record ${index} attaches a Web JS regime to ${record.harness}`);
+    }
     const hasRepeatedSource = Array.isArray(record.samples);
     const hasScalarSource = typeof record.value === 'number' && Number.isFinite(record.value);
     const hasLegacyScalar = record.samples == null && record.n === 1
@@ -702,6 +729,8 @@ const stormTransportEvidence = (run, record) => {
     && candidate.suite === record.suite
     && candidate.harness === record.harness
     && candidate.environment === record.environment
+    && candidate.jsRegime === record.jsRegime
+    && candidate.cpuThrottle === record.cpuThrottle
     && candidate.workload === record.workload
     && candidate.scale === record.scale
     && candidate.metric === metric)?.median ?? null;
@@ -734,6 +763,8 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     suite: record.suite,
     harness: record.harness,
     environment: record.environment,
+    jsRegime: record.jsRegime,
+    cpuThrottle: record.cpuThrottle,
     entry,
     ...(sourceEntry === entry ? {} : { sourceEntry }),
     workload: record.workload,
@@ -765,6 +796,8 @@ const historySourceSummary = ({ file, run }, recordCount, entryIds, rankEligible
   machineId: run.meta.machine.id,
   harnesses: [...new Set(run.records.map((record) => record.harness))].sort(),
   environments: [...new Set(run.records.map((record) => record.environment))].sort(),
+  regimes: [...new Set(run.records.filter((record) => record.harness === 'web')
+    .map(webRegimeKey))].sort(),
   entryIds: [...entryIds].sort(),
   entryCommits: Object.fromEntries(Object.entries(run.meta.entryCommits ?? {}).sort()),
   machine: run.meta.machine,
@@ -1014,6 +1047,7 @@ const buildHistory = ({
           harnesses: [{
             harness: 'web',
             environment: webPublic[0].environment,
+            ...normalizeWebRegime(webPublic[0]),
             machineId: run.meta.machine.id,
             sourceRunFiles: [file],
             entryIds: [...webEntries].sort(),
@@ -1117,11 +1151,14 @@ const buildHistory = ({
   const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) =>
     completeMatrixRecords(
       current.records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment),
+        && record.environment === cohort.environment
+        && (cohort.harness !== 'web'
+          || (record.jsRegime === cohort.jsRegime
+            && record.cpuThrottle === cohort.cpuThrottle))),
       cohort.entryIds,
     ).map((record) => ({
       ...record,
-      cohortId: `current:${cohort.harness}:${cohort.machineId}`,
+      cohortId: `current:${cohort.harness}:${cohort.machineId}:${cohort.jsRegime ?? 'native'}:${cohort.cpuThrottle ?? 0}`,
       rankEligible: true,
     })));
   const currentActiveRecordIndexes = currentHistoryRecords.map(
@@ -1145,6 +1182,7 @@ const buildHistory = ({
       .filter((index) => index >= 0))],
     harnesses: current.comparison.harnesses.map((cohort) => ({
       harness: cohort.harness, environment: cohort.environment, machineId: cohort.machineId,
+      jsRegime: cohort.jsRegime ?? null, cpuThrottle: cohort.cpuThrottle ?? null,
       sourceRunFiles: cohort.sourceRunFiles, entryIds: cohort.entryIds, rankEligible: true,
     })),
   });
@@ -1229,10 +1267,12 @@ export function collectRuns({
 
   const runFiles = fs.readdirSync(runsDir).filter((f) => f.endsWith('.json')).sort();
   const machines = {};
+  const machineRegimes = {};
   const merged = new Map();
   const runs = [];
   const incompleteCheckpointFiles = new Set();
   let comparisonRun = null;
+  const comparisonRuns = new Map();
   let latestSourceGeneratedAt = null;
   let runsSeen = 0;
   const resolvedTiers = entryTiers ?? readEntryTiers(root);
@@ -1248,8 +1288,9 @@ export function collectRuns({
 
   for (const file of runFiles) {
     const rawRun = JSON.parse(fs.readFileSync(path.join(runsDir, file), 'utf-8'));
-    if (rawRun.schemaVersion !== SCHEMA_VERSION) {
-      log(`[collect] skip ${file}: schemaVersion ${rawRun.schemaVersion} != ${SCHEMA_VERSION}`);
+    if (rawRun.schemaVersion !== SCHEMA_VERSION
+      && !LEGACY_SCHEMA_VERSIONS.includes(rawRun.schemaVersion)) {
+      log(`[collect] skip ${file}: unsupported schemaVersion ${rawRun.schemaVersion}`);
       continue;
     }
     if (rawRun.meta?.checkpoint === true && rawRun.meta?.checkpointComplete !== true) {
@@ -1264,6 +1305,13 @@ export function collectRuns({
     runsSeen += 1;
     const m = run.meta.machine;
     const runTime = run.meta.generatedAt ?? file;
+    const webRegimes = new Set(run.records
+      .filter((record) => record.harness === 'web' && isBenchmarkRecord(record))
+      .map(webRegimeKey));
+    if (webRegimes.size > 1) {
+      throw new Error(`${file}: one physical Web run cannot contain multiple JS regimes`);
+    }
+    const regimeKey = webRegimes.values().next().value ?? 'native';
     latestSourceGeneratedAt = latestSourceGeneratedAt == null || runTime > latestSourceGeneratedAt
       ? runTime
       : latestSourceGeneratedAt;
@@ -1271,6 +1319,22 @@ export function collectRuns({
       || (runTime === machines[m.id].latestRunGeneratedAt && file > machines[m.id].latestRunFile)) {
       machines[m.id] = {
         ...m,
+        latestCalibration: run.meta.calibration,
+        latestRunFile: file,
+        latestRunGeneratedAt: run.meta.generatedAt,
+      };
+    }
+    const machineRegimeId = `${m.id}|${regimeKey}`;
+    if (!machineRegimes[machineRegimeId]
+      || runTime > machineRegimes[machineRegimeId].latestRunGeneratedAt
+      || (runTime === machineRegimes[machineRegimeId].latestRunGeneratedAt
+        && file > machineRegimes[machineRegimeId].latestRunFile)) {
+      machineRegimes[machineRegimeId] = {
+        ...m,
+        machineRegimeId,
+        ...(regimeKey === 'native'
+          ? { jsRegime: null, cpuThrottle: null }
+          : normalizeWebRegime(run.records.find((record) => record.harness === 'web'))),
         latestCalibration: run.meta.calibration,
         latestRunFile: file,
         latestRunGeneratedAt: run.meta.generatedAt,
@@ -1285,26 +1349,51 @@ export function collectRuns({
       }
     }
     const view = comparisonView(run, featuredIds, entryById, 'web');
-    const candidate = { file, run: view };
-    if (view.records.length > 0
-      && isBetterComparisonRun(candidate, comparisonRun, featuredIds)) comparisonRun = candidate;
+    for (const candidateRegime of new Set(view.records.map(webRegimeKey))) {
+      const regimeView = {
+        ...view,
+        records: view.records.filter((record) => webRegimeKey(record) === candidateRegime),
+      };
+      const candidate = { file, run: regimeView };
+      const current = comparisonRuns.get(candidateRegime) ?? null;
+      if (regimeView.records.length > 0
+        && isBetterComparisonRun(candidate, current, featuredIds)) {
+        comparisonRuns.set(candidateRegime, candidate);
+      }
+    }
   }
 
-  if (!comparisonRun) throw new Error(`no schema v${SCHEMA_VERSION} runs at ${runsDir}`);
+  comparisonRun = comparisonRuns.get('jit:1')
+    ?? [...comparisonRuns.values()].sort((left, right) =>
+      String(right.run.meta.generatedAt).localeCompare(String(left.run.meta.generatedAt)))[0]
+    ?? null;
+  if (!comparisonRun) throw new Error(`no supported Web runs at ${runsDir}`);
   if (comparisonRank(comparisonRun.run, featuredIds)[0] === 0) {
     throw new Error(`no featured benchmark records in schema v${SCHEMA_VERSION} runs at ${runsDir}`);
   }
-  const comparisonSourceRecords = comparisonRun.run.records.filter((r) =>
-    featuredIds.has(r.entry) && isBenchmarkRecord(r));
-  for (const entryId of new Set(comparisonSourceRecords.map((record) => record.entry))) {
-    assertCurrentEntryCommit(comparisonRun.run, entryId, entryById.get(entryId), 'comparison');
-  }
+  const selectedWebComparisons = [...comparisonRuns.entries()]
+    .sort(([left], [right]) => {
+      if (left === 'jit:1') return -1;
+      if (right === 'jit:1') return 1;
+      return left.localeCompare(right, undefined, { numeric: true });
+    })
+    .map(([regimeKey, candidate]) => ({ regimeKey, ...candidate }));
+  const webComparisonSources = selectedWebComparisons.map((candidate) => {
+    const records = candidate.run.records.filter((r) =>
+      featuredIds.has(r.entry) && isBenchmarkRecord(r));
+    for (const entryId of new Set(records.map((record) => record.entry))) {
+      assertCurrentEntryCommit(candidate.run, entryId, entryById.get(entryId), 'comparison');
+    }
+    return { ...candidate, records };
+  });
+  const comparisonSourceRecords = webComparisonSources.flatMap(({ records }) => records);
   const comparisonStaticRecords = [...featuredIds].flatMap((entryId) => {
     const entry = entryById.get(entryId);
     return entry ? (staticByEntry.get(entryId) ?? []).map((record) => annotateStatic(entry, record)) : [];
   });
   const comparisonRecords = [
-    ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
+    ...webComparisonSources.flatMap((source) => source.records.map((record) =>
+      annotate(source.run, source.file, record, 'same-run'))),
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
@@ -1386,17 +1475,22 @@ export function collectRuns({
     sourceRecordCount: comparisonSourceRecords.length,
     recordCount: comparisonRecords.length,
     harnesses: [
-      {
+      ...webComparisonSources.map((source) => {
+        const regime = normalizeWebRegime(source.records[0] ?? { harness: 'web' });
+        return {
         harness: 'web',
-        environment: comparisonSourceRecords[0]?.environment ?? null,
-        generatedAt: comparisonRun.run.meta.generatedAt,
-        machineId: comparisonRun.run.meta.machine.id,
-        calibration: comparisonRun.run.meta.calibration,
-        sourceRunFiles: [comparisonRun.file],
-        entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
-        sourceRecordCount: comparisonSourceRecords.length,
-        recordCount: comparisonSourceRecords.length + comparisonStaticRecords.length,
-      },
+        environment: source.records[0]?.environment ?? null,
+        ...regime,
+        generatedAt: source.run.meta.generatedAt,
+        machineId: source.run.meta.machine.id,
+        machineRegimeId: `${source.run.meta.machine.id}|${source.regimeKey}`,
+        calibration: source.run.meta.calibration,
+        sourceRunFiles: [source.file],
+        entryIds: [...new Set(source.records.map((r) => r.entry))].sort(),
+        sourceRecordCount: source.records.length,
+        recordCount: source.records.length + comparisonStaticRecords.length,
+        };
+      }),
       ...(nativeComparison ? [nativeComparison] : []),
     ],
   };
@@ -1456,6 +1550,7 @@ export function collectRuns({
       entryIds: currentEntries.map((entry) => entry.id),
     },
     machines,
+    machineRegimes,
     records: [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile))
       .concat(archiveStaticRecords),
     comparison,

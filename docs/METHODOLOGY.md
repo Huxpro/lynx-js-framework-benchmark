@@ -233,6 +233,25 @@ metric rather than silently changing the upstream interaction formula.
   the same policy is in the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
   calibration or an outlier filter.
 
+## Web JavaScript execution regimes
+
+The Web harness has three separately ranked execution lanes. `web` is Chromium's normal V8 JIT
+with CPU throttling disabled (`jsRegime: "jit", cpuThrottle: 1`). `web-jitless` adds V8
+`--jitless` while retaining `--expose-gc`, and leaves CPU throttling disabled. `web-jitless-4x`
+uses the same JITless process and applies `Emulation.setCPUThrottlingRate` at 4× after each page
+target attaches and before any measured phase. The historical default is exactly `web`; a
+schema-v2 record without regime fields normalizes to JIT / 1×. The machine fingerprint does not
+change, but collection keys and comparison cohorts include both regime fields, so lanes never
+overwrite, average, or rank together.
+
+Both JITless lanes are **directional probes — interpreter regime under V8; not Native, not
+PrimJS**. V8 Ignition is not LepusNG/PrimJS: even without generated executable code, V8 retains
+hidden classes, feedback vectors, and a generational garbage collector, while PrimJS uses its own
+IC/shape machinery and reference-counting model. `--jitless` also disables WebAssembly and runs
+RegExp through the interpreted path, which can amplify RegExp-heavy workloads for a reason that
+does not transfer to PrimJS. These lanes are suitable for ordering, scale-shape, regression, and
+"what was JIT hiding?" leads, never absolute device-time prediction.
+
 ## Harness separation
 
 - `harness: "web"` — Lynx for Web in headless Chromium. Measures architectural behavior

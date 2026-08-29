@@ -186,10 +186,10 @@ function nativeCampaignMeta(entries, {
 
 const writeRun = (root, file, {
   machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z', entryCommits = null,
-  receipt = null,
+  receipt = null, schemaVersion = 2, regime = null,
 }) => {
   fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion,
     meta: {
       generatedAt,
       machine: machine(machineId),
@@ -197,7 +197,7 @@ const writeRun = (root, file, {
       ...(entryCommits ? { entryCommits } : {}),
       ...(receipt ? { receipt } : {}),
     },
-    records: entries.map((entry) => record(entry)),
+    records: entries.map((entry) => ({ ...record(entry), ...(regime ?? {}) })),
   }));
 };
 
@@ -231,6 +231,43 @@ test('collect keeps record calibration and charts one coherent broadest run', ()
     assert.equal(oldReact.calibration.score, 100);
     assert.equal(newOctane.calibration.score, 110);
     assert.equal(out.machines.a.latestCalibration.score, 110);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector defaults historical Web records to jit x1 and never mixes regime rankings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-regime-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'baseline-v2.json', {
+      machineId: 'same-machine', score: 100, entries: ['react', 'vue'],
+      generatedAt: '2026-01-01T00:00:00Z',
+    });
+    writeRun(root, 'jitless-v3.json', {
+      machineId: 'same-machine', score: 50, entries: ['react', 'vue'],
+      generatedAt: '2026-01-02T00:00:00Z', schemaVersion: 3,
+      regime: { jsRegime: 'jitless', cpuThrottle: 4 },
+    });
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue']),
+    });
+    const webCohorts = out.comparison.harnesses.filter(({ harness }) => harness === 'web');
+    assert.deepEqual(webCohorts.map(({ jsRegime, cpuThrottle }) =>
+      [jsRegime, cpuThrottle]), [['jit', 1], ['jitless', 4]]);
+    assert.deepEqual(webCohorts.map(({ sourceRunFiles }) => sourceRunFiles), [
+      ['baseline-v2.json'],
+      ['jitless-v3.json'],
+    ]);
+    assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jit').length, 2);
+    assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jitless').length, 2);
+    assert.deepEqual(Object.keys(out.machineRegimes).sort(), [
+      'same-machine|jit:1',
+      'same-machine|jitless:4',
+    ]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

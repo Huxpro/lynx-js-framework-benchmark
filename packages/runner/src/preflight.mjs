@@ -48,10 +48,12 @@ export const PROBE_JS = `(() => {
   return { score: (n / elapsed) * 1000, iterations: n, elapsedMs: elapsed, sink };
 })()`;
 
-export async function runPreflight(browser) {
+export async function runPreflight(browser, { cpuThrottle = 1 } = {}) {
   const page = await browser.newPage();
   try {
     await page.goto('about:blank');
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottle });
     const result = await page.evaluate(PROBE_JS);
     return {
       probeVersion: PROBE_VERSION,
