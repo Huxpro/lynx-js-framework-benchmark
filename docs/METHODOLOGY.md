@@ -257,6 +257,29 @@ also disables Wasm, and restoring Wasm through DrumBrake would require a custom,
 Chromium build. These lanes are suitable for ordering,
 scale-shape, regression, and "what was JIT hiding?" leads, never absolute device-time prediction.
 
+### Rank-stability calibration against device rounds 1–2
+
+The current calibration uses the same-machine 29 August featured Web campaign, with upstream
+Octane at `9779569e`, Huxpro/new-lynx at `8938c126`, and the `web-interp-4x` lane as the directional
+probe. Its device anchors are the real-device round-1 and round-2 windows in
+[Huxpro/octane#194](https://github.com/Huxpro/octane/issues/194). Those device windows used older
+Octane tips and different instrumentation boundaries, so the table below tests only ordering,
+completion cliffs, and scaling direction. It does not compare absolute times or claim a controlled
+revision A/B.
+
+| Device anchor | Matching `web-interp-4x` observation | Rank/shape verdict |
+| --- | --- | --- |
+| Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is the one cross-framework rank anchor shared by both instruments. |
+| Round 1 program versus template at 1k: program 12,717 ms versus template 14,354 ms; after the round-2 ledger fix, program 657 ms versus template 2,149 ms. | Hux Octane startup@1k is 1,588.1 ms versus upstream Octane 1,485.2 ms. | **Ordering disagrees.** The Web probe does not reproduce the Native compiled-program advantage. |
+| Formal Native ReactLynx startup grows from 63.8 ms at 0 rows to 1,434.1 ms at 1k, then is DNF at 10k and 30k. The device rounds also hit the ART/PaintingContext capacity boundary at eager 10k. | ReactLynx grows from 110.2 ms to 923.5 ms at 1k but completes at 8,706.4 ms / 25,934.3 ms for 10k / 30k. Every featured Web entry completes both large scales. | **Only the increasing direction agrees; the scaling shape and capacity cliff do not.** Compiled Wasm plus browser host objects cannot expose the Native JNI global-reference ceiling. |
+| Round-2 `mountProgram` bookkeeping falls from 8,565 ms to 4 ms after the ledger fix. | No Web record has a boundary equivalent to Native `mountProgram`. | **Not rank-calibratable.** It remains a Native-only internal anchor and is not imputed into Web. |
+
+Within Web itself, turning off compiled JavaScript changes the winning entry in 5 of the 16 shared
+latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Comparing normal JIT with
+`web-interp-4x` changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does hide material
+ordering differences, but the mixed device calibration above is too weak for the interpreter lane
+to substitute for device rounds: use it to choose confirmation cells, not to publish Native ranks.
+
 ## Harness separation
 
 - `harness: "web"` — Lynx for Web in headless Chromium. Measures architectural behavior
