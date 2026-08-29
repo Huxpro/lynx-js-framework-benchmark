@@ -1273,6 +1273,7 @@ export function collectRuns({
   const incompleteCheckpointFiles = new Set();
   let comparisonRun = null;
   const comparisonRuns = new Map();
+  const prospectiveWebGroups = new Map();
   let latestSourceGeneratedAt = null;
   let runsSeen = 0;
   const resolvedTiers = entryTiers ?? readEntryTiers(root);
@@ -1355,11 +1356,48 @@ export function collectRuns({
         records: view.records.filter((record) => webRegimeKey(record) === candidateRegime),
       };
       const candidate = { file, run: regimeView };
+      if (rawRun.schemaVersion === SCHEMA_VERSION) {
+        const groupId = `${m.id}|${candidateRegime}`;
+        const group = prospectiveWebGroups.get(groupId) ?? {
+          machineId: m.id,
+          regimeKey: candidateRegime,
+          cells: new Map(),
+          latest: candidate,
+        };
+        if (runTime > (group.latest.run.meta.generatedAt ?? group.latest.file)
+          || (runTime === (group.latest.run.meta.generatedAt ?? group.latest.file)
+            && file > group.latest.file)) group.latest = candidate;
+        for (const record of regimeView.records) {
+          const key = `${record.entry}|${cellKey(record)}`;
+          const current = group.cells.get(key);
+          const currentTime = current?.run.meta.generatedAt ?? current?.file;
+          if (!current || runTime > currentTime || (runTime === currentTime && file > current.file)) {
+            group.cells.set(key, { file, run, record });
+          }
+        }
+        prospectiveWebGroups.set(groupId, group);
+        continue;
+      }
       const current = comparisonRuns.get(candidateRegime) ?? null;
       if (regimeView.records.length > 0
         && isBetterComparisonRun(candidate, current, featuredIds)) {
         comparisonRuns.set(candidateRegime, candidate);
       }
+    }
+  }
+
+  for (const group of prospectiveWebGroups.values()) {
+    const sources = [...group.cells.values()];
+    const candidate = {
+      file: group.latest.file,
+      run: { ...group.latest.run, records: sources.map(({ record }) => record) },
+      sources,
+      machineRegimeId: `${group.machineId}|${group.regimeKey}`,
+    };
+    const current = comparisonRuns.get(group.regimeKey) ?? null;
+    if (candidate.run.records.length > 0
+      && isBetterComparisonRun(candidate, current, featuredIds)) {
+      comparisonRuns.set(group.regimeKey, candidate);
     }
   }
 
@@ -1379,12 +1417,20 @@ export function collectRuns({
     })
     .map(([regimeKey, candidate]) => ({ regimeKey, ...candidate }));
   const webComparisonSources = selectedWebComparisons.map((candidate) => {
-    const records = candidate.run.records.filter((r) =>
-      featuredIds.has(r.entry) && isBenchmarkRecord(r));
-    for (const entryId of new Set(records.map((record) => record.entry))) {
-      assertCurrentEntryCommit(candidate.run, entryId, entryById.get(entryId), 'comparison');
+    const recordSources = (candidate.sources ?? candidate.run.records.map((record) => ({
+      file: candidate.file,
+      run: candidate.run,
+      record,
+    }))).filter(({ record }) => featuredIds.has(record.entry) && isBenchmarkRecord(record));
+    for (const source of recordSources) {
+      assertCurrentEntryCommit(
+        source.run,
+        source.record.entry,
+        entryById.get(source.record.entry),
+        'comparison',
+      );
     }
-    return { ...candidate, records };
+    return { ...candidate, records: recordSources.map(({ record }) => record), recordSources };
   });
   const comparisonSourceRecords = webComparisonSources.flatMap(({ records }) => records);
   const comparisonStaticRecords = [...featuredIds].flatMap((entryId) => {
@@ -1392,8 +1438,12 @@ export function collectRuns({
     return entry ? (staticByEntry.get(entryId) ?? []).map((record) => annotateStatic(entry, record)) : [];
   });
   const comparisonRecords = [
-    ...webComparisonSources.flatMap((source) => source.records.map((record) =>
-      annotate(source.run, source.file, record, 'same-run'))),
+    ...webComparisonSources.flatMap((source) => {
+      const sourceFiles = new Set(source.recordSources.map(({ file }) => file));
+      const comparisonKind = sourceFiles.size === 1 ? 'same-run' : 'same-machine-regime';
+      return source.recordSources.map((recordSource) =>
+        annotate(recordSource.run, recordSource.file, recordSource.record, comparisonKind));
+    }),
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
@@ -1485,7 +1535,7 @@ export function collectRuns({
         machineId: source.run.meta.machine.id,
         machineRegimeId: `${source.run.meta.machine.id}|${source.regimeKey}`,
         calibration: source.run.meta.calibration,
-        sourceRunFiles: [source.file],
+        sourceRunFiles: [...new Set(source.recordSources.map(({ file }) => file))].sort(),
         entryIds: [...new Set(source.records.map((r) => r.entry))].sort(),
         sourceRecordCount: source.records.length,
         recordCount: source.records.length + comparisonStaticRecords.length,

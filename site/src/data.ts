@@ -44,7 +44,7 @@ export interface BenchRecord {
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'same-machine-regime' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
   comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;

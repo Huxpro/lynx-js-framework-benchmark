@@ -244,9 +244,14 @@ test('collector defaults historical Web records to jit x1 and never mixes regime
       machineId: 'same-machine', score: 100, entries: ['react', 'vue'],
       generatedAt: '2026-01-01T00:00:00Z',
     });
-    writeRun(root, 'jitless-v3.json', {
-      machineId: 'same-machine', score: 50, entries: ['react', 'vue'],
+    writeRun(root, 'jitless-react-v3.json', {
+      machineId: 'same-machine', score: 50, entries: ['react'],
       generatedAt: '2026-01-02T00:00:00Z', schemaVersion: 3,
+      regime: { jsRegime: 'jitless', cpuThrottle: 4 },
+    });
+    writeRun(root, 'jitless-vue-v3.json', {
+      machineId: 'same-machine', score: 51, entries: ['vue'],
+      generatedAt: '2026-01-03T00:00:00Z', schemaVersion: 3,
       regime: { jsRegime: 'jitless', cpuThrottle: 4 },
     });
     const out = collectRuns({
@@ -260,7 +265,7 @@ test('collector defaults historical Web records to jit x1 and never mixes regime
       [jsRegime, cpuThrottle]), [['jit', 1], ['jitless', 4]]);
     assert.deepEqual(webCohorts.map(({ sourceRunFiles }) => sourceRunFiles), [
       ['baseline-v2.json'],
-      ['jitless-v3.json'],
+      ['jitless-react-v3.json', 'jitless-vue-v3.json'],
     ]);
     assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jit').length, 2);
     assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jitless').length, 2);
