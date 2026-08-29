@@ -25,8 +25,8 @@ Web runs default to the historical V8 JIT / unthrottled regime. The directional 
 probes are explicit and remain Web-only:
 
 ```bash
-pnpm bench run --harness web --jit=jitless --cpu-throttle=1 --label web-jitless
-pnpm bench run --harness web --jit=jitless --cpu-throttle=4 --label web-jitless-4x
+pnpm bench run --harness web --jit=interp --cpu-throttle=1 --label web-interp
+pnpm bench run --harness web --jit=interp --cpu-throttle=4 --label web-interp-4x
 ```
 
 `--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;
@@ -34,9 +34,10 @@ the default remains `0,1000,10000,30000`.
 
 Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
 `npx playwright install chromium`, or `PLAYWRIGHT_CHROMIUM_PATH`).
-Because Lynx Web requires WebAssembly, the JITless lanes specifically require a Chromium built
-with V8 DrumBrake; the runner uses `--wasm-jitless` and fails its capability check when a stock
-desktop build removes WebAssembly instead of substituting a partially-JITed regime.
+The interpreter lanes disable TurboFan, Sparkplug, and Maglev while retaining compiled Wasm.
+Before a formal interpreter run, the runner uses a one-off `--allow-natives-syntax` control to
+prove a hot function stays never-optimized in Ignition and Wasm still instantiates. The measured
+browser never receives that diagnostic flag.
 
 For a leased Lynx Sandbox Android device:
 

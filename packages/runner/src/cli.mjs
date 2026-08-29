@@ -4,7 +4,7 @@
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
 //                  [--suite table,startup] [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
-//                  [--jit jit|jitless] [--cpu-throttle N]
+//                  [--jit jit|interp] [--cpu-throttle N]
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
@@ -21,8 +21,8 @@ import { runNativeHarness } from './harness-native.mjs';
 import { bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
-import { runPreflight } from './preflight.mjs';
-import { launchBrowser } from './browser.mjs';
+import { runPreflight, verifyInterpreterFlags } from './preflight.mjs';
+import { jsFlagsForRegime, launchBrowser } from './browser.mjs';
 import { runReceipt } from './provenance.mjs';
 import { stringifyResult } from './result-json.mjs';
 import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
@@ -85,7 +85,7 @@ async function cmdRun(args) {
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
   const jit = args.jit ?? 'jit';
   const cpuThrottle = args['cpu-throttle'] == null ? 1 : Number(args['cpu-throttle']);
-  if (jit !== 'jit' && jit !== 'jitless') throw new Error(`unknown jit regime: ${jit}`);
+  if (jit !== 'jit' && jit !== 'interp') throw new Error(`unknown jit regime: ${jit}`);
   if (!Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
     throw new Error(`--cpu-throttle must be a finite number >= 1; received ${args['cpu-throttle']}`);
   }
@@ -350,6 +350,15 @@ async function cmdRun(args) {
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
   console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
 
+  // Only the one-off verifier gets --allow-natives-syntax. Measured processes never do.
+  const flagVerification = jit === 'interp' ? await verifyInterpreterFlags() : null;
+  if (flagVerification != null) {
+    console.log(
+      `[preflight:interp] JIT status=${flagVerification.jit.status}; `
+      + `interp status=${flagVerification.interp.status}; Wasm=ok`,
+    );
+  }
+
   // Preflight in the same browser configuration that will measure.
   const preflight = await (async () => {
     const { browser, executablePath, browserVersion } = await launchBrowser({ jit });
@@ -367,11 +376,12 @@ async function cmdRun(args) {
     }
   })();
   const { probe } = preflight;
+  const jsFlags = jsFlagsForRegime(jit);
   console.log(`[preflight] score=${probe.score} (probe v${probe.probeVersion})`);
   const receipt = runReceipt({
     entries, reps, stormReps, startupReps,
     execution: {
-      harness: 'web', browser: preflight.browser, jsRegime: jit, cpuThrottle,
+      harness: 'web', browser: preflight.browser, jsRegime: jit, jsFlags, cpuThrottle,
     },
   });
 
@@ -385,7 +395,7 @@ async function cmdRun(args) {
   }
   for (const entry of entries) records.push(...bundleRecords(entry).map((record) => ({
     ...record,
-    environment: { jsRegime: jit, cpuThrottle },
+    environment: { jsRegime: jit, jsFlags, cpuThrottle },
   })));
 
   const machine = machineFingerprint();
@@ -399,7 +409,8 @@ async function cmdRun(args) {
       calibration: probe,
       chromium: executablePath,
       browser: { name: 'chromium', version: browserVersion, executablePath },
-      environment: { jsRegime: jit, cpuThrottle },
+      environment: { jsRegime: jit, jsFlags, cpuThrottle },
+      ...(flagVerification == null ? {} : { flagVerification }),
       argv: process.argv.slice(2),
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),
@@ -423,18 +434,21 @@ async function cmdRun(args) {
 async function cmdPreflight(args) {
   const jit = args.jit ?? 'jit';
   const cpuThrottle = args['cpu-throttle'] == null ? 1 : Number(args['cpu-throttle']);
-  if (jit !== 'jit' && jit !== 'jitless') throw new Error(`unknown jit regime: ${jit}`);
+  if (jit !== 'jit' && jit !== 'interp') throw new Error(`unknown jit regime: ${jit}`);
   if (!Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
     throw new Error(`--cpu-throttle must be a finite number >= 1; received ${args['cpu-throttle']}`);
   }
+  const flagVerification = jit === 'interp' ? await verifyInterpreterFlags() : null;
   const { browser } = await launchBrowser({ jit });
   try {
-    const probe = await runPreflight(browser, { cpuThrottle });
+    const probe = await runPreflight(browser, { cpuThrottle, requireWebHarness: true });
+    const jsFlags = jsFlagsForRegime(jit);
     const machine = machineFingerprint();
     console.log(JSON.stringify({
       machine,
-      environment: { jsRegime: jit, cpuThrottle },
+      environment: { jsRegime: jit, jsFlags, cpuThrottle },
       calibration: probe,
+      ...(flagVerification == null ? {} : { flagVerification }),
     }, null, 2));
   } finally {
     await browser.close();

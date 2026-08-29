@@ -246,15 +246,23 @@ test('collector defaults historical Web records to jit x1 and never mixes regime
       machineId: 'same-machine', score: 100, entries: ['react', 'vue'],
       generatedAt: '2026-01-01T00:00:00Z',
     });
-    writeRun(root, 'jitless-react-v3.json', {
+    writeRun(root, 'interp-react-v3.json', {
       machineId: 'same-machine', score: 50, entries: ['react'],
       generatedAt: '2026-01-02T00:00:00Z', schemaVersion: 3,
-      regime: { jsRegime: 'jitless', cpuThrottle: 4 },
+      regime: {
+        jsRegime: 'interp',
+        jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+        cpuThrottle: 4,
+      },
     });
-    writeRun(root, 'jitless-vue-v3.json', {
+    writeRun(root, 'interp-vue-v3.json', {
       machineId: 'same-machine', score: 51, entries: ['vue'],
       generatedAt: '2026-01-03T00:00:00Z', schemaVersion: 3,
-      regime: { jsRegime: 'jitless', cpuThrottle: 4 },
+      regime: {
+        jsRegime: 'interp',
+        jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+        cpuThrottle: 4,
+      },
     });
     const out = collectRuns({
       root,
@@ -264,16 +272,16 @@ test('collector defaults historical Web records to jit x1 and never mixes regime
     });
     const webCohorts = out.comparison.harnesses.filter(({ harness }) => harness === 'web');
     assert.deepEqual(webCohorts.map(({ jsRegime, cpuThrottle }) =>
-      [jsRegime, cpuThrottle]), [['jit', 1], ['jitless', 4]]);
+      [jsRegime, cpuThrottle]), [['interp', 4], ['jit', 1]]);
     assert.deepEqual(webCohorts.map(({ sourceRunFiles }) => sourceRunFiles), [
+      ['interp-react-v3.json', 'interp-vue-v3.json'],
       ['baseline-v2.json'],
-      ['jitless-react-v3.json', 'jitless-vue-v3.json'],
     ]);
     assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jit').length, 2);
-    assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jitless').length, 2);
+    assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'interp').length, 2);
     assert.deepEqual(Object.keys(out.machineRegimes).sort(), [
-      'same-machine|jit:1',
-      'same-machine|jitless:4',
+      'same-machine|interp:--expose-gc,--no-opt,--no-sparkplug,--no-maglev:4',
+      'same-machine|jit:--expose-gc:1',
     ]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

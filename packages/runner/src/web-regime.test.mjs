@@ -5,7 +5,10 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 
 import { chromiumArgs } from './browser.mjs';
 import { setCPUThrottlingRate } from './cdp.mjs';
-import { assertWebHarnessCapabilities } from './preflight.mjs';
+import {
+  assertInterpreterFlagProbe,
+  assertWebHarnessCapabilities,
+} from './preflight.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
 
 test('default Chromium arguments remain byte-for-byte identical', () => {
@@ -18,10 +21,14 @@ test('default Chromium arguments remain byte-for-byte identical', () => {
   ]);
 });
 
-test('jitless keeps expose-gc in the same V8 flag payload', () => {
+test('interp keeps expose-gc and disables every JavaScript compiler tier', () => {
   assert.equal(
-    chromiumArgs({ jit: 'jitless' })[0],
-    '--js-flags=--expose-gc --jitless --wasm-jitless',
+    chromiumArgs({ jit: 'interp' })[0],
+    '--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+  );
+  assert.equal(
+    chromiumArgs({ jit: 'interp', allowNativesSyntax: true })[0],
+    '--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev,--allow-natives-syntax',
   );
   assert.throws(() => chromiumArgs({ jit: 'other' }), /invalid jit regime/);
 });
@@ -39,17 +46,26 @@ test('CPU throttling uses the attached page session and validates the rate', asy
 });
 
 test('Web harness capability check refuses to relabel a non-Wasm stock browser', () => {
-  assert.doesNotThrow(() => assertWebHarnessCapabilities(
-    { webAssembly: true },
-    { jsRegime: 'jitless' },
-  ));
+  assert.doesNotThrow(() => assertWebHarnessCapabilities({ webAssembly: true }));
   assert.throws(
-    () => assertWebHarnessCapabilities(
-      { webAssembly: false },
-      { jsRegime: 'jitless' },
-    ),
-    /DrumBrake.*will not silently substitute/s,
+    () => assertWebHarnessCapabilities({ webAssembly: false }),
+    /requires WebAssembly/,
   );
+});
+
+test('interpreter preflight requires a JIT control, never-optimized Ignition, and Wasm', () => {
+  assert.doesNotThrow(() => assertInterpreterFlagProbe({
+    jit: { status: 41, wasmInstantiated: true },
+    interp: { status: 67, wasmInstantiated: true },
+  }));
+  assert.throws(() => assertInterpreterFlagProbe({
+    jit: { status: 41, wasmInstantiated: true },
+    interp: { status: 41, wasmInstantiated: true },
+  }), /flags were ignored/);
+  assert.throws(() => assertInterpreterFlagProbe({
+    jit: { status: 41, wasmInstantiated: true },
+    interp: { status: 67, wasmInstantiated: false },
+  }), /WebAssembly/);
 });
 
 test('no-collect policy applies equally to Web and Native run completion', () => {
@@ -63,11 +79,17 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     metric: 'latency', boundary: 'test', unit: 'ms', samples: [1],
   };
   const historicalDefault = makeRecord(base);
-  assert.deepEqual(historicalDefault.environment, { jsRegime: 'jit', cpuThrottle: 1 });
+  assert.deepEqual(historicalDefault.environment, {
+    jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1,
+  });
   assert.equal(Object.hasOwn(historicalDefault, 'jsRegime'), false);
   assert.equal(Object.hasOwn(historicalDefault, 'cpuThrottle'), false);
-  const probe = makeRecord({ ...base, jsRegime: 'jitless', cpuThrottle: 4 });
-  assert.deepEqual(probe.environment, { jsRegime: 'jitless', cpuThrottle: 4 });
+  const probe = makeRecord({ ...base, jsRegime: 'interp', cpuThrottle: 4 });
+  assert.deepEqual(probe.environment, {
+    jsRegime: 'interp',
+    jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+    cpuThrottle: 4,
+  });
   const native = makeRecord({ ...base, harness: 'native', environment: 'device' });
   assert.equal(native.environment, 'device');
   assert.equal(Object.hasOwn(native, 'jsRegime'), false);
@@ -76,7 +98,8 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     ...base,
     harness: 'native',
     environment: 'device',
-    jsRegime: 'jitless',
+    jsRegime: 'interp',
+    jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
     cpuThrottle: 4,
   }), /Web-only/);
 });

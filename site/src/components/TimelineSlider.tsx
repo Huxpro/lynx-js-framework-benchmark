@@ -42,7 +42,7 @@ export function TimelineSlider({
   const progress = snapshots.length > 1 ? (index / (snapshots.length - 1)) * 100 : 0;
   const cohorts = checkpoint.harnesses.map((cohort) => {
     const environment = cohort.harness === 'web'
-      ? `Web ${cohort.jsRegime === 'jitless' ? 'JITless' : 'JIT'} ${cohort.cpuThrottle ?? 1}×`
+      ? `Web ${cohort.jsRegime === 'interp' ? 'Ignition' : 'JIT'} ${cohort.cpuThrottle ?? 1}×`
       : 'Native';
     return `${environment} ${cohort.entryIds.length}${cohort.rankEligible ? '' : text(' observation', '（观察值）')}`;
   });
@@ -77,16 +77,19 @@ export function TimelineSlider({
                 {WEB_REGIMES.map((candidate) => {
                   const available = checkpoint.harnesses.some((cohort) => cohort.harness === 'web'
                     && cohort.jsRegime === candidate.jsRegime
+                    && cohort.jsFlags === candidate.jsFlags
                     && cohort.cpuThrottle === candidate.cpuThrottle);
                   return (
                     <button
                       key={candidate.id}
                       type="button"
                       aria-pressed={regime.jsRegime === candidate.jsRegime
+                        && regime.jsFlags === candidate.jsFlags
                         && regime.cpuThrottle === candidate.cpuThrottle}
                       disabled={!available}
                       onClick={() => onRegimeChange({
                         jsRegime: candidate.jsRegime,
+                        jsFlags: candidate.jsFlags,
                         cpuThrottle: candidate.cpuThrottle,
                       })}
                     >{candidate.label}</button>

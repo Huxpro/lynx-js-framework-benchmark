@@ -20,11 +20,14 @@ export const LEGACY_SCHEMA_VERSIONS = [2];
 
 export const DEFAULT_WEB_REGIME = Object.freeze({
   jsRegime: 'jit',
+  jsFlags: '--expose-gc',
   cpuThrottle: 1,
 });
 
+export const INTERP_WEB_JS_FLAGS = '--expose-gc,--no-opt,--no-sparkplug,--no-maglev';
+
 export function normalizeWebRegime(record) {
-  if (record.harness !== 'web') return { jsRegime: null, cpuThrottle: null };
+  if (record.harness !== 'web') return { jsRegime: null, jsFlags: null, cpuThrottle: null };
   const environment = record.environment != null
     && typeof record.environment === 'object'
     && !Array.isArray(record.environment)
@@ -32,13 +35,14 @@ export function normalizeWebRegime(record) {
     : {};
   return {
     jsRegime: environment.jsRegime ?? record.jsRegime ?? DEFAULT_WEB_REGIME.jsRegime,
+    jsFlags: environment.jsFlags ?? record.jsFlags ?? DEFAULT_WEB_REGIME.jsFlags,
     cpuThrottle: environment.cpuThrottle ?? record.cpuThrottle ?? DEFAULT_WEB_REGIME.cpuThrottle,
   };
 }
 
 export function webRegimeKey(record) {
-  const { jsRegime, cpuThrottle } = normalizeWebRegime(record);
-  return record.harness === 'web' ? `${jsRegime}:${cpuThrottle}` : 'native';
+  const { jsRegime, jsFlags, cpuThrottle } = normalizeWebRegime(record);
+  return record.harness === 'web' ? `${jsRegime}:${jsFlags}:${cpuThrottle}` : 'native';
 }
 
 export const COMPARABILITY_KEYS = [
@@ -124,6 +128,9 @@ export function makeRecord({
   harness = 'web',
   environment = 'lynx-for-web',
   jsRegime = harness === 'web' ? DEFAULT_WEB_REGIME.jsRegime : null,
+  jsFlags = harness === 'web'
+    ? (jsRegime === 'interp' ? INTERP_WEB_JS_FLAGS : DEFAULT_WEB_REGIME.jsFlags)
+    : null,
   cpuThrottle = harness === 'web' ? DEFAULT_WEB_REGIME.cpuThrottle : null,
   entry,
   workload,
@@ -144,17 +151,21 @@ export function makeRecord({
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
   }
   if (harness === 'web') {
-    if (jsRegime !== 'jit' && jsRegime !== 'jitless') {
+    if (jsRegime !== 'jit' && jsRegime !== 'interp') {
       throw new Error(`invalid Web jsRegime: ${jsRegime}`);
+    }
+    const expectedJsFlags = jsRegime === 'interp' ? INTERP_WEB_JS_FLAGS : DEFAULT_WEB_REGIME.jsFlags;
+    if (jsFlags !== expectedJsFlags) {
+      throw new Error(`invalid Web jsFlags for ${jsRegime}: ${jsFlags}`);
     }
     if (typeof cpuThrottle !== 'number' || !Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
       throw new Error(`invalid Web cpuThrottle: ${cpuThrottle}`);
     }
-  } else if (jsRegime != null || cpuThrottle != null) {
+  } else if (jsRegime != null || jsFlags != null || cpuThrottle != null) {
     throw new Error('JS execution regimes are Web-only and cannot be attached to Native records');
   }
   const recordEnvironment = harness === 'web'
-    ? { jsRegime, cpuThrottle }
+    ? { jsRegime, jsFlags, cpuThrottle }
     : environment;
   const record = {
     suite,

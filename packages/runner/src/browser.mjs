@@ -59,12 +59,21 @@ async function freePort() {
   });
 }
 
-export function chromiumArgs({ jit = 'jit' } = {}) {
-  if (jit !== 'jit' && jit !== 'jitless') throw new Error(`invalid jit regime: ${jit}`);
+export const WEB_JS_FLAGS = Object.freeze({
+  jit: '--expose-gc',
+  interp: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+});
+
+export function jsFlagsForRegime(jit = 'jit') {
+  const jsFlags = WEB_JS_FLAGS[jit];
+  if (jsFlags == null) throw new Error(`invalid jit regime: ${jit}`);
+  return jsFlags;
+}
+
+export function chromiumArgs({ jit = 'jit', allowNativesSyntax = false } = {}) {
+  const jsFlags = jsFlagsForRegime(jit);
   return [
-    jit === 'jit'
-      ? '--js-flags=--expose-gc'
-      : '--js-flags=--expose-gc --jitless --wasm-jitless',
+    `--js-flags=${jsFlags}${allowNativesSyntax ? ',--allow-natives-syntax' : ''}`,
     '--enable-precise-memory-info',
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',
@@ -72,7 +81,9 @@ export function chromiumArgs({ jit = 'jit' } = {}) {
   ];
 }
 
-export async function launchBrowser({ headless = true, jit = 'jit' } = {}) {
+export async function launchBrowser({
+  headless = true, jit = 'jit', allowNativesSyntax = false,
+} = {}) {
   const executablePath = resolveChromium();
   const cdpPort = await freePort();
   const browser = await chromium.launch({
@@ -80,7 +91,7 @@ export async function launchBrowser({ headless = true, jit = 'jit' } = {}) {
     executablePath,
     args: [
       `--remote-debugging-port=${cdpPort}`,
-      ...chromiumArgs({ jit }),
+      ...chromiumArgs({ jit, allowNativesSyntax }),
     ],
   });
   return { browser, cdpPort, executablePath, browserVersion: browser.version() };

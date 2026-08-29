@@ -9,6 +9,7 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
   const checkpointCopy = checkpoint ? localizedCheckpoint(checkpoint, locale) : null;
   const cohort = snapshot.comparison.harnesses.find((candidate) => candidate.harness === harness
     && (harness !== 'web' || (candidate.jsRegime === regime.jsRegime
+      && candidate.jsFlags === regime.jsFlags
       && candidate.cpuThrottle === regime.cpuThrottle)));
   const boundary = harness === 'web'
     ? text('Interaction: in-page pointerdown → first frame whose composed-DOM predicate passes. Startup: view attach → first frame with benchmark content; this is a workload-defined content boundary, not cold browser-navigation FCP.', '交互：页面内 pointerdown → composed DOM 条件首次通过的帧。启动：view attach → 首个包含 benchmark 内容的帧；这是 workload 定义的内容边界，不是浏览器冷导航 FCP。')
@@ -25,7 +26,7 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
           <code title={checkpointCopy?.description}>{checkpointCopy?.label ?? snapshot.label}</code>
           {' · '}<time dateTime={snapshot.generatedAt}>{generatedAt}</time>
           {' · '}{harness === 'web' ? 'Web' : 'Native'}
-          {harness === 'web' ? ` · ${regime.jsRegime === 'jit' ? 'JIT' : 'JITless'} · ${regime.cpuThrottle}× CPU` : ''}
+          {harness === 'web' ? ` · ${regime.jsRegime === 'jit' ? 'JIT' : 'Ignition'} · ${regime.cpuThrottle}× CPU` : ''}
           {' · '}{cohort
             ? text(`${cohort.entryIds.length} comparable entries`, `${cohort.entryIds.length} 个可比条目`)
             : text('no publishable cohort', '无可发布 cohort')}

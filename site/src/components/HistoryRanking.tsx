@@ -255,10 +255,12 @@ export function HistoryRanking({
   const plotWidth = useElementWidth(ref);
   const focusSeriesRef = useRef<(entry: string | null) => void>(() => undefined);
   const matchesRegime = (record: HistoryRecord) => harness !== 'web'
-    || (record.jsRegime === regime.jsRegime && record.cpuThrottle === regime.cpuThrottle);
+    || (record.jsRegime === regime.jsRegime && record.jsFlags === regime.jsFlags
+      && record.cpuThrottle === regime.cpuThrottle);
   const matchesCohort = (cohort: HistoryCheckpoint['harnesses'][number]) =>
     cohort.harness === harness && (harness !== 'web'
-      || (cohort.jsRegime === regime.jsRegime && cohort.cpuThrottle === regime.cpuThrottle));
+      || (cohort.jsRegime === regime.jsRegime && cohort.jsFlags === regime.jsFlags
+        && cohort.cpuThrottle === regime.cpuThrottle));
   const allRecords = useMemo(() => BENCHMARK_HISTORY.records.filter((record) =>
     record.harness === harness && matchesRegime(record)
       && HISTORY_ENTRY_IDS.includes(record.entry)), [harness, regime]);

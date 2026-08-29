@@ -118,11 +118,13 @@ test('Web regime facet is explicit, URL-addressable, and cannot mix ranking reco
   assert.match(source, /JavaScript execution regime/);
   assert.match(source, /WEB_REGIMES\.map/);
   assert.match(source, /cohort\.jsRegime === candidate\.jsRegime/);
+  assert.match(source, /cohort\.jsFlags === candidate\.jsFlags/);
   assert.match(source, /cohort\.cpuThrottle === candidate\.cpuThrottle/);
   assert.match(appSource, /params\.set\('regime', id\)/);
-  assert.match(appSource, /Directional probe — interpreter regime under V8; not Native, not PrimJS\./);
+  assert.match(appSource, /Directional probe — Ignition-only JavaScript under V8; not Native, not PrimJS\./);
   assert.match(contextSource, /recordMatchesWebRegime\(record, regime\)/);
   assert.match(rankingSource, /record\.jsRegime === regime\.jsRegime/);
+  assert.match(rankingSource, /record\.jsFlags === regime\.jsFlags/);
   assert.match(rankingSource, /record\.cpuThrottle === regime\.cpuThrottle/);
 });
 

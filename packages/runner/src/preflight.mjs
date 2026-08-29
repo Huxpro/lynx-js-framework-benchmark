@@ -8,20 +8,85 @@
 // identical everywhere. PROBE_VERSION must bump when the workload changes;
 // scores across versions are incomparable.
 
+import { launchBrowser } from './browser.mjs';
+
 export const PROBE_VERSION = 1;
 
 export function assertWebHarnessCapabilities(
   { webAssembly },
-  { jsRegime = 'jit' } = {},
 ) {
   if (webAssembly) return;
-  const detail = jsRegime === 'jitless'
-    ? 'This Chromium build disables WebAssembly under --jitless. '
-      + '@lynx-js/web-core requires WebAssembly, and desktop Chromium normally ships without '
-      + 'V8 DrumBrake (the Wasm interpreter). Use a Chromium build with DrumBrake enabled; '
-      + 'the runner will not silently substitute a different JavaScript regime.'
-    : '@lynx-js/web-core requires WebAssembly, but this Chromium does not expose it.';
-  throw new Error(`Web harness capability check failed: ${detail}`);
+  throw new Error(
+    'Web harness capability check failed: @lynx-js/web-core requires WebAssembly, '
+    + 'but this Chromium does not expose it.',
+  );
+}
+
+export const OPTIMIZATION_STATUS = Object.freeze({
+  neverOptimize: 1 << 1,
+  optimized: 1 << 4,
+  turboFanned: 1 << 5,
+  interpreted: 1 << 6,
+  maglevved: 1 << 15,
+});
+
+export const INTERPRETER_FLAG_PROBE_JS = `(() => {
+  const hot = (x) => {
+    let sum = 0;
+    for (let i = 0; i < 100; i++) sum = (sum + i + x) | 0;
+    return sum;
+  };
+  for (let i = 0; i < 200000; i++) hot(i);
+  const status = (new Function('fn', 'return %GetOptimizationStatus(fn)'))(hot);
+  const wasm = new WebAssembly.Module(new Uint8Array([0,97,115,109,1,0,0,0]));
+  return { status, wasmInstantiated: wasm instanceof WebAssembly.Module };
+})()`;
+
+export function assertInterpreterFlagProbe({ jit, interp }) {
+  const compiledMask = OPTIMIZATION_STATUS.optimized
+    | OPTIMIZATION_STATUS.turboFanned
+    | OPTIMIZATION_STATUS.maglevved;
+  if ((jit.status & compiledMask) === 0) {
+    throw new Error(`interpreter flag preflight is inconclusive: JIT control status=${jit.status}`);
+  }
+  if ((interp.status & OPTIMIZATION_STATUS.neverOptimize) === 0
+    || (interp.status & OPTIMIZATION_STATUS.interpreted) === 0
+    || (interp.status & compiledMask) !== 0) {
+    throw new Error(
+      `interpreter flags were ignored: expected never-optimized Ignition, status=${interp.status}`,
+    );
+  }
+  if (!interp.wasmInstantiated) {
+    throw new Error('interpreter flag preflight failed: WebAssembly no longer instantiates');
+  }
+}
+
+async function optimizationStatusProbe(jit) {
+  const { browser, executablePath, browserVersion } = await launchBrowser({
+    jit,
+    allowNativesSyntax: true,
+  });
+  try {
+    const page = await browser.newPage();
+    try {
+      await page.goto('about:blank');
+      return await page.evaluate(INTERPRETER_FLAG_PROBE_JS);
+    } finally {
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+}
+
+export async function verifyInterpreterFlags() {
+  const result = {
+    method: 'GetOptimizationStatus-hot-function-v1',
+    jit: await optimizationStatusProbe('jit'),
+    interp: await optimizationStatusProbe('interp'),
+  };
+  assertInterpreterFlagProbe(result);
+  return result;
 }
 
 export const PROBE_JS = `(() => {
@@ -72,7 +137,7 @@ export async function runPreflight(
     if (requireWebHarness) {
       assertWebHarnessCapabilities({
         webAssembly: await page.evaluate(() => typeof WebAssembly === 'object'),
-      }, { jsRegime });
+      });
     }
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottle });

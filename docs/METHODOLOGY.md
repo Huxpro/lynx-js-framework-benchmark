@@ -236,24 +236,25 @@ metric rather than silently changing the upstream interaction formula.
 ## Web JavaScript execution regimes
 
 The Web harness has three separately ranked execution lanes. `web` is Chromium's normal V8 JIT
-with CPU throttling disabled (`environment: { jsRegime: "jit", cpuThrottle: 1 }`).
-`web-jitless` adds V8 `--jitless` while retaining `--expose-gc`, and leaves CPU throttling
-disabled. `web-jitless-4x`
-uses the same JITless process and applies `Emulation.setCPUThrottlingRate` at 4× after each page
+with CPU throttling disabled (`environment: { jsRegime: "jit", jsFlags: "--expose-gc",
+cpuThrottle: 1 }`). `web-interp` uses
+`--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev`, leaving JavaScript on Ignition while
+Wasm keeps its normal compiled pipeline, and leaves CPU throttling disabled. `web-interp-4x`
+uses the same interpreter-only JavaScript process and applies `Emulation.setCPUThrottlingRate` at 4× after each page
 target attaches and before any measured phase. The historical default is exactly `web`; a
-schema-v2 record without regime fields normalizes to JIT / 1×. The machine fingerprint does not
-change, but collection keys and comparison cohorts include both regime fields, so lanes never
+schema-v2 record without regime fields normalizes to JIT / `--expose-gc` / 1×. The machine fingerprint does not
+change, but collection keys and comparison cohorts include all three regime fields, so lanes never
 overwrite, average, or rank together.
 
-Both JITless lanes are **directional probes — interpreter regime under V8; not Native, not
-PrimJS**. V8 Ignition is not LepusNG/PrimJS: even without generated executable code, V8 retains
-hidden classes, feedback vectors, and a generational garbage collector, while PrimJS uses its own
-IC/shape machinery and reference-counting model. Stock desktop Chromium disables WebAssembly
-under `--jitless`, while Lynx Web requires it; publishable probe runs therefore require a Chromium
-build with V8 DrumBrake and add `--wasm-jitless`, so both JavaScript and the required Wasm execute
-without JIT compilation. The runner rejects an incapable browser rather than silently changing
-the regime. RegExp also runs through the interpreted path, which can amplify RegExp-heavy
-workloads for a reason that does not transfer to PrimJS. These lanes are suitable for ordering,
+Both interpreter lanes are **directional probes — interpreter regime under V8; not Native, not
+PrimJS**. V8 Ignition is not LepusNG/PrimJS: JavaScript keeps Ignition's ICs, hidden classes, and
+feedback vectors (but no compiled JavaScript), plus V8's generational garbage collector; Wasm and
+RegExp remain compiled. Before a formal interpreter run, a one-off browser adds
+`--allow-natives-syntax`, warms a pure-JavaScript function, and asserts that a JIT control compiles
+while the interpreter process reports never-optimized Ignition; it also instantiates a minimal
+Wasm module. Measured processes omit the diagnostic flag. Full `--jitless` was rejected because it
+also disables Wasm, and restoring Wasm through DrumBrake would require a custom, non-reproducible
+Chromium build. These lanes are suitable for ordering,
 scale-shape, regression, and "what was JIT hiding?" leads, never absolute device-time prediction.
 
 ## Harness separation

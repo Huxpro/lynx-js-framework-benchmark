@@ -126,7 +126,8 @@ dimensions. One record per (entry × workload × scale × metric):
     "suite": "table" | "startup",
     "harness": "web" | "native",
     "environment": {                     // Web only
-      "jsRegime": "jit",                // jit | jitless
+      "jsRegime": "jit",                // jit | interp
+      "jsFlags": "--expose-gc",         // exact V8 payload
       "cpuThrottle": 1                   // CDP CPU multiplier
     },
     "entry": "vue-vdom",
@@ -238,7 +239,7 @@ calibration output, `latest.json`, and every site score/visual are derived.
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
-  (harness, environment, jsRegime, cpuThrottle, entry, workload, scale, metric, machineId);
+  (harness, environment, jsRegime, jsFlags, cpuThrottle, entry, workload, scale, metric, machineId);
   cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
   one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured

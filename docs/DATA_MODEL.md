@@ -22,7 +22,7 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, Web `environment: { jsRegime, cpuThrottle }` or the unchanged
+- record identity: suite, harness, Web `environment: { jsRegime, jsFlags, cpuThrottle }` or the unchanged
   Native device-environment string, entry,
   workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
@@ -34,9 +34,11 @@ These are the only files/fields that require an update when their real-world inp
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
 Schema v3 adds the Web JS-execution regime as
-`environment: { jsRegime: "jit" | "jitless", cpuThrottle: number }`, where the throttle is a finite
+`environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number }`, where
+`jsFlags` is the exact V8 payload and the throttle is a finite
 multiplier ≥1. Native records keep their schema-v2 environment string byte-for-byte and never gain
-Web regime fields. Schema-v2 Web records normalize to `{ jsRegime: "jit", cpuThrottle: 1 }`.
+Web regime fields. Schema-v2 Web records normalize to
+`{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1 }`.
 The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
 keyed by machine × regime so the three Web lanes cannot overwrite, average, or rank together.
 

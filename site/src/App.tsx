@@ -82,7 +82,7 @@ function initialWebRegime(): WebRegime {
   const match = WEB_REGIMES.find((candidate) => candidate.id === id);
   return match == null
     ? DEFAULT_WEB_REGIME
-    : { jsRegime: match.jsRegime, cpuThrottle: match.cpuThrottle };
+    : { jsRegime: match.jsRegime, jsFlags: match.jsFlags, cpuThrottle: match.cpuThrottle };
 }
 
 function AppContent({
@@ -106,6 +106,7 @@ function AppContent({
   const cohortEntryIds = snapshot.comparison.harnesses
     .find((cohort) => cohort.harness === harness && (harness !== 'web'
       || (cohort.jsRegime === regime.jsRegime
+        && cohort.jsFlags === regime.jsFlags
         && cohort.cpuThrottle === regime.cpuThrottle)))?.entryIds ?? [];
   const cohortKey = `${snapshot.id}:${harness}:${webRegimeId(regime)}`;
   const previousCohort = useRef(cohortKey);
@@ -287,11 +288,11 @@ function AppContent({
         onHeatPaletteToggle={toggleHeatPalette}
       />
       <MeasurementReceipt harness={harness} />
-      {harness === 'web' && regime.jsRegime === 'jitless' && (
+      {harness === 'web' && regime.jsRegime === 'interp' && (
         <p className="regime-disclaimer" role="note">
           {text(
-            'Directional probe — interpreter regime under V8; not Native, not PrimJS.',
-            '方向性探针——V8 解释器政权；不是 Native，也不是 PrimJS。',
+            'Directional probe — Ignition-only JavaScript under V8; not Native, not PrimJS.',
+            '方向性探针——V8 下仅用 Ignition 解释 JavaScript；不是 Native，也不是 PrimJS。',
           )}
         </p>
       )}
@@ -479,7 +480,8 @@ export default function App() {
     const params = new URLSearchParams(location.search);
     const candidate = TIMELINE_SNAPSHOTS[index];
     const regimeAvailable = candidate.comparison.harnesses.some((cohort) => cohort.harness === 'web'
-      && cohort.jsRegime === regime.jsRegime && cohort.cpuThrottle === regime.cpuThrottle);
+      && cohort.jsRegime === regime.jsRegime && cohort.jsFlags === regime.jsFlags
+      && cohort.cpuThrottle === regime.cpuThrottle);
     if (!regimeAvailable) {
       setRegime(DEFAULT_WEB_REGIME);
       params.delete('regime');

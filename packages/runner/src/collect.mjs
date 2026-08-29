@@ -285,8 +285,14 @@ const normalizeRecord = (run, record) => {
     ? { ...record, environment: 'lynx-for-web', ...regime }
     : { ...record };
   if (record.harness === 'web') {
-    if (regime.jsRegime !== 'jit' && regime.jsRegime !== 'jitless') {
+    if (regime.jsRegime !== 'jit' && regime.jsRegime !== 'interp') {
       throw new Error(`invalid Web jsRegime: ${regime.jsRegime}`);
+    }
+    const expectedJsFlags = regime.jsRegime === 'interp'
+      ? '--expose-gc,--no-opt,--no-sparkplug,--no-maglev'
+      : '--expose-gc';
+    if (regime.jsFlags !== expectedJsFlags) {
+      throw new Error(`invalid Web jsFlags for ${regime.jsRegime}: ${regime.jsFlags}`);
     }
     if (!Number.isFinite(regime.cpuThrottle) || regime.cpuThrottle < 1) {
       throw new Error(`invalid Web cpuThrottle: ${regime.cpuThrottle}`);
@@ -309,19 +315,21 @@ const normalizeRun = (rawRun, file) => {
       const environment = record.environment;
       if (environment == null || typeof environment !== 'object' || Array.isArray(environment)
         || !Object.hasOwn(environment, 'jsRegime')
+        || !Object.hasOwn(environment, 'jsFlags')
         || !Object.hasOwn(environment, 'cpuThrottle')) {
         throw new Error(
           `${file}: schema v${SCHEMA_VERSION} Web record ${index} is missing its environment regime`,
         );
       }
-      if (Object.hasOwn(record, 'jsRegime') || Object.hasOwn(record, 'cpuThrottle')) {
+      if (Object.hasOwn(record, 'jsRegime') || Object.hasOwn(record, 'jsFlags')
+        || Object.hasOwn(record, 'cpuThrottle')) {
         throw new Error(
           `${file}: schema v${SCHEMA_VERSION} Web record ${index} stores its regime outside environment`,
         );
       }
     }
     if (record.harness !== 'web'
-      && (record.jsRegime != null || record.cpuThrottle != null
+      && (record.jsRegime != null || record.jsFlags != null || record.cpuThrottle != null
         || (record.environment != null && typeof record.environment === 'object'))) {
       throw new Error(`${file}: record ${index} attaches a Web JS regime to ${record.harness}`);
     }
@@ -748,6 +756,7 @@ const stormTransportEvidence = (run, record) => {
     && candidate.harness === record.harness
     && candidate.environment === record.environment
     && candidate.jsRegime === record.jsRegime
+    && candidate.jsFlags === record.jsFlags
     && candidate.cpuThrottle === record.cpuThrottle
     && candidate.workload === record.workload
     && candidate.scale === record.scale
@@ -782,6 +791,7 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     harness: record.harness,
     environment: record.environment,
     jsRegime: record.jsRegime,
+    jsFlags: record.jsFlags,
     cpuThrottle: record.cpuThrottle,
     entry,
     ...(sourceEntry === entry ? {} : { sourceEntry }),
@@ -1172,11 +1182,13 @@ const buildHistory = ({
         && record.environment === cohort.environment
         && (cohort.harness !== 'web'
           || (record.jsRegime === cohort.jsRegime
+            && record.jsFlags === cohort.jsFlags
             && record.cpuThrottle === cohort.cpuThrottle))),
       cohort.entryIds,
     ).map((record) => ({
       ...record,
-      cohortId: `current:${cohort.harness}:${cohort.machineId}:${cohort.jsRegime ?? 'native'}:${cohort.cpuThrottle ?? 0}`,
+      cohortId: `current:${cohort.harness}:${cohort.machineId}:`
+        + `${cohort.jsRegime ?? 'native'}:${cohort.jsFlags ?? ''}:${cohort.cpuThrottle ?? 0}`,
       rankEligible: true,
     })));
   const currentActiveRecordIndexes = currentHistoryRecords.map(
@@ -1200,7 +1212,8 @@ const buildHistory = ({
       .filter((index) => index >= 0))],
     harnesses: current.comparison.harnesses.map((cohort) => ({
       harness: cohort.harness, environment: cohort.environment, machineId: cohort.machineId,
-      jsRegime: cohort.jsRegime ?? null, cpuThrottle: cohort.cpuThrottle ?? null,
+      jsRegime: cohort.jsRegime ?? null, jsFlags: cohort.jsFlags ?? null,
+      cpuThrottle: cohort.cpuThrottle ?? null,
       sourceRunFiles: cohort.sourceRunFiles, entryIds: cohort.entryIds, rankEligible: true,
     })),
   });
@@ -1352,7 +1365,7 @@ export function collectRuns({
         ...m,
         machineRegimeId,
         ...(regimeKey === 'native'
-          ? { jsRegime: null, cpuThrottle: null }
+          ? { jsRegime: null, jsFlags: null, cpuThrottle: null }
           : normalizeWebRegime(run.records.find((record) => record.harness === 'web'))),
         latestCalibration: run.meta.calibration,
         latestRunFile: file,

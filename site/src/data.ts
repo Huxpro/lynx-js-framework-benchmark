@@ -6,7 +6,8 @@ export interface BenchRecord {
   suite: string;
   harness: string;
   environment: string;
-  jsRegime: 'jit' | 'jitless' | null;
+  jsRegime: 'jit' | 'interp' | null;
+  jsFlags: string | null;
   cpuThrottle: number | null;
   entry: string;
   workload: string;
@@ -85,7 +86,8 @@ export interface ComparisonRun {
   harnesses: {
     harness: string;
     environment: string | null;
-    jsRegime: 'jit' | 'jitless' | null;
+    jsRegime: 'jit' | 'interp' | null;
+    jsFlags: string | null;
     cpuThrottle: number | null;
     generatedAt: string;
     machineId: string;
@@ -210,7 +212,8 @@ export interface HistoryRecord extends BenchRecord {
 export interface HistoryCohort {
   harness: string;
   environment: string | null;
-  jsRegime: 'jit' | 'jitless' | null;
+  jsRegime: 'jit' | 'interp' | null;
+  jsFlags: string | null;
   cpuThrottle: number | null;
   machineId: string;
   sourceRunFiles: string[];
@@ -329,23 +332,30 @@ const collected = latest as unknown as {
 };
 export const BENCHMARK_HISTORY = collected.history;
 export interface WebRegime {
-  jsRegime: 'jit' | 'jitless';
+  jsRegime: 'jit' | 'interp';
+  jsFlags: string;
   cpuThrottle: number;
 }
-export const DEFAULT_WEB_REGIME: WebRegime = { jsRegime: 'jit', cpuThrottle: 1 };
+const JIT_FLAGS = '--expose-gc';
+const INTERP_FLAGS = '--expose-gc,--no-opt,--no-sparkplug,--no-maglev';
+export const DEFAULT_WEB_REGIME: WebRegime = {
+  jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1,
+};
 export const WEB_REGIMES: (WebRegime & { id: string; label: string })[] = [
-  { id: 'web', label: 'JIT · 1×', jsRegime: 'jit', cpuThrottle: 1 },
-  { id: 'web-jitless', label: 'JITless · 1×', jsRegime: 'jitless', cpuThrottle: 1 },
-  { id: 'web-jitless-4x', label: 'JITless · 4×', jsRegime: 'jitless', cpuThrottle: 4 },
+  { id: 'web', label: 'JIT · 1×', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1 },
+  { id: 'web-interp', label: 'Ignition · 1×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1 },
+  { id: 'web-interp-4x', label: 'Ignition · 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4 },
 ];
 export function webRegimeId(regime: WebRegime): string {
   return WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime
+    && candidate.jsFlags === regime.jsFlags
     && candidate.cpuThrottle === regime.cpuThrottle)?.id
     ?? `${regime.jsRegime}-${regime.cpuThrottle}x`;
 }
 export function recordMatchesWebRegime(record: BenchRecord, regime: WebRegime): boolean {
   return record.harness !== 'web'
-    || (record.jsRegime === regime.jsRegime && record.cpuThrottle === regime.cpuThrottle);
+    || (record.jsRegime === regime.jsRegime && record.jsFlags === regime.jsFlags
+      && record.cpuThrottle === regime.cpuThrottle);
 }
 const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   version: 'history-no-native-data',
@@ -376,6 +386,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     harness: cohort.harness,
     environment: cohort.environment,
     jsRegime: cohort.jsRegime ?? null,
+    jsFlags: cohort.jsFlags ?? null,
     cpuThrottle: cohort.cpuThrottle ?? null,
     generatedAt: checkpoint.generatedAt,
     machineId: cohort.machineId,
@@ -384,9 +395,11 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     entryIds: cohort.entryIds,
     sourceRecordCount: records.filter((record) => record.harness === cohort.harness
       && (cohort.harness !== 'web' || (record.jsRegime === cohort.jsRegime
+        && record.jsFlags === cohort.jsFlags
         && record.cpuThrottle === cohort.cpuThrottle))).length,
     recordCount: records.filter((record) => record.harness === cohort.harness
       && (cohort.harness !== 'web' || (record.jsRegime === cohort.jsRegime
+        && record.jsFlags === cohort.jsFlags
         && record.cpuThrottle === cohort.cpuThrottle))).length,
   }));
   const sources = checkpoint.sourceIndexes.map((index) => BENCHMARK_HISTORY.sources[index]);
@@ -465,7 +478,8 @@ export interface RecordFilter {
   scale?: number;
   metric?: string;
   environment?: string;
-  jsRegime?: 'jit' | 'jitless' | null;
+  jsRegime?: 'jit' | 'interp' | null;
+  jsFlags?: string | null;
   cpuThrottle?: number | null;
   boundary?: string;
   unit?: string;
@@ -483,6 +497,7 @@ export function filterRecords(records: BenchRecord[], filter: RecordFilter): Ben
     && (filter.metric == null || r.metric === filter.metric)
     && (filter.environment == null || r.environment === filter.environment)
     && (filter.jsRegime == null || r.jsRegime === filter.jsRegime)
+    && (filter.jsFlags == null || r.jsFlags === filter.jsFlags)
     && (filter.cpuThrottle == null || r.cpuThrottle === filter.cpuThrottle)
     && (filter.boundary == null || r.boundary === filter.boundary)
     && (filter.unit == null || r.unit === filter.unit),
