@@ -26,6 +26,7 @@ import { launchBrowser } from './browser.mjs';
 import { runReceipt } from './provenance.mjs';
 import { stringifyResult } from './result-json.mjs';
 import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
+import { shouldCollectAfterRun } from './run-policy.mjs';
 import {
   assertConnectorPackageTrees,
   resolveConnectorPackageTrees,
@@ -334,7 +335,7 @@ async function cmdRun(args) {
     }
     persist({ records: native.records, machine: native.machine }, { complete: true });
     console.log(`[run:native] ${records.length} records → ${path.relative(root, outPath)}`);
-    if (!args['no-collect']) collectRuns();
+    if (shouldCollectAfterRun(args)) collectRuns();
     return;
   }
   const quick = Boolean(args.quick);
@@ -354,7 +355,11 @@ async function cmdRun(args) {
     const { browser, executablePath, browserVersion } = await launchBrowser({ jit });
     try {
       return {
-        probe: await runPreflight(browser, { cpuThrottle }),
+        probe: await runPreflight(browser, {
+          cpuThrottle,
+          requireWebHarness: true,
+          jsRegime: jit,
+        }),
         browser: { name: 'chromium', version: browserVersion, executablePath },
       };
     } finally {
@@ -411,9 +416,9 @@ async function cmdRun(args) {
   fs.writeFileSync(outPath, stringifyResult(run));
   console.log(`[run] ${records.length} records → ${path.relative(root, outPath)}`);
   // The run file is the source; latest.json is only a materialized view. Keep
-  // it synchronized immediately so no consumer can observe the previous run's
-  // derived cohort/statistics between `run` and a later build.
-  collectRuns();
+  // it synchronized immediately unless the caller explicitly asked to defer
+  // materialization (useful while completing a split regime campaign).
+  if (shouldCollectAfterRun(args)) collectRuns();
 }
 
 async function cmdPreflight(args) {

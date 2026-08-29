@@ -5,6 +5,8 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 
 import { chromiumArgs } from './browser.mjs';
 import { setCPUThrottlingRate } from './cdp.mjs';
+import { assertWebHarnessCapabilities } from './preflight.mjs';
+import { shouldCollectAfterRun } from './run-policy.mjs';
 
 test('default Chromium arguments remain byte-for-byte identical', () => {
   assert.deepEqual(chromiumArgs(), [
@@ -31,6 +33,25 @@ test('CPU throttling uses the attached page session and validates the rate', asy
     'page-session',
   ]]);
   await assert.rejects(() => setCPUThrottlingRate(client, 'page-session', 0), /invalid CPU/);
+});
+
+test('Web harness capability check refuses to relabel a non-Wasm stock browser', () => {
+  assert.doesNotThrow(() => assertWebHarnessCapabilities(
+    { webAssembly: true },
+    { jsRegime: 'jitless' },
+  ));
+  assert.throws(
+    () => assertWebHarnessCapabilities(
+      { webAssembly: false },
+      { jsRegime: 'jitless' },
+    ),
+    /DrumBrake.*will not silently substitute/s,
+  );
+});
+
+test('no-collect policy applies equally to Web and Native run completion', () => {
+  assert.equal(shouldCollectAfterRun({}), true);
+  assert.equal(shouldCollectAfterRun({ 'no-collect': true }), false);
 });
 
 test('schema records Web regimes and rejects applying them to Native', () => {

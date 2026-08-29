@@ -10,6 +10,20 @@
 
 export const PROBE_VERSION = 1;
 
+export function assertWebHarnessCapabilities(
+  { webAssembly },
+  { jsRegime = 'jit' } = {},
+) {
+  if (webAssembly) return;
+  const detail = jsRegime === 'jitless'
+    ? 'This Chromium build disables WebAssembly under --jitless. '
+      + '@lynx-js/web-core requires WebAssembly, and desktop Chromium normally ships without '
+      + 'V8 DrumBrake (the Wasm interpreter). Use a Chromium build with DrumBrake enabled; '
+      + 'the runner will not silently substitute a different JavaScript regime.'
+    : '@lynx-js/web-core requires WebAssembly, but this Chromium does not expose it.';
+  throw new Error(`Web harness capability check failed: ${detail}`);
+}
+
 export const PROBE_JS = `(() => {
   let seed = 7 >>> 0;
   const rand = () => {
@@ -48,10 +62,18 @@ export const PROBE_JS = `(() => {
   return { score: (n / elapsed) * 1000, iterations: n, elapsedMs: elapsed, sink };
 })()`;
 
-export async function runPreflight(browser, { cpuThrottle = 1 } = {}) {
+export async function runPreflight(
+  browser,
+  { cpuThrottle = 1, requireWebHarness = false, jsRegime = 'jit' } = {},
+) {
   const page = await browser.newPage();
   try {
     await page.goto('about:blank');
+    if (requireWebHarness) {
+      assertWebHarnessCapabilities({
+        webAssembly: await page.evaluate(() => typeof WebAssembly === 'object'),
+      }, { jsRegime });
+    }
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottle });
     const result = await page.evaluate(PROBE_JS);
