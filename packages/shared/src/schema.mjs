@@ -25,9 +25,14 @@ export const DEFAULT_WEB_REGIME = Object.freeze({
 
 export function normalizeWebRegime(record) {
   if (record.harness !== 'web') return { jsRegime: null, cpuThrottle: null };
+  const environment = record.environment != null
+    && typeof record.environment === 'object'
+    && !Array.isArray(record.environment)
+    ? record.environment
+    : {};
   return {
-    jsRegime: record.jsRegime ?? DEFAULT_WEB_REGIME.jsRegime,
-    cpuThrottle: record.cpuThrottle ?? DEFAULT_WEB_REGIME.cpuThrottle,
+    jsRegime: environment.jsRegime ?? record.jsRegime ?? DEFAULT_WEB_REGIME.jsRegime,
+    cpuThrottle: environment.cpuThrottle ?? record.cpuThrottle ?? DEFAULT_WEB_REGIME.cpuThrottle,
   };
 }
 
@@ -39,8 +44,6 @@ export function webRegimeKey(record) {
 export const COMPARABILITY_KEYS = [
   'harness',
   'environment',
-  'jsRegime',
-  'cpuThrottle',
   'workload',
   'scale',
   'metric',
@@ -150,12 +153,13 @@ export function makeRecord({
   } else if (jsRegime != null || cpuThrottle != null) {
     throw new Error('JS execution regimes are Web-only and cannot be attached to Native records');
   }
+  const recordEnvironment = harness === 'web'
+    ? { jsRegime, cpuThrottle }
+    : environment;
   const record = {
     suite,
     harness,
-    environment,
-    jsRegime,
-    cpuThrottle,
+    environment: recordEnvironment,
     entry,
     workload,
     scale,
@@ -176,5 +180,10 @@ export function makeRecord({
 }
 
 export function comparisonKey(record) {
-  return COMPARABILITY_KEYS.map((k) => String(record[k])).join('|');
+  const base = COMPARABILITY_KEYS.map((key) => {
+    const value = record[key];
+    return value != null && typeof value === 'object' ? JSON.stringify(value) : String(value);
+  });
+  if (record.harness === 'web') base.push(webRegimeKey(record));
+  return base.join('|');
 }

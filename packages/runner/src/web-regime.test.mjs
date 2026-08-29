@@ -19,7 +19,10 @@ test('default Chromium arguments remain byte-for-byte identical', () => {
 });
 
 test('jitless keeps expose-gc in the same V8 flag payload', () => {
-  assert.equal(chromiumArgs({ jit: 'jitless' })[0], '--js-flags=--expose-gc --jitless');
+  assert.equal(
+    chromiumArgs({ jit: 'jitless' })[0],
+    '--js-flags=--expose-gc --jitless --wasm-jitless',
+  );
   assert.throws(() => chromiumArgs({ jit: 'other' }), /invalid jit regime/);
 });
 
@@ -59,12 +62,16 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     suite: 'table', entry: 'react', workload: 'create', scale: 1000,
     metric: 'latency', boundary: 'test', unit: 'ms', samples: [1],
   };
-  const legacyDefault = makeRecord(base);
-  assert.equal(legacyDefault.jsRegime, 'jit');
-  assert.equal(legacyDefault.cpuThrottle, 1);
+  const historicalDefault = makeRecord(base);
+  assert.deepEqual(historicalDefault.environment, { jsRegime: 'jit', cpuThrottle: 1 });
+  assert.equal(Object.hasOwn(historicalDefault, 'jsRegime'), false);
+  assert.equal(Object.hasOwn(historicalDefault, 'cpuThrottle'), false);
   const probe = makeRecord({ ...base, jsRegime: 'jitless', cpuThrottle: 4 });
-  assert.equal(probe.jsRegime, 'jitless');
-  assert.equal(probe.cpuThrottle, 4);
+  assert.deepEqual(probe.environment, { jsRegime: 'jitless', cpuThrottle: 4 });
+  const native = makeRecord({ ...base, harness: 'native', environment: 'device' });
+  assert.equal(native.environment, 'device');
+  assert.equal(Object.hasOwn(native, 'jsRegime'), false);
+  assert.equal(Object.hasOwn(native, 'cpuThrottle'), false);
   assert.throws(() => makeRecord({
     ...base,
     harness: 'native',

@@ -277,7 +277,13 @@ const normalizedEntryId = (run, entry) => {
 const normalizeRecord = (run, record) => {
   const entry = normalizedEntryId(run, record.entry);
   const regime = normalizeWebRegime(record);
-  const withRegime = { ...record, ...regime };
+  // Source schema-v3 Web records devote `environment` to the execution-regime
+  // object requested by issue #40. The derived dataset retains the historical
+  // runtime label for existing site consumers and exposes normalized lane
+  // fields alongside it. Native environment strings are never rewritten.
+  const withRegime = record.harness === 'web'
+    ? { ...record, environment: 'lynx-for-web', ...regime }
+    : { ...record };
   if (record.harness === 'web') {
     if (regime.jsRegime !== 'jit' && regime.jsRegime !== 'jitless') {
       throw new Error(`invalid Web jsRegime: ${regime.jsRegime}`);
@@ -299,12 +305,24 @@ const normalizeRun = (rawRun, file) => {
   }
   if (!Array.isArray(rawRun.records)) throw new Error(`${file}: records must be an array`);
   const normalizedRecords = rawRun.records.map((record, index) => {
-    if (rawRun.schemaVersion === SCHEMA_VERSION && record.harness === 'web'
-      && (!Object.hasOwn(record, 'jsRegime') || !Object.hasOwn(record, 'cpuThrottle'))) {
-      throw new Error(`${file}: schema v${SCHEMA_VERSION} Web record ${index} is missing its JS regime`);
+    if (rawRun.schemaVersion === SCHEMA_VERSION && record.harness === 'web') {
+      const environment = record.environment;
+      if (environment == null || typeof environment !== 'object' || Array.isArray(environment)
+        || !Object.hasOwn(environment, 'jsRegime')
+        || !Object.hasOwn(environment, 'cpuThrottle')) {
+        throw new Error(
+          `${file}: schema v${SCHEMA_VERSION} Web record ${index} is missing its environment regime`,
+        );
+      }
+      if (Object.hasOwn(record, 'jsRegime') || Object.hasOwn(record, 'cpuThrottle')) {
+        throw new Error(
+          `${file}: schema v${SCHEMA_VERSION} Web record ${index} stores its regime outside environment`,
+        );
+      }
     }
     if (record.harness !== 'web'
-      && (record.jsRegime != null || record.cpuThrottle != null)) {
+      && (record.jsRegime != null || record.cpuThrottle != null
+        || (record.environment != null && typeof record.environment === 'object'))) {
       throw new Error(`${file}: record ${index} attaches a Web JS regime to ${record.harness}`);
     }
     const hasRepeatedSource = Array.isArray(record.samples);

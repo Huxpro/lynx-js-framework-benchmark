@@ -22,7 +22,8 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, environment, Web-only `jsRegime` / `cpuThrottle`, entry,
+- record identity: suite, harness, Web `environment: { jsRegime, cpuThrottle }` or the unchanged
+  Native device-environment string, entry,
   workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
@@ -32,9 +33,10 @@ These are the only files/fields that require an update when their real-world inp
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
-Schema v3 adds the Web JS-execution regime. Every schema-v3 Web record names `jsRegime` (`jit` or
-`jitless`) and `cpuThrottle` (a finite multiplier ≥1); Native records carry nulls and can never be
-assigned a Web regime. Schema-v2 Web records normalize to `{ jsRegime: "jit", cpuThrottle: 1 }`.
+Schema v3 adds the Web JS-execution regime as
+`environment: { jsRegime: "jit" | "jitless", cpuThrottle: number }`, where the throttle is a finite
+multiplier ≥1. Native records keep their schema-v2 environment string byte-for-byte and never gain
+Web regime fields. Schema-v2 Web records normalize to `{ jsRegime: "jit", cpuThrottle: 1 }`.
 The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
 keyed by machine × regime so the three Web lanes cannot overwrite, average, or rank together.
 

@@ -64,7 +64,7 @@ export function chromiumArgs({ jit = 'jit' } = {}) {
   return [
     jit === 'jit'
       ? '--js-flags=--expose-gc'
-      : '--js-flags=--expose-gc --jitless',
+      : '--js-flags=--expose-gc --jitless --wasm-jitless',
     '--enable-precise-memory-info',
     '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding',

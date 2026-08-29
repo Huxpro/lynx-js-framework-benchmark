@@ -197,7 +197,9 @@ const writeRun = (root, file, {
       ...(entryCommits ? { entryCommits } : {}),
       ...(receipt ? { receipt } : {}),
     },
-    records: entries.map((entry) => ({ ...record(entry), ...(regime ?? {}) })),
+    records: entries.map((entry) => schemaVersion === 3
+      ? { ...record(entry), environment: regime }
+      : record(entry)),
   }));
 };
 

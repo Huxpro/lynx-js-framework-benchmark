@@ -125,9 +125,10 @@ dimensions. One record per (entry × workload × scale × metric):
   "records": [{
     "suite": "table" | "startup",
     "harness": "web" | "native",
-    "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
-    "jsRegime": "jit",                  // Web: jit | jitless; Native: null
-    "cpuThrottle": 1,                    // Web CDP CPU multiplier; Native: null
+    "environment": {                     // Web only
+      "jsRegime": "jit",                // jit | jitless
+      "cpuThrottle": 1                   // CDP CPU multiplier
+    },
     "entry": "vue-vdom",
     "workload": "update10th",
     "scale": 10000,
@@ -143,8 +144,9 @@ dimensions. One record per (entry × workload × scale × metric):
 ```
 
 **Comparability policy** (inherited): two records may be charted against each other only when
-`harness`, `environment`, `jsRegime`, `cpuThrottle`, `workload`, `scale`, `metric`, `boundary`,
-and `unit` all agree. Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
+`harness`, normalized `environment` regime, `workload`, `scale`, `metric`, `boundary`, and `unit`
+all agree. Native retains its existing device-environment string and has no Web regime fields.
+Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
 

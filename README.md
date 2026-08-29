@@ -34,6 +34,9 @@ the default remains `0,1000,10000,30000`.
 
 Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
 `npx playwright install chromium`, or `PLAYWRIGHT_CHROMIUM_PATH`).
+Because Lynx Web requires WebAssembly, the JITless lanes specifically require a Chromium built
+with V8 DrumBrake; the runner uses `--wasm-jitless` and fails its capability check when a stock
+desktop build removes WebAssembly instead of substituting a partially-JITed regime.
 
 For a leased Lynx Sandbox Android device:
 

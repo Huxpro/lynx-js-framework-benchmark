@@ -385,8 +385,7 @@ async function cmdRun(args) {
   }
   for (const entry of entries) records.push(...bundleRecords(entry).map((record) => ({
     ...record,
-    jsRegime: jit,
-    cpuThrottle,
+    environment: { jsRegime: jit, cpuThrottle },
   })));
 
   const machine = machineFingerprint();
