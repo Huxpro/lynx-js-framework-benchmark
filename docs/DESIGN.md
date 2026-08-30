@@ -150,9 +150,10 @@ series in the same chart.
 
 `bundle-scale` is a derived static suite, not a benchmark suite. Its records are excluded before
 cohort/matrix selection, marked non-ranking, and attached descriptively only to the current exact
-manifest identity. The staging view joins one record to startup FCP on entry + harness + scale,
-computes the lower-left non-dominated frontier in the site, and draws the already-derived FCP
-`ci95`; it never reduces the two axes to one score. Exact coordinate ties remain co-frontier.
+manifest identity. The staging view joins one record to startup FCP on entry + harness + scale +
+one normalized execution regime (Web JIT 1× by default), computes the lower-left non-dominated
+frontier in the site, and draws the already-derived FCP `ci95`; it never reduces the two axes to one
+score. The frontier helper rejects mixed regimes, and exact coordinate ties remain co-frontier.
 
 The list contract is additionally capability-gated. The source is the optional `listFixture`
 declaration plus its exact bundle artifact; `collect` derives a complete entry × harness × case

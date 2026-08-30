@@ -2,10 +2,15 @@ import * as Plot from '@observablehq/plot';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
-import { ENTRIES, entryColor, shortLabel } from '../data';
+import { ENTRIES, entryColor, filterRecords, oneFrom, shortLabel } from '../data';
 import { useElementWidth } from '../hooks';
 import { useI18n } from '../i18n';
-import { paretoFrontier, paretoLine } from '../pareto.mjs';
+import {
+  paretoFrontier,
+  paretoLine,
+  paretoRegimeKey,
+  paretoRegimeRecords,
+} from '../pareto.mjs';
 import { CardCaption } from './ResponsiveCopy';
 
 type SizeMode = 'total' | 'mts';
@@ -22,6 +27,7 @@ interface ParetoPoint {
   artifactSha256: string;
   fcpRunFile: string;
   fcpBoundary: string;
+  regimeKey: string;
 }
 
 export function CostSpace({
@@ -34,13 +40,13 @@ export function CostSpace({
   selected: Set<string>;
 }) {
   const { text } = useI18n();
-  const { one, workloadScales } = useBenchmarkData();
+  const { snapshot } = useBenchmarkData();
+  const records = snapshot.records;
   const ref = useRef<HTMLDivElement>(null);
   const plotWidth = useElementWidth(ref);
-  const scales = useMemo(
-    () => workloadScales({ suite: 'startup', harness, workload: 'startup', metric: 'fcp' }),
-    [harness, workloadScales],
-  );
+  const scales = useMemo(() => [...new Set(paretoRegimeRecords(filterRecords(records, {
+    suite: 'startup', harness, workload: 'startup', metric: 'fcp',
+  }), harness).map((record) => record.scale))].sort((left, right) => left - right), [harness, records]);
   const [scale, setScale] = useState(10000);
   const [sizeMode, setSizeMode] = useState<SizeMode>('total');
   const activeScale = scales.includes(scale)
@@ -54,12 +60,16 @@ export function CostSpace({
     const missing: string[] = [];
     for (const entry of ENTRIES) {
       if (!selected.has(entry.id) || activeScale == null) continue;
-      const fcp = one({
+      const fcpMatches = paretoRegimeRecords(filterRecords(records, {
         suite: 'startup', harness, entry: entry.id,
         workload: 'startup', scale: activeScale, metric: 'fcp',
-      });
+      }), harness);
+      if (fcpMatches.length > 1) {
+        throw new Error(`ambiguous Pareto FCP in ${paretoRegimeKey(fcpMatches[0])}: ${entry.id}@${activeScale}`);
+      }
+      const fcp = fcpMatches[0] ?? null;
       if (fcp?.median == null) continue;
-      const size = one({
+      const size = oneFrom(records, {
         suite: 'bundle-scale', harness, entry: entry.id,
         workload: 'startup-bundle', scale: activeScale, metric: sizeMetric,
       });
@@ -80,10 +90,11 @@ export function CostSpace({
         artifactSha256: size.artifact.sha256,
         fcpRunFile: fcp.runFile ?? 'derived checkpoint',
         fcpBoundary: fcp.boundary,
+        regimeKey: paretoRegimeKey(fcp),
       });
     }
     return { data: points, unavailable: missing };
-  }, [activeScale, harness, one, selected, sizeMetric]);
+  }, [activeScale, harness, records, selected, sizeMetric]);
 
   const frontier = useMemo(() => paretoFrontier(data) as ParetoPoint[], [data]);
   const frontierEntries = useMemo(
@@ -169,8 +180,8 @@ export function CostSpace({
       <figcaption>
         <CardCaption title={text('staging Pareto — what did those bytes buy?', 'Staging Pareto——这些字节换来了什么？')}>
           {text(
-            'Exact scale-matched artifact gzip against local/cached startup FCP. The x-axis is a separate static shipping cost; production network transfer is not inside FCP. The rust line joins the lower-left non-dominated frontier; vertical rules are the existing 95% time confidence intervals. This is a trade-space, never a score.',
-            '将同一规模的 artifact gzip 与本地/缓存启动 FCP 精确配对。横轴是独立的静态交付成本；生产网络传输不计入 FCP。铁锈色折线连接左下方非支配前沿；竖线沿用现有时间 95% 置信区间。这是权衡空间，不是得分。',
+            'Exact scale-matched artifact gzip against local/cached startup FCP from one regime only (Web JIT 1× by default). The x-axis is a separate static shipping cost; production network transfer is not inside FCP. The rust line joins the lower-left non-dominated frontier; vertical rules are the existing 95% time confidence intervals. This is a trade-space, never a score.',
+            '将同一规模的 artifact gzip 与单一 regime 的本地/缓存启动 FCP 精确配对（Web 默认 JIT 1×），禁止跨 lane 混合前沿。横轴是独立的静态交付成本；生产网络传输不计入 FCP。铁锈色折线连接左下方非支配前沿；竖线沿用现有时间 95% 置信区间。这是权衡空间，不是得分。',
           )}
         </CardCaption>
       </figcaption>
@@ -204,6 +215,7 @@ export function CostSpace({
       <div className="pareto-key" aria-label={text('Pareto chart key', 'Pareto 图例')}>
         <span className="pareto-key-frontier">{text('non-dominated frontier', '非支配前沿')}</span>
         <span>{text('vertical rule = FCP 95% CI', '竖线 = FCP 95% CI')}</span>
+        <span>{harness === 'web' ? 'Web · JIT · 1×' : 'Native'}</span>
         <span>{harness === 'web' ? 'main.web.bundle' : 'main.lynx.bundle'}</span>
       </div>
       {unavailable.length > 0 && (

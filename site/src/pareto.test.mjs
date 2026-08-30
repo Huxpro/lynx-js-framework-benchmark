@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { paretoFrontier, paretoLine } from './pareto.mjs';
+import {
+  paretoFrontier,
+  paretoLine,
+  paretoRegimeKey,
+  paretoRegimeRecords,
+} from './pareto.mjs';
 
 test('Pareto frontier keeps lower-left non-dominated points and exact ties', () => {
   const points = [
@@ -33,4 +38,26 @@ test('equal x or y keeps only the better point', () => {
     paretoFrontier(points).map(({ entry }) => entry),
     ['same-x-better', 'same-y-better'],
   );
+});
+
+test('Pareto joins only the default Web JIT 1x regime', () => {
+  const records = [
+    { id: 'legacy-default', harness: 'web' },
+    { id: 'jit-1x', harness: 'web', jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1 },
+    { id: 'interp-1x', harness: 'web', jsRegime: 'interp', jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev', cpuThrottle: 1 },
+    { id: 'interp-4x', harness: 'web', jsRegime: 'interp', jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev', cpuThrottle: 4 },
+    { id: 'native', harness: 'native' },
+  ];
+  assert.deepEqual(
+    paretoRegimeRecords(records).map(({ id }) => id),
+    ['legacy-default', 'jit-1x'],
+  );
+  assert.equal(paretoRegimeKey(records[0]), 'web:jit:--expose-gc:1');
+});
+
+test('Pareto frontier fails closed instead of pooling regime lanes', () => {
+  assert.throws(() => paretoFrontier([
+    { entry: 'jit', bytes: 2, fcp: 5, regimeKey: 'web:jit:--expose-gc:1' },
+    { entry: 'interp', bytes: 3, fcp: 4, regimeKey: 'web:interp:--expose-gc,--no-opt:1' },
+  ]), /cannot mix regimes/);
 });

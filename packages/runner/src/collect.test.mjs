@@ -1251,7 +1251,8 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
   const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
   assert.equal(bundleScale.length, 144);
-  assert.equal(out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale').length, 1423);
+  const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
+  assert.equal(retainedRecords.length, 2991);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null

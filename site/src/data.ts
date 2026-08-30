@@ -21,6 +21,9 @@ export interface BenchRecord {
   suite: string;
   harness: string;
   environment: string;
+  jsRegime?: 'jit' | 'interp' | null;
+  jsFlags?: string | null;
+  cpuThrottle?: number | null;
   entry: string;
   workload: string;
   scale: number;

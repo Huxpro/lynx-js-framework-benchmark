@@ -132,10 +132,13 @@ metric rather than silently changing the upstream interaction formula.
   path and SHA-256 beside the static record. The total axis uses the whole selected-harness
   artifact. The MTS axis is emitted only when `lepusCode.root` is structurally readable; binary
   formats are labelled unavailable. The site joins those bytes to FCP from the same entry, harness,
-  and scale, draws its existing 95% CI vertically, and connects exactly the points for which no
-  peer is both no larger and no slower (with at least one strict improvement). It is not a score.
-  Current manifests are not applied retroactively to historical commits that did not retain their
-  exact per-scale bytes.
+  scale, and one normalized execution regime. Web uses JIT at 1× by default; interpreter and
+  throttled lanes are excluded, and the frontier derivation fails closed if lanes are mixed. It
+  draws the existing 95% CI vertically and connects exactly the points for which no peer is both no
+  larger and no slower (with at least one strict improvement). It is not a score. Current manifests
+  are not applied retroactively to historical commits that did not retain their exact per-scale
+  bytes; retroactivity applies only where those bytes exist. The next Octane bundle refresh must
+  vendor real per-scale builds so straight-line N-growing code staging can become visible.
 - **CPU**: the CDP sampling profiler (200µs) attached separately to the page (MTS + harness
   overhead; the UI thread) and the `lynx-bg` worker (BTS), summing non-idle sample time.
   Includes GC and microtasks. The two threads run concurrently — per-realm CPU values are
