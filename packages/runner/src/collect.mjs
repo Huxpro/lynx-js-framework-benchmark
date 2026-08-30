@@ -849,13 +849,34 @@ const comparisonRank = (run, featuredIds) => {
   return [entries.size, sharedCells, minimumCoverage, uniqueRecords];
 };
 
-const commitMatchesManifest = (run, record, entryById) => {
+const webBundleReceiptMatchesManifest = (run, record, entry) => {
+  if (record.harness !== 'web') return false;
+  const sourceId = record.sourceEntry ?? record.entry;
+  const runBundles = run.meta.receipt?.entryBundles?.[sourceId];
+  const manifestBundles = entry.provenance?.sha256;
+  if (runBundles == null || typeof runBundles !== 'object' || Array.isArray(runBundles)
+    || manifestBundles == null || typeof manifestBundles !== 'object'
+    || Array.isArray(manifestBundles)) return false;
+  // Native-only or source-only changes may move a commit without changing the
+  // measured Web program. Admit that case only when the complete Web artifact
+  // set is byte-identical; one missing, extra, or changed bundle fails closed.
+  const expected = Object.entries(manifestBundles)
+    .filter(([relative]) => relative.endsWith('.web.bundle'));
+  const observed = Object.entries(runBundles)
+    .filter(([relative]) => relative.endsWith('.web.bundle'));
+  return expected.length > 0
+    && observed.length === expected.length
+    && expected.every(([relative, sha256]) => runBundles[relative] === sha256);
+};
+
+const entryIdentityMatchesManifest = (run, record, entryById) => {
   const entry = entryById.get(record.entry);
   if (!entry) return true;
   const sourceId = record.sourceEntry ?? record.entry;
   const runCommit = run.meta.entryCommits?.[sourceId];
   const manifestCommit = entry.provenance?.commit;
-  return Boolean(runCommit && manifestCommit && runCommit === manifestCommit);
+  return Boolean(runCommit && manifestCommit && runCommit === manifestCommit)
+    || webBundleReceiptMatchesManifest(run, record, entry);
 };
 
 const isPublishableRecord = (run, record) => !(
@@ -984,7 +1005,7 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
     && record.harness === harness
     && isComparisonVisible(record)
     && isPublishableRecord(run, record)
-    && commitMatchesManifest(run, record, entryById)),
+    && entryIdentityMatchesManifest(run, record, entryById)),
 });
 
 const currentPipelineCampaign = (runs, featuredIds, entryById) => {
@@ -1811,11 +1832,11 @@ const buildHistory = ({
     id: 'current-main',
     generatedAt: current.generatedAt,
     label: 'Current · merged upstream',
-    description: 'Current manifests are upstream Octane 9779569e and Huxpro/new-lynx e9f1fb14. No '
-      + 'single control receipt contains both commits yet: default JIT publishes Hux plus five peers, '
-      + 'while the interpreter lanes publish Octane plus the same five peers until the controlled '
-      + 'cgroup rerun lands. Regimes remain separate from each other and from Native. Complete pipeline '
-      + 'and storm campaigns attach as descriptive exact evidence and never enter the weighted matrix.',
+    description: 'Current manifests are upstream Octane 9779569e and Huxpro/new-lynx e9f1fb14. '
+      + 'Every Web regime publishes both identities: the earlier Hux source commit is accepted only '
+      + 'because its complete Web bundle receipt is byte-identical to e9f1fb14. Regimes remain separate '
+      + 'from each other and from Native. Complete pipeline and storm campaigns attach as descriptive '
+      + 'exact evidence and never enter the weighted matrix.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     pipelineCoverage: current.pipelineCoverage,
@@ -1843,18 +1864,17 @@ const buildHistory = ({
   };
 };
 
-const assertCurrentEntryCommit = (run, entryId, entry, label) => {
+const assertCurrentEntryIdentity = (run, entryId, entry, label) => {
   if (!entry) return;
   const record = run.records.find((candidate) => candidate.entry === entryId);
+  if (record && entryIdentityMatchesManifest(run, record, new Map([[entryId, entry]]))) return;
   const sourceId = record?.sourceEntry ?? entryId;
   const runCommit = run.meta.entryCommits?.[sourceId];
   const manifestCommit = entry.provenance?.commit;
-  if (!runCommit || !manifestCommit || runCommit !== manifestCommit) {
-    throw new Error(
-      `${label} ${entryId}: source run commit ${runCommit ?? 'missing'} does not match `
-      + `current entry manifest ${manifestCommit ?? 'missing'}; rerun the benchmark`,
-    );
-  }
+  throw new Error(
+    `${label} ${entryId}: source run commit ${runCommit ?? 'missing'} and Web bundle receipt `
+    + `do not match current entry manifest ${manifestCommit ?? 'missing'}; rerun the benchmark`,
+  );
 };
 
 const scaleNumber = (value, ratio) => value == null ? value : value * ratio;
@@ -2077,7 +2097,7 @@ export function collectRuns({
       record,
     }))).filter(({ record }) => featuredIds.has(record.entry) && isBenchmarkRecord(record));
     for (const source of recordSources) {
-      assertCurrentEntryCommit(
+      assertCurrentEntryIdentity(
         source.run,
         source.record.entry,
         entryById.get(source.record.entry),
@@ -2252,7 +2272,7 @@ export function collectRuns({
     if (!source) continue;
     const records = source.run.records.filter((r) =>
       r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r));
-    assertCurrentEntryCommit(source.run, entryId, entryById.get(entryId), 'Lab comparison');
+    assertCurrentEntryIdentity(source.run, entryId, entryById.get(entryId), 'Lab comparison');
     const sourceCalibration = source.run.meta.calibration;
     const targetCalibration = comparisonRun.run.meta.calibration;
     const compatibleCalibration = sourceCalibration?.probeVersion === targetCalibration?.probeVersion

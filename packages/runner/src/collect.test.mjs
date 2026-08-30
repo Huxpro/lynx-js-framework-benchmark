@@ -238,6 +238,88 @@ test('collect keeps record calibration and charts one coherent broadest run', ()
   }
 });
 
+test('collector accepts byte-identical Web artifacts across source commits', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-web-artifact-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  const entries = [
+    {
+      id: 'peer',
+      distDir: path.join(root, 'missing-peer'),
+      provenance: { commit: 'peer-current' },
+    },
+    {
+      id: 'equivalent',
+      distDir: path.join(root, 'missing-equivalent'),
+      provenance: {
+        commit: 'equivalent-current',
+        sha256: {
+          'rows-0/main.web.bundle': 'web-zero',
+          'rows-1000/main.web.bundle': 'web-one-thousand',
+          'rows-0/main.lynx.bundle': 'native-current',
+        },
+      },
+    },
+    {
+      id: 'stale',
+      distDir: path.join(root, 'missing-stale'),
+      provenance: {
+        commit: 'stale-current',
+        sha256: { 'rows-0/main.web.bundle': 'web-current' },
+      },
+    },
+  ];
+  try {
+    fs.writeFileSync(path.join(root, 'results/runs/web.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('web'),
+        calibration: { probeVersion: 1, score: 100 },
+        entryCommits: {
+          peer: 'peer-current',
+          equivalent: 'equivalent-older-source',
+          stale: 'stale-older-source',
+        },
+        receipt: {
+          comparabilityCohort: 'sha256:web-artifact-identity',
+          entryBundles: {
+            equivalent: {
+              'rows-0/main.web.bundle': 'web-zero',
+              'rows-1000/main.web.bundle': 'web-one-thousand',
+              'rows-0/main.lynx.bundle': 'native-older-and-irrelevant-to-web',
+            },
+            stale: { 'rows-0/main.web.bundle': 'web-older' },
+          },
+        },
+      },
+      records: entries.map(({ id }) => ({
+        ...record(id),
+        environment: {
+          jsRegime: 'jit',
+          jsFlags: '--expose-gc',
+          cpuThrottle: 1,
+          throttleScope: 'none',
+        },
+        attemptedCount: 1,
+        acceptedCount: 1,
+      })),
+    }));
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(entries.map(({ id }) => id)),
+      entries,
+    });
+
+    assert.deepEqual(out.comparison.entryIds, ['equivalent', 'peer']);
+    assert.equal(out.comparisonRecords.some(({ entry }) => entry === 'stale'), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector defaults historical Web records to jit x1 and never mixes regime rankings', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-regime-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -1498,20 +1580,21 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(bundleScale.length, 144);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
   // The invalidated pre-verifier process-cgroup source remains archive-only.
-  // The replacement run contributes one verified 108-record matrix for each
-  // current comparison entry; Octane Hux remains source-visible without being
-  // spliced into the newer comparison cohort.
+  // The replacement run contributes one verified 108-record matrix for every
+  // current comparison entry. The older Hux source commit is admissible here
+  // because its complete Web bundle receipt is byte-identical to the manifest.
   const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
     '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
-  assert.equal(verifiedProcessRun.length, 648);
+  assert.equal(verifiedProcessRun.length, 756);
   assert.deepEqual(
     [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
-    ['octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+    ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom',
+      'vue-vdom-ifr-et'],
   );
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  assert.equal(retainedRecords.length, 4755);
+  assert.equal(retainedRecords.length, 5175);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1526,11 +1609,11 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  // The newest default-JIT control cohort is honest about its source identity:
-  // post-fix Hux + peers are current, while the newer Octane artifact awaits
-  // the controlled rerun and must not be spliced in from another receipt.
-  assert.equal(currentWeb.entryIds.length, 6);
-  assert.equal(currentWeb.entryIds.includes('octane'), false);
+  // Source commits may differ only when the complete Web artifact receipt is
+  // byte-identical, so both Octane identities remain in every Web regime.
+  assert.equal(currentWeb.entryIds.length, 7);
+  assert.equal(currentWeb.entryIds.includes('octane'), true);
+  assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',

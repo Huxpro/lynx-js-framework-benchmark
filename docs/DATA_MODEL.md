@@ -66,6 +66,13 @@ statistics as authoritative.
 Bundle byte/gzip/section metrics are **not** benchmark observations. They are recalculated from
 the current bundle files whenever collection runs.
 
+Current-entry eligibility is artifact-aware but fail-closed. A Web observation matches its current
+manifest when either the source commit is identical or the run's complete set of Web bundle
+receipts is byte-identical to every manifest Web bundle checksum. This permits a source-only or
+Native-only commit change to retain the same measured Web artifact without relabelling changed
+bytes. A missing or different Web checksum remains stale. Native eligibility stays commit-exact;
+Web artifact equivalence never crosses the harness boundary.
+
 ## Derived data
 
 Everything else is derived, including:
