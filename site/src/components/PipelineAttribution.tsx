@@ -4,7 +4,7 @@ import { useBenchmarkData } from '../data-context';
 import { ENTRIES, entryColor, fmtMs, shortLabel } from '../data';
 import { localizedWorkload, useI18n } from '../i18n';
 
-const SEGMENTS = [
+export const PIPELINE_SEGMENTS = [
   {
     name: 'create', timeMetric: 'papiCreateTime', callsMetric: 'papiCreateCalls', role: 'strategy',
     label: ['Element creates', '建节点'],
@@ -31,7 +31,7 @@ const SEGMENTS = [
   },
 ] as const;
 
-const SHAPES: Record<string, {
+export const PIPELINE_SHAPES: Record<string, {
   elements: number;
   listeners: number;
   text: [string, string];
@@ -77,7 +77,7 @@ const fmtSegmentTime = (value: number) => {
   if (value < 1) return `${value.toFixed(3)}ms`;
   return fmtMs(value);
 };
-const fmtCount = (value: number) => {
+export const formatPipelineCount = (value: number) => {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}m`;
   if (value >= 1000) return `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}k`;
   if (value >= 10) return value.toFixed(0);
@@ -145,7 +145,7 @@ export function PipelineAttribution({
         < Math.abs(operation.samples[sampleIndex] - operation.median)) sampleIndex = index;
     }
     const operationMs = operation.samples[sampleIndex];
-    const segments = SEGMENTS.map((segment) => ({
+    const segments = PIPELINE_SEGMENTS.map((segment) => ({
       ...segment,
       time: one({
         suite: 'pipeline', harness: 'web', entry: entry.id,
@@ -270,7 +270,7 @@ export function PipelineAttribution({
             );
           }
           const { measured } = row;
-          const shape = SHAPES[row.entry.id];
+          const shape = PIPELINE_SHAPES[row.entry.id];
           const methodCalls = Object.entries(measured.control?.callMultiset ?? {});
           const expanded = expandedEntries.has(row.entry.id);
           const detailId = `pipeline-detail-${row.entry.id.replace(/[^a-z0-9_-]/gi, '-')}`;
@@ -349,7 +349,7 @@ export function PipelineAttribution({
                           className="pipeline-mekko-column"
                           key={segment.name}
                           style={{ flexGrow: Math.max(segment.calls, 0.001) }}
-                          title={`${text(segment.label[0], segment.label[1])} · ${fmtSegmentTime(segment.time)} · ${fmtCount(segment.calls)} · ${fmtUnitCost(segment.time, segment.calls)}/call`}
+                          title={`${text(segment.label[0], segment.label[1])} · ${fmtSegmentTime(segment.time)} · ${formatPipelineCount(segment.calls)} · ${fmtUnitCost(segment.time, segment.calls)}/call`}
                         >
                           <span
                             className={`pipeline-segment is-${segment.name}`}
@@ -372,7 +372,7 @@ export function PipelineAttribution({
                         </span>
                         <span className="pipeline-segment-values">
                           <strong>{scaleMode === 'row' ? fmtRowTime(segment.time, rowCount) : fmtSegmentTime(segment.time)}</strong>
-                          <span>{fmtCount(scaleMode === 'row' ? segment.calls / rowCount : segment.calls)} {text(scaleMode === 'row' ? 'calls/row' : 'calls', scaleMode === 'row' ? '次/行' : '次调用')}</span>
+                          <span>{formatPipelineCount(scaleMode === 'row' ? segment.calls / rowCount : segment.calls)} {text(scaleMode === 'row' ? 'calls/row' : 'calls', scaleMode === 'row' ? '次/行' : '次调用')}</span>
                           <span>{fmtUnitCost(segment.time, segment.calls)}/{text('call', '次')}</span>
                         </span>
                       </span>

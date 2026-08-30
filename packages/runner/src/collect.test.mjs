@@ -276,6 +276,12 @@ test('collector never merges or ranks pipeline-native evidence', () => {
       (candidate) => candidate.suite === 'pipeline-native'), false);
     assert.equal(Object.hasOwn(out.machines, 'native-attribution'), false);
     assert.equal(out.sources.runFiles.includes('native-attribution.json'), false);
+    assert.equal(out.nativePipelineAttributionRecords.length, 1);
+    assert.equal(out.nativePipelineAttributionRecords[0].metric, 'papiCreateCalls');
+    assert.equal(out.nativePipelineAttributionRecords[0].comparisonKind,
+      'isolated-observation');
+    assert.equal(out.nativePipelineAttributionRecords[0].rankingEligible, false);
+    assert.equal(out.nativePipelineAttributionRecords[0].descriptiveEligible, true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

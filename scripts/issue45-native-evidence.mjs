@@ -286,7 +286,7 @@ export function makeIssue45Audit() {
         suite: 'pipeline-native',
         mixedWithNativeRankingCohort: false,
         mixedWithWebPipelineSuite: false,
-        collectorPolicy: 'raw immutable run only; excluded from latest.json, rankings, and campaign cells',
+        collectorPolicy: 'dedicated descriptive outlet only; excluded from ordinary records, comparison, rankings, history, and campaign cells',
       },
     },
     device: {

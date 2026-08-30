@@ -1326,15 +1326,36 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 .pipeline-owner-bar > span { display: block; min-width: 1px; }
 .pipeline-owner-bar .is-framework { background: var(--pipeline-framework); }
 .pipeline-owner-bar .is-engine { background: var(--pipeline-engine); }
+.native-pipeline-segment-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem 0.72rem;
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+}
+.native-pipeline-segment-key span { display: inline-flex; gap: 0.3rem; align-items: center; white-space: nowrap; }
+.native-pipeline-segment-key i { width: 0.44rem; height: 0.44rem; }
+.native-pipeline-call-values {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 0.65fr) minmax(12rem, 1fr) max-content;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-family: ui-monospace, Menlo, monospace;
+}
+.native-pipeline-call-values > span:not(.pipeline-operation-total) { display: flex; gap: 0.45rem; align-items: baseline; }
+.native-pipeline-call-values small { color: var(--text-secondary); font-size: 0.58rem; }
+.native-pipeline-call-values strong { color: var(--text-primary); font-size: 0.78rem; font-weight: 800; }
+.native-pipeline-call-bar { display: flex; height: 0.62rem; overflow: hidden; background: var(--surface-2); }
+.native-pipeline-call-bar > span { display: block; min-width: 1px; }
 .pipeline-row.is-unmeasured .pipeline-row-summary { grid-template-columns: minmax(8rem, 1fr) max-content minmax(12rem, 2fr); }
 .pipeline-status { color: var(--bad) !important; font-weight: 700 !important; }
 .pipeline-segment { display: block; min-width: 1px; }
-.pipeline-segment.is-create, .pipeline-segment-ledger i.is-create { background: var(--pipeline-create); }
-.pipeline-segment.is-props, .pipeline-segment-ledger i.is-props { background: var(--pipeline-props); }
-.pipeline-segment.is-events, .pipeline-segment-ledger i.is-events { background: var(--pipeline-events); }
-.pipeline-segment.is-topology, .pipeline-segment-ledger i.is-topology { background: var(--pipeline-topology); }
-.pipeline-segment.is-read, .pipeline-segment-ledger i.is-read { background: var(--pipeline-read); }
-.pipeline-segment.is-flush, .pipeline-segment-ledger i.is-flush { background: var(--pipeline-flush); }
+.pipeline-segment.is-create, .pipeline-segment-ledger i.is-create, .native-pipeline-segment-key i.is-create { background: var(--pipeline-create); }
+.pipeline-segment.is-props, .pipeline-segment-ledger i.is-props, .native-pipeline-segment-key i.is-props { background: var(--pipeline-props); }
+.pipeline-segment.is-events, .pipeline-segment-ledger i.is-events, .native-pipeline-segment-key i.is-events { background: var(--pipeline-events); }
+.pipeline-segment.is-topology, .pipeline-segment-ledger i.is-topology, .native-pipeline-segment-key i.is-topology { background: var(--pipeline-topology); }
+.pipeline-segment.is-read, .pipeline-segment-ledger i.is-read, .native-pipeline-segment-key i.is-read { background: var(--pipeline-read); }
+.pipeline-segment.is-flush, .pipeline-segment-ledger i.is-flush, .native-pipeline-segment-key i.is-flush { background: var(--pipeline-flush); }
 .pipeline-detail-toggle {
   display: inline-flex;
   gap: 0.3rem;
@@ -1868,6 +1889,10 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .pipeline-entry > small { overflow: visible; text-overflow: clip; white-space: normal; }
   .pipeline-owner-values { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.35rem 0.7rem; }
   .pipeline-owner-values > span:not(.pipeline-operation-total) { display: grid; gap: 0.05rem; }
+  .native-pipeline-segment-key { gap: 0.24rem 0.6rem; }
+  .native-pipeline-call-values { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.35rem 0.7rem; }
+  .native-pipeline-call-values > span:not(.pipeline-operation-total) { display: grid; gap: 0.05rem; }
+  .native-pipeline-call-bar { height: 0.5rem; }
   .pipeline-operation-total { display: none; }
   .pipeline-detail-toggle { grid-area: toggle; justify-content: center; }
   .pipeline-detail-toggle span { display: none; }

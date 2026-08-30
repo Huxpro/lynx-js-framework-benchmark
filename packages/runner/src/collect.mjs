@@ -1805,6 +1805,7 @@ export function collectRuns({
   const machines = {};
   const merged = new Map();
   const runs = [];
+  const isolatedAttributionRuns = [];
   const incompleteCheckpointFiles = new Set();
   let comparisonRun = null;
   let latestSourceGeneratedAt = null;
@@ -1834,11 +1835,19 @@ export function collectRuns({
       incompleteCheckpointFiles.add(file);
     }
     const normalizedRun = normalizeRun(rawRun, file);
+    const isolatedAttributionRecords = normalizedRun.records.filter(
+      (record) => isIsolatedAttributionSuite(record.suite));
+    if (isolatedAttributionRecords.length > 0) {
+      isolatedAttributionRuns.push({
+        file,
+        run: { ...normalizedRun, records: isolatedAttributionRecords },
+      });
+    }
     const ordinaryRecords = normalizedRun.records.filter(
       (record) => !isIsolatedAttributionSuite(record.suite));
     if (ordinaryRecords.length !== normalizedRun.records.length) {
       log(`[collect] isolate ${file}: ${normalizedRun.records.length - ordinaryRecords.length} `
-        + 'Native attribution evidence records remain raw-run only');
+        + 'Native attribution evidence records routed to the descriptive outlet only');
     }
     if (ordinaryRecords.length === 0) continue;
     const run = ordinaryRecords.length === normalizedRun.records.length
@@ -2071,6 +2080,21 @@ export function collectRuns({
   const archiveStaticRecords = currentEntries.flatMap((entry) =>
     (staticByEntry.get(entry.id) ?? []).map((record) => annotateStatic(entry, record)));
 
+  const nativePipelineAttribution = [...isolatedAttributionRuns].sort((left, right) =>
+    left.run.meta.generatedAt.localeCompare(right.run.meta.generatedAt)
+      || left.file.localeCompare(right.file)).at(-1) ?? null;
+  const nativePipelineAttributionRecords = nativePipelineAttribution == null ? []
+    : nativePipelineAttribution.run.records.map((record) => ({
+      ...annotate(
+        nativePipelineAttribution.run,
+        nativePipelineAttribution.file,
+        record,
+        'isolated-observation',
+      ),
+      rankingEligible: false,
+      descriptiveEligible: true,
+    }));
+
   const out = {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: generatedAt ?? latestSourceGeneratedAt,
@@ -2087,6 +2111,10 @@ export function collectRuns({
     labComparisonRecords,
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
+    // Count-only real-device ElementPAPI evidence. This dedicated outlet is
+    // consumed by one descriptive card and never joins records, comparison,
+    // ranking, history, or a Native campaign matrix.
+    nativePipelineAttributionRecords,
     nativeCoverage,
     pipelineCoverage,
     listCoverage,

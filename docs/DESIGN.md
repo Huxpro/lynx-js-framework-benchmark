@@ -204,8 +204,10 @@ Headless Chromium via `playwright-core` (Chromium resolved from the Playwright c
 
 The real-device `pipeline-native` probe is deliberately outside this Web flow. It rebinds the
 same ElementPAPI identifiers from an MTS prefix and records whole-mount call multisets. The raw run
-is immutable evidence only: collection excludes it from `latest.json`, ranking, history, and Native
-campaign cells. It has no operation-time or self-time metric.
+is immutable evidence: collection routes the newest run to the dedicated
+`nativePipelineAttributionRecords` descriptive outlet while excluding it from ordinary records,
+comparison, ranking, history, and Native campaign cells. It has no operation-time or self-time
+metric.
 
 ### `native` (Android Sandbox, explicitly separated)
 

@@ -37,6 +37,8 @@ test('issue #45 audit records the N2 clock gate and exact Web oracle differences
   assert.equal(audit.decision.N0.papiRebindable, true);
   assert.equal(audit.N2.status, 'NO-GO');
   assert.equal(audit.N2.timingRecordsPublished, 0);
+  assert.match(audit.decision.isolation.collectorPolicy, /descriptive outlet only/);
+  assert.match(audit.decision.isolation.collectorPolicy, /excluded from ordinary records/);
   assert.equal(audit.N1.webOracle.equality, false);
   assert.deepEqual(audit.N1.webOracle.exactMethodDifferences.__AppendElement,
     { native: 7041, web: 0, delta: 7041 });

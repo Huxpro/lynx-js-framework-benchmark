@@ -118,7 +118,9 @@ metric rather than silently changing the upstream interaction formula.
   upstream Octane, Octane-Hux, and ReactLynx at 1k rows. It is not the Web operation interval:
   shell creation and static attributes are included, and topology may use `__AppendElement`
   instead of Web's `__InsertElementBefore`. The collector never merges these records into
-  `latest.json`, a ranking, history, or a Native campaign cohort.
+  ordinary `latest.json` records, a ranking, history, or a Native campaign cohort. It exposes the
+  newest isolated run only through `nativePipelineAttributionRecords`, a dedicated descriptive
+  outlet for the counts-only site card.
 
   Native self-time remains unsupported. The finest available Lepus clock was monotonic
   `Date.now()` at 1 ms; `performance.now()` and `lynx.performance.now()` were unavailable. That is
