@@ -30,6 +30,7 @@ export const INTERP_WEB_JS_FLAGS = '--expose-gc,--no-opt,--no-sparkplug,--no-mag
 export function normalizeWebRegime(record) {
   if (record.harness !== 'web') return {
     jsRegime: null, jsFlags: null, cpuThrottle: null, throttleScope: null,
+    verifiedSlowdown: null,
   };
   const environment = record.environment != null
     && typeof record.environment === 'object'
@@ -48,6 +49,7 @@ export function normalizeWebRegime(record) {
     throttleScope: environment.throttleScope
       ?? record.throttleScope
       ?? (cpuThrottle > 1 ? 'page-cdp' : DEFAULT_WEB_REGIME.throttleScope),
+    verifiedSlowdown: environment.verifiedSlowdown ?? record.verifiedSlowdown ?? null,
   };
 }
 
@@ -148,6 +150,7 @@ export function makeRecord({
   throttleScope = harness === 'web'
     ? (cpuThrottle > 1 ? 'page-cdp' : DEFAULT_WEB_REGIME.throttleScope)
     : null,
+  verifiedSlowdown = null,
   entry,
   workload,
   scale,
@@ -183,11 +186,27 @@ export function makeRecord({
     if ((cpuThrottle === 1) !== (throttleScope === 'none')) {
       throw new Error(`Web throttleScope ${throttleScope} is incompatible with ${cpuThrottle}x CPU`);
     }
-  } else if (jsRegime != null || jsFlags != null || cpuThrottle != null || throttleScope != null) {
+    if (throttleScope === 'process-cgroup') {
+      if (!Number.isFinite(verifiedSlowdown)
+        || verifiedSlowdown < cpuThrottle - 0.5
+        || verifiedSlowdown > cpuThrottle + 0.5) {
+        throw new Error(
+          `process-cgroup record requires verifiedSlowdown in `
+          + `[${cpuThrottle - 0.5}, ${cpuThrottle + 0.5}]; received ${verifiedSlowdown}`,
+        );
+      }
+    } else if (verifiedSlowdown != null) {
+      throw new Error('verifiedSlowdown is valid only for process-cgroup Web records');
+    }
+  } else if (jsRegime != null || jsFlags != null || cpuThrottle != null || throttleScope != null
+    || verifiedSlowdown != null) {
     throw new Error('JS execution regimes are Web-only and cannot be attached to Native records');
   }
   const recordEnvironment = harness === 'web'
-    ? { jsRegime, jsFlags, cpuThrottle, throttleScope }
+    ? {
+      jsRegime, jsFlags, cpuThrottle, throttleScope,
+      ...(verifiedSlowdown == null ? {} : { verifiedSlowdown }),
+    }
     : environment;
   const record = {
     suite,

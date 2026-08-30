@@ -149,7 +149,8 @@ test('regime measurement details are available from the compact information disc
   assert.match(source, /Chromium runs the default V8 compilation tiers/);
   assert.match(source, /V8 JavaScript compiler tiers are disabled; Wasm stays compiled/);
   assert.match(source, /CDP 4× throttling on the page\/MTS target/);
-  assert.match(source, /requested 25% OS quota for the Chromium process tree/);
+  assert.match(source, /inherited, calibrated OS quota for the Chromium process tree/);
+  assert.match(source, /Every entry must verify 3\.5–4\.5× slowdown/);
   assert.match(source, /Rankings stay separate across every lane/);
 });
 

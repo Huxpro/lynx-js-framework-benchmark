@@ -23,7 +23,7 @@ These are the only files/fields that require an update when their real-world inp
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
 - record identity: suite, harness, Web
-  `environment: { jsRegime, jsFlags, cpuThrottle, throttleScope }` or the unchanged
+  `environment: { jsRegime, jsFlags, cpuThrottle, throttleScope, verifiedSlowdown? }` or the unchanged
   Native device-environment string, entry,
   workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
@@ -36,8 +36,10 @@ These are the only files/fields that require an update when their real-world inp
 
 Schema v4 extends the Web JS-execution regime to
 `environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number,
-throttleScope: "none" | "page-cdp" | "process-cgroup" }`. `jsFlags` is the exact V8 payload;
-the scope distinguishes page-target CDP throttling from a whole-process OS quota. Native records
+throttleScope: "none" | "page-cdp" | "process-cgroup", verifiedSlowdown?: number }`.
+`jsFlags` is the exact V8 payload; the scope distinguishes page-target CDP throttling from a
+whole-process OS quota. `verifiedSlowdown` is required for newly produced `process-cgroup` records
+and must be within 0.5× of the declared throttle. Native records
 keep their schema-v2 environment string byte-for-byte and never gain Web regime fields. Schema-v2
 Web records normalize to `{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1,
 throttleScope: "none" }`; throttled schema-v3 records normalize to `"page-cdp"`.
@@ -73,7 +75,9 @@ Everything else is derived, including:
   ranked views. The same applies to `btsCpu` from `cpuThrottle > 1` with
   `throttleScope: "page-cdp"`: CDP throttling is target-scoped and the page setting does not cover
   `lynx-bg`, so those samples are classified
-  `invalid-measurement`. Prospective Lab estimates must match the selected Web cohort exactly;
+  `invalid-measurement`. A `process-cgroup` source without an accepted per-entry
+  `verifiedSlowdown` is invalid for the same reason: an OS-limiter receipt alone does not prove the
+  entry's renderer inherited it. Prospective Lab estimates must match the selected Web cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an
   explicitly validated lease chain or included in cross-entry rankings;

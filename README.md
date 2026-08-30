@@ -31,9 +31,10 @@ pnpm bench run --harness web --jit=interp --cpu-throttle=4 \
   --throttle-scope=process-cgroup --label web-interp-4x-cg
 ```
 
-The whole-process calibration lane prefers a writable cgroup-v2 `cpu.max` quota and falls back to
-`cpulimit`; its preflight fails closed unless the measured probe slowdown confirms that the quota
-is active. Set `LYNX_BENCH_CPULIMIT_PATH` when `cpulimit` is not on `PATH`.
+The whole-process calibration lane starts Chromium inside an inherited CPU cgroup: writable
+cgroup-v2 `cpu.max` when delegated, or cgroup-v1 `cgexec` with non-interactive `sudo` on the lab
+runner. It never chases renderer PIDs with `cpulimit`. Before every entry, an in-page probe must
+verify a 3.5–4.5× slowdown; the observed `verifiedSlowdown` is written into every record.
 
 `--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;
 the default remains `0,1000,10000,30000`.

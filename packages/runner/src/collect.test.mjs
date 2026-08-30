@@ -1183,6 +1183,7 @@ test('collector keeps background CPU eligible for a whole-process throttled lane
       jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
       cpuThrottle: 4,
       throttleScope: 'process-cgroup',
+      verifiedSlowdown: 4.06,
     };
     const measured = (metric) => ({
       suite: 'table', harness: 'web', environment, entry: 'react', workload: 'create', scale: 10000,
@@ -1207,8 +1208,73 @@ test('collector keeps background CPU eligible for a whole-process throttled lane
     });
     const bts = out.comparisonRecords.find(({ metric }) => metric === 'btsCpu');
     assert.equal(bts?.throttleScope, 'process-cgroup');
+    assert.equal(bts?.verifiedSlowdown, 4.06);
     assert.notEqual(bts?.comparabilityStatus, 'invalid-measurement');
     assert.equal(bts?.rankingEligible, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector marks the pre-verifier process-cgroup run invalid-measurement', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-invalid-process-throttle-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    fs.writeFileSync(path.join(root, 'results/runs/throttled.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 25 },
+        receipt: { comparabilityCohort: 'sha256:invalid-process-throttle' },
+        measurementValidity: {
+          status: 'invalid-measurement',
+          reasons: ['process-throttle-not-inherited-at-launch'],
+        },
+      },
+      records: [{
+        suite: 'table', harness: 'web',
+        environment: {
+          jsRegime: 'interp',
+          jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+          cpuThrottle: 4,
+          throttleScope: 'process-cgroup',
+        },
+        entry: 'react', workload: 'create', scale: 10000, metric: 'latency',
+        boundary: 'pointerdown-to-dom-predicate', unit: 'ms', samples: [10, 11],
+        attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+      }],
+    }));
+    fs.writeFileSync(path.join(root, 'results/runs/control.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-02T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+        receipt: { comparabilityCohort: 'sha256:control' },
+      },
+      records: [{
+        suite: 'table', harness: 'web',
+        environment: {
+          jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1, throttleScope: 'none',
+        },
+        entry: 'react', workload: 'create', scale: 10000, metric: 'latency',
+        boundary: 'pointerdown-to-dom-predicate', unit: 'ms', samples: [5, 6],
+        attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+      }],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    const archived = out.records.find(({ throttleScope }) => throttleScope === 'process-cgroup');
+    assert.equal(archived.comparabilityStatus, 'invalid-measurement');
+    assert.deepEqual(archived.comparabilityReasons, [
+      'process-throttle-not-inherited-at-launch',
+      'process-throttle-slowdown-unverified',
+    ]);
+    assert.equal(archived.rankingEligible, false);
+    assert.equal(out.comparisonRecords.some(
+      ({ throttleScope }) => throttleScope === 'process-cgroup',
+    ), false);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

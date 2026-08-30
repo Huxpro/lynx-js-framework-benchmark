@@ -19,6 +19,7 @@ import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
+import { assertProcessThrottleProbe, runPreflight } from './preflight.mjs';
 
 const SETTLE_MS = 30;
 
@@ -223,6 +224,8 @@ export async function runTableSuite({
   includeMemory = true,
   jsRegime = 'jit',
   cpuThrottle = 1,
+  throttleScope = 'none',
+  verifiedSlowdown = null,
   cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
@@ -295,7 +298,7 @@ export async function runTableSuite({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, attemptedCount: reps,
-        jsRegime, cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -309,7 +312,7 @@ export async function runTableSuite({
   try {
     if (!includeMemory) return await runStormCases({
       entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-      jsRegime, cpuThrottle, cdpCpuThrottle,
+      jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
     });
     const fresh = await openBenchPage({
       browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
@@ -337,8 +340,7 @@ export async function runTableSuite({
         boundary: 'gc-heap-with-10k-rows',
         unit: 'bytes',
         value: usedSize,
-        jsRegime,
-        cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
     }
     await clickButton(memoryPage, 'Clear');
@@ -356,8 +358,7 @@ export async function runTableSuite({
         boundary: 'gc-heap-after-clearing-10k-rows',
         unit: 'bytes',
         value: usedSize,
-        jsRegime,
-        cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
     }
     log(
@@ -371,13 +372,13 @@ export async function runTableSuite({
 
   return runStormCases({
     entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-    jsRegime, cpuThrottle, cdpCpuThrottle,
+    jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
   });
 }
 
 async function runStormCases({
   entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-  jsRegime, cpuThrottle, cdpCpuThrottle = cpuThrottle,
+  jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle = cpuThrottle,
 }) {
   // Storm cases: fresh page per rep.
   for (const kase of cases) {
@@ -438,7 +439,7 @@ async function runStormCases({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, failures, attemptedCount: stormReps,
-        jsRegime, cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -454,11 +455,12 @@ function fmtSummary(samples) {
 
 function emitOpRecords({
   entry, kase, scale, samples, dnfCount, failures = [], attemptedCount,
-  jsRegime = 'jit', cpuThrottle = 1,
+  jsRegime = 'jit', cpuThrottle = 1, throttleScope = 'none', verifiedSlowdown = null,
 }) {
   const records = [];
   const base = {
-    suite: 'table', entry: entry.id, workload: kase.name, scale, jsRegime, cpuThrottle,
+    suite: 'table', entry: entry.id, workload: kase.name, scale,
+    jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
   };
   records.push(makeRecord({
     ...base,
@@ -519,6 +521,7 @@ function emitOpRecords({
 
 export async function runStartupSuite({
   entry, scales, reps, browser, origin, cdp, log, jsRegime = 'jit', cpuThrottle = 1,
+  throttleScope = 'none', verifiedSlowdown = null,
   cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
@@ -574,7 +577,8 @@ export async function runStartupSuite({
       }
     }
     const base = {
-      suite: 'startup', entry: entry.id, workload: 'startup', scale, jsRegime, cpuThrottle,
+      suite: 'startup', entry: entry.id, workload: 'startup', scale,
+      jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
     };
     records.push(makeRecord({
       ...base,
@@ -643,24 +647,43 @@ export async function runWebHarness({
   jit = 'jit',
   cpuThrottle = 1,
   throttleScope = 'none',
+  processThrottleControl = null,
+  processQuotaPercent = null,
 }) {
   const bundleRoots = {};
   for (const e of entries) bundleRoots[e.id] = e.distDir;
   const server = await startServer({ bundleRoots });
   const {
     browser, cdpPort, executablePath, browserVersion, processThrottle, closeBrowser,
-  } = await launchBrowser({ jit, cpuThrottle, throttleScope });
+  } = await launchBrowser({ jit, cpuThrottle, throttleScope, processQuotaPercent });
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
+  const processThrottleEntryVerifications = [];
   const cdpCpuThrottle = throttleScope === 'page-cdp' ? cpuThrottle : 1;
   try {
     for (const entry of entries) {
       log(`[entry] ${entry.id} (${entry.label})`);
+      const processThrottleVerification = throttleScope === 'process-cgroup'
+        ? assertProcessThrottleProbe({
+          control: processThrottleControl,
+          throttled: await runPreflight(browser, { requireWebHarness: true, jsRegime: jit }),
+          cpuThrottle,
+          mechanism: processThrottle,
+        })
+        : null;
+      const verifiedSlowdown = processThrottleVerification?.verifiedSlowdown ?? null;
+      if (processThrottleVerification != null) {
+        processThrottleEntryVerifications.push({ entry: entry.id, ...processThrottleVerification });
+        log(
+          `  [verify:process-cgroup] ${entry.id}: ${verifiedSlowdown.toFixed(2)}x `
+          + `(accepted ${processThrottleVerification.acceptedRange.join('–')}x)`,
+        );
+      }
       if (suites.includes('table')) {
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
           browser, origin: server.origin, cdp, log, includeMemory,
-          jsRegime: jit, cpuThrottle, cdpCpuThrottle,
+          jsRegime: jit, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
         }));
       }
       if (suites.includes('startup')) {
@@ -670,7 +693,7 @@ export async function runWebHarness({
             ?? [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
-          jsRegime: jit, cpuThrottle, cdpCpuThrottle,
+          jsRegime: jit, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
         }));
       }
     }
@@ -687,5 +710,9 @@ export async function runWebHarness({
     executablePath,
     browserVersion,
     processThrottle,
+    processThrottleEntryVerifications,
+    verifiedSlowdownByEntry: Object.fromEntries(
+      processThrottleEntryVerifications.map(({ entry, verifiedSlowdown }) => [entry, verifiedSlowdown]),
+    ),
   };
 }

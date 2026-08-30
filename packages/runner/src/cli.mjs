@@ -23,7 +23,7 @@ import { bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
 import {
-  assertProcessThrottleProbe,
+  calibrateProcessThrottle,
   runPreflight,
   verifyInterpreterFlags,
 } from './preflight.mjs';
@@ -380,9 +380,9 @@ async function cmdRun(args) {
 
   // Preflight in the same browser configuration that will measure.
   const preflight = await (async () => {
-    let controlProbe = null;
     if (throttleScope === 'process-cgroup') {
       const control = await launchBrowser({ jit });
+      let controlProbe;
       try {
         controlProbe = await runPreflight(control.browser, {
           requireWebHarness: true,
@@ -391,6 +391,9 @@ async function cmdRun(args) {
       } finally {
         await control.closeBrowser();
       }
+      return calibrateProcessThrottle({
+        jit, cpuThrottle, control: controlProbe, requireWebHarness: true,
+      });
     }
     const launched = await launchBrowser({ jit, cpuThrottle, throttleScope });
     try {
@@ -407,12 +410,8 @@ async function cmdRun(args) {
           executablePath: launched.executablePath,
         },
         processThrottle: launched.processThrottle,
-        processThrottleVerification: controlProbe == null ? null : assertProcessThrottleProbe({
-          control: controlProbe,
-          throttled: probe,
-          cpuThrottle,
-          mechanism: launched.processThrottle,
-        }),
+        processThrottleVerification: null,
+        processQuotaPercent: null,
       };
     } finally {
       await launched.closeBrowser();
@@ -426,12 +425,20 @@ async function cmdRun(args) {
     execution: {
       harness: 'web', browser: preflight.browser, jsRegime: jit, jsFlags, cpuThrottle,
       throttleScope,
+      ...(preflight.processQuotaPercent == null
+        ? {}
+        : { processQuotaPercent: preflight.processQuotaPercent }),
     },
   });
 
-  const { records, executablePath, browserVersion, processThrottle } = await runWebHarness({
+  const {
+    records, executablePath, browserVersion, processThrottle,
+    processThrottleEntryVerifications, verifiedSlowdownByEntry,
+  } = await runWebHarness({
     entries, cases, suites, scales, startupScales, reps, stormReps, startupReps,
     jit, cpuThrottle, throttleScope,
+    processThrottleControl: preflight.processThrottleVerification?.control ?? null,
+    processQuotaPercent: preflight.processQuotaPercent,
   });
   if (browserVersion !== preflight.browser.version
     || executablePath !== preflight.browser.executablePath) {
@@ -440,9 +447,17 @@ async function cmdRun(args) {
   if ((processThrottle?.backend ?? null) !== (preflight.processThrottle?.backend ?? null)) {
     throw new Error('whole-process throttle backend changed between preflight and benchmark execution');
   }
+  if ((processThrottle?.quotaPercent ?? null) !== (preflight.processThrottle?.quotaPercent ?? null)) {
+    throw new Error('whole-process throttle quota changed between preflight and benchmark execution');
+  }
   for (const entry of entries) records.push(...bundleRecords(entry).map((record) => ({
     ...record,
-    environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
+    environment: {
+      jsRegime: jit, jsFlags, cpuThrottle, throttleScope,
+      ...(verifiedSlowdownByEntry[entry.id] == null
+        ? {}
+        : { verifiedSlowdown: verifiedSlowdownByEntry[entry.id] }),
+    },
   })));
 
   const machine = machineFingerprint();
@@ -462,6 +477,9 @@ async function cmdRun(args) {
         ? {}
         : { processThrottleVerification: preflight.processThrottleVerification }),
       ...(processThrottle == null ? {} : { processThrottle }),
+      ...(processThrottleEntryVerifications.length === 0
+        ? {}
+        : { processThrottleEntryVerifications }),
       argv: process.argv.slice(2),
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),
@@ -491,14 +509,27 @@ async function cmdPreflight(args) {
   }
   const throttleScope = resolveThrottleScope(args, cpuThrottle);
   const flagVerification = jit === 'interp' ? await verifyInterpreterFlags() : null;
-  let controlProbe = null;
   if (throttleScope === 'process-cgroup') {
     const control = await launchBrowser({ jit });
+    let controlProbe;
     try {
       controlProbe = await runPreflight(control.browser, { requireWebHarness: true });
     } finally {
       await control.closeBrowser();
     }
+    const calibrated = await calibrateProcessThrottle({
+      jit, cpuThrottle, control: controlProbe, requireWebHarness: true,
+    });
+    const jsFlags = jsFlagsForRegime(jit);
+    console.log(JSON.stringify({
+      machine: machineFingerprint(),
+      environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
+      calibration: calibrated.probe,
+      ...(flagVerification == null ? {} : { flagVerification }),
+      processThrottleVerification: calibrated.processThrottleVerification,
+      processThrottle: calibrated.processThrottle,
+    }, null, 2));
+    return;
   }
   const launched = await launchBrowser({ jit, cpuThrottle, throttleScope });
   try {
@@ -508,18 +539,11 @@ async function cmdPreflight(args) {
     });
     const jsFlags = jsFlagsForRegime(jit);
     const machine = machineFingerprint();
-    const processThrottleVerification = controlProbe == null ? null : assertProcessThrottleProbe({
-      control: controlProbe,
-      throttled: probe,
-      cpuThrottle,
-      mechanism: launched.processThrottle,
-    });
     console.log(JSON.stringify({
       machine,
       environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
       calibration: probe,
       ...(flagVerification == null ? {} : { flagVerification }),
-      ...(processThrottleVerification == null ? {} : { processThrottleVerification }),
     }, null, 2));
   } finally {
     await launched.closeBrowser();

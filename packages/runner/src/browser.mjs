@@ -89,6 +89,7 @@ export async function launchBrowser({
   allowNativesSyntax = false,
   cpuThrottle = 1,
   throttleScope = 'none',
+  processQuotaPercent = null,
 } = {}) {
   const executablePath = resolveChromium();
   const cdpPort = await freePort();
@@ -115,7 +116,11 @@ export async function launchBrowser({
   // launchServer is used only for the whole-process calibration lane because
   // its process lifecycle remains visible while a quota wrapper launches the
   // complete Chromium tree. Defaults retain chromium.launch exactly.
-  const processThrottle = prepareProcessThrottle(cpuThrottle, executablePath);
+  const processThrottle = prepareProcessThrottle(
+    cpuThrottle,
+    executablePath,
+    processQuotaPercent ?? 100 / cpuThrottle,
+  );
   let browserServer;
   let browser;
   try {

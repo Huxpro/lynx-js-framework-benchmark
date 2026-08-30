@@ -69,19 +69,29 @@ test('interpreter preflight requires a JIT control, never-optimized Ignition, an
   }), /WebAssembly/);
 });
 
-test('whole-process throttle preflight requires a real backend and observed slowdown', () => {
+test('whole-process throttle preflight requires inherited launch and a 3.5–4.5x slowdown', () => {
   assert.deepEqual(assertProcessThrottleProbe({
     control: { score: 100 },
     throttled: { score: 25 },
     cpuThrottle: 4,
-    mechanism: { scope: 'process-cgroup', backend: 'cpulimit' },
-  }).observedSlowdown, 4);
+    mechanism: {
+      scope: 'process-cgroup', backend: 'cgroup-v1-cgexec', inheritance: 'launch-cgroup',
+    },
+  }).verifiedSlowdown, 4);
   assert.throws(() => assertProcessThrottleProbe({
     control: { score: 100 },
     throttled: { score: 90 },
     cpuThrottle: 4,
-    mechanism: { scope: 'process-cgroup', backend: 'cpulimit' },
+    mechanism: {
+      scope: 'process-cgroup', backend: 'cgroup-v1-cgexec', inheritance: 'launch-cgroup',
+    },
   }), /preflight failed/);
+  assert.throws(() => assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 25 },
+    cpuThrottle: 4,
+    mechanism: { scope: 'process-cgroup', backend: 'cpulimit' },
+  }), /inherited-cgroup/);
   assert.throws(() => assertProcessThrottleProbe({
     control: { score: 100 },
     throttled: { score: 25 },
@@ -115,8 +125,13 @@ test('schema records Web regimes and rejects applying them to Native', () => {
   });
   const processProbe = makeRecord({
     ...base, jsRegime: 'interp', cpuThrottle: 4, throttleScope: 'process-cgroup',
+    verifiedSlowdown: 4.08,
   });
   assert.equal(processProbe.environment.throttleScope, 'process-cgroup');
+  assert.equal(processProbe.environment.verifiedSlowdown, 4.08);
+  assert.throws(() => makeRecord({
+    ...base, jsRegime: 'interp', cpuThrottle: 4, throttleScope: 'process-cgroup',
+  }), /verifiedSlowdown/);
   const native = makeRecord({ ...base, harness: 'native', environment: 'device' });
   assert.equal(native.environment, 'device');
   assert.equal(Object.hasOwn(native, 'jsRegime'), false);

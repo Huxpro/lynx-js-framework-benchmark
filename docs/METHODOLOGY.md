@@ -249,34 +249,23 @@ only for end-to-end metrics, never per-side metrics; its already-published laten
 mixed-regime and is not rerun. Its raw `btsCpu` samples remain source evidence but are classified
 `invalid-measurement` and excluded from charts and rankings.
 
-`web-interp-4x-cg` keeps the same interpreter flags but applies one 25% OS quota to the whole
-Chromium process tree. The runner prefers cgroup-v2 `cpu.max` (`25000 100000`) and uses `cpulimit`
-when the cgroup is unavailable or not writable. A same-interpreter unthrottled/throttled probe must
-observe the expected slowdown before formal measurement begins, and the actual backend is retained
-in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope: "process-cgroup"`; the
-historical CDP lane normalizes to `throttleScope: "page-cdp"`.
+`web-interp-4x-cg` keeps the same interpreter flags but applies one calibrated OS quota to the whole
+Chromium process tree. Chromium is launched *inside* the quota so every renderer inherits it from
+birth: the runner uses cgroup-v2 `cpu.max` when delegated, or creates a cgroup-v1 CPU controller
+and enters it through `cgexec` on the lab host. Calibration begins at 25% of one CPU and records
+each adjustment needed to bring the page probe to nominal 4×. `cpulimit` PID/fork monitoring is
+not an accepted backend because it can miss renderer startup. Immediately before each entry's
+measured phase, the same interpreter-only Chromium runs the fixed page probe; the window fails
+closed unless `control.score / throttled.score` is within [3.5, 4.5]. Every accepted record stores
+that value as `environment.verifiedSlowdown`, while the backend and every per-entry verification
+remain in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope:
+"process-cgroup"`; the historical CDP lane normalizes to `throttleScope: "page-cdp"`.
 
-The 30 August featured calibration used the `cpulimit` fallback because the runner host exposes
-cgroup v1. The formal receipt records cpulimit 2.8 and a 4.12x control/probe slowdown. Scope changes
-the result, so neither 4x lane supersedes the other: across the 16 shared latency/FCP cells, the
-winning entry label changes in 7 cells and 92 of 336 pairwise entry orderings reverse (27.4%). Every
-cell contains at least one pairwise reversal. The seven winner changes are all within overlapping
-top-cluster CI95 intervals, but 16 pairwise reversals remain CI95-separated in both lanes, spanning
-startup at 1k/10k/30k plus append1k@1k, create@1k/10k, select@10k, and update10th@10k. The two lanes
-are therefore published side by side. Their difference is a scope-sensitivity/BTS-bound signal,
-not a direct estimate of a framework's BTS share.
-
-The winner-label changes are:
-
-| Cell | `web-interp-4x` (page CDP) | `web-interp-4x-cg` (whole process) |
-| --- | --- | --- |
-| clear@10k | Vue | Vue +IFR |
-| clear@1k | Vue +IFR | Vue |
-| remove@1k | Octane (Hux) | Vue Vapor |
-| select@10k | Vue +IFR | Octane (Hux) |
-| select@1k | Octane (Hux) | Vue Vapor +IFR |
-| swap@1k | Vue Vapor | Vue +IFR |
-| update10th@1k | Vue Vapor | Vue +IFR |
+The 30 August `cpulimit` campaign is retained only as an invalid-measurement cautionary example.
+Its one global 4.12× preflight did not prove the later entry windows: most renderer windows matched
+the unthrottled lane, while upstream interactions alone were caught after startup. The collector
+marks every record from that source run `invalid-measurement`; none of its ranks or scope-difference
+claims remain published.
 
 The
 historical default is exactly `web`; a
@@ -326,8 +315,8 @@ latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Compa
 `web-interp-4x` changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does hide material
 ordering differences, but the mixed device calibration above is too weak for the interpreter lane
 to substitute for device rounds: use it to choose confirmation cells, not to publish Native ranks.
-The process-scope calibration above adds a second, independent warning: even at fixed interpreter
-flags and nominal 4x rate, page-only and whole-process throttling do not preserve ranking.
+The process-scope lane receives no rank-stability claim until an inherited-launch campaign passes
+the per-entry in-band slowdown gate above.
 
 ### Issue #42 measurement-boundary audits
 

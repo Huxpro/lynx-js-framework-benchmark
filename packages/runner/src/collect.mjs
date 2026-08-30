@@ -133,9 +133,25 @@ function classifyComparability(run, records) {
       && record.metric === 'btsCpu'
       && record.cpuThrottle > 1
       && record.throttleScope === 'page-cdp';
+    const invalidatedRun = run.meta.measurementValidity?.status === 'invalid-measurement';
+    const unverifiedProcessThrottle = record.harness === 'web'
+      && record.throttleScope === 'process-cgroup'
+      && (!Number.isFinite(record.verifiedSlowdown)
+        || record.verifiedSlowdown < record.cpuThrottle - 0.5
+        || record.verifiedSlowdown > record.cpuThrottle + 0.5);
     let comparabilityStatus = null;
     const comparabilityReasons = [];
-    if (unthrottledWorkerCpu) {
+    if (invalidatedRun || unverifiedProcessThrottle) {
+      comparabilityStatus = 'invalid-measurement';
+      if (invalidatedRun) {
+        comparabilityReasons.push(...(
+          run.meta.measurementValidity.reasons ?? ['source-run-invalidated']
+        ));
+      }
+      if (unverifiedProcessThrottle) {
+        comparabilityReasons.push('process-throttle-slowdown-unverified');
+      }
+    } else if (unthrottledWorkerCpu) {
       // Emulation.setCPUThrottlingRate is target-scoped. The issue-40 runner
       // applied it to the page target, while lynx-bg runs in a separately
       // attached worker target. Preserve the raw samples as source evidence,
@@ -146,7 +162,7 @@ function classifyComparability(run, records) {
       comparabilityStatus = 'incompatible-sampling';
       comparabilityReasons.push(...problems);
     }
-    if (unthrottledWorkerCpu || problems.length) {
+    if (invalidatedRun || unverifiedProcessThrottle || unthrottledWorkerCpu || problems.length) {
       // Source-integrity failures and measurement invalidation take
       // precedence over any derived work classification.
     } else if (work?.status === 'incomplete') {

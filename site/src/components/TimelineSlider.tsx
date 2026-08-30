@@ -131,7 +131,7 @@ export function TimelineSlider({
                       </div>
                       <div>
                         <dt>{text('Process 4×', 'Process 4×')}</dt>
-                        <dd>{text('Interp plus a requested 25% OS quota for the Chromium process tree. The actual backend is recorded in the run receipt.', 'Interp 加 Chromium 进程树的 25% OS 配额；实际 backend 记录在 run receipt 中。')}</dd>
+                        <dd>{text('Interp plus an inherited, calibrated OS quota for the Chromium process tree. Every entry must verify 3.5–4.5× slowdown.', 'Interp 加 Chromium 进程树继承式、经校准的 OS 配额；每个 entry 都必须验证 3.5–4.5× slowdown。')}</dd>
                       </div>
                     </dl>
                     <p>{text('Rankings stay separate across every lane.', '每条 lane 始终独立排名。')}</p>
