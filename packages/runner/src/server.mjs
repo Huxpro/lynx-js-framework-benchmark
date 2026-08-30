@@ -6,8 +6,16 @@ import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import { DRIVER_CLIENT_JS } from '@lynx-bench/shared/driver-client';
-import { PAGE_INSTRUMENT_JS, WORKER_INSTRUMENT_JS } from '@lynx-bench/shared/page-instrument';
+import {
+  DRIVER_CLIENT_JS,
+  PIPELINE_DRIVER_CLIENT_JS,
+  STORM_DRIVER_CLIENT_JS,
+} from '@lynx-bench/shared/driver-client';
+import {
+  PAGE_INSTRUMENT_JS,
+  PAPI_PAGE_INSTRUMENT_JS,
+  WORKER_INSTRUMENT_JS,
+} from '@lynx-bench/shared/page-instrument';
 
 const require = createRequire(import.meta.url);
 
@@ -27,13 +35,18 @@ const MIME = {
   '.bundle': 'application/octet-stream',
 };
 
-export function makeHarnessHtml() {
+export function makeHarnessHtml({ pipeline = false, storm = false } = {}) {
+  if (pipeline && storm) throw new Error('pipeline and storm harness modes are mutually exclusive');
+  const driver = pipeline
+    ? PIPELINE_DRIVER_CLIENT_JS
+    : storm ? STORM_DRIVER_CLIENT_JS : DRIVER_CLIENT_JS;
   return `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
   <script>${PAGE_INSTRUMENT_JS}</script>
-  <script>${DRIVER_CLIENT_JS}</script>
+  ${pipeline ? `<script>${PAPI_PAGE_INSTRUMENT_JS}</script>` : ''}
+  <script>${driver}</script>
   <script type="module" src="/webcore/static/js/client.js"></script>
   <link rel="stylesheet" href="/webcore/static/css/client.css">
   <style>html,body{margin:0;padding:0}</style>
@@ -48,6 +61,8 @@ export function makeHarnessHtml() {
 export async function startServer({ bundleRoots }) {
   const coreRoot = webCoreRoot();
   const harnessHtml = makeHarnessHtml();
+  const pipelineHarnessHtml = makeHarnessHtml({ pipeline: true });
+  const stormHarnessHtml = makeHarnessHtml({ storm: true });
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -61,6 +76,16 @@ export async function startServer({ bundleRoots }) {
       if (url.pathname === '/' || url.pathname === '/index.html') {
         res.writeHead(200, { ...headers, 'content-type': 'text/html' });
         res.end(harnessHtml);
+        return;
+      }
+      if (url.pathname === '/pipeline' || url.pathname === '/pipeline.html') {
+        res.writeHead(200, { ...headers, 'content-type': 'text/html' });
+        res.end(pipelineHarnessHtml);
+        return;
+      }
+      if (url.pathname === '/storm' || url.pathname === '/storm.html') {
+        res.writeHead(200, { ...headers, 'content-type': 'text/html' });
+        res.end(stormHarnessHtml);
         return;
       }
       if (url.pathname === '/instrument-worker.js') {

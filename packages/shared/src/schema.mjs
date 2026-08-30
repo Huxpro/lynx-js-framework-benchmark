@@ -32,6 +32,11 @@ export function normalizeWebRegime(record) {
     jsRegime: null, jsFlags: null, cpuThrottle: null, throttleScope: null,
     verifiedSlowdown: null,
   };
+  // Schema-v2 encoded the interpreter lane in the runtime label rather than
+  // structured fields. Preserve that historical distinction during backfill;
+  // otherwise old interp campaigns are silently relabelled as default JIT.
+  const legacyInterp = typeof record.environment === 'string'
+    && record.environment === 'lynx-for-web-interp';
   const environment = record.environment != null
     && typeof record.environment === 'object'
     && !Array.isArray(record.environment)
@@ -41,8 +46,10 @@ export function normalizeWebRegime(record) {
     ?? record.cpuThrottle
     ?? DEFAULT_WEB_REGIME.cpuThrottle;
   return {
-    jsRegime: environment.jsRegime ?? record.jsRegime ?? DEFAULT_WEB_REGIME.jsRegime,
-    jsFlags: environment.jsFlags ?? record.jsFlags ?? DEFAULT_WEB_REGIME.jsFlags,
+    jsRegime: environment.jsRegime ?? record.jsRegime
+      ?? (legacyInterp ? 'interp' : DEFAULT_WEB_REGIME.jsRegime),
+    jsFlags: environment.jsFlags ?? record.jsFlags
+      ?? (legacyInterp ? INTERP_WEB_JS_FLAGS : DEFAULT_WEB_REGIME.jsFlags),
     cpuThrottle,
     // v2/v3 runs predate the scope field. Their only throttled implementation
     // was Emulation.setCPUThrottlingRate on the page target.
@@ -68,6 +75,8 @@ export const COMPARABILITY_KEYS = [
   'metric',
   'boundary',
   'unit',
+  'contractVersion',
+  'commitPolicy',
   'comparabilityCohort',
 ];
 
@@ -78,7 +87,21 @@ export const BOUNDARIES = {
   btsCpu: 'sampled-js-cpu-background-realm',
   mtsCpu: 'sampled-js-cpu-ui-thread',
   wire: 'web-core-rpc-channel',
+  pipelineOperation: 'pipeline-page-pointerdown-to-dom-predicate',
+  pipelineResidual: 'pipeline-operation-minus-synchronous-element-papi-self-time',
+  papiSelfTime: 'synchronous-element-papi-host-boundary-self-time',
+  papiCalls: 'synchronous-element-papi-host-boundary-call-count',
+  stormOperation: 'storm-first-pointerdown-to-terminal-observed-frame',
+  stormInput: 'storm-real-pointer-input-schedule',
+  stormCommits: 'storm-raf-observable-state-transition-count',
+  stormContract: 'storm-observed-commit-contract-outcome',
+  stormCoalescing: 'storm-committed-frames-divided-by-issued-ticks',
+  stormPerTick: 'storm-total-divided-by-issued-ticks',
+  listRecyclePerCell: 'list-one-viewport-scroll-total-divided-by-recycled-cells',
+  listFlingRate: 'list-fixed-velocity-fling-materialized-cells-divided-by-elapsed',
+  listMaterializationDistribution: 'list-visible-cell-materialization-distribution',
   bundle: 'static',
+  bundleScale: 'static-bundle-artifact-at-startup-scale',
 };
 
 const STAT_FIELDS = ['n', 'median', 'mean', 'std', 'min', 'max', 'p95', 'ci95'];
@@ -165,6 +188,8 @@ export function makeRecord({
   failures = [],
   attemptedCount = null,
   acceptedCount = null,
+  contractVersion = null,
+  commitPolicy = null,
 }) {
   if (!suite || !entry || !workload || !metric || !boundary || !unit) {
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
@@ -215,6 +240,8 @@ export function makeRecord({
     entry,
     workload,
     scale,
+    contractVersion,
+    commitPolicy,
     metric,
     boundary,
     unit,
@@ -233,7 +260,9 @@ export function makeRecord({
 
 export function comparisonKey(record) {
   const base = COMPARABILITY_KEYS.map((key) => {
-    const value = record[key];
+    // Optional prospective dimensions normalize to null so legacy records
+    // remain comparable to modern records that explicitly emit neutrality.
+    const value = record[key] ?? null;
     return value != null && typeof value === 'object' ? JSON.stringify(value) : String(value);
   });
   if (record.harness === 'web') base.push(webRegimeKey(record));

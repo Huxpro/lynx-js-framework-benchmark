@@ -288,6 +288,50 @@ test('collector defaults historical Web records to jit x1 and never mixes regime
   }
 });
 
+test('prospective Web checkpoints never combine across control receipts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-regime-cohort-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const regime = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+    };
+    writeRun(root, 'react.json', {
+      machineId: 'same-machine', score: 50, entries: ['react'], schemaVersion: 3, regime,
+      generatedAt: '2026-01-02T00:00:00Z',
+      receipt: { comparabilityCohort: 'cohort-react' },
+    });
+    writeRun(root, 'vue.json', {
+      machineId: 'same-machine', score: 51, entries: ['vue'], schemaVersion: 3, regime,
+      generatedAt: '2026-01-03T00:00:00Z',
+      receipt: { comparabilityCohort: 'cohort-vue' },
+    });
+    for (const file of ['react.json', 'vue.json']) {
+      const runPath = path.join(root, 'results/runs', file);
+      const run = JSON.parse(fs.readFileSync(runPath, 'utf8'));
+      run.records = run.records.map((candidate) => ({
+        ...candidate,
+        attemptedCount: 1,
+        acceptedCount: 1,
+      }));
+      fs.writeFileSync(runPath, JSON.stringify(run));
+    }
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue']),
+    });
+    assert.deepEqual(out.comparison.entryIds, ['vue']);
+    assert.deepEqual(out.comparison.harnesses[0].sourceRunFiles, ['vue.json']);
+    assert.equal(out.comparisonRecords.length, 1);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('comparison tie-breaks by matrix coverage, then newest run', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -1443,17 +1487,98 @@ test('history keeps a complete past entry set without requiring future featured 
 test('history audits every run but publishes only complete source-defined featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
+  assert.equal(out.listCoverage.expectedCellCount, 56);
+  assert.deepEqual(out.listCoverage.summary, { unsupported: 56 });
+  assert.ok(out.listCoverage.cells.every((cell) =>
+    cell.fixture.kind === 'entry-manifest'
+    && cell.fixture.declared === false
+    && cell.reason === 'list-fixture-not-declared'));
+  assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
+  const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
+  assert.equal(bundleScale.length, 144);
+  const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
+  // The invalidated pre-verifier process-cgroup source remains archived but
+  // contributes no comparison records (72 cells).
+  assert.equal(retainedRecords.length, 4107);
+  assert.ok(bundleScale.every((record) => record.rankingEligible === false
+    && record.descriptiveEligible === true
+    && record.runFile === null
+    && record.artifact?.sha256?.length === 64));
   assert.equal(out.history.sources.length, out.sources.runFiles.length);
   assert.deepEqual(
     out.history.sources.map((source) => source.runFile),
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
+  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 56);
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  assert.equal(currentWeb.entryIds.length, 7);
+  // The newest default-JIT control cohort is honest about its source identity:
+  // post-fix Hux + peers are current, while the newer Octane artifact awaits
+  // the controlled rerun and must not be spliced in from another receipt.
+  assert.equal(currentWeb.entryIds.length, 6);
+  assert.equal(currentWeb.entryIds.includes('octane'), false);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
+  assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
+  ), true);
+  assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
+  ), false);
+  const currentInterpWeb = out.history.checkpoints.at(-1).harnesses.find(
+    (cohort) => cohort.harness === 'web'
+      && cohort.jsRegime === 'interp'
+      && cohort.cpuThrottle === 1,
+  );
+  assert.equal(currentInterpWeb.sourceRunFiles.includes(
+    '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
+  ), true);
+  assert.equal(currentWeb.sourceRunFiles.some((file) =>
+    file.includes('2026-08-26T11-5') && file.includes('issue-30-')), false);
+  const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
+    .map((index) => out.history.records[index]);
+  assert.equal(currentRecords.filter((record) => record.suite === 'bundle-scale').length, 144);
+  assert.ok(currentRecords.filter((record) => record.suite === 'bundle-scale')
+    .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
+  const stormOperations = currentRecords.filter((record) =>
+    record.suite === 'storm' && record.metric === 'operationTime');
+  assert.equal(stormOperations.length, 28);
+  assert.equal(stormOperations.filter((record) =>
+    record.commitPolicy === 'final-state'
+    && !record.rankEligible
+    && record.descriptiveEligible
+    && record.comparabilityStatus === 'comparable'
+    && record.dnfCount === 0).length, 14);
+  assert.equal(stormOperations.filter((record) =>
+    record.commitPolicy === 'every-tick'
+    && !record.rankEligible
+    && record.descriptiveEligible
+    && record.comparabilityStatus === 'contract-failed'
+    && record.dnfCount === 0).length, 14);
+  assert.equal(stormOperations.every((record) =>
+    record.samples.length === 1 && record.detailSamples.length === 1), true);
+  assert.equal(currentRecords.filter((record) =>
+    record.suite === 'storm' && record.metric !== 'operationTime')
+    .every((record) => record.samples.length === 1 && record.detailSamples == null), true);
+  const materializedStormOperations = out.comparisonRecords.filter((record) =>
+    record.suite === 'storm' && record.metric === 'operationTime');
+  assert.equal(materializedStormOperations.length, 56);
+  for (const environment of ['lynx-for-web', 'lynx-for-web-interp']) {
+    const environmentOperations = materializedStormOperations.filter((record) =>
+      record.environment === environment);
+    assert.equal(environmentOperations.length, 28);
+    assert.equal(environmentOperations.filter((record) =>
+      record.commitPolicy === 'final-state'
+      && record.rankingEligible
+      && record.comparabilityStatus === 'comparable'
+      && record.dnfCount === 0).length, 14);
+    assert.equal(environmentOperations.filter((record) =>
+      record.commitPolicy === 'every-tick'
+      && !record.rankingEligible
+      && record.comparabilityStatus === 'contract-failed'
+      && record.dnfCount === 0).length, 14);
+  }
   assert.equal(out.history.sources.some((source) =>
     source.entryIds.includes('octane-pr-791')), true);
 
@@ -1530,7 +1655,8 @@ test('history audits every run but publishes only complete source-defined featur
     const records = checkpoint.activeRecordIndexes.map((index) => out.history.records[index]);
     for (const cohort of checkpoint.harnesses) {
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment);
+        && record.environment === cohort.environment
+        && record.rankEligible);
       const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [
@@ -1540,6 +1666,39 @@ test('history audits every run but publishes only complete source-defined featur
       for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
     }
   }
+
+  const currentCheckpointRecords = out.history.checkpoints.find((checkpoint) => checkpoint.id === 'current-main')
+    .activeRecordIndexes.map((index) => out.history.records[index]);
+  const currentCheckpoint = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.id === 'current-main');
+  const pipelineOperations = currentCheckpointRecords.filter((record) =>
+    record.suite === 'pipeline' && record.metric === 'operationTime');
+  const materializedPipeline = out.comparisonRecords.filter((record) =>
+    record.suite === 'pipeline');
+  assert.equal(currentCheckpoint.pipelineCoverage.expectedCellCount, 84);
+  assert.equal([0, 84].includes(pipelineOperations.length), true);
+  if (pipelineOperations.length === 0) {
+    assert.deepEqual(currentCheckpoint.pipelineCoverage.summary, { unscheduled: 84 });
+  } else {
+    assert.deepEqual(
+      [...new Set(pipelineOperations.map((record) => record.entry))].sort(),
+      ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+    );
+    assert.equal(new Set(pipelineOperations.map((record) =>
+      `${record.entry}|${record.workload}|${record.scale}`)).size, 84);
+  }
+  assert.equal(pipelineOperations.every((record) =>
+    (record.samples.length > 0 || record.dnfCount > 0)
+    && record.detailSamples.length === record.samples.length
+    && !record.rankEligible
+    && record.descriptiveEligible), true);
+  assert.equal(materializedPipeline.filter((record) =>
+    record.metric !== 'operationTime').every((record) =>
+    record.detailSamples == null && record.pipelineControl == null), true);
+  assert.equal(materializedPipeline.filter((record) =>
+    record.metric === 'operationTime').every((record) =>
+    record.detailSamples.every((detail) => detail.surfaceNames == null)
+    && record.pipelineControl.surfaceNames.includes('__FlushElementTree')), true);
 
   const aug8File = '2026-08-08T07-22-33-b0fcfd511132-full.json';
   const aug8 = out.history.checkpoints.find((checkpoint) =>
