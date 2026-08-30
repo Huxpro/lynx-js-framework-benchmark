@@ -1,0 +1,1215 @@
+{
+  "schemaVersion": 2,
+  "meta": {
+    "generatedAt": "2026-08-30T12:10:00.000Z",
+    "argv": [
+      "issue45-native-evidence"
+    ],
+    "machine": {
+      "id": "native-attribution-27ef11fc3610",
+      "platform": "android",
+      "deviceCohort": "aries10-sdk4",
+      "serialSha256": "27ef11fc3610ecf1c723e2d6b6ac25099a1b0e487aa8508b8d535d55e651d2cd"
+    },
+    "calibration": null,
+    "checkpoint": false,
+    "checkpointComplete": false,
+    "comparisonPolicy": "isolated-count-evidence-only",
+    "entryCommits": {
+      "octane": "d5175ca89fdebb8542063b265c6c84b0c7689090",
+      "octane-hux": "e9f1fb14efb0799b091c2982a89bfb72af3fd209",
+      "react": "28f7acbab990b3b574f04944e0d21c769719cc68"
+    },
+    "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+  },
+  "records": [
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane-hux",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiCreateCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        7042
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 1015,
+            "__SetAttribute": 4028,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__CreateRawText": 3013,
+            "__AppendElement": 7041,
+            "__AddEvent": 2012,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 7042,
+      "mean": 7042,
+      "std": 0,
+      "min": 7042,
+      "max": 7042,
+      "p95": 7042,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane-hux",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiPropsCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        8056
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 1015,
+            "__SetAttribute": 4028,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__CreateRawText": 3013,
+            "__AppendElement": 7041,
+            "__AddEvent": 2012,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 8056,
+      "mean": 8056,
+      "std": 0,
+      "min": 8056,
+      "max": 8056,
+      "p95": 8056,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane-hux",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiEventsCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        2012
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 1015,
+            "__SetAttribute": 4028,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__CreateRawText": 3013,
+            "__AppendElement": 7041,
+            "__AddEvent": 2012,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 2012,
+      "mean": 2012,
+      "std": 0,
+      "min": 2012,
+      "max": 2012,
+      "p95": 2012,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane-hux",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiTopologyCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        7041
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 1015,
+            "__SetAttribute": 4028,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__CreateRawText": 3013,
+            "__AppendElement": 7041,
+            "__AddEvent": 2012,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 7041,
+      "mean": 7041,
+      "std": 0,
+      "min": 7041,
+      "max": 7041,
+      "p95": 7041,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane-hux",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiReadCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        1
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 1015,
+            "__SetAttribute": 4028,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__CreateRawText": 3013,
+            "__AppendElement": 7041,
+            "__AddEvent": 2012,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 1,
+      "mean": 1,
+      "std": 0,
+      "min": 1,
+      "max": 1,
+      "p95": 1,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane-hux",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiFlushCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        1
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 1015,
+            "__SetAttribute": 4028,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__CreateRawText": 3013,
+            "__AppendElement": 7041,
+            "__AddEvent": 2012,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 1,
+      "mean": 1,
+      "std": 0,
+      "min": 1,
+      "max": 1,
+      "p95": 1,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiCreateCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        5873
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 848,
+            "__SetAttribute": 3360,
+            "__SetClasses": 3360,
+            "__CreateText": 2512,
+            "__CreateRawText": 2512,
+            "__AddEvent": 1676,
+            "__InsertElementBefore": 5861
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 5873,
+      "mean": 5873,
+      "std": 0,
+      "min": 5873,
+      "max": 5873,
+      "p95": 5873,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiPropsCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        6720
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 848,
+            "__SetAttribute": 3360,
+            "__SetClasses": 3360,
+            "__CreateText": 2512,
+            "__CreateRawText": 2512,
+            "__AddEvent": 1676,
+            "__InsertElementBefore": 5861
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 6720,
+      "mean": 6720,
+      "std": 0,
+      "min": 6720,
+      "max": 6720,
+      "p95": 6720,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiEventsCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        1676
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 848,
+            "__SetAttribute": 3360,
+            "__SetClasses": 3360,
+            "__CreateText": 2512,
+            "__CreateRawText": 2512,
+            "__AddEvent": 1676,
+            "__InsertElementBefore": 5861
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 1676,
+      "mean": 1676,
+      "std": 0,
+      "min": 1676,
+      "max": 1676,
+      "p95": 1676,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiTopologyCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        5861
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 848,
+            "__SetAttribute": 3360,
+            "__SetClasses": 3360,
+            "__CreateText": 2512,
+            "__CreateRawText": 2512,
+            "__AddEvent": 1676,
+            "__InsertElementBefore": 5861
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 5861,
+      "mean": 5861,
+      "std": 0,
+      "min": 5861,
+      "max": 5861,
+      "p95": 5861,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiReadCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        1
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 848,
+            "__SetAttribute": 3360,
+            "__SetClasses": 3360,
+            "__CreateText": 2512,
+            "__CreateRawText": 2512,
+            "__AddEvent": 1676,
+            "__InsertElementBefore": 5861
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 1,
+      "mean": 1,
+      "std": 0,
+      "min": 1,
+      "max": 1,
+      "p95": 1,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "octane",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiFlushCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        0
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__CreateView": 848,
+            "__SetAttribute": 3360,
+            "__SetClasses": 3360,
+            "__CreateText": 2512,
+            "__CreateRawText": 2512,
+            "__AddEvent": 1676,
+            "__InsertElementBefore": 5861
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 0,
+      "mean": 0,
+      "std": 0,
+      "min": 0,
+      "max": 0,
+      "p95": 0,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "react",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiCreateCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        6029
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__SetCSSId": 1,
+            "__CreateView": 1015,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__SetAttribute": 3013,
+            "__AppendElement": 6028,
+            "__AddEvent": 2012,
+            "__CreateRawText": 2000,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 6029,
+      "mean": 6029,
+      "std": 0,
+      "min": 6029,
+      "max": 6029,
+      "p95": 6029,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "react",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiPropsCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        7042
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__SetCSSId": 1,
+            "__CreateView": 1015,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__SetAttribute": 3013,
+            "__AppendElement": 6028,
+            "__AddEvent": 2012,
+            "__CreateRawText": 2000,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 7042,
+      "mean": 7042,
+      "std": 0,
+      "min": 7042,
+      "max": 7042,
+      "p95": 7042,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "react",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiEventsCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        2012
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__SetCSSId": 1,
+            "__CreateView": 1015,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__SetAttribute": 3013,
+            "__AppendElement": 6028,
+            "__AddEvent": 2012,
+            "__CreateRawText": 2000,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 2012,
+      "mean": 2012,
+      "std": 0,
+      "min": 2012,
+      "max": 2012,
+      "p95": 2012,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "react",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiTopologyCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        6028
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__SetCSSId": 1,
+            "__CreateView": 1015,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__SetAttribute": 3013,
+            "__AppendElement": 6028,
+            "__AddEvent": 2012,
+            "__CreateRawText": 2000,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 6028,
+      "mean": 6028,
+      "std": 0,
+      "min": 6028,
+      "max": 6028,
+      "p95": 6028,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "react",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiReadCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        1
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__SetCSSId": 1,
+            "__CreateView": 1015,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__SetAttribute": 3013,
+            "__AppendElement": 6028,
+            "__AddEvent": 2012,
+            "__CreateRawText": 2000,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 1,
+      "mean": 1,
+      "std": 0,
+      "min": 1,
+      "max": 1,
+      "p95": 1,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    },
+    {
+      "suite": "pipeline-native",
+      "harness": "native",
+      "environment": "lynx-native-aries10-sdk4",
+      "entry": "react",
+      "workload": "mount-create",
+      "scale": 1000,
+      "metric": "papiFlushCalls",
+      "boundary": "lepus-main-thread-element-papi-call-count-as-seen-from-lepus",
+      "unit": "count",
+      "comparabilityCohort": null,
+      "value": null,
+      "samples": [
+        1
+      ],
+      "detailSamples": [
+        {
+          "requestedRows": 1000,
+          "committedRows": 1000,
+          "callMultiset": {
+            "__CreatePage": 1,
+            "__GetElementUniqueID": 1,
+            "__SetCSSId": 1,
+            "__CreateView": 1015,
+            "__SetClasses": 4028,
+            "__CreateText": 3013,
+            "__SetAttribute": 3013,
+            "__AppendElement": 6028,
+            "__AddEvent": 2012,
+            "__CreateRawText": 2000,
+            "__FlushElementTree": 1
+          },
+          "attribution": "whole native mount, including app shell"
+        }
+      ],
+      "detail": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "callMultiset": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "attribution": "whole native mount, including app shell"
+      },
+      "dnfCount": 0,
+      "failures": [],
+      "n": 1,
+      "median": 1,
+      "mean": 1,
+      "std": 0,
+      "min": 1,
+      "max": 1,
+      "p95": 1,
+      "ci95": 0,
+      "detailKind": "sample-nearest-median",
+      "rankingEligible": false,
+      "comparabilityStatus": "isolated-evidence-only",
+      "evidenceRef": "results/audits/2026-08-30-issue45-native-pipeline.json"
+    }
+  ]
+}

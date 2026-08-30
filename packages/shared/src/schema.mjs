@@ -41,6 +41,7 @@ export const BOUNDARIES = {
   pipelineResidual: 'pipeline-operation-minus-synchronous-element-papi-self-time',
   papiSelfTime: 'synchronous-element-papi-host-boundary-self-time',
   papiCalls: 'synchronous-element-papi-host-boundary-call-count',
+  papiNativeCalls: 'lepus-main-thread-element-papi-call-count-as-seen-from-lepus',
   stormOperation: 'storm-first-pointerdown-to-terminal-observed-frame',
   stormInput: 'storm-real-pointer-input-schedule',
   stormCommits: 'storm-raf-observable-state-transition-count',

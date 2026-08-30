@@ -51,7 +51,13 @@ const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
-const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite);
+export const ISOLATED_ATTRIBUTION_SUITES = Object.freeze(['pipeline-native']);
+export const isIsolatedAttributionSuite = (suite) =>
+  ISOLATED_ATTRIBUTION_SUITES.includes(suite);
+// Isolated attribution evidence remains available in its immutable raw run,
+// but is never merged into latest.json, ranked, or treated as a campaign cell.
+const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite)
+  && !isIsolatedAttributionSuite(r.suite);
 const isRankingEligible = (record) => record.rankingEligible !== false;
 const isComparisonVisible = (record) => isRankingEligible(record)
   || record.descriptiveEligible === true
@@ -883,8 +889,9 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
-    // Exact-observation suites have dedicated selectors below. They are
-    // descriptive evidence and must never replace or inflate the main
+    // Exact-observation suites have dedicated selectors below. Native count
+    // evidence is excluded earlier by isBenchmarkRecord(). They must never
+    // replace or inflate the main
     // table/startup comparison cohort.
     && !['pipeline', 'storm', 'list'].includes(record.suite)
     && record.harness === harness
@@ -1826,7 +1833,17 @@ export function collectRuns({
       }
       incompleteCheckpointFiles.add(file);
     }
-    const run = normalizeRun(rawRun, file);
+    const normalizedRun = normalizeRun(rawRun, file);
+    const ordinaryRecords = normalizedRun.records.filter(
+      (record) => !isIsolatedAttributionSuite(record.suite));
+    if (ordinaryRecords.length !== normalizedRun.records.length) {
+      log(`[collect] isolate ${file}: ${normalizedRun.records.length - ordinaryRecords.length} `
+        + 'Native attribution evidence records remain raw-run only');
+    }
+    if (ordinaryRecords.length === 0) continue;
+    const run = ordinaryRecords.length === normalizedRun.records.length
+      ? normalizedRun
+      : { ...normalizedRun, records: ordinaryRecords };
     runs.push({ file, run });
     runsSeen += 1;
     const m = run.meta.machine;

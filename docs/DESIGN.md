@@ -98,7 +98,8 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | | `fcp`, `settled` (ms) | `view-attach → content` / `→ quiesce` | shared page driver |
 | | `btsCpu`, `mtsCpu` (ms) | per-realm CPU during the op | CDP `Profiler` on the page and on the `lynx-bg` worker |
 | **wire** | `wireUpMsgs/wireUpBytes` (MTS→BTS), `wireDownMsgs/wireDownBytes` (BTS→MTS), per-endpoint histogram | the real `MessageChannel` between web-core's UI realm and the background worker | `MessagePort.prototype` patch installed before web-core boots |
-| **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
+| **element pipeline (Web)** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment |
+| **element pipeline (Native probe)** | call counts only for the same six segments | whole mount, including app shell, as seen from Lepus | MTS-prefix rebinding on a real device; isolated `pipeline-native` evidence, never ranked |
 | **storm semantics** | source: operation time, pointer ticks, rAF-observable committed frames, CPU/wire totals; derived: contract outcome, coalescing ratio, bytes/messages per tick | first real pointerdown → terminal observed frame | dedicated `/storm` driver repeatedly issues standard actions; Web-only |
 | **list virtualization** | source: first visible content, recycle elapsed/cell/wire totals, fling elapsed/materialized cells/blank frames/materialization samples; derived: per-cell time/wire, materialized/s, p50/p99 | versioned visible-cell boundary for each harness | separate declarative `list` + keyed `list-item` fixture; Web composed-tree and Native visible-cell-tree observers never cross-rank |
 | **static** | legacy scale-0 bundle metrics plus per-harness/per-scale `totalArtifactRaw/Gzip` and readable `mtsSectionRaw/Gzip` | — | exact `rows-N` artifact inspection with path/SHA receipt (JSON-format bundles expose `lepusCode.root`; binary bundles never masquerade as an MTS section) |
@@ -126,7 +127,7 @@ dimensions. One record per (entry × workload × scale × metric):
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
   "records": [{
-    "suite": "table" | "startup" | "pipeline" | "storm" | "list",
+    "suite": "table" | "startup" | "pipeline" | "pipeline-native" | "storm" | "list",
     "harness": "web" | "native",
     "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
     "entry": "vue-vdom",
@@ -200,6 +201,11 @@ Headless Chromium via `playwright-core` (Chromium resolved from the Playwright c
    pointer ticks against the standard update/select controls; no app-authored storm button or
    framework-specific hook participates.
 7. Fresh page per rep; warmup reps discarded per methodology.
+
+The real-device `pipeline-native` probe is deliberately outside this Web flow. It rebinds the
+same ElementPAPI identifiers from an MTS prefix and records whole-mount call multisets. The raw run
+is immutable evidence only: collection excludes it from `latest.json`, ranking, history, and Native
+campaign cells. It has no operation-time or self-time metric.
 
 ### `native` (Android Sandbox, explicitly separated)
 
