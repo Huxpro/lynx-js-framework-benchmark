@@ -116,3 +116,7 @@ export function bundleRecords(entry) {
   }
   return [...records, ...scaleBundleRecords(entry)];
 }
+
+export function attachWebBundleEnvironment(record, environment) {
+  return record.harness === 'web' ? { ...record, environment } : record;
+}

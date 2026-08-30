@@ -26,7 +26,7 @@ import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
 import { runNativeHarness } from './harness-native.mjs';
-import { bundleRecords } from './bundles.mjs';
+import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
 import {
@@ -486,15 +486,13 @@ async function cmdRun(args) {
   if ((processThrottle?.quotaPercent ?? null) !== (preflight.processThrottle?.quotaPercent ?? null)) {
     throw new Error('whole-process throttle quota changed between preflight and benchmark execution');
   }
-  for (const entry of entries) records.push(...bundleRecords(entry).map((record) => ({
-    ...record,
-    environment: {
+  for (const entry of entries) records.push(...bundleRecords(entry).map((record) =>
+    attachWebBundleEnvironment(record, {
       jsRegime: jit, jsFlags, cpuThrottle, throttleScope,
       ...(verifiedSlowdownByEntry[entry.id] == null
         ? {}
         : { verifiedSlowdown: verifiedSlowdownByEntry[entry.id] }),
-    },
-  })));
+    })));
 
   const machine = machineFingerprint();
   const now = new Date();

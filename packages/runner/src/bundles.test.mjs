@@ -6,7 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import zlib from 'node:zlib';
 
-import { bundleRecords } from './bundles.mjs';
+import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
 
 test('bundle derivation preserves legacy scale-0 records and adds exact per-scale artifacts', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bundle-scale-'));
@@ -45,6 +45,20 @@ test('bundle derivation preserves legacy scale-0 records and adds exact per-scal
     });
     assert.equal(point.rankingEligible, false);
     assert.equal(point.descriptiveEligible, true);
+
+    const webEnvironment = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+      throttleScope: 'process-cgroup',
+      verifiedSlowdown: 4,
+    };
+    const attached = records.map((record) =>
+      attachWebBundleEnvironment(record, webEnvironment));
+    assert.ok(attached.filter(({ harness }) => harness === 'web')
+      .every(({ environment }) => environment === webEnvironment));
+    assert.ok(attached.filter(({ harness }) => harness === 'native')
+      .every(({ environment }) => environment === 'lynx-native-static-artifact'));
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
