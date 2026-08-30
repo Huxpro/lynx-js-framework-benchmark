@@ -42,7 +42,7 @@ export function TimelineSlider({
   const progress = snapshots.length > 1 ? (index / (snapshots.length - 1)) * 100 : 0;
   const cohorts = checkpoint.harnesses.map((cohort) => {
     const environment = cohort.harness === 'web'
-      ? `Web ${cohort.jsRegime === 'interp' ? 'Ignition' : 'JIT'} ${
+      ? `Web ${cohort.jsRegime === 'interp' ? 'Interp' : 'JIT'} ${
         cohort.cpuThrottle === 1
           ? '1×'
           : `${cohort.throttleScope === 'page-cdp' ? 'mixed' : 'process'} ${cohort.cpuThrottle ?? 1}×`

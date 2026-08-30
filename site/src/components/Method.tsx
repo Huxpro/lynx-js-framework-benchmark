@@ -28,7 +28,7 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
           {' · '}<time dateTime={snapshot.generatedAt}>{generatedAt}</time>
           {' · '}{harness === 'web' ? 'Web' : 'Native'}
           {harness === 'web'
-            ? ` · ${regime.jsRegime === 'jit' ? 'JIT' : 'Ignition'} · ${regime.cpuThrottle === 1 ? '1× CPU' : `${regime.throttleScope === 'page-cdp' ? 'mixed' : 'process'} ${regime.cpuThrottle}× CPU`}`
+            ? ` · ${regime.jsRegime === 'jit' ? 'JIT' : 'Interp'} · ${regime.cpuThrottle === 1 ? '1× CPU' : `${regime.throttleScope === 'page-cdp' ? 'mixed' : 'process'} ${regime.cpuThrottle}× CPU`}`
             : ''}
           {' · '}{cohort
             ? text(`${cohort.entryIds.length} comparable entries`, `${cohort.entryIds.length} 个可比条目`)

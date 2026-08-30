@@ -346,10 +346,10 @@ export const DEFAULT_WEB_REGIME: WebRegime = {
   jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none',
 };
 export const WEB_REGIMES: (WebRegime & { id: string; label: string })[] = [
-  { id: 'web', label: 'JIT · 1×', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
-  { id: 'web-interp', label: 'Ignition · 1×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
-  { id: 'web-interp-4x', label: 'Ignition · mixed 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'page-cdp' },
-  { id: 'web-interp-4x-cg', label: 'Ignition · process 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'process-cgroup' },
+  { id: 'web', label: 'JIT', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
+  { id: 'web-interp', label: 'Interp', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
+  { id: 'web-interp-4x', label: 'Interp · mixed 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'page-cdp' },
+  { id: 'web-interp-4x-cg', label: 'Interp · process 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'process-cgroup' },
 ];
 export function webRegimeId(regime: WebRegime): string {
   return WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime

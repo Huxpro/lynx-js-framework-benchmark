@@ -8,6 +8,7 @@ const receiptSource = fs.readFileSync(new URL('./components/Method.tsx', import.
 const rankingSource = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
 const appSource = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
 const contextSource = fs.readFileSync(new URL('./data-context.tsx', import.meta.url), 'utf8');
+const dataSource = fs.readFileSync(new URL('./data.ts', import.meta.url), 'utf8');
 const entry = (id) => JSON.parse(fs.readFileSync(
   new URL(`../../entries/${id}/entry.json`, import.meta.url),
   'utf8',
@@ -121,7 +122,10 @@ test('Web regime facet is explicit, URL-addressable, and cannot mix ranking reco
   assert.match(source, /cohort\.jsFlags === candidate\.jsFlags/);
   assert.match(source, /cohort\.cpuThrottle === candidate\.cpuThrottle/);
   assert.match(appSource, /params\.set\('regime', id\)/);
-  assert.match(appSource, /Directional probe — Ignition-only JavaScript under V8; not Native, not PrimJS\./);
+  assert.match(appSource, /Directional probe — interpreter-only JavaScript under V8; not Native, not PrimJS\./);
+  assert.match(dataSource, /label: 'JIT'/);
+  assert.match(dataSource, /label: 'Interp'/);
+  assert.doesNotMatch(`${source}\n${receiptSource}\n${appSource}\n${dataSource}`, /Ignition/);
   assert.match(contextSource, /recordMatchesWebRegime\(record, regime\)/);
   assert.match(rankingSource, /record\.jsRegime === regime\.jsRegime/);
   assert.match(rankingSource, /record\.jsFlags === regime\.jsFlags/);
