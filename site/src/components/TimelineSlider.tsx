@@ -87,6 +87,24 @@ export function TimelineSlider({
               ))}
             </div>
           </div>
+          {harness === 'web' && compact && (
+            <button
+              className="advanced-toggle"
+              type="button"
+              aria-expanded={advancedOpen}
+              aria-controls={advancedId}
+              aria-label={text(
+                `JavaScript configuration, current ${activeRegime?.label ?? 'regime'}`,
+                `JavaScript 配置，当前为 ${activeRegime?.label ?? 'regime'}`,
+              )}
+              title={text('JavaScript configuration', 'JavaScript 配置')}
+              onClick={() => setAdvancedOpen((open) => !open)}
+            >
+              <span>JS</span>
+              <output>{activeRegime?.label ?? text('Regime', '政权')}</output>
+              <i aria-hidden="true">⌄</i>
+            </button>
+          )}
           {harness === 'web' && (
             <div className="workspace-advanced" id={advancedId} hidden={!showAdvanced}>
               <div className="workspace-regime-heading">
@@ -184,19 +202,6 @@ export function TimelineSlider({
               {theme === 'dark' ? '☀' : '☾'}
             </button>
           </div>
-          {harness === 'web' && compact && (
-            <button
-              className="advanced-toggle"
-              type="button"
-              aria-expanded={advancedOpen}
-              aria-controls={advancedId}
-              onClick={() => setAdvancedOpen((open) => !open)}
-            >
-              <span>{text('Advanced configuration', '高级配置')}</span>
-              <output>{activeRegime?.label ?? text('JavaScript regime', 'JavaScript 政权')}</output>
-              <i aria-hidden="true">⌄</i>
-            </button>
-          )}
         </div>
         <section className="timeline" aria-label={text('Dataset time machine', '数据集时光机')}>
         <div className="timeline-control">
