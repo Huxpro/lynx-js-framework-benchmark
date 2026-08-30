@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "issue": "https://github.com/Huxpro/octane/issues/202#issuecomment-5468387170",
+  "protocol": {
+    "pipeline": "Huxpro/octane#194 lease/no-CDP",
+    "deviceSerial": "aic-i18n-bd-fullport.byteintl.net:55779",
+    "issueId": "octane-202-list-capacity-20260830",
+    "leaseExpiresAtUnixMs": 1788096245296,
+    "devToolPreflight": "DevTool disabled. Transitioning to ATTACHED. followed by __OCTANE_DEVTOOL_DISABLED__=true",
+    "thermal": {
+      "batteryTemperatureC": 35,
+      "status": 0
+    },
+    "releasedAt": "2026-08-30T12:38:38Z",
+    "releaseHttpStatus": 200,
+    "releaseReceipt": {
+      "acquired": "aic-i18n-bd-fullport.byteintl.net:55779"
+    }
+  },
+  "entry": "react",
+  "bundle": "entries/react/dist/list/main.lynx.bundle",
+  "bundleSha256": "df5fab95ffadf7df437951352e734a2ef92ea4d8a4769c77c207ff5d1474eee9",
+  "observations": [
+    {
+      "scale": 10000,
+      "loadTemplateEpochSeconds": 1788093474.268,
+      "onFirstScreenEpochSeconds": 1788093477.276,
+      "diagnosticLoadToOnFirstScreenMs": 3008,
+      "nativeListEnabled": true,
+      "initialVisibleRows": "1-16",
+      "fling": {
+        "adbGesture": "input swipe 195 560 195 80 100",
+        "durationMs": 100,
+        "terminalVisibleRows": "15-30",
+        "beforeScreenshot": "issue-202-native-react-list-10000-before-fling.png",
+        "beforeScreenshotSha256": "10672f3dce173b584b932bcde8fec918a3ee39a7c419e27902e021b8495a7a77",
+        "afterScreenshot": "issue-202-native-react-list-10000-after-fling.png",
+        "afterScreenshotSha256": "4f4368589dd001e435180e2bc518bcd5d359724d8b83e9e0a87098cb9fb71575"
+      },
+      "terminalOutcome": "process alive; visible list content after fling",
+      "errorsObservedInCapturedLog": [
+        {
+          "fatal": false,
+          "code": 20100,
+          "message": "E.multiApps[r].callDestroyLifetimeFun is not a function",
+          "observedAfterOnFirstScreenMs": 519
+        }
+      ]
+    },
+    {
+      "scale": 30000,
+      "loadTemplateEpochSeconds": 1788093320.731,
+      "onFirstScreenEpochSeconds": 1788093329.639,
+      "diagnosticLoadToOnFirstScreenMs": 8908,
+      "nativeListEnabled": true,
+      "initialVisibleRows": "1-16",
+      "screenshot": "issue-202-native-react-list-30000.png",
+      "screenshotSha256": "9bb8409bfe349caec46b32147491dd154c182959df8073c0f72c9ee7fc3703da",
+      "terminalOutcome": "process alive; visible list content",
+      "errorsObservedInCapturedLog": [],
+      "limitations": [
+        "The 30k log snapshot ended immediately after onFirstScreen; later non-fatal lifecycle errors were not observed or excluded."
+      ]
+    }
+  ],
+  "claims": {
+    "supported": [
+      "The React virtualized fixture materialized visible native list content at 10k and 30k.",
+      "At 10k the process and visible list content survived the recorded ADB fling."
+    ],
+    "notClaimed": [
+      "No exact cells-per-second, blank-frame, or frame-time metric is inferred from screenshots.",
+      "The run is not claimed to be error-free.",
+      "Diagnostic log deltas are not published as framework-neutral timing metrics.",
+      "Vue native list support is not claimed."
+    ]
+  }
+}

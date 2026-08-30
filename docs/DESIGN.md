@@ -167,12 +167,15 @@ An entry opts in without changing the driver:
 "listFixture": {
   "protocol": "lynx-list-fixture-v1",
   "contractSha256": "<reported by pnpm bench list-coverage>",
+  "scaleInput": "globalProps.listRows || globalProps.queryItems.listRows",
   "bundles": { "web": "dist/list/main.web.bundle", "native": "dist/list/main.lynx.bundle" },
   "sha256": { "web": "<64 hex>", "native": "<64 hex>" }
 }
 ```
 
 Each declared artifact must stay inside its entry directory and match its manifest checksum. The
+`web` and `native` keys are independent capabilities; omitting an unproven platform keeps all five
+of that platform's cells explicitly `unsupported`. The
 same case data, viewport receipt, item-key semantics, and stimulus schedule drive every framework;
 the only harness-specific fields are the declared input and observation mechanisms.
 

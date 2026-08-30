@@ -109,21 +109,25 @@ async function cmdRun(args) {
   const stormCases = STORM_CASES.filter((kase) =>
     (caseNames == null || caseNames.includes(kase.name))
     && commitPolicies.includes(kase.commitPolicy));
+  const listCases = LIST_CASES.filter((kase) =>
+    caseNames == null || caseNames.includes(kase.name));
   if (caseNames) {
-    const knownCases = new Set([...TABLE_CASES, ...STORM_CASES].map((kase) => kase.name));
+    const knownCases = new Set([...TABLE_CASES, ...STORM_CASES, ...LIST_CASES]
+      .map((kase) => kase.name));
     const unknownCases = caseNames.filter((name) => !knownCases.has(name));
     if (unknownCases.length) throw new Error(`unknown case(s): ${unknownCases.join(', ')}`);
   }
   const suites = list(args.suite)
     ?? (harness === 'web' ? ['table', 'startup', 'pipeline', 'storm'] : ['table', 'startup']);
   const unknownSuites = suites.filter((suite) =>
-    !['table', 'startup', 'pipeline', 'storm'].includes(suite));
+    !['table', 'startup', 'pipeline', 'storm', 'list'].includes(suite));
   if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
   if (harness === 'native') {
-    if (suites.includes('pipeline') || suites.includes('storm')) {
+    if (suites.includes('pipeline') || suites.includes('storm') || suites.includes('list')) {
       throw new Error(
-        'The pipeline and storm suites are Web-only; use the standard Native table/startup matrix.',
+        'The pipeline, storm, and list suites use dedicated campaigns; '
+        + 'use the standard Native table/startup matrix here.',
       );
     }
     if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
@@ -364,12 +368,14 @@ async function cmdRun(args) {
   const reps = args.reps ? Number(args.reps) : quick ? 3 : 7;
   const stormReps = args['storm-reps'] ? Number(args['storm-reps']) : quick ? 1 : 3;
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
+  const listReps = args['list-reps'] ? Number(args['list-reps']) : quick ? 1 : 3;
 
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
   console.log(
     `[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; `
     + `storm: ${stormCases.map((c) => `${c.name}/${c.commitPolicy}`).join(', ')}; `
-    + `scales: ${scales.join(', ')}; reps=${reps}; stormReps=${stormReps}`,
+    + `list: ${listCases.map((c) => c.name).join(', ')}; `
+    + `scales: ${scales.join(', ')}; reps=${reps}; stormReps=${stormReps}; listReps=${listReps}`,
   );
 
   // Preflight in the same browser configuration that will measure.
@@ -392,7 +398,8 @@ async function cmdRun(args) {
   });
 
   const { records, executablePath, browserVersion } = await runWebHarness({
-    entries, cases, stormCases, suites, scales, reps, stormReps, startupReps,
+    entries, cases, stormCases, listCases, suites, scales,
+    reps, stormReps, startupReps, listReps,
   });
   if (browserVersion !== preflight.browser.version
     || executablePath !== preflight.browser.executablePath) {

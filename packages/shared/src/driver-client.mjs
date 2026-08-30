@@ -42,9 +42,10 @@ export const DRIVER_CLIENT_JS = `(() => {
   };
 
   // -- lynx-view attach ------------------------------------------------------
-  x.createView = (bundleUrl, w = 800, h = 640) => {
+  x.createView = (bundleUrl, w = 800, h = 640, globalProps = null) => {
     const view = document.createElement('lynx-view');
     view.setAttribute('url', bundleUrl);
+    if (globalProps != null) view.globalProps = globalProps;
     view.style.cssText = 'display:block;width:' + w + 'px;height:' + h + 'px;';
     x.viewAttachTime = performance.now();
     document.body.appendChild(view);
@@ -331,3 +332,97 @@ const injectDriverExtension = (extension) => {
 // shares exactly the same predicate implementation instead of forking one.
 export const PIPELINE_DRIVER_CLIENT_JS = injectDriverExtension(PIPELINE_ARM_JS);
 export const STORM_DRIVER_CLIENT_JS = injectDriverExtension(STORM_ARM_JS);
+
+const LIST_DRIVER_EXTENSION_JS = `  // Dedicated list observer. This is injected
+  // only in /list and observes composed-tree presentation, never renderer internals.
+  const listSurface = () => findByClass('list-surface')[0] ?? null;
+  const cellKey = (cell) => {
+    const stack = [cell];
+    while (stack.length) {
+      const node = stack.pop();
+      if (node.nodeType === 1 && hasClass(node, 'list-cell-key')) {
+        const key = Number(node.textContent);
+        return Number.isFinite(key) ? key : null;
+      }
+      for (const child of node.childNodes || []) stack.push(child);
+    }
+    return null;
+  };
+  x.listState = () => {
+    const surface = listSurface();
+    if (!surface) return { keys: [], rect: null, scrollTop: 0 };
+    const viewport = surface.getBoundingClientRect();
+    const keys = [];
+    for (const cell of findByClass('list-cell')) {
+      const rect = cell.getBoundingClientRect();
+      if (rect.bottom <= viewport.top || rect.top >= viewport.bottom
+        || rect.right <= viewport.left || rect.left >= viewport.right) continue;
+      const key = cellKey(cell);
+      if (key != null) keys.push(key);
+    }
+    keys.sort((a, b) => a - b);
+    return {
+      keys,
+      rect: { x: viewport.x, y: viewport.y, width: viewport.width, height: viewport.height },
+      scrollTop: Number(surface.scrollTop ?? 0),
+    };
+  };
+  x.waitListVisible = (timeoutMs = 120000) => new Promise((resolve, reject) => {
+    const deadline = performance.now() + timeoutMs;
+    const tick = () => {
+      const state = x.listState();
+      if (state.keys.length > 0) return resolve({
+        ...state,
+        firstVisibleContentMs: performance.now() - x.viewAttachTime,
+      });
+      if (performance.now() > deadline) return reject(new Error('list visible-content timeout'));
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  x.observeListOperation = ({ durationMs, velocityPxPerSecond, rowHeightPx }) =>
+    new Promise((resolve) => {
+      const start = performance.now();
+      const deadline = start + durationMs;
+      const appeared = new Set(x.listState().keys);
+      const initiallyVisible = new Set(appeared);
+      const pending = new Map();
+      const materializationTimesMs = [];
+      let blankFrames = 0;
+      let frames = 0;
+      const tick = () => {
+        const now = performance.now();
+        const state = x.listState();
+        frames += 1;
+        if (state.keys.length === 0) blankFrames += 1;
+        const firstExpected = Math.max(1, Math.floor(state.scrollTop / rowHeightPx) + 1);
+        const expectedCount = Math.max(1, Math.ceil(640 / rowHeightPx));
+        for (let key = firstExpected; key < firstExpected + expectedCount; key++) {
+          if (!appeared.has(key) && !pending.has(key)) pending.set(key, now);
+        }
+        for (const key of state.keys) {
+          if (!appeared.has(key)) {
+            appeared.add(key);
+            materializationTimesMs.push(Math.max(0, now - (pending.get(key) ?? start)));
+          }
+          pending.delete(key);
+        }
+        if (now >= deadline) {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve({
+            elapsedMs: performance.now() - start,
+            materializedCells: [...appeared].filter((key) => !initiallyVisible.has(key)).length,
+            blankFrames,
+            materializationTimesMs,
+            frames,
+            velocityPxPerSecond,
+          })));
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
+`;
+
+export const LIST_DRIVER_CLIENT_JS = injectDriverExtension(LIST_DRIVER_EXTENSION_JS);
