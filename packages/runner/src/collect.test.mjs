@@ -1254,11 +1254,13 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(currentWeb.entryIds.length, 7);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
-    '2026-08-26T11-52-48-65160668d8d9-issue-30-final-state-acceptance-v2.json',
+    '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.includes(
-    '2026-08-26T11-53-17-65160668d8d9-issue-30-every-tick-evidence-v2.json',
+    '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
   ), true);
+  assert.equal(currentWeb.sourceRunFiles.some((file) =>
+    file.includes('2026-08-26T11-5') && file.includes('issue-30-')), false);
   const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
     .map((index) => out.history.records[index]);
   const stormOperations = currentRecords.filter((record) =>
@@ -1266,7 +1268,8 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(stormOperations.length, 28);
   assert.equal(stormOperations.filter((record) =>
     record.commitPolicy === 'final-state'
-    && record.rankEligible
+    && !record.rankEligible
+    && record.descriptiveEligible
     && record.comparabilityStatus === 'comparable'
     && record.dnfCount === 0).length, 14);
   assert.equal(stormOperations.filter((record) =>
@@ -1280,6 +1283,24 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(currentRecords.filter((record) =>
     record.suite === 'storm' && record.metric !== 'operationTime')
     .every((record) => record.samples.length === 1 && record.detailSamples == null), true);
+  const materializedStormOperations = out.comparisonRecords.filter((record) =>
+    record.suite === 'storm' && record.metric === 'operationTime');
+  assert.equal(materializedStormOperations.length, 56);
+  for (const environment of ['lynx-for-web', 'lynx-for-web-interp']) {
+    const environmentOperations = materializedStormOperations.filter((record) =>
+      record.environment === environment);
+    assert.equal(environmentOperations.length, 28);
+    assert.equal(environmentOperations.filter((record) =>
+      record.commitPolicy === 'final-state'
+      && record.rankingEligible
+      && record.comparabilityStatus === 'comparable'
+      && record.dnfCount === 0).length, 14);
+    assert.equal(environmentOperations.filter((record) =>
+      record.commitPolicy === 'every-tick'
+      && !record.rankingEligible
+      && record.comparabilityStatus === 'contract-failed'
+      && record.dnfCount === 0).length, 14);
+  }
   assert.equal(out.history.sources.some((source) =>
     source.entryIds.includes('octane-pr-791')), true);
 
@@ -1368,11 +1389,11 @@ test('history audits every run but publishes only complete source-defined featur
     }
   }
 
-  const currentRecords = out.history.checkpoints.find((checkpoint) => checkpoint.id === 'current-main')
+  const currentCheckpointRecords = out.history.checkpoints.find((checkpoint) => checkpoint.id === 'current-main')
     .activeRecordIndexes.map((index) => out.history.records[index]);
   const currentCheckpoint = out.history.checkpoints.find((checkpoint) =>
     checkpoint.id === 'current-main');
-  const pipelineOperations = currentRecords.filter((record) =>
+  const pipelineOperations = currentCheckpointRecords.filter((record) =>
     record.suite === 'pipeline' && record.metric === 'operationTime');
   const materializedPipeline = out.comparisonRecords.filter((record) =>
     record.suite === 'pipeline');
