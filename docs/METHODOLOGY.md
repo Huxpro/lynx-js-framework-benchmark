@@ -256,6 +256,28 @@ observe the expected slowdown before formal measurement begins, and the actual b
 in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope: "process-cgroup"`; the
 historical CDP lane normalizes to `throttleScope: "page-cdp"`.
 
+The 30 August featured calibration used the `cpulimit` fallback because the runner host exposes
+cgroup v1. The formal receipt records cpulimit 2.8 and a 4.12x control/probe slowdown. Scope changes
+the result, so neither 4x lane supersedes the other: across the 16 shared latency/FCP cells, the
+winning entry label changes in 7 cells and 92 of 336 pairwise entry orderings reverse (27.4%). Every
+cell contains at least one pairwise reversal. The seven winner changes are all within overlapping
+top-cluster CI95 intervals, but 16 pairwise reversals remain CI95-separated in both lanes, spanning
+startup at 1k/10k/30k plus append1k@1k, create@1k/10k, select@10k, and update10th@10k. The two lanes
+are therefore published side by side. Their difference is a scope-sensitivity/BTS-bound signal,
+not a direct estimate of a framework's BTS share.
+
+The winner-label changes are:
+
+| Cell | `web-interp-4x` (page CDP) | `web-interp-4x-cg` (whole process) |
+| --- | --- | --- |
+| clear@10k | Vue | Vue +IFR |
+| clear@1k | Vue +IFR | Vue |
+| remove@1k | Octane (Hux) | Vue Vapor |
+| select@10k | Vue +IFR | Octane (Hux) |
+| select@1k | Octane (Hux) | Vue Vapor +IFR |
+| swap@1k | Vue Vapor | Vue +IFR |
+| update10th@1k | Vue Vapor | Vue +IFR |
+
 The
 historical default is exactly `web`; a
 schema-v2 record without regime fields normalizes to JIT / `--expose-gc` / 1×. The machine fingerprint does not
@@ -304,6 +326,8 @@ latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Compa
 `web-interp-4x` changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does hide material
 ordering differences, but the mixed device calibration above is too weak for the interpreter lane
 to substitute for device rounds: use it to choose confirmation cells, not to publish Native ranks.
+The process-scope calibration above adds a second, independent warning: even at fixed interpreter
+flags and nominal 4x rate, page-only and whole-process throttling do not preserve ranking.
 
 ### Issue #42 measurement-boundary audits
 

@@ -1226,10 +1226,11 @@ const buildHistory = ({
     generatedAt: current.generatedAt,
     label: 'Current · merged upstream',
     description: 'Upstream Octane advances to 9779569e and the Huxpro/new-lynx block core to 8938c126. '
-      + 'The same-machine featured cohort is published as three independent Web rankings: V8 JIT, '
-      + 'Ignition-only JavaScript, and Ignition-only JavaScript with 4× CPU throttling. Across the formal '
-      + 'runs, disabling compiled JavaScript changes 63 of 336 pairwise time-cell orderings; regimes remain '
-      + 'separate from each other and from Native. Storm experiments remain archive evidence.',
+      + 'The same-machine featured cohort is published as four independent Web rankings: V8 JIT, '
+      + 'Ignition-only JavaScript, mixed page-CDP 4×, and whole-process 4×. Disabling compiled '
+      + 'JavaScript changes 63 of 336 pairwise time-cell orderings; changing the 4× throttle scope '
+      + 'changes 92 of 336. Regimes remain separate from each other and from Native. Storm experiments '
+      + 'remain archive evidence.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
