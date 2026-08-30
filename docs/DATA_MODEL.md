@@ -59,6 +59,11 @@ Everything else is derived, including:
 - storm `contractPass`, `coalescingRatio`, and wire-per-tick metrics, materialized only by `collect`
   from aligned raw schedules, transitions, counts, and wire totals. A semantic every-tick miss is
   descriptive `contract-failed` data with `dnfCount: 0`; timeouts and driver failures are DNF;
+- scale-indexed `bundle-scale` records, recalculated from each exact `rows-N` artifact. They retain
+  artifact path/SHA-256/flavor/section receipts and are always descriptive/non-ranking. Total gzip
+  uses the selected harness artifact; MTS gzip exists only for a structurally readable
+  `lepusCode.root`. Pareto membership and FCP error-bar coordinates are site derivatives. The FCP
+  side is selected from exactly one execution regime (Web JIT 1× by default), never pooled;
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
@@ -137,6 +142,10 @@ Everything else is derived, including:
 14. List records never enter table/startup rankings. Web and Native use separate observers and
     remain separate cohorts; missing fixture capability is explicit `unsupported`, while DNF is
     reserved for an attempted fixture whose driver or capture failed.
+15. `bundle-scale` records never enter benchmark-matrix selection or any score. A Pareto point must
+    join the same entry, harness, scale, and one normalized execution regime; a frontier containing
+    more than one regime fails closed. Historical checkpoints cannot reuse a current artifact when
+    their exact per-scale bytes were not retained (retroactive only where those bytes exist).
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

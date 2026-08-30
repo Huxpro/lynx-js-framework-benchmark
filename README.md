@@ -154,6 +154,7 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | element pipeline | Web-only synchronous ElementPAPI segment self-time/calls + outside-PAPI residual | dedicated capture page; raw tree/call controls gate derived comparisons; Native is unsupported |
 | storm semantics | Web-only elapsed time, observable frames/ticks, contract outcome, wire bytes/tick | dedicated shared-driver page; every-tick failure is descriptive data, final-state permits coalescing |
 | list virtualization | startup, one-viewport recycle, fixed-velocity fling; raw counts/times/wire plus derived per-cell rates | separate declarative `list`/`list-item` fixture; Web and Native observers are isolated; absent fixtures are unsupported |
+| staging Pareto | exact scale- and regime-matched artifact/MTS gzip × startup FCP median and CI | collector-derived static artifact records + one FCP regime (Web JIT 1× by default); lower-left frontier only, never a score |
 | dual-thread | `btsCpu` / `mtsCpu` | CDP sampling profiler attached per realm (page + `lynx-bg` worker) |
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |
@@ -167,6 +168,16 @@ post-ACK-frame startup metrics because its custom renderer publishes no pipeline
 are never ranked as FCP. See
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the measurement rules and
 [docs/DESIGN.md](docs/DESIGN.md) for the architecture.
+
+The staging Pareto view joins each startup scale only to its exact `rows-N` artifact. The total
+axis uses `main.web.bundle` or `main.lynx.bundle` according to the selected harness. The MTS axis
+appears only when a bundle exposes a readable `lepusCode.root`; binary bundles remain explicitly
+unavailable rather than inheriting whole-artifact bytes. Historical checkpoints without the exact
+then-current per-scale artifact bytes do not borrow today's manifest: the view is retroactive only
+where those bytes were retained. Each frontier uses one FCP regime only; Web is fixed to JIT at 1×
+by default, and interpreter/CPU-throttled lanes are never silently pooled. On the next Octane bundle
+refresh, vendor genuine per-scale builds rather than copying one post-rows-0 artifact across scales,
+so N-growing code staging becomes observable without inventing historical provenance.
 
 ## Harnesses
 

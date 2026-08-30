@@ -21,6 +21,9 @@ export interface BenchRecord {
   suite: string;
   harness: string;
   environment: string;
+  jsRegime?: 'jit' | 'interp' | null;
+  jsFlags?: string | null;
+  cpuThrottle?: number | null;
   entry: string;
   workload: string;
   scale: number;
@@ -78,6 +81,12 @@ export interface BenchRecord {
   contractVersion?: number | string | null;
   commitPolicy?: 'every-tick' | 'final-state' | null;
   derivedFrom?: { kind: string; metrics: string[] };
+  artifact?: {
+    path: string;
+    sha256: string;
+    flavor: 'web' | 'lynx';
+    section: 'whole-artifact' | 'lepusCode.root';
+  };
   workClassification?: {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;

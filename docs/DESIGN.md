@@ -101,7 +101,7 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
 | **storm semantics** | source: operation time, pointer ticks, rAF-observable committed frames, CPU/wire totals; derived: contract outcome, coalescing ratio, bytes/messages per tick | first real pointerdown → terminal observed frame | dedicated `/storm` driver repeatedly issues standard actions; Web-only |
 | **list virtualization** | source: first visible content, recycle elapsed/cell/wire totals, fling elapsed/materialized cells/blank frames/materialization samples; derived: per-cell time/wire, materialized/s, p50/p99 | versioned visible-cell boundary for each harness | separate declarative `list` + keyed `list-item` fixture; Web composed-tree and Native visible-cell-tree observers never cross-rank |
-| **static** | `bundleWebRaw/Gzip`, `bundleLynxRaw/Gzip`, `mtsSectionGzip`, `btsSectionGzip` | — | bundle inspection (JSON-format bundles expose `lepusCode.root` = MTS and `manifest['/app-service.js']` = BTS; binary bundles report whole-bundle only) |
+| **static** | legacy scale-0 bundle metrics plus per-harness/per-scale `totalArtifactRaw/Gzip` and readable `mtsSectionRaw/Gzip` | — | exact `rows-N` artifact inspection with path/SHA receipt (JSON-format bundles expose `lepusCode.root`; binary bundles never masquerade as an MTS section) |
 
 Why this is neutral: ReactLynx, Vue-Lynx (vdom/vapor), and Octane-on-Lynx all ride the same
 `@lynx-js/web-worker-rpc` channel on Lynx for Web — every cross-thread message is an rpc
@@ -147,6 +147,13 @@ dimensions. One record per (entry × workload × scale × metric):
 `harness`, `environment`, `workload`, `scale`, `metric`, `boundary`, and `unit` all agree.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
+
+`bundle-scale` is a derived static suite, not a benchmark suite. Its records are excluded before
+cohort/matrix selection, marked non-ranking, and attached descriptively only to the current exact
+manifest identity. The staging view joins one record to startup FCP on entry + harness + scale +
+one normalized execution regime (Web JIT 1× by default), computes the lower-left non-dominated
+frontier in the site, and draws the already-derived FCP `ci95`; it never reduces the two axes to one
+score. The frontier helper rejects mixed regimes, and exact coordinate ties remain co-frontier.
 
 The list contract is additionally capability-gated. The source is the optional `listFixture`
 declaration plus its exact bundle artifact; `collect` derives a complete entry × harness × case
