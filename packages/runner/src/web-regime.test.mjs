@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { makeRecord } from '@lynx-bench/shared/schema';
+import { makeRecord, normalizeWebRegime } from '@lynx-bench/shared/schema';
 
 import { chromiumArgs } from './browser.mjs';
 import { setCPUThrottlingRate } from './cdp.mjs';
@@ -102,4 +102,15 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
     cpuThrottle: 4,
   }), /Web-only/);
+});
+
+test('schema-v2 interpreter labels remain in a distinct historical regime lane', () => {
+  assert.deepEqual(normalizeWebRegime({
+    harness: 'web',
+    environment: 'lynx-for-web-interp',
+  }), {
+    jsRegime: 'interp',
+    jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+    cpuThrottle: 1,
+  });
 });

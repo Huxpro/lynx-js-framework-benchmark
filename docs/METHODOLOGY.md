@@ -43,9 +43,15 @@ had a documented weakness, the fix is noted.
   Octane's custom renderer does not expose the same pipeline boundary in this Explorer build, so
   **no featured Native Octane metric is reported**. Archived private-protocol observations remain
   evidence, but cannot fill the current black-box matrix.
-- Update/select storms are archived experiments, not featured workload cases. Existing apps differ
-  in whether intermediate ticks must commit or may coalesce to the same final state; until one
-  framework-neutral contract exists, storm values do not enter current runs or rankings.
+- Old app-authored update/select storms remain archived experiments. Featured Web storms use a
+  separate shared `/storm` driver: 50 standard update-every-tenth pointer ticks (10%-column width)
+  or 30 alternating standard selection ticks (one-row width), at a declared 8ms interval. Both
+  `every-tick` and `final-state` policies use that identical stimulus. Every-tick requires the rAF
+  observer to see the exact state sequence; final-state permits coalescing and requires only the
+  terminal state. The source retains actual input offsets and transitions. A semantic miss is
+  `contract-failed` descriptive data, not DNF; timeout/driver failure is DNF. Storms never enter the
+  js-framework weighted score. A full-column shape stays unsupported until every entry exposes one
+  standard black-box action; no framework-specific proxy is used.
 - The standard `select@1k` preselects one row, then measures moving selection to another row. That
   matches js-framework-benchmark's Playwright `init()`/`run()` sequence; an unselected-to-selected
   variant is not substituted. Web `select@10k` remains the larger-scale Lynx extension. Likewise,
@@ -92,6 +98,47 @@ metric rather than silently changing the upstream interaction formula.
   commit-only, one-directional). Bytes are the UTF-8 length of a stable JSON serialization —
   a structured-clone-cost proxy applied identically to every entry (documented limitation:
   transferables are size-tagged, not serialized).
+- **Element pipeline (Web-only)**: a dedicated `/pipeline` harness page intercepts the one
+  `Object.assign` that installs web-core's ElementPAPI surface onto its same-origin sandboxed MTS
+  iframe. The outer hook is installed before web-core boots and wraps every framework identically.
+  Each sample retains synchronous self-time and call counts for `create / props / events /
+  topology / read / flush`, together with the complete call multiset, intercepted surface,
+  requested rows, and committed rows. Nested host calls are subtracted from their parent's
+  self-time. This is a separate `pipeline` suite: the ordinary table/startup page installs no PAPI
+  wrappers, so the new instrument cannot change an already-published latency. Raw runs retain only
+  the operation interval and six synchronous self-time series; `collect` derives
+  `outsidePapiTime` by subtracting aligned samples. It means the black-box
+  pointerdown→predicate interval minus synchronous PAPI self-time; it includes
+  framework script, scheduling, and asynchronous style/layout/paint and is **not** labelled
+  framework-only time. Likewise, `__FlushElementTree` self-time is synchronous web-core flush
+  bookkeeping/root attach, not the browser's full layout/commit cost. Native is explicitly
+  unsupported because it has no equivalent framework-neutral seam; no proxy value is emitted.
+- **List virtualization (capability-gated)**: `list-startup@1k/10k` attaches a separately built,
+  prepopulated declarative list and observes the first visible content frame. `list-recycle@10k`
+  moves exactly one 390×640 viewport twenty times and retains raw elapsed time, recycled-cell count,
+  and wire totals. `list-fling@10k` applies 4,800 px/s for 1,500 ms and retains materialized cells,
+  materialization samples, and every blank frame. Collection alone derives cost/bytes per recycled
+  cell, materialized cells/s, and p50/p99. The fixture uses stable keyed `list-item` children with a
+  40 px estimate and two leading/trailing buffer rows. Native observes the versioned visible-cell
+  tree and uses a shared fixed-velocity touch gesture; Web uses its separate composed-tree observer
+  and shared wheel schedule. A materialization is a stable item key first becoming visible on a
+  presented frame; a blank frame has zero expected visible keys. Renderer internals such as
+  `componentAtIndex` are observational implementation details, never framework-facing calls.
+  Existing eager-table artifacts declare no list fixture, so their cells are explicitly
+  unsupported instead of being proxied. A non-zero blank-frame count is valid measured data; only
+  driver/capture failure is DNF.
+- **Staging Pareto (derived-only)**: for each startup scale, collection reads the matching
+  `rows-N/main.web.bundle` or `main.lynx.bundle`, derives raw/gzip bytes, and retains the artifact
+  path and SHA-256 beside the static record. The total axis uses the whole selected-harness
+  artifact. The MTS axis is emitted only when `lepusCode.root` is structurally readable; binary
+  formats are labelled unavailable. The site joins those bytes to FCP from the same entry, harness,
+  scale, and one normalized execution regime. Web uses JIT at 1× by default; interpreter and
+  throttled lanes are excluded, and the frontier derivation fails closed if lanes are mixed. It
+  draws the existing 95% CI vertically and connects exactly the points for which no peer is both no
+  larger and no slower (with at least one strict improvement). It is not a score. Current manifests
+  are not applied retroactively to historical commits that did not retain their exact per-scale
+  bytes; retroactivity applies only where those bytes exist. The next Octane bundle refresh must
+  vendor real per-scale builds so straight-line N-growing code staging can become visible.
 - **CPU**: the CDP sampling profiler (200µs) attached separately to the page (MTS + harness
   overhead; the UI thread) and the `lynx-bg` worker (BTS), summing non-idle sample time.
   Includes GC and microtasks. The two threads run concurrently — per-realm CPU values are
@@ -102,6 +149,16 @@ metric rather than silently changing the upstream interaction formula.
   not retained-heap deltas or native-process memory.
 - Boundaries are recorded on every record (`boundary` field); records with different
   boundaries are never comparable.
+- Pipeline comparison eligibility is derived, never source-authored. A sample set is rejected when
+  its call multiset, intercepted surface, requested rows, or committed rows varies across
+  repetitions; an operation cell is rejected for every entry when observed peers commit different
+  tree sizes. Call multisets may differ *between* frameworks—the counts are a result—but must be
+  stable within one entry/case/scale sample set.
+- Storm comparison eligibility is also derived. `contractPass`, committed-frames/ticks, and
+  bytes/messages per tick are computed from aligned raw observations. Declared contract drift,
+  invalid transition evidence, or pointer cadence outside the declared 8ms + 50ms tolerance fails
+  closed. Contract-failed observations remain visible in the dedicated view but cannot enter a
+  ranking; final-state observations expose coalescing rather than treating it as missing work.
 
 ## Fairness
 
@@ -192,8 +249,9 @@ metric rather than silently changing the upstream interaction formula.
   30-tick select storm, while the later patched audit run recorded 60 and 92. The benchmark app's
   MessageChannel storm implementation is unchanged across those commits, so the old fast values
   reflect runtime/transport batching or collapsed intermediate commits, not 30 equivalent
-  end-to-end commits. Storms are therefore absent from the featured matrix rather than repaired
-  with framework-specific barriers. The controlled immutable-bundle replay and root-cause split are in
+  end-to-end commits. Those archived app-authored storms therefore stay absent from the featured
+  matrix rather than being repaired with framework-specific barriers; they are not the new shared
+  `/storm` suite. The controlled immutable-bundle replay and root-cause split are in
   [OCTANE_WEB_AUDIT.md](./OCTANE_WEB_AUDIT.md). Those old medians remain visible as
   provenance-bearing incomparable points, but are excluded from rank lines.
 

@@ -2,12 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
+import { ListCoverage } from './components/ListCoverage';
 import { HeatGrid } from './components/HeatGrid';
 import { HistoryRanking } from './components/HistoryRanking';
 import { InteractionScaleComposite } from './components/InteractionScaleComposite';
 import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
+import { PipelineAttribution } from './components/PipelineAttribution';
+import { StormCoalescing } from './components/StormCoalescing';
 import { RankedBars } from './components/RankedBars';
 import { ResponsiveCopy } from './components/ResponsiveCopy';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
@@ -318,6 +321,7 @@ function AppContent({
               </p>
             </div>
             <NativeObservations theme={theme} />
+            <ListCoverage harness={harness} />
             <NativeCoverage />
           </>
         ) : (
@@ -428,7 +432,10 @@ function AppContent({
               </ResponsiveCopy>
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
+            {harness === 'web' && <PipelineAttribution theme={theme} selected={activeSelected} />}
+            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
+          <ListCoverage harness={harness} />
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (

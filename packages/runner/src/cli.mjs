@@ -2,18 +2,25 @@
 // lynx-bench CLI.
 //
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
-//                  [--suite table,startup] [--reps N] [--quick] [--label x]
+//                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
+//                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
 //                  [--jit jit|interp] [--cpu-throttle N]
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
+//   lynx-bench list-coverage
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-import { TABLE_CASES } from '@lynx-bench/shared/workloads';
+import {
+  STORM_CASES,
+  STORM_COMMIT_POLICIES,
+  TABLE_CASES,
+} from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
@@ -38,6 +45,7 @@ import {
   nativeCellKey,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
+import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   NATIVE_SANDBOX_POLICY,
@@ -103,9 +111,32 @@ async function cmdRun(args) {
   const cases = caseNames
     ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
     : TABLE_CASES;
-  const suites = list(args.suite) ?? ['table', 'startup'];
+  const commitPolicies = list(args.commit) ?? STORM_COMMIT_POLICIES;
+  const unknownPolicies = commitPolicies.filter((policy) =>
+    !STORM_COMMIT_POLICIES.includes(policy));
+  if (unknownPolicies.length) {
+    throw new Error(`unknown storm commit policy/policies: ${unknownPolicies.join(', ')}`);
+  }
+  const stormCases = STORM_CASES.filter((kase) =>
+    (caseNames == null || caseNames.includes(kase.name))
+    && commitPolicies.includes(kase.commitPolicy));
+  if (caseNames) {
+    const knownCases = new Set([...TABLE_CASES, ...STORM_CASES].map((kase) => kase.name));
+    const unknownCases = caseNames.filter((name) => !knownCases.has(name));
+    if (unknownCases.length) throw new Error(`unknown case(s): ${unknownCases.join(', ')}`);
+  }
+  const suites = list(args.suite)
+    ?? (harness === 'web' ? ['table', 'startup', 'pipeline', 'storm'] : ['table', 'startup']);
+  const unknownSuites = suites.filter((suite) =>
+    !['table', 'startup', 'pipeline', 'storm'].includes(suite));
+  if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
   if (harness === 'native') {
+    if (suites.includes('pipeline') || suites.includes('storm')) {
+      throw new Error(
+        'The pipeline and storm suites are Web-only; use the standard Native table/startup matrix.',
+      );
+    }
     if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
       throw new Error('Native run requires --adapter <module.mjs>.');
     }
@@ -348,7 +379,11 @@ async function cmdRun(args) {
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
 
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
-  console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
+  console.log(
+    `[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; `
+    + `storm: ${stormCases.map((c) => `${c.name}/${c.commitPolicy}`).join(', ')}; `
+    + `scales: ${scales.join(', ')}; reps=${reps}; stormReps=${stormReps}`,
+  );
 
   // Only the one-off verifier gets --allow-natives-syntax. Measured processes never do.
   const flagVerification = jit === 'interp' ? await verifyInterpreterFlags() : null;
@@ -386,7 +421,7 @@ async function cmdRun(args) {
   });
 
   const { records, executablePath, browserVersion } = await runWebHarness({
-    entries, cases, suites, scales, startupScales, reps, stormReps, startupReps,
+    entries, cases, stormCases, suites, scales, startupScales, reps, stormReps, startupReps,
     jit, cpuThrottle,
   });
   if (browserVersion !== preflight.browser.version
@@ -461,9 +496,21 @@ function cmdList() {
     const scales = fs.existsSync(e.distDir)
       ? fs.readdirSync(e.distDir).filter((d) => d.startsWith('rows-')).map((d) => d.slice(5)).join(',')
       : 'no dist';
-    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}`);
+    const listFixture = e.listFixture == null ? 'unsupported' : e.listFixture.protocol ?? 'invalid';
+    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}; list: ${listFixture}`);
   }
-  console.log('\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ') + ', startup');
+  console.log(
+    '\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ')
+    + ', updateStorm, selectStorm, startup, pipeline, '
+    + LIST_CASES.map((kase) => kase.name).join(', ')
+    + '; storm policies: '
+    + STORM_COMMIT_POLICIES.join(', '),
+  );
+}
+
+function cmdListCoverage() {
+  const coverage = assertListCoverage(buildListCoverage({ entries: discoverEntries() }));
+  console.log(JSON.stringify(coverage, null, 2));
 }
 
 const args = parseArgs(process.argv.slice(2));
@@ -473,6 +520,7 @@ try {
   else if (cmd === 'preflight') await cmdPreflight(args);
   else if (cmd === 'collect') collectRuns();
   else if (cmd === 'list') cmdList();
+  else if (cmd === 'list-coverage') cmdListCoverage();
   else {
     console.error(`unknown command: ${cmd}`);
     process.exit(2);
