@@ -63,7 +63,7 @@ export const LIST_CONFIG = Object.freeze({
 export const LIST_CASES = Object.freeze([
   Object.freeze({
     name: 'list-startup',
-    scales: Object.freeze([1000, 10000]),
+    scales: Object.freeze([1000, 10000, 30000]),
     stimulus: 'attach-prepopulated-list',
     sourceMetrics: Object.freeze(['firstVisibleContentMs']),
     derivedMetrics: Object.freeze([]),

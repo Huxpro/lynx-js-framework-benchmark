@@ -37,5 +37,19 @@
   "bundles": {
     "web": "dist/rows-0/main.web.bundle",
     "lynx": "dist/rows-0/main.lynx.bundle"
+  },
+  "listFixture": {
+    "protocol": "lynx-list-fixture-v1",
+    "contractSha256": "225139c5018bb38705ca7f5c14e5501ac953b90866b74575b1bc9a8e2b1ed4fb",
+    "scaleInput": "globalProps.listRows || globalProps.queryItems.listRows",
+    "source": "fixtures/list/vue",
+    "buildCommand": "node scripts/build-list-fixtures.mjs <vue-lynx-checkout>",
+    "builtAt": "2026-08-30T14:06:00Z",
+    "bundles": {
+      "web": "dist/list/main.web.bundle"
+    },
+    "sha256": {
+      "web": "99a326720e5a250bbc91d216528df0ef7afc27a4559370fba494ba5fe1bbc32e"
+    }
   }
 }

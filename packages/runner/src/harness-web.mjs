@@ -4,6 +4,8 @@
 //   wire     — BTS↔MTS messages/bytes in both directions, per rpc endpoint
 //   btsCpu / mtsCpu — sampled JS CPU per realm via the CDP sidecar
 // plus fcp/settled (+ startup wire/cpu) for the startup suite.
+import path from 'node:path';
+
 import { summarize } from '@lynx-bench/shared/stats';
 import { makeRecord, BOUNDARIES } from '@lynx-bench/shared/schema';
 import {
@@ -14,6 +16,12 @@ import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
 } from '@lynx-bench/shared/workloads';
+import {
+  LIST_CASES,
+  LIST_CONFIG,
+  LIST_SOURCE_METRIC_CONTRACTS,
+  LIST_WORKLOAD_CONTRACT_VERSION,
+} from '../../shared/src/list-workloads.mjs';
 
 import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
@@ -26,8 +34,26 @@ import {
   stormContractPass,
   stormContractReceipt,
 } from './storm-contract.mjs';
+import { fixtureStatus } from './list-coverage.mjs';
 
 const SETTLE_MS = 30;
+const LIST_VISIBLE_TIMEOUT_MS = 180_000;
+
+export function withHostTimeout(promise, timeoutMs, message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 async function evalX(page, expr) {
   return page.evaluate(`(() => { const x = globalThis.__x; return (${expr}); })()`);
@@ -889,6 +915,190 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
   return records;
 }
 
+function listRecord({ entry, kase, scale, metric, samples, dnfCount, failures, attemptedCount }) {
+  const contract = LIST_SOURCE_METRIC_CONTRACTS[metric];
+  return makeRecord({
+    suite: 'list',
+    entry: entry.id,
+    workload: kase.name,
+    scale,
+    metric,
+    boundary: contract.boundary,
+    unit: contract.unit,
+    contractVersion: LIST_WORKLOAD_CONTRACT_VERSION,
+    samples,
+    dnfCount,
+    failures,
+    attemptedCount,
+    acceptedCount: samples.length,
+  });
+}
+
+export function listMetricAttemptAccounting({ kase, metric, reps, sampleCount, failedReps }) {
+  const dnfCount = kase.name === 'list-recycle'
+    ? failedReps * LIST_CONFIG.recycle.repetitions
+    : failedReps;
+  const attemptedCount = metric === 'materializationTimesMs'
+    ? sampleCount + dnfCount
+    : kase.name === 'list-recycle' ? reps * LIST_CONFIG.recycle.repetitions : reps;
+  return { dnfCount, attemptedCount };
+}
+
+async function openListPage({ browser, origin, bundleUrl, scale }) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 640 } });
+  page.on('pageerror', (error) => console.error('  [list pageerror]', String(error).slice(0, 200)));
+  await page.goto(`${origin}/list`, { waitUntil: 'load' });
+  const startup = withHostTimeout(
+    page.evaluate(
+      ({ url, rows, timeoutMs }) => {
+        globalThis.__x.createView(url, 390, 640, { listRows: rows });
+        return globalThis.__x.waitListVisible(timeoutMs);
+      },
+      { url: bundleUrl, rows: scale, timeoutMs: LIST_VISIBLE_TIMEOUT_MS },
+    ),
+    LIST_VISIBLE_TIMEOUT_MS,
+    `list visible-content host timeout after ${LIST_VISIBLE_TIMEOUT_MS}ms`,
+  );
+  return { page, startup };
+}
+
+async function waitForListScroll(page, before, minimumDistancePx, timeoutMs = 10000) {
+  return page.evaluate(({ start, distance, timeout }) => new Promise((resolve, reject) => {
+    const t0 = performance.now();
+    const deadline = t0 + timeout;
+    const tick = () => {
+      const state = globalThis.__x.listState();
+      const changed = state.keys.some((key) => !start.keys.includes(key));
+      if (changed && state.scrollTop >= start.scrollTop + distance - 1) {
+        requestAnimationFrame(() => resolve({ state, operationTimeMs: performance.now() - t0 }));
+        return;
+      }
+      if (performance.now() > deadline) {
+        reject(new Error(`list scroll timeout: ${state.scrollTop} from ${start.scrollTop}`));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }), { start: before, distance: minimumDistancePx, timeout: timeoutMs });
+}
+
+async function runRecycleSample(page) {
+  const operationTimes = [];
+  const recycledCells = [];
+  const wireToMtsBytes = [];
+  const wireToBtsBytes = [];
+  for (let index = 0; index < LIST_CONFIG.recycle.repetitions; index++) {
+    const before = await page.evaluate(() => globalThis.__x.listState());
+    if (!before.rect || before.keys.length === 0) throw new Error('list has no visible cells');
+    const wireBefore = await wireSnapshot(page);
+    const pending = waitForListScroll(page, before, LIST_CONFIG.recycle.distancePx);
+    await page.mouse.move(
+      before.rect.x + before.rect.width / 2,
+      before.rect.y + before.rect.height / 2,
+    );
+    await page.mouse.wheel(0, LIST_CONFIG.recycle.distancePx);
+    const observed = await pending;
+    const wire = wireDelta(wireBefore, await wireSnapshot(page));
+    operationTimes.push(observed.operationTimeMs);
+    recycledCells.push(observed.state.keys.filter((key) => !before.keys.includes(key)).length);
+    wireToMtsBytes.push(wire.toMts.bytes);
+    wireToBtsBytes.push(wire.toBts.bytes);
+  }
+  return { operationTimes, recycledCells, wireToMtsBytes, wireToBtsBytes };
+}
+
+async function runFlingSample(page) {
+  const state = await page.evaluate(() => globalThis.__x.listState());
+  if (!state.rect || state.keys.length === 0) throw new Error('list has no visible cells');
+  await page.mouse.move(state.rect.x + state.rect.width / 2, state.rect.y + state.rect.height / 2);
+  const durationMs = LIST_CONFIG.fling.durationMs;
+  const velocity = LIST_CONFIG.fling.velocityPxPerSecond;
+  const frameMs = 1000 / 60;
+  const distancePerFrame = velocity * frameMs / 1000;
+  const observation = page.evaluate(
+    ({ durationMs: duration, velocityPxPerSecond, rowHeightPx }) =>
+      globalThis.__x.observeListOperation({ durationMs: duration, velocityPxPerSecond, rowHeightPx }),
+    { durationMs, velocityPxPerSecond: velocity, rowHeightPx: LIST_CONFIG.row.estimatedHeightPx },
+  );
+  const started = performance.now();
+  for (let frame = 0; frame < Math.round(durationMs / frameMs); frame++) {
+    const target = frame * frameMs;
+    const remaining = target - (performance.now() - started);
+    if (remaining > 0) await waitMs(remaining);
+    await page.mouse.wheel(0, distancePerFrame);
+  }
+  return observation;
+}
+
+export async function runListSuite({ entry, cases, scales, reps, origin, log }) {
+  const records = [];
+  const fixture = fixtureStatus(entry, 'web');
+  if (!fixture.supported) {
+    log(`  [unsupported] ${entry.id} list: ${fixture.reason}`);
+    return records;
+  }
+  const bundleRel = path.relative(entry.distDir, path.resolve(entry.dir, fixture.bundle));
+  const bundleUrl = `/bundles/${entry.id}/${bundleRel}`;
+  for (const kase of cases) {
+    for (const scale of kase.scales.filter((candidate) => scales.includes(candidate))) {
+      const byMetric = Object.fromEntries(kase.sourceMetrics.map((metric) => [metric, []]));
+      const failures = [];
+      let dnfCount = 0;
+      for (let rep = 0; rep < reps; rep++) {
+        // A capacity failure may kill the renderer process. Isolate every list
+        // attempt so one 30k crash is retained as DNF without erasing sibling cells.
+        const isolated = await launchBrowser();
+        let page = null;
+        try {
+          const opened = await openListPage({
+            browser: isolated.browser,
+            origin,
+            bundleUrl,
+            scale,
+          });
+          page = opened.page;
+          const { startup } = opened;
+          const first = await startup;
+          if (kase.name === 'list-startup') {
+            byMetric.firstVisibleContentMs.push(first.firstVisibleContentMs);
+          } else if (kase.name === 'list-recycle') {
+            const sample = await runRecycleSample(page);
+            byMetric.operationTimeMs.push(...sample.operationTimes);
+            byMetric.recycledCells.push(...sample.recycledCells);
+            byMetric.wireToMtsBytes.push(...sample.wireToMtsBytes);
+            byMetric.wireToBtsBytes.push(...sample.wireToBtsBytes);
+          } else if (kase.name === 'list-fling') {
+            const sample = await runFlingSample(page);
+            byMetric.elapsedMs.push(sample.elapsedMs);
+            byMetric.materializedCells.push(sample.materializedCells);
+            byMetric.blankFrames.push(sample.blankFrames);
+            byMetric.materializationTimesMs.push(...sample.materializationTimesMs);
+          }
+        } catch (error) {
+          dnfCount += 1;
+          failures.push({ rep, category: 'list-driver-or-capture-failure', message: String(error) });
+          log(`  [dnf] ${entry.id} ${kase.name}@${scale} rep${rep}: ${String(error).slice(0, 120)}`);
+        } finally {
+          await page?.close().catch(() => {});
+          await isolated.browser.close().catch(() => {});
+        }
+      }
+      for (const metric of kase.sourceMetrics) {
+        const accounting = listMetricAttemptAccounting({
+          kase, metric, reps, sampleCount: byMetric[metric].length, failedReps: dnfCount,
+        });
+        records.push(listRecord({
+          entry, kase, scale, metric, samples: byMetric[metric], failures, ...accounting,
+        }));
+      }
+      const headline = summarize(byMetric[kase.sourceMetrics[0]]);
+      log(`  ${entry.id} ${kase.name}@${scale}: ${headline ? `${headline.median.toFixed(1)} ${LIST_SOURCE_METRIC_CONTRACTS[kase.sourceMetrics[0]].unit}` : 'DNF'} (n=${headline?.n ?? 0}${dnfCount ? `, dnf=${dnfCount}` : ''})`);
+    }
+  }
+  return records;
+}
+
 export async function runWebHarness({
   entries,
   cases,
@@ -898,6 +1108,8 @@ export async function runWebHarness({
   reps = 7,
   stormReps = 3,
   startupReps = 5,
+  listCases = LIST_CASES,
+  listReps = 3,
   log = console.log,
   includeMemory = true,
 }) {
@@ -922,7 +1134,6 @@ export async function runWebHarness({
           cases,
           scales,
           reps,
-          browser,
           origin: server.origin,
           cdp,
           log,
@@ -946,6 +1157,17 @@ export async function runWebHarness({
           scales: [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
+        }));
+      }
+      if (suites.includes('list')) {
+        records.push(...await runListSuite({
+          entry,
+          cases: listCases,
+          scales,
+          reps: listReps,
+          browser,
+          origin: server.origin,
+          log,
         }));
       }
     }

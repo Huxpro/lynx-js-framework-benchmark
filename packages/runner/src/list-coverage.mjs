@@ -47,7 +47,7 @@ export function selectListCampaignRecords(records, entries) {
   return [...selected.values()].flatMap((candidate) => candidate.records);
 }
 
-function fixtureStatus(entry, harness) {
+export function fixtureStatus(entry, harness) {
   const fixture = entry.listFixture;
   if (fixture == null) {
     return {

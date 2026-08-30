@@ -113,7 +113,7 @@ metric rather than silently changing the upstream interaction formula.
   framework-only time. Likewise, `__FlushElementTree` self-time is synchronous web-core flush
   bookkeeping/root attach, not the browser's full layout/commit cost. Native is explicitly
   unsupported because it has no equivalent framework-neutral seam; no proxy value is emitted.
-- **List virtualization (capability-gated)**: `list-startup@1k/10k` attaches a separately built,
+- **List virtualization (capability-gated)**: `list-startup@1k/10k/30k` attaches a separately built,
   prepopulated declarative list and observes the first visible content frame. `list-recycle@10k`
   moves exactly one 390×640 viewport twenty times and retains raw elapsed time, recycled-cell count,
   and wire totals. `list-fling@10k` applies 4,800 px/s for 1,500 ms and retains materialized cells,

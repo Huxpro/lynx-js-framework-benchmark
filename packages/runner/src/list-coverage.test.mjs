@@ -17,6 +17,38 @@ import {
   buildListCoverage,
   selectListCampaignRecords,
 } from './list-coverage.mjs';
+import { listMetricAttemptAccounting, withHostTimeout } from './harness-web.mjs';
+import { makeHarnessHtml } from './server.mjs';
+
+test('the host deadline rejects even when the list page promise never settles', async () => {
+  await assert.rejects(
+    withHostTimeout(new Promise(() => {}), 5, 'host deadline'),
+    /host deadline/,
+  );
+  assert.equal(await withHostTimeout(Promise.resolve('visible'), 50, 'too late'), 'visible');
+});
+
+test('a failed recycle repetition accounts for every missing viewport sample', () => {
+  assert.deepEqual(listMetricAttemptAccounting({
+    kase: { name: 'list-recycle' },
+    metric: 'operationTimeMs',
+    reps: 1,
+    sampleCount: 0,
+    failedReps: 1,
+  }), { attemptedCount: 20, dnfCount: 20 });
+});
+
+test('the list observer is isolated to the dedicated list harness page', () => {
+  assert.doesNotMatch(makeHarnessHtml(), /x\.waitListVisible/);
+  assert.doesNotMatch(makeHarnessHtml({ pipeline: true }), /x\.waitListVisible/);
+  assert.doesNotMatch(makeHarnessHtml({ storm: true }), /x\.waitListVisible/);
+  assert.match(makeHarnessHtml({ list: true }), /x\.waitListVisible/);
+  assert.match(makeHarnessHtml({ list: true }), /x\.observeListOperation/);
+  assert.throws(
+    () => makeHarnessHtml({ pipeline: true, list: true }),
+    /mutually exclusive/,
+  );
+});
 
 test('list coverage makes absent fixtures explicit for both isolated harnesses', () => {
   const coverage = buildListCoverage({
@@ -27,8 +59,8 @@ test('list coverage makes absent fixtures explicit for both isolated harnesses',
     ],
   });
   assert.deepEqual(coverage.entryIds, ['a', 'b']);
-  assert.equal(coverage.expectedCellCount, 16);
-  assert.deepEqual(coverage.summary, { unsupported: 16 });
+  assert.equal(coverage.expectedCellCount, 20);
+  assert.deepEqual(coverage.summary, { unsupported: 20 });
   assert.deepEqual(new Set(coverage.cells.map((cell) => cell.harness)), new Set(['native', 'web']));
   assert.ok(coverage.cells.every((cell) => cell.reason === 'list-fixture-not-declared'));
   assert.doesNotThrow(() => assertListCoverage(coverage));
@@ -70,9 +102,11 @@ test('declared fixtures become unscheduled, then measured or DNF without changin
     assert.equal(coverage.cells.find((cell) => cell.harness === 'web'
       && cell.workload === 'list-recycle').status, 'dnf');
     assert.equal(coverage.cells.filter((cell) => cell.harness === 'web'
-      && cell.status === 'unscheduled').length, 2);
+      && cell.status === 'unscheduled').length, 3);
     assert.equal(coverage.cells.filter((cell) => cell.harness === 'native'
-      && cell.status === 'unsupported').length, 4);
+      && cell.status === 'unsupported').length, 5);
+    assert.ok(coverage.cells.filter((cell) => cell.harness === 'native')
+      .every((cell) => cell.reason === 'list-native-bundle-not-declared'));
     assert.equal(
       crypto.createHash('sha256').update(JSON.stringify(coverage.config)).digest('hex').length,
       64,

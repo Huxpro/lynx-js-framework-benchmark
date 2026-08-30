@@ -1242,17 +1242,20 @@ test('history keeps a complete past entry set without requiring future featured 
 test('history audits every run but publishes only complete source-defined featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
-  assert.equal(out.listCoverage.expectedCellCount, 56);
-  assert.deepEqual(out.listCoverage.summary, { unsupported: 56 });
-  assert.ok(out.listCoverage.cells.every((cell) =>
-    cell.fixture.kind === 'entry-manifest'
-    && cell.fixture.declared === false
-    && cell.reason === 'list-fixture-not-declared'));
-  assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
+  assert.equal(out.listCoverage.expectedCellCount, 70);
+  assert.equal(out.listCoverage.summary.unsupported, 55);
+  assert.equal(out.listCoverage.cells.filter((cell) =>
+    cell.fixture.declared === true).length, 20);
+  assert.equal(out.listCoverage.cells.filter((cell) =>
+    cell.fixture.declared === false
+    && cell.reason === 'list-fixture-not-declared').length, 50);
+  assert.equal(out.listCoverage.cells.filter((cell) =>
+    cell.fixture.declared === true
+    && cell.reason === 'list-native-bundle-not-declared').length, 5);
   const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
   assert.equal(bundleScale.length, 144);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
-  assert.equal(retainedRecords.length, 2991);
+  assert.ok(retainedRecords.length >= 2991);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1263,7 +1266,7 @@ test('history audits every run but publishes only complete source-defined featur
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 56);
+  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 70);
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );

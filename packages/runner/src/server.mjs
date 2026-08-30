@@ -8,6 +8,7 @@ import path from 'node:path';
 
 import {
   DRIVER_CLIENT_JS,
+  LIST_DRIVER_CLIENT_JS,
   PIPELINE_DRIVER_CLIENT_JS,
   STORM_DRIVER_CLIENT_JS,
 } from '@lynx-bench/shared/driver-client';
@@ -35,11 +36,13 @@ const MIME = {
   '.bundle': 'application/octet-stream',
 };
 
-export function makeHarnessHtml({ pipeline = false, storm = false } = {}) {
-  if (pipeline && storm) throw new Error('pipeline and storm harness modes are mutually exclusive');
+export function makeHarnessHtml({ pipeline = false, storm = false, list = false } = {}) {
+  if ([pipeline, storm, list].filter(Boolean).length > 1) {
+    throw new Error('special harness modes are mutually exclusive');
+  }
   const driver = pipeline
     ? PIPELINE_DRIVER_CLIENT_JS
-    : storm ? STORM_DRIVER_CLIENT_JS : DRIVER_CLIENT_JS;
+    : storm ? STORM_DRIVER_CLIENT_JS : list ? LIST_DRIVER_CLIENT_JS : DRIVER_CLIENT_JS;
   return `<!doctype html>
 <html>
 <head>
@@ -63,6 +66,7 @@ export async function startServer({ bundleRoots }) {
   const harnessHtml = makeHarnessHtml();
   const pipelineHarnessHtml = makeHarnessHtml({ pipeline: true });
   const stormHarnessHtml = makeHarnessHtml({ storm: true });
+  const listHarnessHtml = makeHarnessHtml({ list: true });
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -86,6 +90,11 @@ export async function startServer({ bundleRoots }) {
       if (url.pathname === '/storm' || url.pathname === '/storm.html') {
         res.writeHead(200, { ...headers, 'content-type': 'text/html' });
         res.end(stormHarnessHtml);
+        return;
+      }
+      if (url.pathname === '/list' || url.pathname === '/list.html') {
+        res.writeHead(200, { ...headers, 'content-type': 'text/html' });
+        res.end(listHarnessHtml);
         return;
       }
       if (url.pathname === '/instrument-worker.js') {
