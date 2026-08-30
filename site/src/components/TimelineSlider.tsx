@@ -63,7 +63,7 @@ export function TimelineSlider({
   return (
     <div className="timeline-sticky">
       <div className="timeline-workspace">
-        <div className="workspace-toolbar">
+        <div className={`workspace-toolbar${showAdvanced ? ' is-advanced-open' : ''}`}>
           <nav className="view-switch" aria-label={text('Benchmark views', '基准测试视图')}>
             {(['overview', 'scale'] as const).map((view) => (
               <button

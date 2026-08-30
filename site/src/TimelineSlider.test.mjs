@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./components/TimelineSlider.tsx', import.meta.url), 'utf8');
+const themeSource = fs.readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
 const legendSource = fs.readFileSync(new URL('./components/Legend.tsx', import.meta.url), 'utf8');
 const receiptSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
 const rankingSource = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
@@ -108,7 +109,7 @@ test('framework hover cards own source links and exact plugin options', () => {
 });
 
 test('sticky workspace owns view and environment navigation', () => {
-  assert.match(source, /className="workspace-toolbar"/);
+  assert.match(source, /`workspace-toolbar\$\{/);
   assert.match(source, /\(\['overview', 'scale'\] as const\)/);
   assert.match(source, /<span>\{text\('Lynx for', 'Lynx 环境'\)\}<\/span>/);
   assert.match(source, /candidate === 'web' \? 'Web' : 'Native'/);
@@ -138,9 +139,12 @@ test('mobile workspace folds advanced regimes without hiding primary controls', 
   assert.match(source, /aria-expanded=\{advancedOpen\}/);
   assert.match(source, /aria-controls=\{advancedId\}/);
   assert.match(source, /showAdvanced = harness === 'web' && \(!compact \|\| advancedOpen\)/);
+  assert.match(source, /workspace-toolbar\$\{showAdvanced \? ' is-advanced-open' : ''\}/);
   assert.match(source, /<span>JS<\/span>/);
   assert.match(source, /className="workspace-preferences"/);
   assert.match(source, /className="harness-switch"/);
+  assert.match(themeSource, /grid-template-areas: 'view environment toggle preferences';/);
+  assert.match(themeSource, /\.workspace-toolbar\.is-advanced-open\s*\{[\s\S]*?'advanced advanced advanced advanced'/);
 });
 
 test('regime measurement details are available from the compact information disclosure', () => {

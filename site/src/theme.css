@@ -1677,13 +1677,16 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .timeline-workspace { border-radius: 0.65rem; }
   .workspace-toolbar {
     display: grid;
-    grid-template-areas:
-      'view environment toggle preferences'
-      'advanced advanced advanced advanced';
+    grid-template-areas: 'view environment toggle preferences';
     grid-template-columns: auto auto auto minmax(0, 1fr);
     gap: 0.18rem 0.35rem;
     min-height: 2.45rem;
     padding: 0.28rem 0.4rem;
+  }
+  .workspace-toolbar.is-advanced-open {
+    grid-template-areas:
+      'view environment toggle preferences'
+      'advanced advanced advanced advanced';
   }
   .view-switch { grid-area: view; min-width: 0; }
   .view-switch button { font-size: 0.74rem; padding-inline: 0.42rem; }
