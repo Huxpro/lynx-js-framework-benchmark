@@ -29,6 +29,13 @@ import {
 } from './storm-contract.mjs';
 
 const SETTLE_MS = 30;
+const PROCESS_CGROUP_TRANSPORT_IDLE_MS = 500;
+const PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS = 30000;
+const PROCESS_CGROUP_READINESS_BARRIER = Object.freeze({
+  method: 'wire-idle-v1',
+  idleMs: PROCESS_CGROUP_TRANSPORT_IDLE_MS,
+  timeoutMs: PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS,
+});
 
 async function evalX(page, expr) {
   return page.evaluate(`(() => { const x = globalThis.__x; return (${expr}); })()`);
@@ -62,6 +69,45 @@ async function settle(page, extraMs = SETTLE_MS) {
 
 async function wireSnapshot(page) {
   return page.evaluate(() => globalThis.__LYNX_WIRE_SNAPSHOT__());
+}
+
+const wireSignature = (wire) => [
+  wire.toBts.messages,
+  wire.toBts.bytes,
+  wire.toMts.messages,
+  wire.toMts.bytes,
+].join(':');
+
+/**
+ * Wait until the two-thread transport has stopped changing for a complete
+ * quiet window. A visible "ready" title can precede listener/commit readiness
+ * when a whole Chromium process tree shares a CFS quota; clicking in that
+ * window loses the first untimed setup action for block-program entries.
+ */
+export async function waitForTransportIdle(snapshot, {
+  idleMs = PROCESS_CGROUP_TRANSPORT_IDLE_MS,
+  timeoutMs = PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS,
+  pollMs = 50,
+  now = Date.now,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+} = {}) {
+  const startedAt = now();
+  let quietSince = startedAt;
+  let previous = wireSignature(await snapshot());
+  while (now() - startedAt <= timeoutMs) {
+    await sleep(pollMs);
+    const observedAt = now();
+    const current = wireSignature(await snapshot());
+    if (current !== previous) {
+      previous = current;
+      quietSince = observedAt;
+    } else if (observedAt - quietSince >= idleMs) {
+      return { idleMs: observedAt - quietSince, signature: current };
+    }
+  }
+  throw new Error(
+    `transport did not become idle for ${idleMs}ms within ${timeoutMs}ms`,
+  );
 }
 
 function wireDelta(before, after) {
@@ -144,13 +190,17 @@ async function openBenchPage({
   return { page, attach };
 }
 
-async function waitReady(page, timeoutMs = 120000) {
+async function waitReady(page, timeoutMs = 120000, { requireTransportIdle = false } = {}) {
   await page.waitForFunction(
     (needle) => globalThis.__x.findText(needle),
     READY_TEXT,
     { timeout: timeoutMs, polling: 16 },
   );
   await settle(page);
+  if (requireTransportIdle) {
+    await waitForTransportIdle(() => wireSnapshot(page));
+    await settle(page);
+  }
 }
 
 /** Establish a case's pre-state (untimed). */
@@ -333,7 +383,9 @@ export async function runTableSuite({
   const { page, attach } = await openBenchPage({
     browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
   });
-  await waitReady(page);
+  await waitReady(page, 120000, {
+    requireTransportIdle: throttleScope === 'process-cgroup',
+  });
   const profiler = await profilerFor(page, attach);
 
   // Warmup: two create/clear cycles.
@@ -411,7 +463,9 @@ export async function runTableSuite({
       browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
     });
     memoryPage = fresh.page;
-    await waitReady(memoryPage);
+    await waitReady(memoryPage, 120000, {
+      requireTransportIdle: throttleScope === 'process-cgroup',
+    });
     await clickButton(memoryPage, CREATE_BUTTON[10000]);
     await untilPredicate(memoryPage, { type: 'rowCount', value: 10000 }, 240000);
     await settle(memoryPage, 200);
@@ -682,7 +736,9 @@ async function runStormCases({
           browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
         });
         try {
-          await waitReady(fresh.page);
+          await waitReady(fresh.page, 120000, {
+            requireTransportIdle: throttleScope === 'process-cgroup',
+          });
           const freshProfiler = await profilerFor(fresh.page, fresh.attach);
           await ensurePre(fresh.page, kase, scale);
           await gc(fresh.page);
@@ -946,6 +1002,9 @@ export async function runWebHarness({
   const {
     browser, cdpPort, executablePath, browserVersion, processThrottle, closeBrowser,
   } = await launchBrowser({ jit, cpuThrottle, throttleScope, processQuotaPercent });
+  const processThrottleReceipt = processThrottle == null
+    ? null
+    : { ...processThrottle, readinessBarrier: PROCESS_CGROUP_READINESS_BARRIER };
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
   const processThrottleEntryVerifications = [];
@@ -960,7 +1019,7 @@ export async function runWebHarness({
             requireWebHarness: true, jsRegime: jit,
           }),
           cpuThrottle,
-          mechanism: processThrottle,
+          mechanism: processThrottleReceipt,
         })
         : null;
       const verifiedSlowdown = processThrottleVerification?.verifiedSlowdown ?? null;
@@ -1025,7 +1084,7 @@ export async function runWebHarness({
     })),
     executablePath,
     browserVersion,
-    processThrottle,
+    processThrottle: processThrottleReceipt,
     processThrottleEntryVerifications,
     verifiedSlowdownByEntry: Object.fromEntries(
       processThrottleEntryVerifications.map(({ entry, verifiedSlowdown }) => [entry, verifiedSlowdown]),
