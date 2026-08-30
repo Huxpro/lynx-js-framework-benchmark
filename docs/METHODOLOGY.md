@@ -43,9 +43,15 @@ had a documented weakness, the fix is noted.
   Octane's custom renderer does not expose the same pipeline boundary in this Explorer build, so
   **no featured Native Octane metric is reported**. Archived private-protocol observations remain
   evidence, but cannot fill the current black-box matrix.
-- Update/select storms are archived experiments, not featured workload cases. Existing apps differ
-  in whether intermediate ticks must commit or may coalesce to the same final state; until one
-  framework-neutral contract exists, storm values do not enter current runs or rankings.
+- Old app-authored update/select storms remain archived experiments. Featured Web storms use a
+  separate shared `/storm` driver: 50 standard update-every-tenth pointer ticks (10%-column width)
+  or 30 alternating standard selection ticks (one-row width), at a declared 8ms interval. Both
+  `every-tick` and `final-state` policies use that identical stimulus. Every-tick requires the rAF
+  observer to see the exact state sequence; final-state permits coalescing and requires only the
+  terminal state. The source retains actual input offsets and transitions. A semantic miss is
+  `contract-failed` descriptive data, not DNF; timeout/driver failure is DNF. Storms never enter the
+  js-framework weighted score. A full-column shape stays unsupported until every entry exposes one
+  standard black-box action; no framework-specific proxy is used.
 - The standard `select@1k` preselects one row, then measures moving selection to another row. That
   matches js-framework-benchmark's Playwright `init()`/`run()` sequence; an unselected-to-selected
   variant is not substituted. Web `select@10k` remains the larger-scale Lynx extension. Likewise,
@@ -122,6 +128,11 @@ metric rather than silently changing the upstream interaction formula.
   repetitions; an operation cell is rejected for every entry when observed peers commit different
   tree sizes. Call multisets may differ *between* frameworks—the counts are a result—but must be
   stable within one entry/case/scale sample set.
+- Storm comparison eligibility is also derived. `contractPass`, committed-frames/ticks, and
+  bytes/messages per tick are computed from aligned raw observations. Declared contract drift,
+  invalid transition evidence, or pointer cadence outside the declared 8ms + 50ms tolerance fails
+  closed. Contract-failed observations remain visible in the dedicated view but cannot enter a
+  ranking; final-state observations expose coalescing rather than treating it as missing work.
 
 ## Fairness
 
@@ -212,8 +223,9 @@ metric rather than silently changing the upstream interaction formula.
   30-tick select storm, while the later patched audit run recorded 60 and 92. The benchmark app's
   MessageChannel storm implementation is unchanged across those commits, so the old fast values
   reflect runtime/transport batching or collapsed intermediate commits, not 30 equivalent
-  end-to-end commits. Storms are therefore absent from the featured matrix rather than repaired
-  with framework-specific barriers. The controlled immutable-bundle replay and root-cause split are in
+  end-to-end commits. Those archived app-authored storms therefore stay absent from the featured
+  matrix rather than being repaired with framework-specific barriers; they are not the new shared
+  `/storm` suite. The controlled immutable-bundle replay and root-cause split are in
   [OCTANE_WEB_AUDIT.md](./OCTANE_WEB_AUDIT.md). Those old medians remain visible as
   provenance-bearing incomparable points, but are excluded from rank lines.
 

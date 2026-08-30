@@ -236,9 +236,98 @@ const PIPELINE_ARM_JS = `  // Dedicated ElementPAPI capture primitive. This is
 
 `;
 
+const STORM_ARM_JS = `  // Dedicated storm observer. It is injected only in
+  // /storm; input emission remains in the shared harness and uses real pointer events.
+  let abortStorm = null;
+  x.abortStorm = () => abortStorm?.();
+  x.armStorm = (config, timeoutMs) =>
+    new Promise((resolve) => {
+      const observation = config.observation;
+      const readState = () => {
+        if (observation.kind === 'label-suffix') {
+          const label = x.labelAt(observation.rowIndex);
+          if (typeof label !== 'string' || !label.startsWith(config.baseline)) return null;
+          const tail = label.slice(config.baseline.length);
+          if (tail.length % observation.suffix.length !== 0) return null;
+          const count = tail.length / observation.suffix.length;
+          return observation.suffix.repeat(count) === tail ? count : null;
+        }
+        if (observation.kind === 'alternating-selection') {
+          for (const index of observation.rowIndices) if (x.dangerAt(index)) return index;
+          return -1;
+        }
+        throw new Error('unknown storm observation ' + observation.kind);
+      };
+      const expectedState = (tickIndex) => observation.kind === 'label-suffix'
+        ? tickIndex + 1
+        : observation.rowIndices[tickIndex % observation.rowIndices.length];
+      let t0 = null;
+      let lastState = readState();
+      let finalState = lastState;
+      const issueOffsetsMs = [];
+      const transitions = [];
+      const onDown = () => {
+        if (issueOffsetsMs.length >= config.ticks) return;
+        const now = performance.now();
+        if (t0 == null) t0 = now;
+        issueOffsetsMs.push(now - t0);
+      };
+      window.addEventListener('pointerdown', onDown, { capture: true });
+      const deadline = performance.now() + (timeoutMs ?? 240000);
+      const finish = (timedOut, finishedAt) => {
+        window.removeEventListener('pointerdown', onDown, { capture: true });
+        abortStorm = null;
+        resolve({
+          version: 1,
+          timedOut,
+          operationMs: t0 == null ? null : finishedAt - t0,
+          ticksIssued: issueOffsetsMs.length,
+          committedFrames: transitions.length,
+          issueOffsetsMs,
+          transitions,
+          finalState,
+          expectedFinalState: expectedState(config.ticks - 1),
+        });
+      };
+      abortStorm = () => finish(true, performance.now());
+      const tick = () => {
+        const now = performance.now();
+        const state = readState();
+        finalState = state;
+        if (t0 != null && state !== lastState) {
+          transitions.push({
+            atMs: now - t0,
+            state,
+            issuedTicks: issueOffsetsMs.length,
+          });
+          lastState = state;
+        }
+        if (
+          t0 != null
+          && issueOffsetsMs.length === config.ticks
+          && state === expectedState(config.ticks - 1)
+        ) {
+          finish(false, now);
+          return;
+        }
+        if (now > deadline) {
+          finish(true, now);
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
+`;
+
+const injectDriverExtension = (extension) => {
+  const marker = '  x.until = (spec, timeoutMs = 120000) =>';
+  if (!DRIVER_CLIENT_JS.includes(marker)) throw new Error('driver extension marker is missing');
+  return DRIVER_CLIENT_JS.replace(marker, `${extension}${marker}`);
+};
+
 // Build the dedicated capture driver from the canonical driver text so it
 // shares exactly the same predicate implementation instead of forking one.
-export const PIPELINE_DRIVER_CLIENT_JS = DRIVER_CLIENT_JS.replace(
-  '  x.until = (spec, timeoutMs = 120000) =>',
-  `${PIPELINE_ARM_JS}  x.until = (spec, timeoutMs = 120000) =>`,
-);
+export const PIPELINE_DRIVER_CLIENT_JS = injectDriverExtension(PIPELINE_ARM_JS);
+export const STORM_DRIVER_CLIENT_JS = injectDriverExtension(STORM_ARM_JS);

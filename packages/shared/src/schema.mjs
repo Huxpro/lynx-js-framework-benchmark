@@ -25,6 +25,8 @@ export const COMPARABILITY_KEYS = [
   'metric',
   'boundary',
   'unit',
+  'contractVersion',
+  'commitPolicy',
   'comparabilityCohort',
 ];
 
@@ -39,6 +41,12 @@ export const BOUNDARIES = {
   pipelineResidual: 'pipeline-operation-minus-synchronous-element-papi-self-time',
   papiSelfTime: 'synchronous-element-papi-host-boundary-self-time',
   papiCalls: 'synchronous-element-papi-host-boundary-call-count',
+  stormOperation: 'storm-first-pointerdown-to-terminal-observed-frame',
+  stormInput: 'storm-real-pointer-input-schedule',
+  stormCommits: 'storm-raf-observable-state-transition-count',
+  stormContract: 'storm-observed-commit-contract-outcome',
+  stormCoalescing: 'storm-committed-frames-divided-by-issued-ticks',
+  stormPerTick: 'storm-total-divided-by-issued-ticks',
   bundle: 'static',
 };
 
@@ -117,6 +125,8 @@ export function makeRecord({
   failures = [],
   attemptedCount = null,
   acceptedCount = null,
+  contractVersion = null,
+  commitPolicy = null,
 }) {
   if (!suite || !entry || !workload || !metric || !boundary || !unit) {
     throw new Error(`incomplete record: ${JSON.stringify({ suite, entry, workload, metric, boundary, unit })}`);
@@ -128,6 +138,8 @@ export function makeRecord({
     entry,
     workload,
     scale,
+    contractVersion,
+    commitPolicy,
     metric,
     boundary,
     unit,
@@ -145,5 +157,8 @@ export function makeRecord({
 }
 
 export function comparisonKey(record) {
-  return COMPARABILITY_KEYS.map((k) => String(record[k])).join('|');
+  // Optional prospective dimensions normalize to null so legacy records that
+  // predate a field remain comparable to modern records that explicitly emit
+  // the neutral value.
+  return COMPARABILITY_KEYS.map((k) => String(record[k] ?? null)).join('|');
 }

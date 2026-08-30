@@ -90,7 +90,7 @@ ui-react/octane apps):
 Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.mjs`; a case is
 *data*, not code: `{ name, pre, trigger, predicate, scales }`.
 
-### Metrics: four layers per case
+### Metrics: five layers per case
 
 | layer | metrics | boundary | instrument |
 | --- | --- | --- | --- |
@@ -99,6 +99,7 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | | `btsCpu`, `mtsCpu` (ms) | per-realm CPU during the op | CDP `Profiler` on the page and on the `lynx-bg` worker |
 | **wire** | `wireUpMsgs/wireUpBytes` (MTS→BTS), `wireDownMsgs/wireDownBytes` (BTS→MTS), per-endpoint histogram | the real `MessageChannel` between web-core's UI realm and the background worker | `MessagePort.prototype` patch installed before web-core boots |
 | **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
+| **storm semantics** | source: operation time, pointer ticks, rAF-observable committed frames, CPU/wire totals; derived: contract outcome, coalescing ratio, bytes/messages per tick | first real pointerdown → terminal observed frame | dedicated `/storm` driver repeatedly issues standard actions; Web-only |
 | **static** | `bundleWebRaw/Gzip`, `bundleLynxRaw/Gzip`, `mtsSectionGzip`, `btsSectionGzip` | — | bundle inspection (JSON-format bundles expose `lepusCode.root` = MTS and `manifest['/app-service.js']` = BTS; binary bundles report whole-bundle only) |
 
 Why this is neutral: ReactLynx, Vue-Lynx (vdom/vapor), and Octane-on-Lynx all ride the same
@@ -124,7 +125,7 @@ dimensions. One record per (entry × workload × scale × metric):
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
   "records": [{
-    "suite": "table" | "startup" | "pipeline",
+    "suite": "table" | "startup" | "pipeline" | "storm",
     "harness": "web" | "native",
     "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
     "entry": "vue-vdom",
@@ -166,7 +167,10 @@ Headless Chromium via `playwright-core` (Chromium resolved from the Playwright c
 5. The separate `/pipeline` page alone installs ElementPAPI wrappers. Its capture begins at the
    real pointerdown and freezes at the same shared DOM predicate; ordinary table/startup pages
    never execute the wrappers.
-6. Fresh page per rep; warmup reps discarded per methodology.
+6. The separate `/storm` page alone installs the storm observer. The shared harness emits real
+   pointer ticks against the standard update/select controls; no app-authored storm button or
+   framework-specific hook participates.
+7. Fresh page per rep; warmup reps discarded per methodology.
 
 ### `native` (Android Sandbox, explicitly separated)
 
@@ -236,8 +240,9 @@ calibration output, `latest.json`, and every site score/visual are derived.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
   (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
-  one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured
-  matrix coverage, then newest). Native comparison records require one complete current-commit
+  one coherent physical run for the weighted Web comparison (featured-entry coverage, then featured
+  matrix coverage, then newest). Dedicated pipeline/storm views may attach the best coherent
+  current campaign for each exact contract, while remaining outside the weighted matrix. Native comparison records require one complete current-commit
   campaign with identical stable-device/method/matrix/input/connector identity and an explicit
   valid same-serial lease chain. Partial reruns and
   historical Lab variants therefore cannot replace the public ranking. A current featured Native
