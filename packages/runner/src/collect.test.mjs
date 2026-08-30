@@ -1497,9 +1497,21 @@ test('history audits every run but publishes only complete source-defined featur
   const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
   assert.equal(bundleScale.length, 144);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
-  // The invalidated pre-verifier process-cgroup source remains archived but
-  // contributes no comparison records (72 cells).
-  assert.equal(retainedRecords.length, 4107);
+  // The invalidated pre-verifier process-cgroup source remains archive-only.
+  // The replacement run contributes one verified 108-record matrix for each
+  // current comparison entry; Octane Hux remains source-visible without being
+  // spliced into the newer comparison cohort.
+  const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
+    '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
+  assert.equal(verifiedProcessRun.length, 648);
+  assert.deepEqual(
+    [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
+    ['octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+  );
+  assert.ok(verifiedProcessRun.every((record) =>
+    record.throttleScope === 'process-cgroup'
+    && record.cpuThrottle === 4));
+  assert.equal(retainedRecords.length, 4755);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
