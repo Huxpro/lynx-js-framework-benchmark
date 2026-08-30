@@ -26,7 +26,9 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
           <code title={checkpointCopy?.description}>{checkpointCopy?.label ?? snapshot.label}</code>
           {' · '}<time dateTime={snapshot.generatedAt}>{generatedAt}</time>
           {' · '}{harness === 'web' ? 'Web' : 'Native'}
-          {harness === 'web' ? ` · ${regime.jsRegime === 'jit' ? 'JIT' : 'Ignition'} · ${regime.cpuThrottle}× CPU` : ''}
+          {harness === 'web'
+            ? ` · ${regime.jsRegime === 'jit' ? 'JIT' : 'Ignition'} · ${regime.cpuThrottle === 1 ? '1× CPU' : `MTS ${regime.cpuThrottle}× CPU`}`
+            : ''}
           {' · '}{cohort
             ? text(`${cohort.entryIds.length} comparable entries`, `${cohort.entryIds.length} 个可比条目`)
             : text('no publishable cohort', '无可发布 cohort')}

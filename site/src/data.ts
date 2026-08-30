@@ -344,7 +344,7 @@ export const DEFAULT_WEB_REGIME: WebRegime = {
 export const WEB_REGIMES: (WebRegime & { id: string; label: string })[] = [
   { id: 'web', label: 'JIT · 1×', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1 },
   { id: 'web-interp', label: 'Ignition · 1×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1 },
-  { id: 'web-interp-4x', label: 'Ignition · 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4 },
+  { id: 'web-interp-4x', label: 'Ignition · MTS 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4 },
 ];
 export function webRegimeId(regime: WebRegime): string {
   return WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime

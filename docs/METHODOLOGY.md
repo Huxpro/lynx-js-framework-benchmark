@@ -240,8 +240,12 @@ with CPU throttling disabled (`environment: { jsRegime: "jit", jsFlags: "--expos
 cpuThrottle: 1 }`). `web-interp` uses
 `--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev`, leaving JavaScript on Ignition while
 Wasm keeps its normal compiled pipeline, and leaves CPU throttling disabled. `web-interp-4x`
-uses the same interpreter-only JavaScript process and applies `Emulation.setCPUThrottlingRate` at 4× after each page
-target attaches and before any measured phase. The historical default is exactly `web`; a
+uses the same interpreter-only JavaScript process and applies `Emulation.setCPUThrottlingRate` at
+4× to the page target before any measured phase. CDP throttling is target-scoped: the separately
+attached `lynx-bg` worker does not inherit the page setting. The lane is therefore an MTS-throttled
+directional probe, not a symmetric whole-process slowdown. Its raw `btsCpu` samples remain source
+evidence but are classified `invalid-measurement` and excluded from charts and rankings. The
+historical default is exactly `web`; a
 schema-v2 record without regime fields normalizes to JIT / `--expose-gc` / 1×. The machine fingerprint does not
 change, but collection keys and comparison cohorts include all three regime fields, so lanes never
 overwrite, average, or rank together.
@@ -257,11 +261,11 @@ also disables Wasm, and restoring Wasm through DrumBrake would require a custom,
 Chromium build. These lanes are suitable for ordering,
 scale-shape, regression, and "what was JIT hiding?" leads, never absolute device-time prediction.
 
-### Rank-stability calibration against device rounds 1–2
+### Rank-stability calibration against device rounds 1–3
 
 The current calibration uses the same-machine 29 August featured Web campaign, with upstream
 Octane at `9779569e`, Huxpro/new-lynx at `8938c126`, and the `web-interp-4x` lane as the directional
-probe. Its device anchors are the real-device round-1 and round-2 windows in
+probe. Its pre-fix device anchors are the real-device round-1 and round-2 windows in
 [Huxpro/octane#194](https://github.com/Huxpro/octane/issues/194). Those device windows used older
 Octane tips and different instrumentation boundaries, so the table below tests only ordering,
 completion cliffs, and scaling direction. It does not compare absolute times or claim a controlled
@@ -274,11 +278,32 @@ revision A/B.
 | Formal Native ReactLynx startup grows from 63.8 ms at 0 rows to 1,434.1 ms at 1k, then is DNF at 10k and 30k. The device rounds also hit the ART/PaintingContext capacity boundary at eager 10k. | ReactLynx grows from 110.2 ms to 923.5 ms at 1k but completes at 8,706.4 ms / 25,934.3 ms for 10k / 30k. Every featured Web entry completes both large scales. | **Only the increasing direction agrees; the scaling shape and capacity cliff do not.** Compiled Wasm plus browser host objects cannot expose the Native JNI global-reference ceiling. |
 | Round-2 `mountProgram` bookkeeping falls from 8,565 ms to 4 ms after the ledger fix. | No Web record has a boundary equivalent to Native `mountProgram`. | **Not rank-calibratable.** It remains a Native-only internal anchor and is not imputed into Web. |
 
+The first post-fix anchors use new-lynx `8938c1260` on the same `aries_10` protocol. They are kept
+separate from the pre-fix table because they answer transport shape and measurement fidelity, not
+an absolute-time revision A/B.
+
+| Post-fix device anchor | Matching Web observation | Rank/shape verdict |
+| --- | --- | --- |
+| Two create→clear→re-create sequences at 1k each emit 2 MTS→BTS messages and exactly 1 ACK per commit. Create uses compact-v1 with 7,000 acknowledged hosts; encoded ContextProxy totals are 182 B for create and 222 B for clear. | The post-fix Web create commit is likewise constant-size instead of the former 17.4 MB / 23,799-message storm. | **Transport shape agrees.** Native ContextProxy payload bytes and Web RPC-envelope bytes have different boundaries, so this is a post-fix shape anchor, not a ranking anchor. |
+| Native clear@1k produces valid state/frame receipts, but Hux and upstream wait for an Octane transport ACK while ReactLynx exposes no equivalent ACK. Upstream's create→clear preparation path also DNF'd, requiring an eager-1k clear probe instead. | Web-interp reports a stable Octane-family clear gap under one shared DOM predicate and transport boundary. | **Not rank-calibratable.** The Native producer receipts are not settlement-equivalent, so this round neither validates nor falsifies the Web clear ratio. It defines the fidelity boundary and grants no device prediction stake. |
+
 Within Web itself, turning off compiled JavaScript changes the winning entry in 5 of the 16 shared
 latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Comparing normal JIT with
 `web-interp-4x` changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does hide material
 ordering differences, but the mixed device calibration above is too weak for the interpreter lane
 to substitute for device rounds: use it to choose confirmation cells, not to publish Native ranks.
+
+### Issue #42 measurement-boundary audits
+
+- `btsCpu` under `web-interp-4x` is invalid. The runner sent
+  `Emulation.setCPUThrottlingRate` only to the page session; the `lynx-bg` worker is a separate CDP
+  target. This explains why create@10k BTS samples stayed near the unthrottled interpreter lane and
+  why the Hux/upstream order could invert. The collector preserves those raw samples for audit but
+  gives them `rankingEligible: false`; no throttled BTS CPU claim remains published.
+- ReactLynx startup uses the same harness page, `/bundles/<entry>/rows-N/main.web.bundle` serving
+  route, `viewAttachTime` origin, composed-tree `contentCount >= 5` first-frame predicate, and
+  400 ms content-count quiescence rule as Octane and every Vue entry. There is no React-specific
+  startup branch. Its 40%+ FCP advantage therefore stands as a result at this Web boundary.
 
 ## Harness separation
 

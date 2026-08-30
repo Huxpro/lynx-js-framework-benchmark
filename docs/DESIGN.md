@@ -128,7 +128,7 @@ dimensions. One record per (entry × workload × scale × metric):
     "environment": {                     // Web only
       "jsRegime": "jit",                // jit | interp
       "jsFlags": "--expose-gc",         // exact V8 payload
-      "cpuThrottle": 1                   // CDP CPU multiplier
+      "cpuThrottle": 1                   // CDP page-target CPU multiplier
     },
     "entry": "vue-vdom",
     "workload": "update10th",
@@ -148,6 +148,9 @@ dimensions. One record per (entry × workload × scale × metric):
 `harness`, normalized `environment` regime, `workload`, `scale`, `metric`, `boundary`, and `unit`
 all agree. Native retains its existing device-environment string and has no Web regime fields.
 Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
+`Emulation.setCPUThrottlingRate` is target-scoped; the recorded multiplier applies to the page
+target and is not inherited by `lynx-bg`. Consequently `btsCpu` records with `cpuThrottle > 1`
+are retained only as invalid source evidence and never enter a chart or ranking.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
 

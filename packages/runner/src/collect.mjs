@@ -129,15 +129,25 @@ function classifyComparability(run, records) {
   return records.map((record) => {
     const work = stormWorkClassification(records, record);
     const problems = samplingProblems(run, record);
+    const unthrottledWorkerCpu = record.harness === 'web'
+      && record.metric === 'btsCpu'
+      && record.cpuThrottle > 1;
     let comparabilityStatus = null;
     const comparabilityReasons = [];
-    if (problems.length) {
+    if (unthrottledWorkerCpu) {
+      // Emulation.setCPUThrottlingRate is target-scoped. The issue-40 runner
+      // applied it to the page target, while lynx-bg runs in a separately
+      // attached worker target. Preserve the raw samples as source evidence,
+      // but never chart or rank them as throttled BTS CPU.
+      comparabilityStatus = 'invalid-measurement';
+      comparabilityReasons.push('cpu-throttle-does-not-cover-background-worker');
+    } else if (problems.length) {
       comparabilityStatus = 'incompatible-sampling';
       comparabilityReasons.push(...problems);
     }
-    if (problems.length) {
-      // Sampling accounting is a prospective source-integrity contract and
-      // takes precedence over any derived work classification.
+    if (unthrottledWorkerCpu || problems.length) {
+      // Source-integrity failures and measurement invalidation take
+      // precedence over any derived work classification.
     } else if (work?.status === 'incomplete') {
       comparabilityStatus = 'incomplete-work';
       comparabilityReasons.push('storm-transport-below-sequential-tick-contract');
@@ -152,7 +162,8 @@ function classifyComparability(run, records) {
     }
     const rankingEligible = comparabilityStatus !== 'incomplete-work'
       && comparabilityStatus !== 'unverified-work'
-      && comparabilityStatus !== 'incompatible-sampling';
+      && comparabilityStatus !== 'incompatible-sampling'
+      && comparabilityStatus !== 'invalid-measurement';
     if (comparabilityStatus === null && cohort === null) {
       return { ...record, comparabilityStatus: 'legacy-unverified' };
     }

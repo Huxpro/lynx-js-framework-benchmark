@@ -1131,6 +1131,49 @@ test('collector keeps incomplete historical storms auditable but removes them fr
   }
 });
 
+test('collector archives but never ranks background CPU from a page-only throttled lane', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-throttled-bts-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const environment = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+    };
+    const measured = (metric) => ({
+      suite: 'table', harness: 'web', environment, entry: 'react', workload: 'create', scale: 10000,
+      metric,
+      boundary: metric === 'btsCpu'
+        ? 'sampled-js-cpu-background-realm'
+        : 'pointerdown-to-dom-predicate',
+      unit: 'ms', samples: [10, 11], attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/throttled.json'), JSON.stringify({
+      schemaVersion: 3,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+        receipt: { comparabilityCohort: 'sha256:throttled' },
+      },
+      records: [measured('latency'), measured('btsCpu')],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    const archived = out.records.find(({ metric }) => metric === 'btsCpu');
+    assert.equal(archived.comparabilityStatus, 'invalid-measurement');
+    assert.deepEqual(archived.comparabilityReasons, [
+      'cpu-throttle-does-not-cover-background-worker',
+    ]);
+    assert.equal(archived.rankingEligible, false);
+    assert.equal(out.comparisonRecords.some(({ metric }) => metric === 'btsCpu'), false);
+    assert.equal(out.comparisonRecords.some(({ metric }) => metric === 'latency'), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector rejects prospective sampling mismatches and preserves complete storm cohorts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });

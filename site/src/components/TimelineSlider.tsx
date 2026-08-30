@@ -42,7 +42,9 @@ export function TimelineSlider({
   const progress = snapshots.length > 1 ? (index / (snapshots.length - 1)) * 100 : 0;
   const cohorts = checkpoint.harnesses.map((cohort) => {
     const environment = cohort.harness === 'web'
-      ? `Web ${cohort.jsRegime === 'interp' ? 'Ignition' : 'JIT'} ${cohort.cpuThrottle ?? 1}×`
+      ? `Web ${cohort.jsRegime === 'interp' ? 'Ignition' : 'JIT'} ${
+        cohort.cpuThrottle === 1 ? '1×' : `MTS ${cohort.cpuThrottle ?? 1}×`
+      }`
       : 'Native';
     return `${environment} ${cohort.entryIds.length}${cohort.rankEligible ? '' : text(' observation', '（观察值）')}`;
   });
