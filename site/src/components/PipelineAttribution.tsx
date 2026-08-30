@@ -239,6 +239,10 @@ export function PipelineAttribution({
           <span className="is-framework">{text('Framework side', '框架侧')}</span>
           <span className="is-engine">{text('Web-host engine bill', 'Web Host 引擎账单')}</span>
         </div>
+        <p className="pipeline-bill-guide">{text(
+          'Bill chart: width = calls · height = cost/call · area = total time. Compare element creates and attribute writes with the row shape.',
+          '账单图：宽 = 调用数 · 高 = 每次成本 · 面积 = 总耗时；建节点与写属性请结合每行结构比较。',
+        )}</p>
         <div className="pipeline-scale-mode" role="group" aria-label={text('Normalization', '归一方式')}>
           <button type="button" aria-pressed={scaleMode === 'operation'} onClick={() => setScaleMode('operation')}>
             {text('Whole operation', '整次操作')}
@@ -337,14 +341,6 @@ export function PipelineAttribution({
 
               {expanded ? (
                 <div className="pipeline-row-detail" id={detailId}>
-                  <div className="pipeline-detail-heading">
-                    <span>{text('What makes up the web-host engine bill', 'Web Host 引擎账单由什么构成')}</span>
-                    <small>{text('Width = calls · height = time/call · area = time', '宽 = 调用数 · 高 = 单次成本 · 面积 = 时间')}</small>
-                  </div>
-                  <p className="pipeline-shape-warning">{text(
-                    'Element creates and attribute writes depend on the row shape shown above.',
-                    '建节点和写属性受上方行结构影响，跨框架比较时须一并考虑。',
-                  )}</p>
                   <div className="pipeline-mekko" aria-label={text('Call count by unit cost chart', '调用数与单次成本图')}>
                     {activeSegments.map((segment) => {
                       const unitCost = segment.calls === 0 ? 0 : (segment.time * 1000) / segment.calls;

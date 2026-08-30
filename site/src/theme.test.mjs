@@ -182,7 +182,9 @@ test('pipeline attribution names time by owner and lets framework audits expand 
   assert.match(pipelineAttribution, /expanded \? \(/);
   assert.match(pipelineAttribution, /Framework side/);
   assert.match(pipelineAttribution, /Web-host engine bill/);
-  assert.match(pipelineAttribution, /Width = calls · height = time\/call · area = time/);
+  assert.match(pipelineAttribution, /Bill chart: width = calls · height = cost\/call · area = total time/);
+  assert.equal(pipelineAttribution.match(/width = calls/g)?.length, 1);
+  assert.doesNotMatch(pipelineAttribution, /pipeline-detail-heading|pipeline-shape-warning/);
   assert.match(pipelineAttribution, /elements\/row/);
   assert.match(pipelineAttribution, /Attribute writes/);
   assert.match(pipelineAttribution, /shape-sensitive/);
