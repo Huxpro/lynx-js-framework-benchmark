@@ -319,6 +319,10 @@ closed unless `control.score / throttled.score` is within [3.5, 4.5]. Every acce
 that value as `environment.verifiedSlowdown`, while the backend and every per-entry verification
 remain in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope:
 "process-cgroup"`; the historical CDP lane normalizes to `throttleScope: "page-cdp"`.
+Because the whole Chromium tree shares one CFS quota, exhausting that quota can freeze both MTS
+and BTS until the next scheduler period; the resulting cross-thread round-trip amplification can
+exceed the nominal 4× compute slowdown and is published as an end-to-end latency effect rather than
+normalized away.
 
 The 30 August `cpulimit` campaign is retained only as an invalid-measurement cautionary example.
 Its one global 4.12× preflight did not prove the later entry windows: most renderer windows matched
@@ -374,8 +378,12 @@ latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Compa
 `web-interp-4x` changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does hide material
 ordering differences, but the mixed device calibration above is too weak for the interpreter lane
 to substitute for device rounds: use it to choose confirmation cells, not to publish Native ranks.
-The process-scope lane receives no rank-stability claim until an inherited-launch campaign passes
-the per-entry in-band slowdown gate above.
+The inherited-launch process-scope campaign passed all seven per-entry gates at 3.86–4.07× with no
+DNF. Against the page-CDP lane, it changes the winner in 8 of the same 16 latency/FCP cells and
+reverses 78 of 336 pairwise entry orderings (23.2%); every one of the 12 latency cells has a changed
+full order. The two throttle scopes therefore remain separately published: the difference is the
+measurement of each framework's sensitivity to whole-process quota and cross-thread freeze windows,
+not evidence that either lane can substitute for a Native cohort.
 
 ### Issue #42 measurement-boundary audits
 

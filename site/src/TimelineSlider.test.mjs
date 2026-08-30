@@ -140,6 +140,8 @@ test('mobile workspace folds advanced regimes without hiding primary controls', 
   assert.match(source, /aria-controls=\{advancedId\}/);
   assert.match(source, /showAdvanced = harness === 'web' && \(!compact \|\| advancedOpen\)/);
   assert.match(source, /workspace-toolbar\$\{showAdvanced \? ' is-advanced-open' : ''\}/);
+  assert.match(source, /\{showAdvanced && \(\s*<div className="workspace-advanced" id=\{advancedId\}>/);
+  assert.doesNotMatch(source, /className="workspace-advanced"[^>]*hidden=/);
   assert.match(source, /<span>JS<\/span>/);
   assert.match(source, /className="workspace-preferences"/);
   assert.match(source, /className="harness-switch"/);

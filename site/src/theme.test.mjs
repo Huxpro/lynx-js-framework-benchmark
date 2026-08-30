@@ -47,6 +47,7 @@ test('mobile advanced regimes unfold into a touch-scrollable rail', () => {
   assert.doesNotMatch(mobile, /'toggle toggle/);
   assert.match(mobile, /\.advanced-toggle/);
   assert.match(mobile, /\.workspace-advanced/);
+  assert.doesNotMatch(css, /\.workspace-advanced\[hidden\]/);
 });
 
 test('dataset slider exposes a visible checkpoint rail without replacing the range input', () => {

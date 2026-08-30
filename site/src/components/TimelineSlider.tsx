@@ -105,8 +105,8 @@ export function TimelineSlider({
               <i aria-hidden="true">⌄</i>
             </button>
           )}
-          {harness === 'web' && (
-            <div className="workspace-advanced" id={advancedId} hidden={!showAdvanced}>
+          {showAdvanced && (
+            <div className="workspace-advanced" id={advancedId}>
               <div className="workspace-regime-heading">
                 <span>{text('JavaScript', 'JavaScript')}</span>
                 <details className="regime-info">
