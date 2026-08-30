@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import {
   BENCHMARK_HISTORY,
   TimelineSnapshot,
   WEB_REGIMES,
   WebRegime,
 } from '../data';
+import { useMediaQuery } from '../hooks';
 import { localizedCheckpoint, useI18n } from '../i18n';
 
 export function TimelineSlider({
@@ -36,10 +38,18 @@ export function TimelineSlider({
   onHeatPaletteToggle: () => void;
 }) {
   const { locale, text, date, toggleLocale } = useI18n();
+  const compact = useMediaQuery('(max-width: 48rem)');
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const snapshot = snapshots[index];
   const checkpoint = BENCHMARK_HISTORY.checkpoints[index];
   const checkpointCopy = localizedCheckpoint(checkpoint, locale);
   const progress = snapshots.length > 1 ? (index / (snapshots.length - 1)) * 100 : 0;
+  const activeRegime = WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime
+    && candidate.jsFlags === regime.jsFlags
+    && candidate.cpuThrottle === regime.cpuThrottle
+    && candidate.throttleScope === regime.throttleScope);
+  const showAdvanced = harness === 'web' && (!compact || advancedOpen);
+  const advancedId = 'workspace-advanced-configuration';
   const cohorts = checkpoint.harnesses.map((cohort) => {
     const environment = cohort.harness === 'web'
       ? `Web ${cohort.jsRegime === 'interp' ? 'Interp' : 'JIT'} ${
@@ -76,35 +86,74 @@ export function TimelineSlider({
                 >{candidate === 'web' ? 'Web' : 'Native'}</button>
               ))}
             </div>
-            {harness === 'web' && (
-              <div className="regime-switch" role="group" aria-label={text('JavaScript execution regime', 'JavaScript 执行政权')}>
-                {WEB_REGIMES.map((candidate) => {
-                  const available = checkpoint.harnesses.some((cohort) => cohort.harness === 'web'
-                    && cohort.jsRegime === candidate.jsRegime
-                    && cohort.jsFlags === candidate.jsFlags
-                    && cohort.cpuThrottle === candidate.cpuThrottle
-                    && cohort.throttleScope === candidate.throttleScope);
-                  return (
-                    <button
-                      key={candidate.id}
-                      type="button"
-                      aria-pressed={regime.jsRegime === candidate.jsRegime
-                        && regime.jsFlags === candidate.jsFlags
-                        && regime.cpuThrottle === candidate.cpuThrottle
-                        && regime.throttleScope === candidate.throttleScope}
-                      disabled={!available}
-                      onClick={() => onRegimeChange({
-                        jsRegime: candidate.jsRegime,
-                        jsFlags: candidate.jsFlags,
-                        cpuThrottle: candidate.cpuThrottle,
-                        throttleScope: candidate.throttleScope,
-                      })}
-                    >{candidate.label}</button>
-                  );
-                })}
-              </div>
-            )}
           </div>
+          {harness === 'web' && (
+            <div className="workspace-advanced" id={advancedId} hidden={!showAdvanced}>
+              <div className="workspace-regime-heading">
+                <span>{text('JavaScript', 'JavaScript')}</span>
+                <details className="regime-info">
+                  <summary
+                    aria-label={text('How JavaScript regimes are measured', 'JavaScript 政权如何测量')}
+                    title={text('How JavaScript regimes are measured', 'JavaScript 政权如何测量')}
+                  >i</summary>
+                  <aside className="regime-method" aria-label={text('JavaScript regime measurement details', 'JavaScript 政权测量详情')}>
+                    <strong>{text('How these lanes are measured', '这些 lane 如何测量')}</strong>
+                    <dl>
+                      <div>
+                        <dt>JIT</dt>
+                        <dd>{text('Chromium runs the default V8 compilation tiers. CPU runs at 1×.', 'Chromium 使用 V8 默认编译层级，CPU 为 1×。')}</dd>
+                      </div>
+                      <div>
+                        <dt>Interp</dt>
+                        <dd>{text('V8 JavaScript compiler tiers are disabled; Wasm stays compiled. CPU runs at 1×.', '关闭 V8 的 JavaScript 编译层级；Wasm 保持编译执行。CPU 为 1×。')}</dd>
+                      </div>
+                      <div>
+                        <dt>{text('Mixed 4×', 'Mixed 4×')}</dt>
+                        <dd>{text('Interp plus CDP 4× throttling on the page/MTS target. The BTS worker stays full-speed.', 'Interp 加 CDP 对 page/MTS target 的 4× 限速；BTS worker 保持全速。')}</dd>
+                      </div>
+                      <div>
+                        <dt>{text('Process 4×', 'Process 4×')}</dt>
+                        <dd>{text('Interp plus a requested 25% OS quota for the Chromium process tree. The actual backend is recorded in the run receipt.', 'Interp 加 Chromium 进程树的 25% OS 配额；实际 backend 记录在 run receipt 中。')}</dd>
+                      </div>
+                    </dl>
+                    <p>{text('Rankings stay separate across every lane.', '每条 lane 始终独立排名。')}</p>
+                  </aside>
+                </details>
+              </div>
+              <div
+                className="regime-scroll"
+                tabIndex={0}
+                aria-label={text('Scrollable JavaScript execution regimes', '可横向滚动的 JavaScript 执行政权')}
+              >
+                <div className="regime-switch" role="group" aria-label={text('JavaScript execution regime', 'JavaScript 执行政权')}>
+                  {WEB_REGIMES.map((candidate) => {
+                    const available = checkpoint.harnesses.some((cohort) => cohort.harness === 'web'
+                      && cohort.jsRegime === candidate.jsRegime
+                      && cohort.jsFlags === candidate.jsFlags
+                      && cohort.cpuThrottle === candidate.cpuThrottle
+                      && cohort.throttleScope === candidate.throttleScope);
+                    return (
+                      <button
+                        key={candidate.id}
+                        type="button"
+                        aria-pressed={regime.jsRegime === candidate.jsRegime
+                          && regime.jsFlags === candidate.jsFlags
+                          && regime.cpuThrottle === candidate.cpuThrottle
+                          && regime.throttleScope === candidate.throttleScope}
+                        disabled={!available}
+                        onClick={() => onRegimeChange({
+                          jsRegime: candidate.jsRegime,
+                          jsFlags: candidate.jsFlags,
+                          cpuThrottle: candidate.cpuThrottle,
+                          throttleScope: candidate.throttleScope,
+                        })}
+                      >{candidate.label}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="workspace-preferences">
             <button
               className="palette-toggle"
@@ -135,6 +184,19 @@ export function TimelineSlider({
               {theme === 'dark' ? '☀' : '☾'}
             </button>
           </div>
+          {harness === 'web' && compact && (
+            <button
+              className="advanced-toggle"
+              type="button"
+              aria-expanded={advancedOpen}
+              aria-controls={advancedId}
+              onClick={() => setAdvancedOpen((open) => !open)}
+            >
+              <span>{text('Advanced configuration', '高级配置')}</span>
+              <output>{activeRegime?.label ?? text('JavaScript regime', 'JavaScript 政权')}</output>
+              <i aria-hidden="true">⌄</i>
+            </button>
+          )}
         </div>
         <section className="timeline" aria-label={text('Dataset time machine', '数据集时光机')}>
         <div className="timeline-control">

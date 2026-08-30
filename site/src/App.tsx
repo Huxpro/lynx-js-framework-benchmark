@@ -294,14 +294,6 @@ function AppContent({
         onHeatPaletteToggle={toggleHeatPalette}
       />
       <MeasurementReceipt harness={harness} />
-      {harness === 'web' && regime.jsRegime === 'interp' && (
-        <p className="regime-disclaimer" role="note">
-          {text(
-            'Directional probe — interpreter-only JavaScript under V8; not Native, not PrimJS.',
-            '方向性探针——V8 下纯解释执行 JavaScript；不是 Native，也不是 PrimJS。',
-          )}
-        </p>
-      )}
 
       {harness === 'native' && !nativeHasData ? (
         page === 'overview' ? (

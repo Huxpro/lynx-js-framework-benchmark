@@ -30,6 +30,20 @@ test('dataset slider owns the full sticky second row', () => {
   assert.match(control, /minmax\(0, 1fr\)/);
 });
 
+test('mobile advanced regimes unfold into a touch-scrollable rail', () => {
+  const scroll = css.match(/\.regime-scroll\s*\{([^}]*)\}/)?.[1] ?? '';
+  const switcher = css.match(/\.regime-switch\s*\{([^}]*)\}/)?.[1] ?? '';
+  const mobile = css.match(/@media \(max-width: 48rem\)\s*\{([\s\S]*?)\n\}/)?.[1] ?? '';
+
+  assert.match(scroll, /overflow-x\s*:\s*auto/);
+  assert.match(scroll, /touch-action\s*:\s*pan-x/);
+  assert.match(scroll, /-webkit-overflow-scrolling\s*:\s*touch/);
+  assert.match(switcher, /width\s*:\s*max-content/);
+  assert.match(mobile, /grid-template-areas/);
+  assert.match(mobile, /\.advanced-toggle/);
+  assert.match(mobile, /\.workspace-advanced/);
+});
+
 test('dataset slider exposes a visible checkpoint rail without replacing the range input', () => {
   assert.match(css, /\.timeline-range-track\s*\{/);
   assert.match(css, /\.timeline-dot\s*\{/);

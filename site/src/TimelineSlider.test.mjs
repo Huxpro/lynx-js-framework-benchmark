@@ -122,7 +122,7 @@ test('Web regime facet is explicit, URL-addressable, and cannot mix ranking reco
   assert.match(source, /cohort\.jsFlags === candidate\.jsFlags/);
   assert.match(source, /cohort\.cpuThrottle === candidate\.cpuThrottle/);
   assert.match(appSource, /params\.set\('regime', id\)/);
-  assert.match(appSource, /Directional probe — interpreter-only JavaScript under V8; not Native, not PrimJS\./);
+  assert.doesNotMatch(appSource, /regime-disclaimer|Directional probe — interpreter-only/);
   assert.match(dataSource, /label: 'JIT'/);
   assert.match(dataSource, /label: 'Interp'/);
   assert.doesNotMatch(`${source}\n${receiptSource}\n${appSource}\n${dataSource}`, /Ignition/);
@@ -130,6 +130,26 @@ test('Web regime facet is explicit, URL-addressable, and cannot mix ranking reco
   assert.match(rankingSource, /record\.jsRegime === regime\.jsRegime/);
   assert.match(rankingSource, /record\.jsFlags === regime\.jsFlags/);
   assert.match(rankingSource, /record\.cpuThrottle === regime\.cpuThrottle/);
+});
+
+test('mobile workspace folds advanced regimes without hiding primary controls', () => {
+  assert.match(source, /useMediaQuery\('\(max-width: 48rem\)'\)/);
+  assert.match(source, /className="advanced-toggle"/);
+  assert.match(source, /aria-expanded=\{advancedOpen\}/);
+  assert.match(source, /aria-controls=\{advancedId\}/);
+  assert.match(source, /showAdvanced = harness === 'web' && \(!compact \|\| advancedOpen\)/);
+  assert.match(source, /className="workspace-preferences"/);
+  assert.match(source, /className="harness-switch"/);
+});
+
+test('regime measurement details are available from the compact information disclosure', () => {
+  assert.match(source, /<details className="regime-info">/);
+  assert.match(source, /How these lanes are measured/);
+  assert.match(source, /Chromium runs the default V8 compilation tiers/);
+  assert.match(source, /V8 JavaScript compiler tiers are disabled; Wasm stays compiled/);
+  assert.match(source, /CDP 4× throttling on the page\/MTS target/);
+  assert.match(source, /requested 25% OS quota for the Chromium process tree/);
+  assert.match(source, /Rankings stay separate across every lane/);
 });
 
 test('sticky workspace gives its second row entirely to the dataset slider', () => {
