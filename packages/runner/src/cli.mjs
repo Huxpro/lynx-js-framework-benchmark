@@ -8,6 +8,7 @@
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
+//   lynx-bench list-coverage
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -18,6 +19,7 @@ import {
   TABLE_CASES,
 } from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
@@ -41,6 +43,7 @@ import {
   nativeCellKey,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
+import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   NATIVE_SANDBOX_POLICY,
@@ -445,13 +448,21 @@ function cmdList() {
     const scales = fs.existsSync(e.distDir)
       ? fs.readdirSync(e.distDir).filter((d) => d.startsWith('rows-')).map((d) => d.slice(5)).join(',')
       : 'no dist';
-    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}`);
+    const listFixture = e.listFixture == null ? 'unsupported' : e.listFixture.protocol ?? 'invalid';
+    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}; list: ${listFixture}`);
   }
   console.log(
     '\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ')
-    + ', updateStorm, selectStorm, startup, pipeline; storm policies: '
+    + ', updateStorm, selectStorm, startup, pipeline, '
+    + LIST_CASES.map((kase) => kase.name).join(', ')
+    + '; storm policies: '
     + STORM_COMMIT_POLICIES.join(', '),
   );
+}
+
+function cmdListCoverage() {
+  const coverage = assertListCoverage(buildListCoverage({ entries: discoverEntries() }));
+  console.log(JSON.stringify(coverage, null, 2));
 }
 
 const args = parseArgs(process.argv.slice(2));
@@ -461,6 +472,7 @@ try {
   else if (cmd === 'preflight') await cmdPreflight();
   else if (cmd === 'collect') collectRuns();
   else if (cmd === 'list') cmdList();
+  else if (cmd === 'list-coverage') cmdListCoverage();
   else {
     console.error(`unknown command: ${cmd}`);
     process.exit(2);

@@ -75,7 +75,7 @@ export interface BenchRecord {
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
   descriptiveEligible?: boolean;
-  contractVersion?: number | null;
+  contractVersion?: number | string | null;
   commitPolicy?: 'every-tick' | 'final-state' | null;
   derivedFrom?: { kind: string; metrics: string[] };
   workClassification?: {
@@ -205,6 +205,7 @@ export interface NativeCoverage {
   version: string;
   contractSha256: string;
   expectedCellCount: number;
+  sourceRunFiles: Record<'web' | 'native', string[]>;
   entryIds: string[];
   summary: Partial<Record<NativeCoverageStatus, number>>;
   cells: NativeCoverageCell[];
@@ -251,6 +252,55 @@ export interface PipelineCoverage {
   cells: PipelineCoverageCell[];
 }
 
+export type ListCoverageStatus =
+  | 'measured'
+  | 'dnf'
+  | 'unsupported'
+  | 'unscheduled'
+  | 'invalid-incomparable';
+
+export interface ListCoverageCell {
+  entry: string;
+  harness: 'web' | 'native';
+  workload: 'list-startup' | 'list-recycle' | 'list-fling';
+  scale: number;
+  key: string;
+  status: ListCoverageStatus;
+  reason: string | null;
+  recordCount: number;
+  fixture: {
+    kind: 'entry-manifest' | 'entry-manifest-and-artifact';
+    declared: boolean;
+    protocol?: string | null;
+    contractSha256?: string | null;
+    bundle?: string;
+    sha256?: string;
+    actualSha256?: string;
+  };
+  sourceMetrics: string[];
+  derivedMetrics: string[];
+}
+
+export interface ListCoverage {
+  version: string;
+  contractSha256: string;
+  fixtureProtocol: string;
+  config: {
+    viewport: { widthPx: number; heightPx: number };
+    row: { estimatedHeightPx: number; itemKey: string };
+    buffer: { leadingRows: number; trailingRows: number };
+    recycle: { distancePx: number; repetitions: number };
+    fling: { velocityPxPerSecond: number; durationMs: number };
+    observation: { web: string; native: string };
+    input: Record<'web' | 'native', { recycle: string; fling: string }>;
+    semantics: { materializedCell: string; blankFrame: string };
+  };
+  entryIds: string[];
+  expectedCellCount: number;
+  summary: Partial<Record<ListCoverageStatus, number>>;
+  cells: ListCoverageCell[];
+}
+
 export interface NativeObservation {
   entryId: string;
   harness: 'native';
@@ -274,6 +324,7 @@ export interface TimelineSnapshot {
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   pipelineCoverage: PipelineCoverage;
+  listCoverage: ListCoverage;
 }
 
 export interface HistoryTransportEvidence {
@@ -331,6 +382,7 @@ export interface HistoryCheckpoint {
   harnesses: HistoryCohort[];
   nativeCoverage?: NativeCoverage;
   pipelineCoverage?: PipelineCoverage;
+  listCoverage?: ListCoverage;
 }
 
 export interface HistorySource {
@@ -393,6 +445,12 @@ export interface EntryMeta {
   tier?: 'featured' | 'lab' | 'archive';
   /** Harnesses this public entry is eligible to run in. Omitted means both. */
   harnesses?: ('web' | 'native')[];
+  listFixture?: {
+    protocol: string;
+    contractSha256: string;
+    bundles: Partial<Record<'web' | 'native', string>>;
+    sha256: Partial<Record<'web' | 'native', string>>;
+  };
   color: string;
   presentation: { order: number; colorLight: string; colorDark: string };
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
@@ -407,6 +465,7 @@ const collected = latest as unknown as {
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   pipelineCoverage: PipelineCoverage;
+  listCoverage: ListCoverage;
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
@@ -414,6 +473,7 @@ const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   version: 'history-no-native-data',
   contractSha256: '',
   expectedCellCount: 0,
+  sourceRunFiles: { web: [], native: [] },
   entryIds: [],
   summary: {},
   cells: [],
@@ -423,6 +483,28 @@ const EMPTY_PIPELINE_COVERAGE: PipelineCoverage = {
   contractSha256: '',
   expectedCellCount: 0,
   entryIds: [],
+  summary: {},
+  cells: [],
+};
+const EMPTY_LIST_COVERAGE: ListCoverage = {
+  version: 'history-no-list-contract',
+  contractSha256: '',
+  fixtureProtocol: '',
+  config: {
+    viewport: { widthPx: 0, heightPx: 0 },
+    row: { estimatedHeightPx: 0, itemKey: '' },
+    buffer: { leadingRows: 0, trailingRows: 0 },
+    recycle: { distancePx: 0, repetitions: 0 },
+    fling: { velocityPxPerSecond: 0, durationMs: 0 },
+    observation: { web: '', native: '' },
+    input: {
+      web: { recycle: '', fling: '' },
+      native: { recycle: '', fling: '' },
+    },
+    semantics: { materializedCell: '', blankFrame: '' },
+  },
+  entryIds: [],
+  expectedCellCount: 0,
   summary: {},
   cells: [],
 };
@@ -488,6 +570,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     nativeObservationRecords: [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
     pipelineCoverage: checkpoint.pipelineCoverage ?? EMPTY_PIPELINE_COVERAGE,
+    listCoverage: checkpoint.listCoverage ?? EMPTY_LIST_COVERAGE,
   };
 });
 
