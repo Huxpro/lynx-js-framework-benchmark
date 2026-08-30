@@ -6,6 +6,7 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 import { chromiumArgs } from './browser.mjs';
 import { setCPUThrottlingRate } from './cdp.mjs';
 import {
+  assertProcessThrottleProbe,
   assertInterpreterFlagProbe,
   assertWebHarnessCapabilities,
 } from './preflight.mjs';
@@ -68,6 +69,27 @@ test('interpreter preflight requires a JIT control, never-optimized Ignition, an
   }), /WebAssembly/);
 });
 
+test('whole-process throttle preflight requires a real backend and observed slowdown', () => {
+  assert.deepEqual(assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 25 },
+    cpuThrottle: 4,
+    mechanism: { scope: 'process-cgroup', backend: 'cpulimit' },
+  }).observedSlowdown, 4);
+  assert.throws(() => assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 90 },
+    cpuThrottle: 4,
+    mechanism: { scope: 'process-cgroup', backend: 'cpulimit' },
+  }), /preflight failed/);
+  assert.throws(() => assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 25 },
+    cpuThrottle: 4,
+    mechanism: null,
+  }), /mechanism receipt/);
+});
+
 test('no-collect policy applies equally to Web and Native run completion', () => {
   assert.equal(shouldCollectAfterRun({}), true);
   assert.equal(shouldCollectAfterRun({ 'no-collect': true }), false);
@@ -80,7 +102,7 @@ test('schema records Web regimes and rejects applying them to Native', () => {
   };
   const historicalDefault = makeRecord(base);
   assert.deepEqual(historicalDefault.environment, {
-    jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1,
+    jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1, throttleScope: 'none',
   });
   assert.equal(Object.hasOwn(historicalDefault, 'jsRegime'), false);
   assert.equal(Object.hasOwn(historicalDefault, 'cpuThrottle'), false);
@@ -89,7 +111,12 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     jsRegime: 'interp',
     jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
     cpuThrottle: 4,
+    throttleScope: 'page-cdp',
   });
+  const processProbe = makeRecord({
+    ...base, jsRegime: 'interp', cpuThrottle: 4, throttleScope: 'process-cgroup',
+  });
+  assert.equal(processProbe.environment.throttleScope, 'process-cgroup');
   const native = makeRecord({ ...base, harness: 'native', environment: 'device' });
   assert.equal(native.environment, 'device');
   assert.equal(Object.hasOwn(native, 'jsRegime'), false);
@@ -101,5 +128,6 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     jsRegime: 'interp',
     jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
     cpuThrottle: 4,
+    throttleScope: 'process-cgroup',
   }), /Web-only/);
 });

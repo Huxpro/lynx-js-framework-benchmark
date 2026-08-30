@@ -22,7 +22,8 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, Web `environment: { jsRegime, jsFlags, cpuThrottle }` or the unchanged
+- record identity: suite, harness, Web
+  `environment: { jsRegime, jsFlags, cpuThrottle, throttleScope }` or the unchanged
   Native device-environment string, entry,
   workload, scale, metric, boundary, unit;
 - repeated observations: `samples`;
@@ -33,14 +34,15 @@ These are the only files/fields that require an update when their real-world inp
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
-Schema v3 adds the Web JS-execution regime as
-`environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number }`, where
-`jsFlags` is the exact V8 payload and the throttle is a finite page-target
-multiplier ≥1. Native records keep their schema-v2 environment string byte-for-byte and never gain
-Web regime fields. Schema-v2 Web records normalize to
-`{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1 }`.
+Schema v4 extends the Web JS-execution regime to
+`environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number,
+throttleScope: "none" | "page-cdp" | "process-cgroup" }`. `jsFlags` is the exact V8 payload;
+the scope distinguishes page-target CDP throttling from a whole-process OS quota. Native records
+keep their schema-v2 environment string byte-for-byte and never gain Web regime fields. Schema-v2
+Web records normalize to `{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1,
+throttleScope: "none" }`; throttled schema-v3 records normalize to `"page-cdp"`.
 The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
-keyed by machine × regime so the three Web lanes cannot overwrite, average, or rank together.
+keyed by machine × regime so the Web lanes cannot overwrite, average, or rank together.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
@@ -68,8 +70,9 @@ Everything else is derived, including:
 - comparability/work classification. Incomplete or unverified work and prospective
   sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
   the source archive and audit index, but do not become Dataset Time Machine checkpoints or enter
-  ranked views. The same applies to `btsCpu` from `cpuThrottle > 1`: CDP throttling is target-scoped
-  and the page setting does not cover `lynx-bg`, so those samples are classified
+  ranked views. The same applies to `btsCpu` from `cpuThrottle > 1` with
+  `throttleScope: "page-cdp"`: CDP throttling is target-scoped and the page setting does not cover
+  `lynx-bg`, so those samples are classified
   `invalid-measurement`. Prospective Lab estimates must match the selected Web cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an

@@ -27,7 +27,13 @@ probes are explicit and remain Web-only:
 ```bash
 pnpm bench run --harness web --jit=interp --cpu-throttle=1 --label web-interp
 pnpm bench run --harness web --jit=interp --cpu-throttle=4 --label web-interp-4x
+pnpm bench run --harness web --jit=interp --cpu-throttle=4 \
+  --throttle-scope=process-cgroup --label web-interp-4x-cg
 ```
+
+The whole-process calibration lane prefers a writable cgroup-v2 `cpu.max` quota and falls back to
+`cpulimit`; its preflight fails closed unless the measured probe slowdown confirms that the quota
+is active. Set `LYNX_BENCH_CPULIMIT_PATH` when `cpulimit` is not on `PATH`.
 
 `--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;
 the default remains `0,1000,10000,30000`.

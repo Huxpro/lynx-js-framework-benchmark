@@ -235,22 +235,34 @@ metric rather than silently changing the upstream interaction formula.
 
 ## Web JavaScript execution regimes
 
-The Web harness has three separately ranked execution lanes. `web` is Chromium's normal V8 JIT
+The Web harness has four separately ranked execution lanes. `web` is Chromium's normal V8 JIT
 with CPU throttling disabled (`environment: { jsRegime: "jit", jsFlags: "--expose-gc",
-cpuThrottle: 1 }`). `web-interp` uses
+cpuThrottle: 1, throttleScope: "none" }`). `web-interp` uses
 `--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev`, leaving JavaScript on Ignition while
 Wasm keeps its normal compiled pipeline, and leaves CPU throttling disabled. `web-interp-4x`
 uses the same interpreter-only JavaScript process and applies `Emulation.setCPUThrottlingRate` at
 4× to the page target before any measured phase. CDP throttling is target-scoped: the separately
 attached `lynx-bg` worker does not inherit the page setting. The lane is therefore an MTS-throttled
-directional probe, not a symmetric whole-process slowdown. Its raw `btsCpu` samples remain source
-evidence but are classified `invalid-measurement` and excluded from charts and rankings. The
+directional probe, not a symmetric whole-process slowdown. In other words, the existing
+`web-interp-4x` is a mixed regime — MTS throttled, BTS full-speed. That mixed regime is defensible
+only for end-to-end metrics, never per-side metrics; its already-published latency is labelled
+mixed-regime and is not rerun. Its raw `btsCpu` samples remain source evidence but are classified
+`invalid-measurement` and excluded from charts and rankings.
+
+`web-interp-4x-cg` keeps the same interpreter flags but applies one 25% OS quota to the whole
+Chromium process tree. The runner prefers cgroup-v2 `cpu.max` (`25000 100000`) and uses `cpulimit`
+when the cgroup is unavailable or not writable. A same-interpreter unthrottled/throttled probe must
+observe the expected slowdown before formal measurement begins, and the actual backend is retained
+in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope: "process-cgroup"`; the
+historical CDP lane normalizes to `throttleScope: "page-cdp"`.
+
+The
 historical default is exactly `web`; a
 schema-v2 record without regime fields normalizes to JIT / `--expose-gc` / 1×. The machine fingerprint does not
-change, but collection keys and comparison cohorts include all three regime fields, so lanes never
+change, but collection keys and comparison cohorts include all four regime fields, so lanes never
 overwrite, average, or rank together.
 
-Both interpreter lanes are **directional probes — interpreter regime under V8; not Native, not
+All interpreter lanes are **directional probes — interpreter regime under V8; not Native, not
 PrimJS**. V8 Ignition is not LepusNG/PrimJS: JavaScript keeps Ignition's ICs, hidden classes, and
 feedback vectors (but no compiled JavaScript), plus V8's generational garbage collector; Wasm and
 RegExp remain compiled. Before a formal interpreter run, a one-off browser adds

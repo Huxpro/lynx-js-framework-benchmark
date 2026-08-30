@@ -118,7 +118,7 @@ dimensions. One record per (entry × workload × scale × metric):
 
 ```jsonc
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "meta": { "generatedAt": "…", "machine": { "id": "…", "platform": "…", "cpuModel": "…",
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
@@ -128,7 +128,8 @@ dimensions. One record per (entry × workload × scale × metric):
     "environment": {                     // Web only
       "jsRegime": "jit",                // jit | interp
       "jsFlags": "--expose-gc",         // exact V8 payload
-      "cpuThrottle": 1                   // CDP page-target CPU multiplier
+      "cpuThrottle": 1,                  // CPU slowdown multiplier
+      "throttleScope": "none"            // none | page-cdp | process-cgroup
     },
     "entry": "vue-vdom",
     "workload": "update10th",
@@ -150,7 +151,8 @@ all agree. Native retains its existing device-environment string and has no Web 
 Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
 `Emulation.setCPUThrottlingRate` is target-scoped; the recorded multiplier applies to the page
 target and is not inherited by `lynx-bg`. Consequently `btsCpu` records with `cpuThrottle > 1`
-are retained only as invalid source evidence and never enter a chart or ranking.
+and `throttleScope: "page-cdp"` are retained only as invalid source evidence and never enter a
+chart or ranking. A `process-cgroup` run applies one OS quota to the Chromium tree instead.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
 
@@ -242,7 +244,8 @@ calibration output, `latest.json`, and every site score/visual are derived.
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
-  (harness, environment, jsRegime, jsFlags, cpuThrottle, entry, workload, scale, metric, machineId);
+  (harness, environment, jsRegime, jsFlags, cpuThrottle, throttleScope, entry, workload, scale,
+  metric, machineId);
   cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
   one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured

@@ -62,7 +62,7 @@ export function assertInterpreterFlagProbe({ jit, interp }) {
 }
 
 async function optimizationStatusProbe(jit) {
-  const { browser, executablePath, browserVersion } = await launchBrowser({
+  const { browser, closeBrowser } = await launchBrowser({
     jit,
     allowNativesSyntax: true,
   });
@@ -75,7 +75,7 @@ async function optimizationStatusProbe(jit) {
       await page.close();
     }
   } finally {
-    await browser.close();
+    await closeBrowser();
   }
 }
 
@@ -87,6 +87,32 @@ export async function verifyInterpreterFlags() {
   };
   assertInterpreterFlagProbe(result);
   return result;
+}
+
+export function assertProcessThrottleProbe({ control, throttled, cpuThrottle, mechanism }) {
+  if (mechanism?.scope !== 'process-cgroup'
+    || !['cgroup-v2', 'cpulimit'].includes(mechanism?.backend)) {
+    throw new Error('whole-process CPU throttle did not produce a recognized mechanism receipt');
+  }
+  const observedSlowdown = control.score / throttled.score;
+  const minimumSlowdown = Math.max(1.5, cpuThrottle * 0.6);
+  const maximumSlowdown = cpuThrottle * 1.75;
+  if (!Number.isFinite(observedSlowdown)
+    || observedSlowdown < minimumSlowdown
+    || observedSlowdown > maximumSlowdown) {
+    throw new Error(
+      `whole-process CPU throttle preflight failed: expected about ${cpuThrottle}x, `
+      + `observed ${observedSlowdown.toFixed(2)}x`,
+    );
+  }
+  return {
+    method: 'same-interpreter-probe-ratio-v1',
+    control,
+    throttled,
+    expectedSlowdown: cpuThrottle,
+    observedSlowdown: Math.round(observedSlowdown * 100) / 100,
+    mechanism,
+  };
 }
 
 export const PROBE_JS = `(() => {

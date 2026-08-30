@@ -272,16 +272,16 @@ test('collector defaults historical Web records to jit x1 and never mixes regime
     });
     const webCohorts = out.comparison.harnesses.filter(({ harness }) => harness === 'web');
     assert.deepEqual(webCohorts.map(({ jsRegime, cpuThrottle }) =>
-      [jsRegime, cpuThrottle]), [['interp', 4], ['jit', 1]]);
+      [jsRegime, cpuThrottle]), [['jit', 1], ['interp', 4]]);
     assert.deepEqual(webCohorts.map(({ sourceRunFiles }) => sourceRunFiles), [
-      ['interp-react-v3.json', 'interp-vue-v3.json'],
       ['baseline-v2.json'],
+      ['interp-react-v3.json', 'interp-vue-v3.json'],
     ]);
     assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jit').length, 2);
     assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'interp').length, 2);
     assert.deepEqual(Object.keys(out.machineRegimes).sort(), [
-      'same-machine|interp:--expose-gc,--no-opt,--no-sparkplug,--no-maglev:4',
-      'same-machine|jit:--expose-gc:1',
+      'same-machine|interp:--expose-gc,--no-opt,--no-sparkplug,--no-maglev:4:page-cdp',
+      'same-machine|jit:--expose-gc:1:none',
     ]);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -1174,6 +1174,46 @@ test('collector archives but never ranks background CPU from a page-only throttl
   }
 });
 
+test('collector keeps background CPU eligible for a whole-process throttled lane', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-process-throttled-bts-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const environment = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+      throttleScope: 'process-cgroup',
+    };
+    const measured = (metric) => ({
+      suite: 'table', harness: 'web', environment, entry: 'react', workload: 'create', scale: 10000,
+      metric,
+      boundary: metric === 'btsCpu'
+        ? 'sampled-js-cpu-background-realm'
+        : 'pointerdown-to-dom-predicate',
+      unit: 'ms', samples: [10, 11], attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/throttled.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 25 },
+        receipt: { comparabilityCohort: 'sha256:process-throttled' },
+      },
+      records: [measured('latency'), measured('btsCpu')],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    const bts = out.comparisonRecords.find(({ metric }) => metric === 'btsCpu');
+    assert.equal(bts?.throttleScope, 'process-cgroup');
+    assert.notEqual(bts?.comparabilityStatus, 'invalid-measurement');
+    assert.equal(bts?.rankingEligible, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector rejects prospective sampling mismatches and preserves complete storm cohorts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -1497,8 +1537,9 @@ test('history audits every run but publishes only complete source-defined featur
       '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
     )));
   assert.ok(native);
-  assert.equal(native.harnesses[0].rankEligible, true);
-  assert.equal(native.harnesses[0].sourceRunFiles.length, 1);
+  const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');
+  assert.equal(nativeCohort.rankEligible, true);
+  assert.equal(nativeCohort.sourceRunFiles.length, 1);
   assert.equal(out.history.checkpoints.some((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',

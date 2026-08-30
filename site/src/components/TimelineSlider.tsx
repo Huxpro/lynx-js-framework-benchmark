@@ -43,7 +43,9 @@ export function TimelineSlider({
   const cohorts = checkpoint.harnesses.map((cohort) => {
     const environment = cohort.harness === 'web'
       ? `Web ${cohort.jsRegime === 'interp' ? 'Ignition' : 'JIT'} ${
-        cohort.cpuThrottle === 1 ? '1×' : `MTS ${cohort.cpuThrottle ?? 1}×`
+        cohort.cpuThrottle === 1
+          ? '1×'
+          : `${cohort.throttleScope === 'page-cdp' ? 'mixed' : 'process'} ${cohort.cpuThrottle ?? 1}×`
       }`
       : 'Native';
     return `${environment} ${cohort.entryIds.length}${cohort.rankEligible ? '' : text(' observation', '（观察值）')}`;
@@ -80,19 +82,22 @@ export function TimelineSlider({
                   const available = checkpoint.harnesses.some((cohort) => cohort.harness === 'web'
                     && cohort.jsRegime === candidate.jsRegime
                     && cohort.jsFlags === candidate.jsFlags
-                    && cohort.cpuThrottle === candidate.cpuThrottle);
+                    && cohort.cpuThrottle === candidate.cpuThrottle
+                    && cohort.throttleScope === candidate.throttleScope);
                   return (
                     <button
                       key={candidate.id}
                       type="button"
                       aria-pressed={regime.jsRegime === candidate.jsRegime
                         && regime.jsFlags === candidate.jsFlags
-                        && regime.cpuThrottle === candidate.cpuThrottle}
+                        && regime.cpuThrottle === candidate.cpuThrottle
+                        && regime.throttleScope === candidate.throttleScope}
                       disabled={!available}
                       onClick={() => onRegimeChange({
                         jsRegime: candidate.jsRegime,
                         jsFlags: candidate.jsFlags,
                         cpuThrottle: candidate.cpuThrottle,
+                        throttleScope: candidate.throttleScope,
                       })}
                     >{candidate.label}</button>
                   );

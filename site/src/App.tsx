@@ -82,7 +82,12 @@ function initialWebRegime(): WebRegime {
   const match = WEB_REGIMES.find((candidate) => candidate.id === id);
   return match == null
     ? DEFAULT_WEB_REGIME
-    : { jsRegime: match.jsRegime, jsFlags: match.jsFlags, cpuThrottle: match.cpuThrottle };
+    : {
+      jsRegime: match.jsRegime,
+      jsFlags: match.jsFlags,
+      cpuThrottle: match.cpuThrottle,
+      throttleScope: match.throttleScope,
+    };
 }
 
 function AppContent({
@@ -107,7 +112,8 @@ function AppContent({
     .find((cohort) => cohort.harness === harness && (harness !== 'web'
       || (cohort.jsRegime === regime.jsRegime
         && cohort.jsFlags === regime.jsFlags
-        && cohort.cpuThrottle === regime.cpuThrottle)))?.entryIds ?? [];
+        && cohort.cpuThrottle === regime.cpuThrottle
+        && cohort.throttleScope === regime.throttleScope)))?.entryIds ?? [];
   const cohortKey = `${snapshot.id}:${harness}:${webRegimeId(regime)}`;
   const previousCohort = useRef(cohortKey);
   const [selected, setSelected] = useState<Set<string>>(() => initialSelection(cohortEntryIds));
@@ -481,7 +487,8 @@ export default function App() {
     const candidate = TIMELINE_SNAPSHOTS[index];
     const regimeAvailable = candidate.comparison.harnesses.some((cohort) => cohort.harness === 'web'
       && cohort.jsRegime === regime.jsRegime && cohort.jsFlags === regime.jsFlags
-      && cohort.cpuThrottle === regime.cpuThrottle);
+      && cohort.cpuThrottle === regime.cpuThrottle
+      && cohort.throttleScope === regime.throttleScope);
     if (!regimeAvailable) {
       setRegime(DEFAULT_WEB_REGIME);
       params.delete('regime');

@@ -15,34 +15,47 @@
 
 import { summarize } from './stats.mjs';
 
-export const SCHEMA_VERSION = 3;
-export const LEGACY_SCHEMA_VERSIONS = [2];
+export const SCHEMA_VERSION = 4;
+export const LEGACY_SCHEMA_VERSIONS = [2, 3];
 
 export const DEFAULT_WEB_REGIME = Object.freeze({
   jsRegime: 'jit',
   jsFlags: '--expose-gc',
   cpuThrottle: 1,
+  throttleScope: 'none',
 });
 
 export const INTERP_WEB_JS_FLAGS = '--expose-gc,--no-opt,--no-sparkplug,--no-maglev';
 
 export function normalizeWebRegime(record) {
-  if (record.harness !== 'web') return { jsRegime: null, jsFlags: null, cpuThrottle: null };
+  if (record.harness !== 'web') return {
+    jsRegime: null, jsFlags: null, cpuThrottle: null, throttleScope: null,
+  };
   const environment = record.environment != null
     && typeof record.environment === 'object'
     && !Array.isArray(record.environment)
     ? record.environment
     : {};
+  const cpuThrottle = environment.cpuThrottle
+    ?? record.cpuThrottle
+    ?? DEFAULT_WEB_REGIME.cpuThrottle;
   return {
     jsRegime: environment.jsRegime ?? record.jsRegime ?? DEFAULT_WEB_REGIME.jsRegime,
     jsFlags: environment.jsFlags ?? record.jsFlags ?? DEFAULT_WEB_REGIME.jsFlags,
-    cpuThrottle: environment.cpuThrottle ?? record.cpuThrottle ?? DEFAULT_WEB_REGIME.cpuThrottle,
+    cpuThrottle,
+    // v2/v3 runs predate the scope field. Their only throttled implementation
+    // was Emulation.setCPUThrottlingRate on the page target.
+    throttleScope: environment.throttleScope
+      ?? record.throttleScope
+      ?? (cpuThrottle > 1 ? 'page-cdp' : DEFAULT_WEB_REGIME.throttleScope),
   };
 }
 
 export function webRegimeKey(record) {
-  const { jsRegime, jsFlags, cpuThrottle } = normalizeWebRegime(record);
-  return record.harness === 'web' ? `${jsRegime}:${jsFlags}:${cpuThrottle}` : 'native';
+  const { jsRegime, jsFlags, cpuThrottle, throttleScope } = normalizeWebRegime(record);
+  return record.harness === 'web'
+    ? `${jsRegime}:${jsFlags}:${cpuThrottle}:${throttleScope}`
+    : 'native';
 }
 
 export const COMPARABILITY_KEYS = [
@@ -132,6 +145,9 @@ export function makeRecord({
     ? (jsRegime === 'interp' ? INTERP_WEB_JS_FLAGS : DEFAULT_WEB_REGIME.jsFlags)
     : null,
   cpuThrottle = harness === 'web' ? DEFAULT_WEB_REGIME.cpuThrottle : null,
+  throttleScope = harness === 'web'
+    ? (cpuThrottle > 1 ? 'page-cdp' : DEFAULT_WEB_REGIME.throttleScope)
+    : null,
   entry,
   workload,
   scale,
@@ -161,11 +177,17 @@ export function makeRecord({
     if (typeof cpuThrottle !== 'number' || !Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
       throw new Error(`invalid Web cpuThrottle: ${cpuThrottle}`);
     }
-  } else if (jsRegime != null || jsFlags != null || cpuThrottle != null) {
+    if (!['none', 'page-cdp', 'process-cgroup'].includes(throttleScope)) {
+      throw new Error(`invalid Web throttleScope: ${throttleScope}`);
+    }
+    if ((cpuThrottle === 1) !== (throttleScope === 'none')) {
+      throw new Error(`Web throttleScope ${throttleScope} is incompatible with ${cpuThrottle}x CPU`);
+    }
+  } else if (jsRegime != null || jsFlags != null || cpuThrottle != null || throttleScope != null) {
     throw new Error('JS execution regimes are Web-only and cannot be attached to Native records');
   }
   const recordEnvironment = harness === 'web'
-    ? { jsRegime, jsFlags, cpuThrottle }
+    ? { jsRegime, jsFlags, cpuThrottle, throttleScope }
     : environment;
   const record = {
     suite,

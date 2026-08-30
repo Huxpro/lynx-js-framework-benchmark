@@ -131,7 +131,8 @@ function classifyComparability(run, records) {
     const problems = samplingProblems(run, record);
     const unthrottledWorkerCpu = record.harness === 'web'
       && record.metric === 'btsCpu'
-      && record.cpuThrottle > 1;
+      && record.cpuThrottle > 1
+      && record.throttleScope === 'page-cdp';
     let comparabilityStatus = null;
     const comparabilityReasons = [];
     if (unthrottledWorkerCpu) {
@@ -288,7 +289,7 @@ const normalizedEntryId = (run, entry) => {
 const normalizeRecord = (run, record) => {
   const entry = normalizedEntryId(run, record.entry);
   const regime = normalizeWebRegime(record);
-  // Source schema-v3 Web records devote `environment` to the execution-regime
+  // Prospective Web records devote `environment` to the execution-regime
   // object requested by issue #40. The derived dataset retains the historical
   // runtime label for existing site consumers and exposes normalized lane
   // fields alongside it. Native environment strings are never rewritten.
@@ -307,6 +308,14 @@ const normalizeRecord = (run, record) => {
     }
     if (!Number.isFinite(regime.cpuThrottle) || regime.cpuThrottle < 1) {
       throw new Error(`invalid Web cpuThrottle: ${regime.cpuThrottle}`);
+    }
+    if (!['none', 'page-cdp', 'process-cgroup'].includes(regime.throttleScope)) {
+      throw new Error(`invalid Web throttleScope: ${regime.throttleScope}`);
+    }
+    if ((regime.cpuThrottle === 1) !== (regime.throttleScope === 'none')) {
+      throw new Error(
+        `Web throttleScope ${regime.throttleScope} is incompatible with ${regime.cpuThrottle}x CPU`,
+      );
     }
   }
   const normalized = entry === record.entry
@@ -327,13 +336,14 @@ const normalizeRun = (rawRun, file) => {
       if (environment == null || typeof environment !== 'object' || Array.isArray(environment)
         || !Object.hasOwn(environment, 'jsRegime')
         || !Object.hasOwn(environment, 'jsFlags')
-        || !Object.hasOwn(environment, 'cpuThrottle')) {
+        || !Object.hasOwn(environment, 'cpuThrottle')
+        || !Object.hasOwn(environment, 'throttleScope')) {
         throw new Error(
           `${file}: schema v${SCHEMA_VERSION} Web record ${index} is missing its environment regime`,
         );
       }
       if (Object.hasOwn(record, 'jsRegime') || Object.hasOwn(record, 'jsFlags')
-        || Object.hasOwn(record, 'cpuThrottle')) {
+        || Object.hasOwn(record, 'cpuThrottle') || Object.hasOwn(record, 'throttleScope')) {
         throw new Error(
           `${file}: schema v${SCHEMA_VERSION} Web record ${index} stores its regime outside environment`,
         );
@@ -341,6 +351,7 @@ const normalizeRun = (rawRun, file) => {
     }
     if (record.harness !== 'web'
       && (record.jsRegime != null || record.jsFlags != null || record.cpuThrottle != null
+        || record.throttleScope != null
         || (record.environment != null && typeof record.environment === 'object'))) {
       throw new Error(`${file}: record ${index} attaches a Web JS regime to ${record.harness}`);
     }
@@ -769,6 +780,7 @@ const stormTransportEvidence = (run, record) => {
     && candidate.jsRegime === record.jsRegime
     && candidate.jsFlags === record.jsFlags
     && candidate.cpuThrottle === record.cpuThrottle
+    && candidate.throttleScope === record.throttleScope
     && candidate.workload === record.workload
     && candidate.scale === record.scale
     && candidate.metric === metric)?.median ?? null;
@@ -804,6 +816,7 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     jsRegime: record.jsRegime,
     jsFlags: record.jsFlags,
     cpuThrottle: record.cpuThrottle,
+    throttleScope: record.throttleScope,
     entry,
     ...(sourceEntry === entry ? {} : { sourceEntry }),
     workload: record.workload,
@@ -1194,12 +1207,14 @@ const buildHistory = ({
         && (cohort.harness !== 'web'
           || (record.jsRegime === cohort.jsRegime
             && record.jsFlags === cohort.jsFlags
-            && record.cpuThrottle === cohort.cpuThrottle))),
+            && record.cpuThrottle === cohort.cpuThrottle
+            && record.throttleScope === cohort.throttleScope))),
       cohort.entryIds,
     ).map((record) => ({
       ...record,
       cohortId: `current:${cohort.harness}:${cohort.machineId}:`
-        + `${cohort.jsRegime ?? 'native'}:${cohort.jsFlags ?? ''}:${cohort.cpuThrottle ?? 0}`,
+        + `${cohort.jsRegime ?? 'native'}:${cohort.jsFlags ?? ''}:${cohort.cpuThrottle ?? 0}:`
+        + `${cohort.throttleScope ?? 'native'}`,
       rankEligible: true,
     })));
   const currentActiveRecordIndexes = currentHistoryRecords.map(
@@ -1226,6 +1241,7 @@ const buildHistory = ({
       harness: cohort.harness, environment: cohort.environment, machineId: cohort.machineId,
       jsRegime: cohort.jsRegime ?? null, jsFlags: cohort.jsFlags ?? null,
       cpuThrottle: cohort.cpuThrottle ?? null,
+      throttleScope: cohort.throttleScope ?? null,
       sourceRunFiles: cohort.sourceRunFiles, entryIds: cohort.entryIds, rankEligible: true,
     })),
   });
@@ -1377,7 +1393,7 @@ export function collectRuns({
         ...m,
         machineRegimeId,
         ...(regimeKey === 'native'
-          ? { jsRegime: null, jsFlags: null, cpuThrottle: null }
+          ? { jsRegime: null, jsFlags: null, cpuThrottle: null, throttleScope: null }
           : normalizeWebRegime(run.records.find((record) => record.harness === 'web'))),
         latestCalibration: run.meta.calibration,
         latestRunFile: file,
@@ -1399,7 +1415,7 @@ export function collectRuns({
         records: view.records.filter((record) => webRegimeKey(record) === candidateRegime),
       };
       const candidate = { file, run: regimeView };
-      if (rawRun.schemaVersion === SCHEMA_VERSION) {
+      if (rawRun.schemaVersion === SCHEMA_VERSION || rawRun.schemaVersion === 3) {
         const groupId = `${m.id}|${candidateRegime}`;
         const group = prospectiveWebGroups.get(groupId) ?? {
           machineId: m.id,
@@ -1444,7 +1460,8 @@ export function collectRuns({
     }
   }
 
-  comparisonRun = comparisonRuns.get('jit:1')
+  const defaultWebRegimeKey = 'jit:--expose-gc:1:none';
+  comparisonRun = comparisonRuns.get(defaultWebRegimeKey)
     ?? [...comparisonRuns.values()].sort((left, right) =>
       String(right.run.meta.generatedAt).localeCompare(String(left.run.meta.generatedAt)))[0]
     ?? null;
@@ -1454,8 +1471,8 @@ export function collectRuns({
   }
   const selectedWebComparisons = [...comparisonRuns.entries()]
     .sort(([left], [right]) => {
-      if (left === 'jit:1') return -1;
-      if (right === 'jit:1') return 1;
+      if (left === defaultWebRegimeKey) return -1;
+      if (right === defaultWebRegimeKey) return 1;
       return left.localeCompare(right, undefined, { numeric: true });
     })
     .map(([regimeKey, candidate]) => ({ regimeKey, ...candidate }));

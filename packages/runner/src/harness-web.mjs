@@ -223,6 +223,7 @@ export async function runTableSuite({
   includeMemory = true,
   jsRegime = 'jit',
   cpuThrottle = 1,
+  cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
   const bundle = bundleFor(entry, { rows: 0 });
@@ -234,7 +235,7 @@ export async function runTableSuite({
 
   // Warm page shared by non-storm cases.
   const { page, attach } = await openBenchPage({
-    browser, origin, bundleUrl, cdp, cpuThrottle,
+    browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
   });
   await waitReady(page);
   const profiler = await profilerFor(page, attach);
@@ -308,9 +309,11 @@ export async function runTableSuite({
   try {
     if (!includeMemory) return await runStormCases({
       entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-      jsRegime, cpuThrottle,
+      jsRegime, cpuThrottle, cdpCpuThrottle,
     });
-    const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp, cpuThrottle });
+    const fresh = await openBenchPage({
+      browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+    });
     memoryPage = fresh.page;
     await waitReady(memoryPage);
     await clickButton(memoryPage, CREATE_BUTTON[10000]);
@@ -368,13 +371,13 @@ export async function runTableSuite({
 
   return runStormCases({
     entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-    jsRegime, cpuThrottle,
+    jsRegime, cpuThrottle, cdpCpuThrottle,
   });
 }
 
 async function runStormCases({
   entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-  jsRegime, cpuThrottle,
+  jsRegime, cpuThrottle, cdpCpuThrottle = cpuThrottle,
 }) {
   // Storm cases: fresh page per rep.
   for (const kase of cases) {
@@ -385,7 +388,9 @@ async function runStormCases({
       let dnfCount = 0;
       const failures = [];
       for (let rep = 0; rep < stormReps; rep++) {
-        const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp, cpuThrottle });
+        const fresh = await openBenchPage({
+          browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+        });
         try {
           await waitReady(fresh.page);
           const freshProfiler = await profilerFor(fresh.page, fresh.attach);
@@ -514,6 +519,7 @@ function emitOpRecords({
 
 export async function runStartupSuite({
   entry, scales, reps, browser, origin, cdp, log, jsRegime = 'jit', cpuThrottle = 1,
+  cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
   const kase = STARTUP_CASES[0];
@@ -530,7 +536,9 @@ export async function runStartupSuite({
       const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
       try {
         await page.goto(`${origin}/`, { waitUntil: 'load' });
-        const attach = await attachToPageAndWorkers(cdp, origin, { cpuThrottle });
+        const attach = await attachToPageAndWorkers(cdp, origin, {
+          cpuThrottle: cdpCpuThrottle,
+        });
         attach.client = cdp;
         // Profile from before view attach; the bg worker session joins on boot.
         const pageProfiler = new RealmProfiler(cdp, [{ key: 'mts', sessionId: attach.pageSession }]);
@@ -634,13 +642,17 @@ export async function runWebHarness({
   includeMemory = true,
   jit = 'jit',
   cpuThrottle = 1,
+  throttleScope = 'none',
 }) {
   const bundleRoots = {};
   for (const e of entries) bundleRoots[e.id] = e.distDir;
   const server = await startServer({ bundleRoots });
-  const { browser, cdpPort, executablePath, browserVersion } = await launchBrowser({ jit });
+  const {
+    browser, cdpPort, executablePath, browserVersion, processThrottle, closeBrowser,
+  } = await launchBrowser({ jit, cpuThrottle, throttleScope });
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
+  const cdpCpuThrottle = throttleScope === 'page-cdp' ? cpuThrottle : 1;
   try {
     for (const entry of entries) {
       log(`[entry] ${entry.id} (${entry.label})`);
@@ -648,7 +660,7 @@ export async function runWebHarness({
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
           browser, origin: server.origin, cdp, log, includeMemory,
-          jsRegime: jit, cpuThrottle,
+          jsRegime: jit, cpuThrottle, cdpCpuThrottle,
         }));
       }
       if (suites.includes('startup')) {
@@ -658,14 +670,22 @@ export async function runWebHarness({
             ?? [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
-          jsRegime: jit, cpuThrottle,
+          jsRegime: jit, cpuThrottle, cdpCpuThrottle,
         }));
       }
     }
   } finally {
     cdp.close();
-    await browser.close();
+    await closeBrowser();
     await server.close();
   }
-  return { records, executablePath, browserVersion };
+  return {
+    records: records.map((record) => ({
+      ...record,
+      environment: { ...record.environment, throttleScope },
+    })),
+    executablePath,
+    browserVersion,
+    processThrottle,
+  };
 }

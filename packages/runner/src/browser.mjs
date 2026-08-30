@@ -9,6 +9,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
+import { prepareProcessThrottle } from './process-throttle.mjs';
+
 export function resolveChromium() {
   if (process.env.PLAYWRIGHT_CHROMIUM_PATH) return process.env.PLAYWRIGHT_CHROMIUM_PATH;
   const candidates = [];
@@ -82,17 +84,64 @@ export function chromiumArgs({ jit = 'jit', allowNativesSyntax = false } = {}) {
 }
 
 export async function launchBrowser({
-  headless = true, jit = 'jit', allowNativesSyntax = false,
+  headless = true,
+  jit = 'jit',
+  allowNativesSyntax = false,
+  cpuThrottle = 1,
+  throttleScope = 'none',
 } = {}) {
   const executablePath = resolveChromium();
   const cdpPort = await freePort();
-  const browser = await chromium.launch({
+  const launchOptions = {
     headless,
     executablePath,
     args: [
       `--remote-debugging-port=${cdpPort}`,
       ...chromiumArgs({ jit, allowNativesSyntax }),
     ],
-  });
-  return { browser, cdpPort, executablePath, browserVersion: browser.version() };
+  };
+  if (throttleScope !== 'process-cgroup') {
+    const browser = await chromium.launch(launchOptions);
+    return {
+      browser,
+      cdpPort,
+      executablePath,
+      browserVersion: browser.version(),
+      processThrottle: null,
+      closeBrowser: () => browser.close(),
+    };
+  }
+
+  // launchServer is used only for the whole-process calibration lane because
+  // its process lifecycle remains visible while a quota wrapper launches the
+  // complete Chromium tree. Defaults retain chromium.launch exactly.
+  const processThrottle = prepareProcessThrottle(cpuThrottle, executablePath);
+  let browserServer;
+  let browser;
+  try {
+    browserServer = await chromium.launchServer({
+      ...launchOptions,
+      executablePath: processThrottle.executablePath,
+    });
+    browser = await chromium.connect(browserServer.wsEndpoint());
+  } catch (error) {
+    await processThrottle.close();
+    await browserServer?.close();
+    throw error;
+  }
+  return {
+    browser,
+    cdpPort,
+    executablePath,
+    browserVersion: browser.version(),
+    processThrottle: processThrottle.receipt,
+    async closeBrowser() {
+      try {
+        await browser.close();
+      } finally {
+        await browserServer.close().catch(() => {});
+        await processThrottle.close();
+      }
+    },
+  };
 }
