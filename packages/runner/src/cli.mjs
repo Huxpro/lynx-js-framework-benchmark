@@ -2,7 +2,7 @@
 // lynx-bench CLI.
 //
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
-//                  [--suite table,startup] [--reps N] [--quick] [--label x]
+//                  [--suite table,startup,pipeline] [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
 //   lynx-bench preflight
 //   lynx-bench collect
@@ -92,9 +92,17 @@ async function cmdRun(args) {
   const cases = caseNames
     ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
     : TABLE_CASES;
-  const suites = list(args.suite) ?? ['table', 'startup'];
+  const suites = list(args.suite)
+    ?? (harness === 'web' ? ['table', 'startup', 'pipeline'] : ['table', 'startup']);
+  const unknownSuites = suites.filter((suite) => !['table', 'startup', 'pipeline'].includes(suite));
+  if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
   if (harness === 'native') {
+    if (suites.includes('pipeline')) {
+      throw new Error(
+        'The pipeline suite is unsupported on Native: no framework-neutral ElementPAPI seam exists.',
+      );
+    }
     if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
       throw new Error('Native run requires --adapter <module.mjs>.');
     }
@@ -415,7 +423,7 @@ function cmdList() {
       : 'no dist';
     console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}`);
   }
-  console.log('\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ') + ', startup');
+  console.log('\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ') + ', startup, pipeline');
 }
 
 const args = parseArgs(process.argv.slice(2));

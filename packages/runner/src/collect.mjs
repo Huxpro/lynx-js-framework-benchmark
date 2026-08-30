@@ -10,7 +10,13 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { comparisonKey, deriveRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import {
+  BOUNDARIES,
+  comparisonKey,
+  deriveRecord,
+  SCHEMA_VERSION,
+} from '@lynx-bench/shared/schema';
+import { PAPI_SEGMENTS } from '@lynx-bench/shared/pipeline';
 import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
@@ -21,6 +27,10 @@ import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
+import {
+  assertPipelineCoverage,
+  classifyPipelineCoverage,
+} from './pipeline-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   assertNativeDeviceCohort,
@@ -90,6 +100,147 @@ function stormWorkClassification(records, record) {
   return { status: 'unverified', expectedSequentialCommits: expected, observed };
 }
 
+const pipelineOperationKey = (record) => [
+  record.suite,
+  record.harness,
+  record.environment,
+  record.workload,
+  record.scale,
+].join('|');
+
+const stableJson = (value) => JSON.stringify(value);
+
+const pipelineTimeMetric = (segment) =>
+  `papi${segment[0].toUpperCase()}${segment.slice(1)}Time`;
+
+/**
+ * Materialize the residual only in the derived dataset. Raw run files retain
+ * operation time and host-boundary self-times, never their subtraction.
+ */
+export function derivePipelineResidualRecords(records) {
+  const residuals = [];
+  for (const operation of records.filter((record) =>
+    record.suite === 'pipeline' && record.metric === 'operationTime')) {
+    const siblings = records.filter((candidate) =>
+      operationCellKey(candidate) === operationCellKey(operation));
+    const segmentRecords = PAPI_SEGMENTS.map((segment) => {
+      const metric = pipelineTimeMetric(segment);
+      const matches = siblings.filter((candidate) => candidate.metric === metric);
+      if (matches.length !== 1) {
+        throw new Error(`pipeline operation requires exactly one ${metric} source record`);
+      }
+      return matches[0];
+    });
+    const operationSamples = operation.samples ?? [];
+    for (const segment of segmentRecords) {
+      if (!Array.isArray(segment.samples) || segment.samples.length !== operationSamples.length) {
+        throw new Error(`pipeline metric ${segment.metric} must align with operationTime samples`);
+      }
+      if (stableJson(segment.detailSamples) !== stableJson(operation.detailSamples)) {
+        throw new Error(`pipeline metric ${segment.metric} must share operationTime controls`);
+      }
+    }
+    const samples = operationSamples.map((operationMs, index) => {
+      const selfMs = segmentRecords.reduce((sum, segment) => sum + segment.samples[index], 0);
+      if (!Number.isFinite(operationMs) || !Number.isFinite(selfMs)) {
+        throw new Error('pipeline residual inputs must be finite');
+      }
+      if (selfMs > operationMs + 0.05) {
+        throw new Error(`pipeline PAPI self time ${selfMs}ms exceeds operation time ${operationMs}ms`);
+      }
+      return Math.max(0, operationMs - selfMs);
+    });
+    residuals.push(deriveRecord({
+      ...operation,
+      metric: 'outsidePapiTime',
+      boundary: BOUNDARIES.pipelineResidual,
+      samples,
+      detailSamples: operation.detailSamples,
+      derivedFrom: {
+        kind: 'aligned-sample-subtraction',
+        metrics: ['operationTime', ...segmentRecords.map((record) => record.metric)],
+      },
+    }));
+  }
+  return [...records, ...residuals];
+}
+
+export function pipelineRecordControl(record) {
+  const values = observationValues(record);
+  if (values.length === 0) {
+    return (record.dnfCount ?? 0) > 0
+      ? { status: 'incomplete', reason: 'pipeline-dnf-without-observation' }
+      : { status: 'invalid', reason: 'pipeline-has-no-observation-or-dnf' };
+  }
+  if (!Array.isArray(record.detailSamples) || record.detailSamples.length !== values.length) {
+    return { status: 'invalid', reason: 'pipeline-control-sample-count-mismatch' };
+  }
+  const identities = [];
+  for (const detail of record.detailSamples) {
+    if (
+      !Number.isInteger(detail?.requestedRows)
+      || !Number.isInteger(detail?.committedRows)
+      || detail.requestedRows !== record.scale
+      || detail.callMultiset == null
+      || typeof detail.callMultiset !== 'object'
+      || !Array.isArray(detail.surfaceNames)
+      || !detail.surfaceNames.includes('__FlushElementTree')
+    ) {
+      return { status: 'invalid', reason: 'pipeline-control-sample-invalid' };
+    }
+    identities.push(stableJson({
+      requestedRows: detail.requestedRows,
+      committedRows: detail.committedRows,
+      callMultiset: detail.callMultiset,
+      surfaceNames: detail.surfaceNames,
+    }));
+  }
+  if (new Set(identities).size !== 1) {
+    return { status: 'invalid', reason: 'pipeline-call-or-tree-control-varies-across-samples' };
+  }
+  const detail = record.detailSamples[0];
+  if ((record.dnfCount ?? 0) > 0) {
+    return {
+      status: 'incomplete',
+      reason: 'pipeline-dnf-observed',
+      requestedRows: detail.requestedRows,
+      committedRows: detail.committedRows,
+      callMultiset: detail.callMultiset,
+      surfaceNames: detail.surfaceNames,
+    };
+  }
+  return {
+    status: 'controlled',
+    requestedRows: detail.requestedRows,
+    committedRows: detail.committedRows,
+    callMultiset: detail.callMultiset,
+    surfaceNames: detail.surfaceNames,
+  };
+}
+
+export function pipelineWorkClassification(records, record) {
+  if (record.suite !== 'pipeline') return null;
+  const own = pipelineRecordControl(record);
+  if (own.status !== 'controlled') return own;
+
+  // Comparison eligibility is conservative at the whole operation cell: if
+  // any observed peer committed a different tree size, no segment in that
+  // cell is publishable as a cross-entry comparison.
+  const peerControls = records
+    .filter((candidate) => candidate.suite === 'pipeline'
+      && candidate.metric === 'operationTime'
+      && pipelineOperationKey(candidate) === pipelineOperationKey(record))
+    .map(pipelineRecordControl)
+    .filter((control) => control.status === 'controlled');
+  if (new Set(peerControls.map((control) => control.requestedRows)).size > 1) {
+    return { ...own, status: 'invalid', reason: 'pipeline-requested-tree-mismatch-between-entries' };
+  }
+  if (new Set(peerControls.map((control) => control.committedRows)).size > 1) {
+    return { ...own, status: 'invalid', reason: 'pipeline-committed-tree-mismatch-between-entries' };
+  }
+  return own;
+}
+
 function samplingProblems(run, record) {
   if (
     !run.meta.receipt
@@ -107,7 +258,12 @@ function samplingProblems(run, record) {
   if (!Number.isInteger(record.attemptedCount) || record.attemptedCount < sourceCount) {
     problems.push('attempted-count-invalid');
   }
-  if (record.metric === 'latency' || record.metric === 'fcp' || record.metric === 'settled') {
+  if (
+    record.metric === 'latency'
+    || record.metric === 'fcp'
+    || record.metric === 'settled'
+    || record.suite === 'pipeline'
+  ) {
     if (Number.isInteger(record.attemptedCount)) {
       const accounted = sourceCount + (record.dnfCount ?? 0);
       if (accounted < record.attemptedCount) problems.push('attempt-accounting-underflow');
@@ -121,6 +277,7 @@ function classifyComparability(run, records) {
   const cohort = run.meta.receipt?.comparabilityCohort ?? null;
   return records.map((record) => {
     const work = stormWorkClassification(records, record);
+    const pipeline = pipelineWorkClassification(records, record);
     const problems = samplingProblems(run, record);
     let comparabilityStatus = null;
     const comparabilityReasons = [];
@@ -131,6 +288,12 @@ function classifyComparability(run, records) {
     if (problems.length) {
       // Sampling accounting is a prospective source-integrity contract and
       // takes precedence over any derived work classification.
+    } else if (pipeline?.status === 'invalid') {
+      comparabilityStatus = 'incompatible-controls';
+      comparabilityReasons.push(pipeline.reason);
+    } else if (pipeline?.status === 'incomplete') {
+      comparabilityStatus = 'incomplete-work';
+      comparabilityReasons.push(pipeline.reason);
     } else if (work?.status === 'incomplete') {
       comparabilityStatus = 'incomplete-work';
       comparabilityReasons.push('storm-transport-below-sequential-tick-contract');
@@ -145,7 +308,8 @@ function classifyComparability(run, records) {
     }
     const rankingEligible = comparabilityStatus !== 'incomplete-work'
       && comparabilityStatus !== 'unverified-work'
-      && comparabilityStatus !== 'incompatible-sampling';
+      && comparabilityStatus !== 'incompatible-sampling'
+      && comparabilityStatus !== 'incompatible-controls';
     if (comparabilityStatus === null && cohort === null) {
       return { ...record, comparabilityStatus: 'legacy-unverified' };
     }
@@ -156,6 +320,7 @@ function classifyComparability(run, records) {
       ...(cohort ? { comparabilityCohort: cohort } : {}),
       rankingEligible,
       ...(work ? { workClassification: work } : {}),
+      ...(pipeline ? { pipelineControl: pipeline } : {}),
     };
   });
 }
@@ -280,6 +445,9 @@ const normalizeRun = (rawRun, file) => {
   }
   if (!Array.isArray(rawRun.records)) throw new Error(`${file}: records must be an array`);
   const normalizedRecords = rawRun.records.map((record, index) => {
+    if (record.suite === 'pipeline' && record.metric === 'outsidePapiTime') {
+      throw new Error(`${file}: outsidePapiTime is derived and must not be source-authored`);
+    }
     const hasRepeatedSource = Array.isArray(record.samples);
     const hasScalarSource = typeof record.value === 'number' && Number.isFinite(record.value);
     const hasLegacyScalar = record.samples == null && record.n === 1
@@ -299,7 +467,7 @@ const normalizeRun = (rawRun, file) => {
     }
     return normalizeRecord(rawRun, record);
   });
-  const records = classifyComparability(rawRun, normalizedRecords);
+  const records = classifyComparability(rawRun, derivePipelineResidualRecords(normalizedRecords));
   const seen = new Set();
   for (const record of records) {
     const key = [record.entry, cellKey(record)].join('|');
@@ -470,11 +638,46 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
+    // ElementPAPI attribution has its own complete-campaign selector below.
+    // It is descriptive evidence and must never replace or inflate the main
+    // table/startup comparison cohort.
+    && record.suite !== 'pipeline'
     && record.harness === harness
     && isComparisonVisible(record)
     && isPublishableRecord(run, record)
     && commitMatchesManifest(run, record, entryById)),
 });
+
+const currentPipelineCampaign = (runs, featuredIds, entryById) => {
+  let selected = null;
+  const entries = [...featuredIds].map((id) => entryById.get(id)).filter(Boolean);
+  for (const candidate of runs) {
+    const records = candidate.run.records.filter((record) =>
+      featuredIds.has(record.entry)
+      && record.harness === 'web'
+      && record.suite === 'pipeline'
+      && isBenchmarkRecord(record)
+      && isPublishableRecord(candidate.run, record)
+      && commitMatchesManifest(candidate.run, record, entryById));
+    if (!records.length) continue;
+    const coverage = classifyPipelineCoverage({
+      entries,
+      sourceRecords: records,
+      publishedRecords: records,
+    });
+    try {
+      assertPipelineCoverage(coverage);
+    } catch {
+      continue;
+    }
+    const score = [candidate.run.meta.generatedAt ?? candidate.file, candidate.file];
+    if (!selected || score[0] > selected.score[0]
+      || (score[0] === selected.score[0] && score[1] > selected.score[1])) {
+      selected = { ...candidate, records, coverage, score };
+    }
+  }
+  return selected;
+};
 
 const isBetterComparisonRun = (candidate, current, featuredIds) => {
   if (!current) return true;
@@ -667,6 +870,33 @@ const annotate = (run, file, record, comparisonKind = 'archive') => ({
   comparisonKind,
 });
 
+// Raw pipeline files deliberately repeat controls beside every source metric
+// so each record is independently auditable. The materialized site dataset is
+// not another source archive: keep full controls on operationTime, then retain
+// only aligned samples/accounting on its segment and residual siblings.
+const compactPipelineOutputRecord = (record) => {
+  if (record.suite !== 'pipeline') return record;
+  if (record.metric === 'operationTime') {
+    const compactDetail = (detail) => {
+      if (detail == null) return detail;
+      const { surfaceNames: _surfaceNames, ...rest } = detail;
+      return rest;
+    };
+    return {
+      ...record,
+      detail: compactDetail(record.detail),
+      detailSamples: record.detailSamples?.map(compactDetail) ?? record.detailSamples,
+    };
+  }
+  const {
+    detail: _detail,
+    detailSamples: _detailSamples,
+    pipelineControl: _pipelineControl,
+    ...compact
+  } = record;
+  return compact;
+};
+
 const annotateStatic = (entry, record) => ({
   ...deriveRecord(record),
   machineId: null,
@@ -745,7 +975,9 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     median: record.median,
     ci95: record.ci95,
     dnfCount: record.dnfCount,
-    detail: record.detail,
+    detail: record.suite === 'pipeline' && record.metric !== 'operationTime'
+      ? null
+      : record.detail,
     detailKind: record.detailKind,
     ...(record.failures?.length ? { failures: record.failures } : {}),
     machineId: run.meta.machine.id,
@@ -754,8 +986,18 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     entryCommit: sourceCommit(run, record),
     comparisonKind,
     cohortId,
-    rankEligible: transport?.comparable ?? true,
+    rankEligible: isRankingEligible(record) && (transport?.comparable ?? true),
+    ...(record.descriptiveEligible ? { descriptiveEligible: true } : {}),
+    ...(record.comparabilityStatus ? { comparabilityStatus: record.comparabilityStatus } : {}),
     ...(transport ? { transport } : {}),
+    ...(record.suite === 'pipeline' ? {
+      samples: record.samples,
+      attemptedCount: record.attemptedCount,
+      acceptedCount: record.acceptedCount,
+      ...(record.metric === 'operationTime' ? { detailSamples: record.detailSamples } : {}),
+      ...(record.derivedFrom ? { derivedFrom: record.derivedFrom } : {}),
+      ...(record.pipelineControl ? { pipelineControl: record.pipelineControl } : {}),
+    } : {}),
   };
 };
 
@@ -1114,16 +1356,40 @@ const buildHistory = ({
     }
   }
 
-  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) =>
-    completeMatrixRecords(
-      current.records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment),
+  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
+    const cohortRecords = current.records.filter((record) => record.harness === cohort.harness
+      && record.environment === cohort.environment);
+    const matrixRecords = completeMatrixRecords(
+      cohortRecords.filter((record) => record.suite !== 'pipeline'),
       cohort.entryIds,
-    ).map((record) => ({
-      ...record,
-      cohortId: `current:${cohort.harness}:${cohort.machineId}`,
-      rankEligible: true,
-    })));
+    );
+    const matrixSet = new Set(matrixRecords);
+    const pipelineRecords = cohortRecords.filter((record) =>
+      !matrixSet.has(record) && record.suite === 'pipeline' && isComparisonVisible(record));
+    return [...matrixRecords, ...pipelineRecords].map((record) => {
+      const sourceEntry = record.sourceEntry ?? record.entry;
+      const syntheticRun = {
+        meta: {
+          machine: { id: record.machineId },
+          generatedAt: record.runGeneratedAt,
+          entryCommits: { [sourceEntry]: record.entryCommit },
+        },
+        records: cohortRecords,
+      };
+      const history = historyRecord(
+        syntheticRun,
+        record.runFile,
+        record,
+        record.comparisonKind,
+        `current:${cohort.harness}:${cohort.machineId}`,
+      );
+      return matrixSet.has(record) ? history : {
+        ...history,
+        rankEligible: false,
+        descriptiveEligible: true,
+      };
+    });
+  });
   const currentActiveRecordIndexes = currentHistoryRecords.map(
     (_, index) => records.length + index,
   );
@@ -1138,6 +1404,7 @@ const buildHistory = ({
       + 'seven-entry cohort; storm experiments remain archive evidence.',
     current: true,
     nativeCoverage: current.nativeCoverage,
+    pipelineCoverage: current.pipelineCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
     identityPointers: identityPointers(currentHistoryRecords, entryById),
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
@@ -1303,8 +1570,18 @@ export function collectRuns({
     const entry = entryById.get(entryId);
     return entry ? (staticByEntry.get(entryId) ?? []).map((record) => annotateStatic(entry, record)) : [];
   });
+  const pipelineCampaign = currentPipelineCampaign(runs, featuredIds, entryById);
+  const pipelineSourceRecords = pipelineCampaign == null ? [] : pipelineCampaign.records.map(
+    (record) => compactPipelineOutputRecord(
+      annotate(pipelineCampaign.run, pipelineCampaign.file, record, 'same-run'),
+    ),
+  );
+  const pipelineCoverage = pipelineCampaign?.coverage ?? classifyPipelineCoverage({
+    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+  });
   const comparisonRecords = [
     ...comparisonSourceRecords.map((r) => annotate(comparisonRun.run, comparisonRun.file, r, 'same-run')),
+    ...pipelineSourceRecords,
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
@@ -1392,10 +1669,15 @@ export function collectRuns({
         generatedAt: comparisonRun.run.meta.generatedAt,
         machineId: comparisonRun.run.meta.machine.id,
         calibration: comparisonRun.run.meta.calibration,
-        sourceRunFiles: [comparisonRun.file],
+        sourceRunFiles: [...new Set([
+          comparisonRun.file,
+          ...(pipelineCampaign ? [pipelineCampaign.file] : []),
+        ])],
         entryIds: [...new Set(comparisonSourceRecords.map((r) => r.entry))].sort(),
         sourceRecordCount: comparisonSourceRecords.length,
-        recordCount: comparisonSourceRecords.length + comparisonStaticRecords.length,
+        recordCount: comparisonSourceRecords.length
+          + pipelineSourceRecords.length
+          + comparisonStaticRecords.length,
       },
       ...(nativeComparison ? [nativeComparison] : []),
     ],
@@ -1457,6 +1739,7 @@ export function collectRuns({
     },
     machines,
     records: [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile))
+      .map(compactPipelineOutputRecord)
       .concat(archiveStaticRecords),
     comparison,
     comparisonRecords,
@@ -1464,6 +1747,7 @@ export function collectRuns({
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
     nativeCoverage,
+    pipelineCoverage,
   };
   out.history = buildHistory({
     runs: retainedRuns,
@@ -1480,6 +1764,7 @@ export function collectRuns({
       nativeObservations: out.nativeObservations,
       nativeObservationRecords: out.nativeObservationRecords,
       nativeCoverage: out.nativeCoverage,
+      pipelineCoverage: out.pipelineCoverage,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

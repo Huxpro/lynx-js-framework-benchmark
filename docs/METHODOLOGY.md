@@ -92,6 +92,21 @@ metric rather than silently changing the upstream interaction formula.
   commit-only, one-directional). Bytes are the UTF-8 length of a stable JSON serialization —
   a structured-clone-cost proxy applied identically to every entry (documented limitation:
   transferables are size-tagged, not serialized).
+- **Element pipeline (Web-only)**: a dedicated `/pipeline` harness page intercepts the one
+  `Object.assign` that installs web-core's ElementPAPI surface onto its same-origin sandboxed MTS
+  iframe. The outer hook is installed before web-core boots and wraps every framework identically.
+  Each sample retains synchronous self-time and call counts for `create / props / events /
+  topology / read / flush`, together with the complete call multiset, intercepted surface,
+  requested rows, and committed rows. Nested host calls are subtracted from their parent's
+  self-time. This is a separate `pipeline` suite: the ordinary table/startup page installs no PAPI
+  wrappers, so the new instrument cannot change an already-published latency. Raw runs retain only
+  the operation interval and six synchronous self-time series; `collect` derives
+  `outsidePapiTime` by subtracting aligned samples. It means the black-box
+  pointerdown→predicate interval minus synchronous PAPI self-time; it includes
+  framework script, scheduling, and asynchronous style/layout/paint and is **not** labelled
+  framework-only time. Likewise, `__FlushElementTree` self-time is synchronous web-core flush
+  bookkeeping/root attach, not the browser's full layout/commit cost. Native is explicitly
+  unsupported because it has no equivalent framework-neutral seam; no proxy value is emitted.
 - **CPU**: the CDP sampling profiler (200µs) attached separately to the page (MTS + harness
   overhead; the UI thread) and the `lynx-bg` worker (BTS), summing non-idle sample time.
   Includes GC and microtasks. The two threads run concurrently — per-realm CPU values are
@@ -102,6 +117,11 @@ metric rather than silently changing the upstream interaction formula.
   not retained-heap deltas or native-process memory.
 - Boundaries are recorded on every record (`boundary` field); records with different
   boundaries are never comparable.
+- Pipeline comparison eligibility is derived, never source-authored. A sample set is rejected when
+  its call multiset, intercepted surface, requested rows, or committed rows varies across
+  repetitions; an operation cell is rejected for every entry when observed peers commit different
+  tree sizes. Call multisets may differ *between* frameworks—the counts are a result—but must be
+  stable within one entry/case/scale sample set.
 
 ## Fairness
 

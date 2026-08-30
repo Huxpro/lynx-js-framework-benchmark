@@ -1329,7 +1329,8 @@ test('history audits every run but publishes only complete source-defined featur
     const records = checkpoint.activeRecordIndexes.map((index) => out.history.records[index]);
     for (const cohort of checkpoint.harnesses) {
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment);
+        && record.environment === cohort.environment
+        && record.rankEligible);
       const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [
@@ -1339,6 +1340,39 @@ test('history audits every run but publishes only complete source-defined featur
       for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
     }
   }
+
+  const currentRecords = out.history.checkpoints.find((checkpoint) => checkpoint.id === 'current-main')
+    .activeRecordIndexes.map((index) => out.history.records[index]);
+  const currentCheckpoint = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.id === 'current-main');
+  const pipelineOperations = currentRecords.filter((record) =>
+    record.suite === 'pipeline' && record.metric === 'operationTime');
+  const materializedPipeline = out.comparisonRecords.filter((record) =>
+    record.suite === 'pipeline');
+  assert.equal(currentCheckpoint.pipelineCoverage.expectedCellCount, 84);
+  assert.equal([0, 84].includes(pipelineOperations.length), true);
+  if (pipelineOperations.length === 0) {
+    assert.deepEqual(currentCheckpoint.pipelineCoverage.summary, { unscheduled: 84 });
+  } else {
+    assert.deepEqual(
+      [...new Set(pipelineOperations.map((record) => record.entry))].sort(),
+      ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+    );
+    assert.equal(new Set(pipelineOperations.map((record) =>
+      `${record.entry}|${record.workload}|${record.scale}`)).size, 84);
+  }
+  assert.equal(pipelineOperations.every((record) =>
+    (record.samples.length > 0 || record.dnfCount > 0)
+    && record.detailSamples.length === record.samples.length
+    && !record.rankEligible
+    && record.descriptiveEligible), true);
+  assert.equal(materializedPipeline.filter((record) =>
+    record.metric !== 'operationTime').every((record) =>
+    record.detailSamples == null && record.pipelineControl == null), true);
+  assert.equal(materializedPipeline.filter((record) =>
+    record.metric === 'operationTime').every((record) =>
+    record.detailSamples.every((detail) => detail.surfaceNames == null)
+    && record.pipelineControl.surfaceNames.includes('__FlushElementTree')), true);
 
   const aug8File = '2026-08-08T07-22-33-b0fcfd511132-full.json';
   const aug8 = out.history.checkpoints.find((checkpoint) =>
@@ -1402,8 +1436,9 @@ test('history audits every run but publishes only complete source-defined featur
       '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
     )));
   assert.ok(native);
-  assert.equal(native.harnesses[0].rankEligible, true);
-  assert.equal(native.harnesses[0].sourceRunFiles.length, 1);
+  const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');
+  assert.equal(nativeCohort.rankEligible, true);
+  assert.equal(nativeCohort.sourceRunFiles.length, 1);
   assert.equal(out.history.checkpoints.some((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',

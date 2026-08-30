@@ -16,7 +16,7 @@ See [docs/DATA_MODEL.md](./docs/DATA_MODEL.md).
 
 ```bash
 pnpm install
-pnpm bench run            # full matrix → results/runs/<stamp>-<machine>.json
+pnpm bench run            # Web table + startup + pipeline → results/runs/<stamp>-<machine>.json
 pnpm bench collect        # explicitly regenerate the derived results/latest.json cache
 pnpm site:dev             # regenerates the cache, then starts the results site
 ```
@@ -116,6 +116,7 @@ device-only dependency when selected.
 pnpm bench run --entry vue-vapor --case select --scale 10000 --reps 20   # one cell, high N
 pnpm bench run --quick                                                   # fast full sweep
 pnpm bench run --suite startup                                           # one suite
+pnpm bench run --suite pipeline --case select --scale 1000 --reps 20     # host-boundary attribution
 pnpm bench list                                                          # entries & cases
 pnpm bench preflight                                                     # machine calibration only
 ```
@@ -147,6 +148,7 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | layer | metrics | how |
 | --- | --- | --- |
 | time | Web `latency`/`fcp`/`settled`; Native `latency` and pipeline startup where available | real input; harness-specific boundaries are stored on every record |
+| element pipeline | Web-only synchronous ElementPAPI segment self-time/calls + outside-PAPI residual | dedicated capture page; raw tree/call controls gate derived comparisons; Native is unsupported |
 | dual-thread | `btsCpu` / `mtsCpu` | CDP sampling profiler attached per realm (page + `lynx-bg` worker) |
 | wire | messages & bytes **both directions**, per rpc endpoint | `MessagePort` patch over web-core's BTS↔MTS channel — one instrument for every framework |
 | static | bundle raw/gzip, MTS/BTS section split | bundle inspection |

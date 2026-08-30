@@ -106,6 +106,8 @@ export function workloadReceipt(root = repoRoot()) {
   const files = [
     'packages/shared/src/workloads.mjs',
     'packages/shared/src/page-instrument.mjs',
+    'packages/shared/src/pipeline.mjs',
+    'packages/runner/src/pipeline-attribution.mjs',
   ];
   const hashes = Object.fromEntries(files.map((relative) => [
     relative, fileSha256(path.join(root, relative)),
@@ -147,6 +149,7 @@ export function samplingPolicy({ reps, stormReps, startupReps }) {
     },
     acceptance: {
       table: 'dom-predicate-completed-before-timeout',
+      pipeline: 'dom-predicate-completed-with-tree-and-call-multiset-controls',
       storm: 'dom-predicate-and-minimum-one-rpc-message-each-direction-per-tick',
       startup: 'first-content-observed-before-timeout',
     },

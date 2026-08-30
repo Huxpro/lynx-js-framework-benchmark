@@ -10,6 +10,8 @@ const scaleTrends = fs.readFileSync(new URL('./components/ScaleTrends.tsx', impo
 const scaleComposite = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const responsiveCopy = fs.readFileSync(new URL('./components/ResponsiveCopy.tsx', import.meta.url), 'utf8');
 const historyRanking = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
+const pipelineAttribution = fs.readFileSync(new URL('./components/PipelineAttribution.tsx', import.meta.url), 'utf8');
+const pipelineVocabulary = fs.readFileSync(new URL('../../packages/shared/src/pipeline.mjs', import.meta.url), 'utf8');
 
 test('expanded exact-data tables scroll inside their card on narrow viewports', () => {
   const rule = css.match(/details\.data-table\s*\{([^}]*)\}/)?.[1] ?? '';
@@ -163,6 +165,39 @@ test('visualization appendices stay compact until their audited table is opened'
   assert.match(css, /\.appendix-table-scroll\s*\{/);
   assert.match(css, /max-height\s*:\s*30rem/);
   assert.match(css, /overflow\s*:\s*auto/);
+});
+
+test('pipeline attribution names time by owner and lets framework audits expand independently', () => {
+  const rail = css.match(/\.pipeline-cell-rail\s*\{([^}]*)\}/)?.[1] ?? '';
+  const summary = css.match(/\.pipeline-row-summary\s*\{([^}]*)\}/)?.[1] ?? '';
+
+  assert.match(rail, /grid-auto-flow\s*:\s*column/);
+  assert.match(rail, /overflow-x\s*:\s*auto/);
+  assert.match(summary, /min-height\s*:\s*3\.2rem/);
+  assert.match(pipelineAttribution, /const \[expandedEntries, setExpandedEntries\].*new Set\(\)/);
+  assert.match(pipelineAttribution, /const next = new Set\(current\)/);
+  assert.match(pipelineAttribution, /next\.delete\(row\.entry\.id\)/);
+  assert.match(pipelineAttribution, /next\.add\(row\.entry\.id\)/);
+  assert.match(pipelineAttribution, /aria-expanded=\{expanded\}/);
+  assert.match(pipelineAttribution, /expanded \? \(/);
+  assert.match(pipelineAttribution, /Framework side/);
+  assert.match(pipelineAttribution, /Web-host engine bill/);
+  assert.match(pipelineAttribution, /Bill chart: width = calls · height = cost\/call · area = total time/);
+  assert.equal(pipelineAttribution.match(/width = calls/g)?.length, 1);
+  assert.doesNotMatch(pipelineAttribution, /pipeline-detail-heading|pipeline-shape-warning/);
+  assert.match(pipelineAttribution, /elements\/row/);
+  assert.match(pipelineAttribution, /Attribute writes/);
+  assert.match(pipelineAttribution, /shape-sensitive/);
+  assert.match(pipelineAttribution, /Per row/);
+  assert.match(css, /grid-template-areas:[\s\S]*?'entry toggle'[\s\S]*?'owner owner'/);
+});
+
+test('pipeline display labels stay neutral without migrating the raw six-segment vocabulary', () => {
+  assert.match(pipelineVocabulary, /'create',[\s\S]*'props',[\s\S]*'events',[\s\S]*'topology',[\s\S]*'read',[\s\S]*'flush'/);
+  assert.match(pipelineAttribution, /label: \['Element creates', '建节点'\]/);
+  assert.match(pipelineAttribution, /label: \['Attribute writes', '写属性'\]/);
+  assert.match(pipelineAttribution, /label: \['Synchronous commit', '同步提交'\]/);
+  assert.doesNotMatch(pipelineAttribution, /label: \['Props'|label: \['Flush'/);
 });
 
 test('page and prose measures use the wide data workspace without losing readable line length', () => {

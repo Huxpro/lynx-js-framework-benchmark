@@ -28,6 +28,8 @@ These are the only files/fields that require an update when their real-world inp
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
   phase, timeout, trigger mode, message, and observed device state);
 - per-repetition wire endpoint observations: `detailSamples`;
+- per-repetition pipeline controls in `detailSamples`: requested/committed rows, the complete
+  ElementPAPI call multiset, and the intercepted host-surface receipt;
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
@@ -49,6 +51,8 @@ the current bundle files whenever collection runs.
 Everything else is derived, including:
 
 - `n`, min/max, mean, median, standard deviation, p95, and 95% confidence interval;
+- `outsidePapiTime`, materialized only by `collect` by subtracting the six synchronous
+  ElementPAPI self-time series from each aligned `operationTime` source sample;
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
@@ -56,7 +60,9 @@ Everything else is derived, including:
 - comparability/work classification. Incomplete or unverified work and prospective
   sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
   the source archive and audit index, but do not become Dataset Time Machine checkpoints or enter
-  ranked views. Prospective Lab estimates must match the selected Web cohort exactly;
+  ranked views. Pipeline control identities and cross-entry committed-tree eligibility are also
+  derived here; unstable call multisets or mismatched trees cannot enter comparisons. Prospective
+  Lab estimates must match the selected Web cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an
   explicitly validated lease chain or included in cross-entry rankings;

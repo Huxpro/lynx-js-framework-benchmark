@@ -22,8 +22,20 @@ export interface BenchRecord {
   max?: number | null;
   value?: number | null;
   samples: number[] | null;
-  detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
-  detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
+  detail: {
+    byName?: Record<string, { messages: number; bytes: number }>;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  } | null;
+  detailSamples?: {
+    byName?: Record<string, { messages: number; bytes: number }>;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  }[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
   attemptedCount?: number;
@@ -43,14 +55,23 @@ export interface BenchRecord {
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
   comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
-  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
+  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
+  descriptiveEligible?: boolean;
   workClassification?: {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;
     observed: Record<string, unknown> | null;
+  };
+  pipelineControl?: {
+    status: 'controlled' | 'invalid' | 'incomplete';
+    reason?: string;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
   };
   sourceEntry?: string;
   sourceMedian?: number | null;
@@ -165,6 +186,47 @@ export interface NativeCoverage {
   cells: NativeCoverageCell[];
 }
 
+export type PipelineCoverageStatus =
+  | 'measured'
+  | 'measured-with-dnf'
+  | 'dnf'
+  | 'unscheduled'
+  | 'invalid-incomparable'
+  | 'display-derivation-bug';
+
+export interface PipelineCoverageCell {
+  entry: string;
+  suite: 'pipeline';
+  harness: 'web';
+  workload: string;
+  scale: number;
+  metric: 'operationTime';
+  unit: 'ms';
+  boundary: string;
+  key: string;
+  status: PipelineCoverageStatus;
+  reason: string | null;
+  record: {
+    n: number;
+    dnfCount: number;
+    attemptedCount: number | null;
+    acceptedCount: number | null;
+    median: number | null;
+    runFile: string | null;
+    machineId: string | null;
+    failureCategories: string[];
+  } | null;
+}
+
+export interface PipelineCoverage {
+  version: string;
+  contractSha256: string;
+  expectedCellCount: number;
+  entryIds: string[];
+  summary: Partial<Record<PipelineCoverageStatus, number>>;
+  cells: PipelineCoverageCell[];
+}
+
 export interface NativeObservation {
   entryId: string;
   harness: 'native';
@@ -187,6 +249,7 @@ export interface TimelineSnapshot {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
+  pipelineCoverage: PipelineCoverage;
 }
 
 export interface HistoryTransportEvidence {
@@ -243,6 +306,7 @@ export interface HistoryCheckpoint {
   sourceIndexes: number[];
   harnesses: HistoryCohort[];
   nativeCoverage?: NativeCoverage;
+  pipelineCoverage?: PipelineCoverage;
 }
 
 export interface HistorySource {
@@ -318,11 +382,20 @@ const collected = latest as unknown as {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
+  pipelineCoverage: PipelineCoverage;
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
 const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   version: 'history-no-native-data',
+  contractSha256: '',
+  expectedCellCount: 0,
+  entryIds: [],
+  summary: {},
+  cells: [],
+};
+const EMPTY_PIPELINE_COVERAGE: PipelineCoverage = {
+  version: 'history-no-pipeline-data',
   contractSha256: '',
   expectedCellCount: 0,
   entryIds: [],
@@ -345,7 +418,8 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
   // evidence chart, but comparison consumers see a real gap rather than a
   // deceptively fast value.
   const records = historyRecordsForCheckpoint(checkpoint)
-    .filter((record) => record.rankEligible !== false);
+    .filter((record) => record.rankEligible !== false
+      || record.descriptiveEligible === true);
   const harnesses = checkpoint.harnesses.map((cohort) => ({
     harness: cohort.harness,
     environment: cohort.environment,
@@ -386,6 +460,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     nativeObservations: [],
     nativeObservationRecords: [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
+    pipelineCoverage: checkpoint.pipelineCoverage ?? EMPTY_PIPELINE_COVERAGE,
   };
 });
 
@@ -440,6 +515,7 @@ export interface RecordFilter {
 export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
   return records.filter((r) =>
     (r.rankingEligible !== false
+      || r.descriptiveEligible === true
       || (r.comparabilityStatus === 'incomplete-work' && r.n === 0 && r.dnfCount > 0))
     && (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)

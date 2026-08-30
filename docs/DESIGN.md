@@ -90,7 +90,7 @@ ui-react/octane apps):
 Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.mjs`; a case is
 *data*, not code: `{ name, pre, trigger, predicate, scales }`.
 
-### Metrics: three layers per case
+### Metrics: four layers per case
 
 | layer | metrics | boundary | instrument |
 | --- | --- | --- | --- |
@@ -98,6 +98,7 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | | `fcp`, `settled` (ms) | `view-attach → content` / `→ quiesce` | shared page driver |
 | | `btsCpu`, `mtsCpu` (ms) | per-realm CPU during the op | CDP `Profiler` on the page and on the `lynx-bg` worker |
 | **wire** | `wireUpMsgs/wireUpBytes` (MTS→BTS), `wireDownMsgs/wireDownBytes` (BTS→MTS), per-endpoint histogram | the real `MessageChannel` between web-core's UI realm and the background worker | `MessagePort.prototype` patch installed before web-core boots |
+| **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
 | **static** | `bundleWebRaw/Gzip`, `bundleLynxRaw/Gzip`, `mtsSectionGzip`, `btsSectionGzip` | — | bundle inspection (JSON-format bundles expose `lepusCode.root` = MTS and `manifest['/app-service.js']` = BTS; binary bundles report whole-bundle only) |
 
 Why this is neutral: ReactLynx, Vue-Lynx (vdom/vapor), and Octane-on-Lynx all ride the same
@@ -123,7 +124,7 @@ dimensions. One record per (entry × workload × scale × metric):
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
   "records": [{
-    "suite": "table" | "startup",
+    "suite": "table" | "startup" | "pipeline",
     "harness": "web" | "native",
     "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
     "entry": "vue-vdom",
@@ -162,7 +163,10 @@ Headless Chromium via `playwright-core` (Chromium resolved from the Playwright c
    `t0` = in-page capture-phase `pointerdown`, `t1` = first rAF where the DOM predicate holds.
 4. Around each op the runner snapshots the wire meter and (optionally, `--profile`) runs CDP
    `Profiler.start/stop` on both the page and the `lynx-bg` worker for `btsCpu`/`mtsCpu`.
-5. Fresh page per rep; warmup reps discarded per methodology.
+5. The separate `/pipeline` page alone installs ElementPAPI wrappers. Its capture begins at the
+   real pointerdown and freezes at the same shared DOM predicate; ordinary table/startup pages
+   never execute the wrappers.
+6. Fresh page per rep; warmup reps discarded per methodology.
 
 ### `native` (Android Sandbox, explicitly separated)
 

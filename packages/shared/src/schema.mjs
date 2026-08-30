@@ -35,6 +35,10 @@ export const BOUNDARIES = {
   btsCpu: 'sampled-js-cpu-background-realm',
   mtsCpu: 'sampled-js-cpu-ui-thread',
   wire: 'web-core-rpc-channel',
+  pipelineOperation: 'pipeline-page-pointerdown-to-dom-predicate',
+  pipelineResidual: 'pipeline-operation-minus-synchronous-element-papi-self-time',
+  papiSelfTime: 'synchronous-element-papi-host-boundary-self-time',
+  papiCalls: 'synchronous-element-papi-host-boundary-call-count',
   bundle: 'static',
 };
 
