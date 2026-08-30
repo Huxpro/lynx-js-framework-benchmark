@@ -1325,9 +1325,7 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   padding: 0.2rem 0 0.25rem 1.25rem;
   border-left: 1px solid var(--border-strong);
 }
-.axis-answer > span,
-.axis-overline,
-.axis-verdict > span {
+.axis-answer > span {
   grid-column: 1 / -1;
   color: var(--text-muted);
   font-size: 0.7rem;
@@ -1347,211 +1345,90 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   margin-top: 0.5rem;
   color: var(--text-muted);
 }
-.axis-reading-key {
+.axis-plain-key {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  margin: clamp(2rem, 4vw, 3.5rem) 0 0;
-  padding: 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  list-style: none;
-}
-.axis-reading-key li {
-  display: grid;
-  grid-template-columns: 2rem 1fr;
-  gap: 0.65rem;
-  align-items: center;
-  min-height: 4.5rem;
-  padding: 0.75rem 1rem 0.75rem 0;
-}
-.axis-reading-key li + li {
-  padding-left: 1rem;
-  border-left: 1px solid var(--border);
-}
-.axis-reading-key span {
-  color: var(--accent);
-  font-size: 1.45rem;
-  font-variant-numeric: tabular-nums;
-}
-.axis-reading-key b { font-size: 0.84rem; line-height: 1.35; }
-.axis-instrument {
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr) auto;
-  gap: 0.85rem;
-  align-items: center;
-  margin-top: 1.5rem;
-  padding: 0.8rem 0;
-  border-bottom: 1px solid var(--border);
-}
-.axis-instrument > span {
-  color: var(--accent);
-  font-size: 1.25rem;
-}
-.axis-instrument p {
-  display: flex;
-  gap: 0.5rem;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
-}
-.axis-instrument p b { color: var(--text-primary); white-space: nowrap; }
-.axis-instrument a { color: var(--text-secondary); font-size: 0.82rem; }
-.axis-experiment-list { margin-top: clamp(2.5rem, 5vw, 5rem); }
-.axis-experiment {
-  padding: clamp(1.5rem, 3vw, 2.75rem) 0;
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+  gap: 1rem 2rem;
+  margin-top: clamp(2rem, 4vw, 3.5rem);
+  padding: 1.1rem 0;
   border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
 }
-.axis-experiment-head {
+.axis-plain-key p { margin: 0; line-height: 1.5; }
+.axis-plain-key > div { display: grid; gap: 0.35rem; align-content: center; }
+.axis-plain-key span { font-size: 0.8rem; font-weight: 650; }
+.axis-plain-key .is-coupled { color: color-mix(in srgb, var(--accent) 78%, var(--text-primary)); }
+.axis-plain-key .is-residue { color: var(--good); }
+.axis-ledger-group { margin-top: clamp(2.8rem, 6vw, 5.5rem); }
+.axis-ledger-group > header {
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) minmax(12rem, 19rem);
-  gap: clamp(1rem, 3vw, 2.5rem);
-  align-items: start;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 1rem;
+  max-width: 64rem;
+  margin-bottom: 1.4rem;
 }
-.axis-experiment-index {
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
+.axis-ledger-group > header > span {
+  color: var(--accent);
+  font: 500 1.25rem/1 ui-monospace, Menlo, monospace;
 }
-.axis-overline { margin: 0 0 0.25rem; }
-.axis-experiment-head h3 {
-  margin: 0;
-  font-size: clamp(1.2rem, 2vw, 1.65rem);
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+.axis-ledger-group > header h3 { margin: 0; font-size: clamp(1.2rem, 2vw, 1.7rem); letter-spacing: -0.025em; }
+.axis-ledger-group > header p { margin: 0.4rem 0 0; color: var(--text-secondary); line-height: 1.5; }
+.axis-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.axis-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(1.15rem, 2.5vw, 1.65rem);
+  border: 1px solid var(--border);
+  border-top: 3px solid color-mix(in srgb, var(--accent) 62%, var(--border));
+  background: color-mix(in srgb, var(--surface-1) 92%, var(--accent) 8%);
 }
-.axis-experiment-head h3 span { color: var(--accent); }
-.axis-experiment-head p:not(.axis-overline) {
-  max-width: 68ch;
-  margin: 0.55rem 0 0;
-  color: var(--text-secondary);
+.axis-card.is-implementation-residue {
+  border-top-color: var(--good);
+  background: color-mix(in srgb, var(--surface-1) 94%, var(--good) 6%);
 }
-.axis-verdict {
-  display: grid;
-  gap: 0.35rem;
-  padding-left: 1rem;
-  border-left: 1px solid var(--border-strong);
-}
-.axis-verdict strong { line-height: 1.3; }
-.axis-verdict.is-coupled strong { color: color-mix(in srgb, var(--accent) 78%, var(--text-primary)); }
-.axis-verdict.is-invalid strong { color: var(--bad); }
-.axis-verdict.is-validated strong { color: var(--good); }
-.axis-experiment-body {
-  display: grid;
-  grid-template-columns: minmax(20rem, 0.9fr) minmax(22rem, 1.1fr);
-  gap: clamp(2rem, 5vw, 5rem);
-  margin: clamp(1.75rem, 3.5vw, 3rem) 0 0 3.5rem;
-}
-.axis-experiment-body h4 {
-  margin: 0 0 0.85rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
+.axis-card header { display: grid; gap: 0.5rem; }
+.axis-card h4 { margin: 0; font-size: 1.08rem; line-height: 1.3; letter-spacing: -0.015em; }
+.axis-status {
+  width: fit-content;
+  padding: 0.18rem 0.42rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
+  font-size: 0.67rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.axis-change-ledger ol {
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--border);
-  list-style: none;
-}
-.axis-change-ledger li {
-  display: grid;
-  grid-template-columns: minmax(8rem, 0.8fr) minmax(10rem, 1.25fr) auto;
-  gap: 0.75rem;
-  align-items: center;
-  min-height: 3.2rem;
-  border-bottom: 1px solid var(--border);
-}
-.axis-change-name { font-size: 0.83rem; font-weight: 650; }
-.axis-change-ledger code {
-  overflow-wrap: anywhere;
-  color: var(--text-secondary);
-}
-.axis-change-role {
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 720;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-.axis-change-ledger .is-question .axis-change-role { color: var(--accent); }
-.axis-unchanged {
-  margin: 0.65rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.axis-meaning-lead {
-  max-width: 56ch;
-  margin: 0;
-  font-size: clamp(1.05rem, 1.5vw, 1.25rem);
-  line-height: 1.48;
-  text-wrap: pretty;
-}
-.axis-measure-count {
-  margin: 1.15rem 0 0;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-}
-.axis-measure-count b {
-  color: var(--text-primary);
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
-}
-.axis-measurements,
-.axis-ceiling details,
-.axis-audit,
-.axis-method-note { margin-top: 0.9rem; }
-.axis-experiment summary,
-.axis-method-note summary {
-  cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-}
-.axis-ceiling {
-  margin-top: 1.15rem;
-  padding-top: 1.15rem;
-  border-top: 1px dashed var(--border-strong);
-}
-.axis-ceiling-intro {
-  max-width: 58ch;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-}
-.axis-ceiling-intro b { color: var(--text-primary); }
-.axis-audit { margin-left: 3.5rem; }
-.axis-audit dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem 2rem;
-  max-width: 60rem;
-  margin: 1rem 0 0;
-}
-.axis-audit dl > div {
-  display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  gap: 0.75rem;
-}
-.axis-audit dt { color: var(--text-muted); font-size: 0.75rem; }
-.axis-audit dd { margin: 0; font-size: 0.78rem; overflow-wrap: anywhere; }
-.axis-effect-table-wrap { overflow-x: auto; margin-top: 0.75rem; }
-.axis-effect-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-.axis-effect-table caption {
-  padding: 0 0 0.5rem;
-  color: var(--text-muted);
-  text-align: left;
-}
-.axis-effect-table th,
-.axis-effect-table td {
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-  vertical-align: top;
-}
-.axis-effect-table small { display: block; margin-top: 0.18rem; color: var(--text-muted); }
-.axis-effect-table .is-negative { color: var(--good); }
-.axis-effect-table .is-positive { color: var(--bad); }
+.is-implementation-residue .axis-status { background: color-mix(in srgb, var(--good) 12%, transparent); color: var(--good); }
+.axis-conclusion { margin: 0.75rem 0 1rem; color: var(--text-secondary); line-height: 1.55; text-wrap: pretty; }
+.axis-moved { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin-top: auto; }
+.axis-moved b { width: 100%; margin-bottom: 0.1rem; color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.axis-moved span { padding: 0.25rem 0.48rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.72rem; }
+.axis-moved .is-fixed { border-color: color-mix(in srgb, var(--good) 42%, var(--border)); color: var(--good); }
+.axis-facts { display: grid; gap: 0; margin: 1rem 0 0; padding: 0; border-top: 1px solid var(--border); list-style: none; }
+.axis-fact { display: grid; grid-template-columns: minmax(8rem, 1fr) auto auto; gap: 0.65rem; align-items: center; padding: 0.58rem 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
+.axis-fact > span { color: var(--text-secondary); }
+.axis-fact b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.axis-fact b i { margin: 0 0.35rem; color: var(--text-muted); font-style: normal; }
+.axis-fact em { color: var(--text-muted); font-style: normal; font-variant-numeric: tabular-nums; }
+.axis-fact.is-improved em { color: var(--good); }
+.axis-audit { margin-top: 0.85rem; font-size: 0.75rem; }
+.axis-audit summary,
+.axis-method-note summary { cursor: pointer; color: var(--text-secondary); font-size: 0.8rem; }
+.axis-audit p { margin: 0.6rem 0 0; color: var(--text-muted); line-height: 1.45; }
+.axis-audit a { display: inline-block; margin-top: 0.55rem; color: var(--accent); text-decoration: none; }
+.axis-instruments { margin-top: clamp(2.8rem, 6vw, 5rem); padding: 1.35rem; border: 1px solid var(--border); }
+.axis-instruments h3 { margin: 0; font-size: 1rem; }
+.axis-instruments > p { margin: 0.35rem 0 1rem; color: var(--text-secondary); font-size: 0.85rem; }
+.axis-instruments ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; border-top: 1px solid var(--border); list-style: none; }
+.axis-instruments li { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.5rem; padding: 0.85rem; border-bottom: 1px solid var(--border); }
+.axis-instruments li + li { border-left: 1px solid var(--border); }
+.axis-instruments li b { grid-row: 1 / 3; color: var(--accent); font-size: 1.25rem; font-weight: 500; }
+.axis-instruments li span { font-size: 0.78rem; font-weight: 700; }
+.axis-instruments li small { color: var(--text-muted); font-size: 0.7rem; }
 .axis-method-note {
+  margin-top: 1rem;
   padding: 1rem 0;
   border-top: 1px solid var(--border-strong);
   border-bottom: 1px solid var(--border-strong);
@@ -1564,8 +1441,8 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 }
 @container (max-width: 760px) {
   .axis-story-head,
-  .axis-experiment-head,
-  .axis-experiment-body { grid-template-columns: 1fr; }
+  .axis-plain-key,
+  .axis-card-grid { grid-template-columns: 1fr; }
   .axis-story-head { gap: 1.5rem; }
   .axis-answer {
     grid-template-columns: auto auto 1fr;
@@ -1578,30 +1455,10 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   .axis-answer small { grid-column: 1 / -1; }
   .axis-answer strong { font-size: 3rem; }
   .axis-answer b { max-width: none; }
-  .axis-reading-key { grid-template-columns: 1fr; }
-  .axis-reading-key li + li {
-    padding-left: 0;
-    border-top: 1px solid var(--border);
-    border-left: 0;
-  }
-  .axis-instrument {
-    grid-template-columns: 2rem minmax(0, 1fr);
-    align-items: start;
-  }
-  .axis-instrument p { display: grid; gap: 0.1rem; }
-  .axis-instrument a { grid-column: 2; }
-  .axis-experiment-head { gap: 0.8rem; }
-  .axis-verdict {
-    padding: 0.75rem 0 0;
-    border-top: 1px solid var(--border);
-    border-left: 0;
-  }
-  .axis-experiment-body,
-  .axis-audit { margin-left: 0; }
-  .axis-experiment-body { gap: 2rem; }
-  .axis-change-ledger li { grid-template-columns: minmax(7rem, 0.8fr) minmax(9rem, 1.2fr); }
-  .axis-change-role { grid-column: 2; padding-bottom: 0.5rem; }
-  .axis-audit dl { grid-template-columns: 1fr; }
+  .axis-instruments ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .axis-instruments li:nth-child(3) { border-left: 0; }
+  .axis-fact { grid-template-columns: 1fr auto; }
+  .axis-fact em { grid-column: 2; }
 }
 .section-heading { max-width: var(--measure-lead); }
 .section-heading h2 { margin: 0.08rem 0 0.18rem; font-size: 1.35rem; line-height: var(--leading-heading); }

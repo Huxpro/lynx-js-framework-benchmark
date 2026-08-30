@@ -29,6 +29,7 @@ import {
 } from '@lynx-bench/shared/workloads';
 
 import { bundleRecords } from './bundles.mjs';
+import { loadAxisEvidenceSources } from './axis-evidence.mjs';
 import { buildAxisEffectView, loadAxisObservationRuns } from './axis-effects.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
@@ -2292,6 +2293,7 @@ export function collectRuns({
   const axisEffects = buildAxisEffectView({
     entries: currentEntries,
     runs: [...retainedRuns, ...loadAxisObservationRuns({ root })],
+    evidenceSources: loadAxisEvidenceSources({ root }),
     root,
   });
 

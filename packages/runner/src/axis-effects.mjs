@@ -18,7 +18,9 @@ import {
 import { BOUNDARIES, deriveRecord } from '@lynx-bench/shared/schema';
 import { PAPI_SEGMENTS } from '@lynx-bench/shared/pipeline';
 
-export const AXIS_EFFECT_VIEW_VERSION = 'axis-effect-view-v1';
+import { axisEvidencePoints, buildAxisEvidenceLedger } from './axis-evidence.mjs';
+
+export const AXIS_EFFECT_VIEW_VERSION = 'axis-effect-view-v2';
 
 const stableJson = (value) => {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -523,11 +525,14 @@ function decomposeWithCeilings(pair, runs, ceilingByEntry) {
   };
 }
 
-export function buildAxisEffectView({ entries, runs, root = null }) {
-  const entryById = new Map(entries.map((entry) => [entry.id, entry]));
-  const { ceilings, diagnostics: ceilingDiagnostics } = findCeilings(entries, entryById);
+export function buildAxisEffectView({ entries, runs, evidenceSources = [], root = null }) {
+  const evidenceEntries = axisEvidencePoints(evidenceSources);
+  const allEntries = [...entries, ...evidenceEntries];
+  const entryById = new Map(allEntries.map((entry) => [entry.id, entry]));
+  if (entryById.size !== allEntries.length) throw new Error('axis entries contain duplicate IDs');
+  const { ceilings, diagnostics: ceilingDiagnostics } = findCeilings(allEntries, entryById);
   const pairs = [];
-  for (const entry of entries.filter((candidate) => candidate.ablation != null)) {
+  for (const entry of allEntries.filter((candidate) => candidate.ablation != null)) {
     const manifest = manifestControl(entry, entryById, root);
     const pair = {
       id: `${entry.ablation?.against ?? '<missing>'}→${entry.id}`,
@@ -628,12 +633,13 @@ export function buildAxisEffectView({ entries, runs, root = null }) {
       localCoordinateContextRequired: true,
       ceilingAndImplementationResidueSeparated: true,
     },
-    classifiedEntryIds: entries.filter((entry) => entry.coordinates != null)
+    classifiedEntryIds: allEntries.filter((entry) => entry.coordinates != null)
       .map((entry) => entry.id).sort(),
-    unclassifiedEntryIds: entries.filter((entry) => entry.coordinates == null)
+    unclassifiedEntryIds: allEntries.filter((entry) => entry.coordinates == null)
       .map((entry) => entry.id).sort(),
     ceilingDiagnostics,
     pairs,
     axes,
+    ledger: buildAxisEvidenceLedger({ sources: evidenceSources, pairs }),
   };
 }

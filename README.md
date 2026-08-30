@@ -255,7 +255,7 @@ contract remains true for the Block core. See
 packages/shared/    workload contract, page driver, wire instrument, stats, schema
 packages/runner/    lynx-bench CLI: run / collect / preflight / list; web + native harnesses
 entries/            one directory per framework×config, vendored bundles + provenance
-results/            runs/ + immutable axis-runs/ Lab sources + latest.json (collected)
+results/            runs/ + immutable axis-runs/ + cited axis-evidence/ Lab sources + latest.json
 site/               the results site (React + Vite + Observable Plot)
 docs/               DESIGN.md, METHODOLOGY.md, DATA_MODEL.md
 ```

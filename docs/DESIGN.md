@@ -71,7 +71,8 @@ comparison matrix the entry joins.
 
 ### Six-axis coordinates and ablations
 
-Lab attribution classifies an entry only when its manifest supplies the complete coordinate:
+Lab attribution classifies a runnable entry, or an immutable historical evidence point, only when
+its source declaration supplies the complete coordinate:
 
 ```jsonc
 {
@@ -310,7 +311,8 @@ observations remain historical appendix evidence only.
 ## Axis-effect view
 
 `collect` creates a dedicated Lab-only `axisEffects` projection after ordinary cohort selection.
-It consumes controlled current runs plus compact historical sources in `results/axis-runs/`, but
+It consumes controlled current runs, compact raw historical sources in `results/axis-runs/`, and a
+cited comparison ledger in `results/axis-evidence/`, but
 does not feed data back into `records`, `comparisonRecords`, `labComparisonRecords`, history, or
 rankings. The view follows four hard rules:
 
@@ -323,6 +325,13 @@ rankings. The view follows four hard rules:
    axis effect is `target ceiling − base ceiling`; implementation residue is independently
    `measured point − its own ceiling`. A missing endpoint ceiling leaves the axis estimate empty
    rather than folding residue into it.
+
+The evidence ledger is conclusion-first without weakening those rules. Each card is derived as one
+of: attributable single-axis pair, coupled multi-axis change, descriptive point set, uncontrolled
+pair, or same-coordinate implementation residue. Published aggregate highlights are shown only as
+the cited source reports them; linked raw axis observations keep their full detailed cells in the
+audit derivative. The default UI states the verdict and changed coordinates first, and keeps control
+receipts and source links behind disclosure.
 
 Axis ④ reports instrument readiness separately from effect availability. When #200 source records
 exist but no attributable pair carries segment measurements, the UI says the instrument is ready

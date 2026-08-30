@@ -594,6 +594,61 @@ export interface AxisEffectView {
       sourceRecordCount: number;
     } | null;
   }[];
+  ledger: AxisEvidenceLedger;
+}
+
+export type AxisEvidenceVerdict =
+  | 'attributable'
+  | 'coupled'
+  | 'descriptive'
+  | 'uncontrolled'
+  | 'implementation-residue';
+
+export interface AxisEvidenceObservation {
+  label: string;
+  metric: string;
+  scale?: number;
+  unit: string;
+  lowerIsBetter: boolean;
+  before: { label: string; value: number; ci95?: number; n?: number };
+  after: { label: string; value: number; ci95?: number; n?: number };
+  effect?: { ratio: number; ci95Low: number; ci95High: number };
+  delta: number;
+  relativeDelta: number | null;
+  direction: 'improved' | 'regressed' | 'unchanged';
+}
+
+export interface AxisEvidenceComparison {
+  id: string;
+  group: 'architecture' | 'residue';
+  shape: 'pair' | 'point-set';
+  title: string;
+  source: { label: string; url: string };
+  sourceFile: string;
+  subjects: string[];
+  relationship: 'same-codebase' | 'cross-framework';
+  intendedAxis: AxisName | null;
+  changedAxes: AxisName[];
+  pairRef?: string;
+  controls: Record<'sameCodebase' | 'sameFixture' | 'singlePhysicalRun' | 'singleBuildVariable', boolean | null>;
+  verdict: AxisEvidenceVerdict;
+  observations: AxisEvidenceObservation[];
+  auditEffectCount: number;
+}
+
+export interface AxisEvidenceLedger {
+  version: string;
+  derivedOnly: true;
+  sourceFiles: string[];
+  summary: {
+    comparisonCount: number;
+    attributableCount: number;
+    coupledCount: number;
+    descriptiveCount: number;
+    uncontrolledCount: number;
+    implementationResidueCount: number;
+  };
+  comparisons: AxisEvidenceComparison[];
 }
 
 // Featured charts use one physical run. Opt-in Lab records are historical and

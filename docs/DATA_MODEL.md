@@ -64,9 +64,16 @@ statistics or residuals: the collector derives both, including `outsidePapiTime`
 samples. Axis-run observations feed only the axis-effect view; they never enter the ordinary run
 archive, comparison cohorts, history checkpoints, or rankings.
 
+`results/axis-evidence/*.json` is a second, deliberately smaller source class: a cited backfill
+ledger. It retains typed historical point coordinates, the comparison shape and controls, and only
+the key published values transcribed from the linked issue/PR effect table. It does not pretend that
+those aggregate values are raw samples. Historical points here are not runnable entries and do not
+appear under `entries/`; the collector can use them only to classify the Lab evidence ledger and to
+join a cited comparison to an immutable `axis-runs` pair where one exists.
+
 ### When an entry is built or vendored
 
-- `entries/*/entry.json`: entry identity, tier, presentation color, provenance, commit, optional
+- `entries/*/entry.json`: runnable entry identity, tier, presentation color, provenance, commit, optional
   six-axis coordinates/ablation/ceiling relation, and bundle checksums. Coordinate relations are
   claims about source configuration; whether they pass control validation is always derived. An
   optional versioned `listFixture` capability declaration records list-suite support;
@@ -92,7 +99,8 @@ Everything else is derived, including:
   side is selected from exactly one execution regime (Web JIT 1× by default), never pooled;
 - the complete `axisEffects` view: coordinate classification, ablation-control verdicts,
   descriptive and attributable effect tables, direction consistency, #200 instrument readiness,
-  ceiling-to-ceiling axis effects, and point-to-own-ceiling implementation residue;
+  ceiling-to-ceiling axis effects, point-to-own-ceiling implementation residue, and the six-item
+  first-cohort evidence ledger;
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;

@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-test('axis Lab view leads with the current answer and explains why evidence is not attributable', () => {
+test('axis Lab view leads with a plain-language answer and keeps audit detail secondary', () => {
   const source = fs.readFileSync(new URL('./components/AxisEffects.tsx', import.meta.url), 'utf8');
-  assert.match(source, /Not yet. Both first experiments change three coordinates at once/);
-  assert.match(source, /These measurements describe that combined change/);
+  assert.match(source, /What do these experiments actually prove/);
+  assert.match(source, /do not give one axis credit for a combined change/);
+  assert.match(source, /only a same-codebase experiment that changes exactly one axis/);
+  assert.match(source, /Same coordinates: implementation alone still moves the result/);
   assert.match(source, /Why this verdict/);
   assert.match(source, /no regression or interaction fitting/);
-  assert.match(source, /A hand-written ceiling measures implementation gap only/);
-  assert.match(source, /#200 instrument is ready, but no single-axis staging experiment/);
+  assert.match(source, /Ceiling axis effects and implementation residue stay separate/);
+  assert.match(source, /Instruments observe physical work/);
 });
