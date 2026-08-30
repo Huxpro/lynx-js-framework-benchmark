@@ -25,6 +25,7 @@ import { machineFingerprint } from './machine.mjs';
 import {
   calibrateProcessThrottle,
   runPreflight,
+  runProcessThrottleProbe,
   verifyInterpreterFlags,
 } from './preflight.mjs';
 import { jsFlagsForRegime, launchBrowser } from './browser.mjs';
@@ -384,7 +385,7 @@ async function cmdRun(args) {
       const control = await launchBrowser({ jit });
       let controlProbe;
       try {
-        controlProbe = await runPreflight(control.browser, {
+        controlProbe = await runProcessThrottleProbe(control.browser, {
           requireWebHarness: true,
           jsRegime: jit,
         });
@@ -513,7 +514,7 @@ async function cmdPreflight(args) {
     const control = await launchBrowser({ jit });
     let controlProbe;
     try {
-      controlProbe = await runPreflight(control.browser, { requireWebHarness: true });
+      controlProbe = await runProcessThrottleProbe(control.browser, { requireWebHarness: true });
     } finally {
       await control.closeBrowser();
     }

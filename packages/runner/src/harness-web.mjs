@@ -19,7 +19,7 @@ import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
-import { assertProcessThrottleProbe, runPreflight } from './preflight.mjs';
+import { assertProcessThrottleProbe, runProcessThrottleProbe } from './preflight.mjs';
 
 const SETTLE_MS = 30;
 
@@ -666,7 +666,9 @@ export async function runWebHarness({
       const processThrottleVerification = throttleScope === 'process-cgroup'
         ? assertProcessThrottleProbe({
           control: processThrottleControl,
-          throttled: await runPreflight(browser, { requireWebHarness: true, jsRegime: jit }),
+          throttled: await runProcessThrottleProbe(browser, {
+            requireWebHarness: true, jsRegime: jit,
+          }),
           cpuThrottle,
           mechanism: processThrottle,
         })

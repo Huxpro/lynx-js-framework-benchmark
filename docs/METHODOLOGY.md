@@ -255,7 +255,8 @@ birth: the runner uses cgroup-v2 `cpu.max` when delegated, or creates a cgroup-v
 and enters it through `cgexec` on the lab host. Calibration begins at 25% of one CPU and records
 each adjustment needed to bring the page probe to nominal 4×. `cpulimit` PID/fork monitoring is
 not an accepted backend because it can miss renderer startup. Immediately before each entry's
-measured phase, the same interpreter-only Chromium runs the fixed page probe; the window fails
+measured phase, the same interpreter-only Chromium runs the fixed page probe three times and uses
+the median score; the window fails
 closed unless `control.score / throttled.score` is within [3.5, 4.5]. Every accepted record stores
 that value as `environment.verifiedSlowdown`, while the backend and every per-entry verification
 remain in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope:

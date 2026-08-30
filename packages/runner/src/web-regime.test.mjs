@@ -9,6 +9,7 @@ import {
   assertProcessThrottleProbe,
   assertInterpreterFlagProbe,
   assertWebHarnessCapabilities,
+  summarizeProcessThrottleProbes,
 } from './preflight.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
 
@@ -98,6 +99,30 @@ test('whole-process throttle preflight requires inherited launch and a 3.5–4.5
     cpuThrottle: 4,
     mechanism: null,
   }), /mechanism receipt/);
+});
+
+test('whole-process throttle verification uses a fixed three-probe median', () => {
+  const summary = summarizeProcessThrottleProbes([
+    { probeVersion: 1, score: 20, iterations: 20 },
+    { probeVersion: 1, score: 27, iterations: 27 },
+    { probeVersion: 1, score: 25, iterations: 25 },
+  ]);
+  assert.deepEqual(summary, {
+    probeVersion: 1,
+    score: 25,
+    iterations: 25,
+    aggregation: 'median',
+    repetitions: 3,
+    samples: [
+      { probeVersion: 1, score: 20, iterations: 20 },
+      { probeVersion: 1, score: 27, iterations: 27 },
+      { probeVersion: 1, score: 25, iterations: 25 },
+    ],
+  });
+  assert.throws(() => summarizeProcessThrottleProbes(summary.samples.slice(0, 2)), /exactly 3/);
+  assert.throws(() => summarizeProcessThrottleProbes([
+    summary.samples[0], summary.samples[1], { ...summary.samples[2], probeVersion: 2 },
+  ]), /incompatible/);
 });
 
 test('no-collect policy applies equally to Web and Native run completion', () => {

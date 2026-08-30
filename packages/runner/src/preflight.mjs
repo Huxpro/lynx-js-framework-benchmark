@@ -11,6 +11,35 @@
 import { launchBrowser } from './browser.mjs';
 
 export const PROBE_VERSION = 1;
+export const PROCESS_THROTTLE_PROBE_REPETITIONS = 3;
+
+const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+};
+
+export function summarizeProcessThrottleProbes(probes) {
+  if (!Array.isArray(probes) || probes.length !== PROCESS_THROTTLE_PROBE_REPETITIONS) {
+    throw new Error(
+      `process throttle verification requires exactly ${PROCESS_THROTTLE_PROBE_REPETITIONS} probes`,
+    );
+  }
+  const probeVersion = probes[0]?.probeVersion;
+  if (!Number.isInteger(probeVersion)
+    || probes.some((probe) => probe?.probeVersion !== probeVersion
+      || !Number.isFinite(probe.score)
+      || !Number.isInteger(probe.iterations))) {
+    throw new Error('process throttle verification received incompatible probe samples');
+  }
+  return {
+    probeVersion,
+    score: median(probes.map(({ score }) => score)),
+    iterations: median(probes.map(({ iterations }) => iterations)),
+    aggregation: 'median',
+    repetitions: PROCESS_THROTTLE_PROBE_REPETITIONS,
+    samples: probes,
+  };
+}
 
 export function assertWebHarnessCapabilities(
   { webAssembly },
@@ -107,7 +136,7 @@ export function assertProcessThrottleProbe({ control, throttled, cpuThrottle, me
     );
   }
   return {
-    method: 'same-interpreter-probe-ratio-v1',
+    method: 'same-interpreter-probe-median-ratio-v2',
     control,
     throttled,
     expectedSlowdown: cpuThrottle,
@@ -136,7 +165,7 @@ export async function calibrateProcessThrottle({
       processQuotaPercent: quotaPercent,
     });
     try {
-      const probe = await runPreflight(launched.browser, {
+      const probe = await runProcessThrottleProbe(launched.browser, {
         requireWebHarness,
         jsRegime: jit,
       });
@@ -246,4 +275,12 @@ export async function runPreflight(
   } finally {
     await page.close();
   }
+}
+
+export async function runProcessThrottleProbe(browser, options = {}) {
+  const probes = [];
+  for (let repetition = 0; repetition < PROCESS_THROTTLE_PROBE_REPETITIONS; repetition++) {
+    probes.push(await runPreflight(browser, options));
+  }
+  return summarizeProcessThrottleProbes(probes);
 }
