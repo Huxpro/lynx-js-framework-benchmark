@@ -60,11 +60,24 @@ test('Lab is a first-class view while Threads and method stay inlined', () => {
   assert.match(timelineSource, /overview: text\('Overview', '总览'\)/);
   assert.match(timelineSource, /scale: text\('Scale', '规模'\)/);
   assert.match(source, /page === 'lab'/);
-  assert.match(source, /<h1>\{text\('Architecture Lab', '架构实验室'\)\}<\/h1>/);
+  assert.match(source, /<h1>\{text\('Benchmark Lab', '基准实验室'\)\}<\/h1>/);
   assert.doesNotMatch(source, /page === 'threads'/);
   assert.doesNotMatch(source, /page === 'method'/);
   assert.match(source, /<ThreadsPage harness=\{harness\}/);
   assert.match(source, /<MeasurementReceipt harness=\{harness\}/);
+});
+
+test('research-only Storm semantics and list contracts live in Lab, not Overview', () => {
+  const lab = source.indexOf("page === 'lab'");
+  const overview = source.indexOf(") : harness === 'native'", lab);
+  const labSource = source.slice(lab, overview);
+  const overviewSource = source.slice(overview);
+
+  assert.match(labSource, /<StormCoalescing theme=\{theme\} selected=\{activeSelected\}/);
+  assert.match(labSource, /<ListCoverage harness=\{harness\}/);
+  assert.doesNotMatch(overviewSource, /<StormCoalescing/);
+  assert.doesNotMatch(overviewSource, /<ListCoverage/);
+  assert.doesNotMatch(source, /next === 'native' && page === 'lab'/);
 });
 
 test('Lab owns axis evidence instead of appending it to Overview', () => {

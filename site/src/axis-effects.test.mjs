@@ -14,3 +14,15 @@ test('axis Lab view leads with a plain-language answer and keeps audit detail se
   assert.match(source, /Ceiling axis effects and implementation residue stay separate/);
   assert.match(source, /Instruments observe physical work/);
 });
+
+test('Storm observations stay neutral unless the run is DNF', () => {
+  const source = fs.readFileSync(new URL('./components/StormCoalescing.tsx', import.meta.url), 'utf8');
+  const theme = fs.readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
+
+  assert.match(source, /Coalescing under every-tick is an expected strategy observation, not an error/);
+  assert.match(source, /coalesced to \$\{row\.frames\}\/\$\{row\.ticks\} frames/);
+  assert.match(source, /data-outcome=\{row\.dnf \? 'dnf' : 'observed'\}/);
+  assert.doesNotMatch(source, /contract fail|contract 失败|data-outcome=.*'fail'/);
+  assert.match(theme, /tr\[data-outcome='dnf'\] strong \{ color: var\(--bad\)/);
+  assert.doesNotMatch(theme, /tr\[data-outcome='(?:observed|fail)'\] strong \{ color: var\(--bad\)/);
+});

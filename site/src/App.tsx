@@ -133,7 +133,6 @@ function AppContent({
   })), [availableIds, harness, selected]);
   const changeHarness = (next: string) => {
     setHarness(next);
-    if (next === 'native' && page === 'lab') setPage('overview');
     const params = new URLSearchParams(location.search);
     if (next === 'web') params.delete('harness');
     else params.set('harness', next);
@@ -286,10 +285,7 @@ function AppContent({
         index={snapshotIndex}
         onChange={onSnapshotChange}
         page={page}
-        onPageChange={(nextPage) => {
-          setPage(nextPage);
-          if (nextPage === 'lab' && harness !== 'web') changeHarness('web');
-        }}
+        onPageChange={setPage}
         harness={harness}
         onHarnessChange={changeHarness}
         regime={regime}
@@ -303,19 +299,33 @@ function AppContent({
 
       {page === 'lab' ? (
         <>
-          <h1>{text('Architecture Lab', '架构实验室')}</h1>
+          <h1>{text('Benchmark Lab', '基准实验室')}</h1>
           <ResponsiveCopy className="subtitle">
             {text(
-              'A causality ledger for framework authors: start with what the current experiments can prove, then inspect the comparisons, controls, and measurement limits below.',
-              '面向 framework author 的因果证据账本：先看当前实验能够证明什么，再向下检查对照、控制条件与测量边界。',
+              'Research suites for framework authors. Start with the published finding, then inspect the stress behavior, capability contracts, controls, and raw measurement boundaries below.',
+              '面向 framework author 的研究性 suite：先看已发布结论，再向下检查压力行为、能力合约、控制条件与原始测量边界。',
             )}
           </ResponsiveCopy>
-          {snapshot.id === 'current-main' ? <AxisEffects /> : (
+          {harness === 'web' && snapshot.id === 'current-main' ? <AxisEffects /> : harness === 'web' ? (
             <div className="empty-state">
               <p><b>{text('Lab evidence is published at the current checkpoint.', 'Lab 证据发布在当前节点。')}</b></p>
               <p>{text('Move the timeline to the latest checkpoint to inspect the architecture comparisons.', '请把时间线移到最新节点，再查看架构对照。')}</p>
             </div>
-          )}
+          ) : null}
+          <section className="lab-research" aria-labelledby="lab-research-title">
+            <div className="section-heading">
+              <div className="section-kicker">{text('Research suites', '研究性 suite')}</div>
+              <h2 id="lab-research-title">{text('Behavior beyond the headline ranking', '主排名之外的行为')}</h2>
+              <ResponsiveCopy className="section-copy">
+                {text(
+                  'These instruments answer narrower research questions. They stay out of the default benchmark story, but their contracts and records remain fully auditable here.',
+                  '这些仪器回答更窄的研究问题，不进入默认 benchmark 叙事；它们的合约与 records 仍在此完整可审计。',
+                )}
+              </ResponsiveCopy>
+            </div>
+            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
+            <ListCoverage harness={harness} />
+          </section>
         </>
       ) : harness === 'native' && !nativeHasData ? (
         page === 'overview' ? (
@@ -338,7 +348,6 @@ function AppContent({
               </p>
             </div>
             <NativeObservations theme={theme} />
-            <ListCoverage harness={harness} />
             <NativeCoverage />
           </>
         ) : (
@@ -450,9 +459,7 @@ function AppContent({
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
             {harness === 'web' && <PipelineAttribution theme={theme} selected={activeSelected} />}
-            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
-          <ListCoverage harness={harness} />
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (

@@ -1439,6 +1439,17 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   color: var(--text-secondary);
   font-size: 0.86rem;
 }
+.lab-research {
+  margin-top: clamp(3rem, 7vw, 6rem);
+  padding-top: clamp(1.25rem, 2.5vw, 2rem);
+  border-top: 2px solid var(--text-primary);
+}
+.lab-research > .section-heading h2 {
+  margin-top: 0.15rem;
+  font-size: clamp(1.35rem, 2.2vw, 2rem);
+}
+.lab-research > .storm-coalescing { margin-top: clamp(1.5rem, 3vw, 2.25rem); }
+.lab-research > .list-coverage { margin-top: clamp(3rem, 6vw, 5rem); }
 @container (max-width: 760px) {
   .axis-story-head,
   .axis-plain-key,
@@ -1742,8 +1753,8 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 .storm-table tbody th { color: var(--text-primary); font-weight: 600; }
 .storm-table tbody th i { display: inline-block; width: 0.48rem; height: 0.48rem; margin-right: 0.35rem; border-radius: 2px; }
 .storm-table small { color: var(--text-muted); margin-left: 0.2rem; }
-.storm-table tr[data-outcome='pass'] strong { color: var(--good); }
-.storm-table tr[data-outcome='fail'] strong, .storm-table tr[data-outcome='dnf'] strong { color: var(--bad); }
+.storm-table tr[data-outcome='observed'] strong { color: var(--text-primary); font-weight: 650; }
+.storm-table tr[data-outcome='dnf'] strong { color: var(--bad); }
 .visualization-appendix {
   margin-top: 0.42rem;
   border-top: 1px solid var(--border);
