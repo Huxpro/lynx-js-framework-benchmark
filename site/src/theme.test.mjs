@@ -11,6 +11,8 @@ const scaleComposite = fs.readFileSync(new URL('./components/InteractionScaleCom
 const responsiveCopy = fs.readFileSync(new URL('./components/ResponsiveCopy.tsx', import.meta.url), 'utf8');
 const historyRanking = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
 const pipelineAttribution = fs.readFileSync(new URL('./components/PipelineAttribution.tsx', import.meta.url), 'utf8');
+const nativePipelineAttribution = fs.readFileSync(new URL('./components/NativePipelineAttribution.tsx', import.meta.url), 'utf8');
+const app = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
 const pipelineVocabulary = fs.readFileSync(new URL('../../packages/shared/src/pipeline.mjs', import.meta.url), 'utf8');
 
 test('expanded exact-data tables scroll inside their card on narrow viewports', () => {
@@ -198,6 +200,20 @@ test('pipeline display labels stay neutral without migrating the raw six-segment
   assert.match(pipelineAttribution, /label: \['Attribute writes', '写属性'\]/);
   assert.match(pipelineAttribution, /label: \['Synchronous commit', '同步提交'\]/);
   assert.doesNotMatch(pipelineAttribution, /label: \['Props'|label: \['Flush'/);
+});
+
+test('Native pipeline attribution reuses the six-segment UI without inventing time', () => {
+  assert.match(app, /harness === 'native' && <NativePipelineAttribution/);
+  assert.match(nativePipelineAttribution, /snapshot\.nativePipelineAttributionRecords/);
+  assert.match(nativePipelineAttribution, /PIPELINE_SEGMENTS/);
+  assert.match(nativePipelineAttribution, /native-pipeline-call-bar/);
+  assert.match(nativePipelineAttribution, /Whole mount/);
+  assert.match(nativePipelineAttribution, /counts only/);
+  assert.match(nativePipelineAttribution, /never ranked/);
+  assert.match(nativePipelineAttribution, /no self-time, framework remainder, or cost-per-call value is published/);
+  assert.doesNotMatch(nativePipelineAttribution, /papiCreateTime|outsidePapiTime|operationTime|fmtUnitCost/);
+  assert.match(css, /\.native-pipeline-call-bar\s*\{/);
+  assert.match(css, /\.native-pipeline-segment-key\s*\{/);
 });
 
 test('page and prose measures use the wide data workspace without losing readable line length', () => {

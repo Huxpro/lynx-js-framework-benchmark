@@ -1,0 +1,556 @@
+{
+  "protocol": "lynx-bench-issue45-native-pipeline-audit-v1",
+  "issue": 45,
+  "generatedAt": "2026-08-30T12:10:00.000Z",
+  "decision": {
+    "N0": {
+      "papiRebindable": true,
+      "next": "N1-GO",
+      "highResolutionClockAvailable": false,
+      "timing": "N2-NO-GO"
+    },
+    "publication": "counts-only",
+    "timingLabelReservedForFutureValidMeasurements": "engine + JNI bridge, as seen from Lepus",
+    "isolation": {
+      "suite": "pipeline-native",
+      "mixedWithNativeRankingCohort": false,
+      "mixedWithWebPipelineSuite": false,
+      "collectorPolicy": "dedicated descriptive outlet only; excluded from ordinary records, comparison, rankings, history, and campaign cells"
+    }
+  },
+  "device": {
+    "cohort": "aries10-sdk4",
+    "leaseIssueId": "issue-45-native-pipeline-n0",
+    "leaseExpiredAt": "2026-08-30T12:21:15.774Z",
+    "serialSha256": "27ef11fc3610ecf1c723e2d6b6ac25099a1b0e487aa8508b8d535d55e651d2cd",
+    "sharedLeaseUsedForN0AndN1": true
+  },
+  "N0": {
+    "protocol": "lynx-bench-pipeline-native-n0-v1",
+    "requestedRows": 100,
+    "committedRows": 100,
+    "domPredicate": {
+      "query": "col-label",
+      "resultCount": 100
+    },
+    "reportError": null,
+    "bindings": {
+      "__CreatePage": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateElement": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateView": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateScrollView": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateText": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateRawText": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateImage": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__CreateList": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__UpdateListCallbacks": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__GetElementUniqueID": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__GetParent": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__ElementIsEqual": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__AppendElement": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__InsertElementBefore": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__RemoveElement": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__ReplaceElement": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__SetClasses": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__SetInlineStyles": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__SetCSSId": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__SetAttribute": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__SetDataset": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__AddEvent": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__SetID": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      },
+      "__FlushElementTree": {
+        "present": true,
+        "rebound": true,
+        "assignmentError": null
+      }
+    },
+    "counts": {
+      "__CreatePage": 1,
+      "__GetElementUniqueID": 2265,
+      "__CreateView": 230,
+      "__SetAttribute": 428,
+      "__SetClasses": 856,
+      "__CreateText": 626,
+      "__CreateRawText": 626,
+      "__AppendElement": 741,
+      "__AddEvent": 636,
+      "__FlushElementTree": 3,
+      "__GetParent": 781,
+      "__ElementIsEqual": 40,
+      "__RemoveElement": 1,
+      "__InsertElementBefore": 741
+    },
+    "clocks": {
+      "Date.now": {
+        "available": true,
+        "reads": 37282,
+        "positiveDeltas": 40,
+        "equalReads": 37242,
+        "backwardReads": 0,
+        "resolutionMs": 1,
+        "monotonicObserved": true
+      },
+      "performance.now": {
+        "available": false,
+        "error": "not a function"
+      },
+      "lynx.performance.now": {
+        "available": false,
+        "error": "not a function"
+      }
+    },
+    "clockSurface": {
+      "globalThis": {
+        "__date_clock": "function",
+        "setTimeout": "function",
+        "clearTimeout": "function"
+      },
+      "lynx.performance": {}
+    },
+    "buildReceipt": {
+      "source": {
+        "repository": "Huxpro/octane",
+        "commit": "e9f1fb14efb0799b091c2982a89bfb72af3fd209",
+        "dirty": false
+      },
+      "rows": 100,
+      "build": {
+        "core": "block",
+        "blockMode": "scoped",
+        "distTag": "issue45-n0"
+      },
+      "injection": {
+        "placement": "MTS asset prefix before TASM encoding",
+        "sha256": "07bd21205bbff3c34376f107397f0ed8e9917e7c23f1d4902d556f9faac519a7",
+        "source": ";/* issue #45 N0: exact MTS prefix; generated, do not minify separately */\n(function () {\n  var probe = globalThis.__ISSUE45_N0__ = {\n    protocol: \"lynx-bench-pipeline-native-n0-v1\",\n    rows: 100,\n    bindings: {},\n    counts: {},\n    clocks: {},\n    clockSurface: {},\n    reportError: null\n  };\n\n  function clock(name, read) {\n    var first;\n    try {\n      first = read();\n    } catch (error) {\n      probe.clocks[name] = { available: false, error: String(error) };\n      return;\n    }\n    var previous = first;\n    var minimumPositiveMs = Infinity;\n    var positiveDeltas = 0;\n    var equalReads = 0;\n    var backwardReads = 0;\n    var reads = 0;\n    var wallDeadline = Date.now() + 40;\n    while (reads < 200000 && (positiveDeltas < 32 || Date.now() < wallDeadline)) {\n      var current = read();\n      var delta = current - previous;\n      if (delta > 0) {\n        positiveDeltas++;\n        if (delta < minimumPositiveMs) minimumPositiveMs = delta;\n      } else if (delta === 0) equalReads++;\n      else backwardReads++;\n      previous = current;\n      reads++;\n    }\n    probe.clocks[name] = {\n      available: true,\n      first: first,\n      last: previous,\n      reads: reads,\n      positiveDeltas: positiveDeltas,\n      equalReads: equalReads,\n      backwardReads: backwardReads,\n      resolutionMs: minimumPositiveMs === Infinity ? null : minimumPositiveMs,\n      monotonicObserved: backwardReads === 0\n    };\n  }\n\n  clock('Date.now', function () { return Date.now(); });\n  if (typeof performance === 'object' && performance && typeof performance.now === 'function') {\n    clock('performance.now', function () { return performance.now(); });\n  } else {\n    probe.clocks['performance.now'] = { available: false, error: 'not a function' };\n  }\n  if (typeof lynx === 'object' && lynx && lynx.performance && typeof lynx.performance.now === 'function') {\n    clock('lynx.performance.now', function () { return lynx.performance.now(); });\n  } else {\n    probe.clocks['lynx.performance.now'] = { available: false, error: 'not a function' };\n  }\n\n  try {\n    var surfaces = [\n      ['globalThis', globalThis],\n      ['performance', typeof performance === 'object' ? performance : null],\n      ['lynx.performance', typeof lynx === 'object' && lynx ? lynx.performance : null]\n    ];\n    for (var surfaceIndex = 0; surfaceIndex < surfaces.length; surfaceIndex++) {\n      var label = surfaces[surfaceIndex][0];\n      var value = surfaces[surfaceIndex][1];\n      if (!value) continue;\n      var names = Object.getOwnPropertyNames(value);\n      var matches = {};\n      for (var nameIndex = 0; nameIndex < names.length; nameIndex++) {\n        var property = names[nameIndex];\n        if (/now|time|clock|perf/i.test(property)) matches[property] = typeof value[property];\n      }\n      probe.clockSurface[label] = matches;\n    }\n  } catch (error) {\n    probe.clockSurface.error = String(error);\n  }\n\n  (function () {\n    var binding = { present: typeof __CreatePage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreatePage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreatePage = __CreatePage;\n    var __issue45_wrapper_CreatePage = function () {\n      probe.counts[\"__CreatePage\"] = (probe.counts[\"__CreatePage\"] || 0) + 1;\n      return __issue45_original_CreatePage.apply(this, arguments);\n    };\n    try {\n      __CreatePage = __issue45_wrapper_CreatePage;\n      binding.rebound = __CreatePage === __issue45_wrapper_CreatePage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateElement = __CreateElement;\n    var __issue45_wrapper_CreateElement = function () {\n      probe.counts[\"__CreateElement\"] = (probe.counts[\"__CreateElement\"] || 0) + 1;\n      return __issue45_original_CreateElement.apply(this, arguments);\n    };\n    try {\n      __CreateElement = __issue45_wrapper_CreateElement;\n      binding.rebound = __CreateElement === __issue45_wrapper_CreateElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateView = __CreateView;\n    var __issue45_wrapper_CreateView = function () {\n      probe.counts[\"__CreateView\"] = (probe.counts[\"__CreateView\"] || 0) + 1;\n      return __issue45_original_CreateView.apply(this, arguments);\n    };\n    try {\n      __CreateView = __issue45_wrapper_CreateView;\n      binding.rebound = __CreateView === __issue45_wrapper_CreateView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateScrollView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateScrollView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateScrollView = __CreateScrollView;\n    var __issue45_wrapper_CreateScrollView = function () {\n      probe.counts[\"__CreateScrollView\"] = (probe.counts[\"__CreateScrollView\"] || 0) + 1;\n      return __issue45_original_CreateScrollView.apply(this, arguments);\n    };\n    try {\n      __CreateScrollView = __issue45_wrapper_CreateScrollView;\n      binding.rebound = __CreateScrollView === __issue45_wrapper_CreateScrollView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateText = __CreateText;\n    var __issue45_wrapper_CreateText = function () {\n      probe.counts[\"__CreateText\"] = (probe.counts[\"__CreateText\"] || 0) + 1;\n      return __issue45_original_CreateText.apply(this, arguments);\n    };\n    try {\n      __CreateText = __issue45_wrapper_CreateText;\n      binding.rebound = __CreateText === __issue45_wrapper_CreateText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateRawText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateRawText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateRawText = __CreateRawText;\n    var __issue45_wrapper_CreateRawText = function () {\n      probe.counts[\"__CreateRawText\"] = (probe.counts[\"__CreateRawText\"] || 0) + 1;\n      return __issue45_original_CreateRawText.apply(this, arguments);\n    };\n    try {\n      __CreateRawText = __issue45_wrapper_CreateRawText;\n      binding.rebound = __CreateRawText === __issue45_wrapper_CreateRawText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateImage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateImage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateImage = __CreateImage;\n    var __issue45_wrapper_CreateImage = function () {\n      probe.counts[\"__CreateImage\"] = (probe.counts[\"__CreateImage\"] || 0) + 1;\n      return __issue45_original_CreateImage.apply(this, arguments);\n    };\n    try {\n      __CreateImage = __issue45_wrapper_CreateImage;\n      binding.rebound = __CreateImage === __issue45_wrapper_CreateImage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateList === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateList\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateList = __CreateList;\n    var __issue45_wrapper_CreateList = function () {\n      probe.counts[\"__CreateList\"] = (probe.counts[\"__CreateList\"] || 0) + 1;\n      return __issue45_original_CreateList.apply(this, arguments);\n    };\n    try {\n      __CreateList = __issue45_wrapper_CreateList;\n      binding.rebound = __CreateList === __issue45_wrapper_CreateList;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __UpdateListCallbacks === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__UpdateListCallbacks\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_UpdateListCallbacks = __UpdateListCallbacks;\n    var __issue45_wrapper_UpdateListCallbacks = function () {\n      probe.counts[\"__UpdateListCallbacks\"] = (probe.counts[\"__UpdateListCallbacks\"] || 0) + 1;\n      return __issue45_original_UpdateListCallbacks.apply(this, arguments);\n    };\n    try {\n      __UpdateListCallbacks = __issue45_wrapper_UpdateListCallbacks;\n      binding.rebound = __UpdateListCallbacks === __issue45_wrapper_UpdateListCallbacks;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetElementUniqueID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetElementUniqueID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetElementUniqueID = __GetElementUniqueID;\n    var __issue45_wrapper_GetElementUniqueID = function () {\n      probe.counts[\"__GetElementUniqueID\"] = (probe.counts[\"__GetElementUniqueID\"] || 0) + 1;\n      return __issue45_original_GetElementUniqueID.apply(this, arguments);\n    };\n    try {\n      __GetElementUniqueID = __issue45_wrapper_GetElementUniqueID;\n      binding.rebound = __GetElementUniqueID === __issue45_wrapper_GetElementUniqueID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetParent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetParent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetParent = __GetParent;\n    var __issue45_wrapper_GetParent = function () {\n      probe.counts[\"__GetParent\"] = (probe.counts[\"__GetParent\"] || 0) + 1;\n      return __issue45_original_GetParent.apply(this, arguments);\n    };\n    try {\n      __GetParent = __issue45_wrapper_GetParent;\n      binding.rebound = __GetParent === __issue45_wrapper_GetParent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ElementIsEqual === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ElementIsEqual\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ElementIsEqual = __ElementIsEqual;\n    var __issue45_wrapper_ElementIsEqual = function () {\n      probe.counts[\"__ElementIsEqual\"] = (probe.counts[\"__ElementIsEqual\"] || 0) + 1;\n      return __issue45_original_ElementIsEqual.apply(this, arguments);\n    };\n    try {\n      __ElementIsEqual = __issue45_wrapper_ElementIsEqual;\n      binding.rebound = __ElementIsEqual === __issue45_wrapper_ElementIsEqual;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AppendElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AppendElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AppendElement = __AppendElement;\n    var __issue45_wrapper_AppendElement = function () {\n      probe.counts[\"__AppendElement\"] = (probe.counts[\"__AppendElement\"] || 0) + 1;\n      return __issue45_original_AppendElement.apply(this, arguments);\n    };\n    try {\n      __AppendElement = __issue45_wrapper_AppendElement;\n      binding.rebound = __AppendElement === __issue45_wrapper_AppendElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __InsertElementBefore === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__InsertElementBefore\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_InsertElementBefore = __InsertElementBefore;\n    var __issue45_wrapper_InsertElementBefore = function () {\n      probe.counts[\"__InsertElementBefore\"] = (probe.counts[\"__InsertElementBefore\"] || 0) + 1;\n      return __issue45_original_InsertElementBefore.apply(this, arguments);\n    };\n    try {\n      __InsertElementBefore = __issue45_wrapper_InsertElementBefore;\n      binding.rebound = __InsertElementBefore === __issue45_wrapper_InsertElementBefore;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __RemoveElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__RemoveElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_RemoveElement = __RemoveElement;\n    var __issue45_wrapper_RemoveElement = function () {\n      probe.counts[\"__RemoveElement\"] = (probe.counts[\"__RemoveElement\"] || 0) + 1;\n      return __issue45_original_RemoveElement.apply(this, arguments);\n    };\n    try {\n      __RemoveElement = __issue45_wrapper_RemoveElement;\n      binding.rebound = __RemoveElement === __issue45_wrapper_RemoveElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ReplaceElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ReplaceElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ReplaceElement = __ReplaceElement;\n    var __issue45_wrapper_ReplaceElement = function () {\n      probe.counts[\"__ReplaceElement\"] = (probe.counts[\"__ReplaceElement\"] || 0) + 1;\n      return __issue45_original_ReplaceElement.apply(this, arguments);\n    };\n    try {\n      __ReplaceElement = __issue45_wrapper_ReplaceElement;\n      binding.rebound = __ReplaceElement === __issue45_wrapper_ReplaceElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetClasses === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetClasses\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetClasses = __SetClasses;\n    var __issue45_wrapper_SetClasses = function () {\n      probe.counts[\"__SetClasses\"] = (probe.counts[\"__SetClasses\"] || 0) + 1;\n      return __issue45_original_SetClasses.apply(this, arguments);\n    };\n    try {\n      __SetClasses = __issue45_wrapper_SetClasses;\n      binding.rebound = __SetClasses === __issue45_wrapper_SetClasses;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetInlineStyles === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetInlineStyles\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetInlineStyles = __SetInlineStyles;\n    var __issue45_wrapper_SetInlineStyles = function () {\n      probe.counts[\"__SetInlineStyles\"] = (probe.counts[\"__SetInlineStyles\"] || 0) + 1;\n      return __issue45_original_SetInlineStyles.apply(this, arguments);\n    };\n    try {\n      __SetInlineStyles = __issue45_wrapper_SetInlineStyles;\n      binding.rebound = __SetInlineStyles === __issue45_wrapper_SetInlineStyles;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetCSSId === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetCSSId\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetCSSId = __SetCSSId;\n    var __issue45_wrapper_SetCSSId = function () {\n      probe.counts[\"__SetCSSId\"] = (probe.counts[\"__SetCSSId\"] || 0) + 1;\n      return __issue45_original_SetCSSId.apply(this, arguments);\n    };\n    try {\n      __SetCSSId = __issue45_wrapper_SetCSSId;\n      binding.rebound = __SetCSSId === __issue45_wrapper_SetCSSId;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetAttribute === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetAttribute\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetAttribute = __SetAttribute;\n    var __issue45_wrapper_SetAttribute = function () {\n      probe.counts[\"__SetAttribute\"] = (probe.counts[\"__SetAttribute\"] || 0) + 1;\n      return __issue45_original_SetAttribute.apply(this, arguments);\n    };\n    try {\n      __SetAttribute = __issue45_wrapper_SetAttribute;\n      binding.rebound = __SetAttribute === __issue45_wrapper_SetAttribute;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetDataset === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetDataset\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetDataset = __SetDataset;\n    var __issue45_wrapper_SetDataset = function () {\n      probe.counts[\"__SetDataset\"] = (probe.counts[\"__SetDataset\"] || 0) + 1;\n      return __issue45_original_SetDataset.apply(this, arguments);\n    };\n    try {\n      __SetDataset = __issue45_wrapper_SetDataset;\n      binding.rebound = __SetDataset === __issue45_wrapper_SetDataset;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AddEvent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AddEvent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AddEvent = __AddEvent;\n    var __issue45_wrapper_AddEvent = function () {\n      probe.counts[\"__AddEvent\"] = (probe.counts[\"__AddEvent\"] || 0) + 1;\n      return __issue45_original_AddEvent.apply(this, arguments);\n    };\n    try {\n      __AddEvent = __issue45_wrapper_AddEvent;\n      binding.rebound = __AddEvent === __issue45_wrapper_AddEvent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetID = __SetID;\n    var __issue45_wrapper_SetID = function () {\n      probe.counts[\"__SetID\"] = (probe.counts[\"__SetID\"] || 0) + 1;\n      return __issue45_original_SetID.apply(this, arguments);\n    };\n    try {\n      __SetID = __issue45_wrapper_SetID;\n      binding.rebound = __SetID === __issue45_wrapper_SetID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __FlushElementTree === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__FlushElementTree\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_FlushElementTree = __FlushElementTree;\n    var __issue45_wrapper_FlushElementTree = function () {\n      probe.counts[\"__FlushElementTree\"] = (probe.counts[\"__FlushElementTree\"] || 0) + 1;\n      return __issue45_original_FlushElementTree.apply(this, arguments);\n    };\n    try {\n      __FlushElementTree = __issue45_wrapper_FlushElementTree;\n      binding.rebound = __FlushElementTree === __issue45_wrapper_FlushElementTree;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  function report() {\n    try {\n      console.log(\"__ISSUE45_N0_RESULT__\" + JSON.stringify(probe));\n    } catch (error) {\n      probe.reportError = String(error);\n      console.log(\"__ISSUE45_N0_RESULT__\" + '{\"protocol\":lynx-bench-pipeline-native-n0-v1,\"reportError\":\"' + String(error) + '\"}');\n    }\n  }\n  try {\n    lynx.requestAnimationFrame(function () {\n      lynx.requestAnimationFrame(report);\n    });\n  } catch (error) {\n    probe.reportError = String(error);\n    if (typeof setTimeout === 'function') setTimeout(report, 50);\n    else report();\n  }\n})();"
+      },
+      "bundle": {
+        "bytes": 454349,
+        "sha256": "1da0faf5ed2b0a7b774bb1fcbc46f7c3c590339065dc5e19bec32158ff7be751",
+        "markerPresent": true
+      }
+    }
+  },
+  "N1": {
+    "protocol": "lynx-bench-pipeline-native-counts-v1",
+    "classifier": {
+      "source": "packages/shared/src/pipeline.mjs",
+      "import": "classifyPapiMethod, PAPI_SEGMENTS",
+      "reimplemented": false
+    },
+    "entries": {
+      "octane-hux": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "domPredicate": {
+          "query": "col-label",
+          "resultCount": 1000
+        },
+        "devtoolSessionId": 4,
+        "bindings": {
+          "present": 24,
+          "rebound": 24,
+          "assignmentErrors": []
+        },
+        "reportError": null,
+        "consoleErrors": [],
+        "methodCounts": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 1015,
+          "__SetAttribute": 4028,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__CreateRawText": 3013,
+          "__AppendElement": 7041,
+          "__AddEvent": 2012,
+          "__FlushElementTree": 1
+        },
+        "segmentCounts": {
+          "create": 7042,
+          "props": 8056,
+          "events": 2012,
+          "topology": 7041,
+          "read": 1,
+          "flush": 1
+        },
+        "buildReceipt": {
+          "source": {
+            "repository": "Huxpro/octane",
+            "commit": "e9f1fb14efb0799b091c2982a89bfb72af3fd209",
+            "dirty": false
+          },
+          "rows": 1000,
+          "build": {
+            "core": "block",
+            "blockMode": "scoped",
+            "distTag": "issue45-n1-octane-hux"
+          },
+          "deviceMessageChannelFallback": {
+            "applied": true,
+            "placement": "staged BTS source via build script",
+            "anchor": "const _stormChannel = new MessageChannel();",
+            "sha256": "9bdc076af5b77e8959944c3bb6af321b35f01f8493f95562eb36874ca20a136b"
+          },
+          "promiseAllSettledPolyfill": {
+            "placement": "after the unique injected-runtime Promise alias in background JS, before TASM encoding",
+            "sha256": "3741086cf98f1e2fb6f2d47ba8a1054ebf05e9c9d51c3a5d86e3265409498993",
+            "source": ";/* issue #45 N1: SDK 4.0 BTS compatibility; exact evidence template */\n  if (typeof __ISSUE45_PROMISE__.allSettled !== 'function') {\n    __ISSUE45_PROMISE__.allSettled = function (values) {\n      return __ISSUE45_PROMISE__.all(Array.from(values, function (value) {\n        return __ISSUE45_PROMISE__.resolve(value).then(function (result) {\n          return { status: 'fulfilled', value: result };\n        }, function (reason) {\n          return { status: 'rejected', reason: reason };\n        });\n      }));\n    };\n  }",
+            "markerPresentInFinalBundle": true
+          },
+          "injection": {
+            "placement": "MTS asset prefix before TASM encoding",
+            "sha256": "4ba8c6825f21a9144bb8ec312c85967760e83e838391efb7f7ad3775d841ceb0",
+            "source": ";/* issue #45 N1: exact count-only MTS prefix; generated, do not minify separately */\n(function () {\n  var probe = globalThis.__ISSUE45_N1__ = {\n    protocol: \"lynx-bench-pipeline-native-counts-v1\",\n    entry: \"octane-hux\",\n    rows: 1000,\n    bindings: {},\n    counts: {},\n    reportError: null\n  };\n\n  (function () {\n    var binding = { present: typeof __CreatePage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreatePage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreatePage = __CreatePage;\n    var __issue45_wrapper_CreatePage = function () {\n      probe.counts[\"__CreatePage\"] = (probe.counts[\"__CreatePage\"] || 0) + 1;\n      return __issue45_original_CreatePage.apply(this, arguments);\n    };\n    try {\n      __CreatePage = __issue45_wrapper_CreatePage;\n      binding.rebound = __CreatePage === __issue45_wrapper_CreatePage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateElement = __CreateElement;\n    var __issue45_wrapper_CreateElement = function () {\n      probe.counts[\"__CreateElement\"] = (probe.counts[\"__CreateElement\"] || 0) + 1;\n      return __issue45_original_CreateElement.apply(this, arguments);\n    };\n    try {\n      __CreateElement = __issue45_wrapper_CreateElement;\n      binding.rebound = __CreateElement === __issue45_wrapper_CreateElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateView = __CreateView;\n    var __issue45_wrapper_CreateView = function () {\n      probe.counts[\"__CreateView\"] = (probe.counts[\"__CreateView\"] || 0) + 1;\n      return __issue45_original_CreateView.apply(this, arguments);\n    };\n    try {\n      __CreateView = __issue45_wrapper_CreateView;\n      binding.rebound = __CreateView === __issue45_wrapper_CreateView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateScrollView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateScrollView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateScrollView = __CreateScrollView;\n    var __issue45_wrapper_CreateScrollView = function () {\n      probe.counts[\"__CreateScrollView\"] = (probe.counts[\"__CreateScrollView\"] || 0) + 1;\n      return __issue45_original_CreateScrollView.apply(this, arguments);\n    };\n    try {\n      __CreateScrollView = __issue45_wrapper_CreateScrollView;\n      binding.rebound = __CreateScrollView === __issue45_wrapper_CreateScrollView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateText = __CreateText;\n    var __issue45_wrapper_CreateText = function () {\n      probe.counts[\"__CreateText\"] = (probe.counts[\"__CreateText\"] || 0) + 1;\n      return __issue45_original_CreateText.apply(this, arguments);\n    };\n    try {\n      __CreateText = __issue45_wrapper_CreateText;\n      binding.rebound = __CreateText === __issue45_wrapper_CreateText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateRawText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateRawText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateRawText = __CreateRawText;\n    var __issue45_wrapper_CreateRawText = function () {\n      probe.counts[\"__CreateRawText\"] = (probe.counts[\"__CreateRawText\"] || 0) + 1;\n      return __issue45_original_CreateRawText.apply(this, arguments);\n    };\n    try {\n      __CreateRawText = __issue45_wrapper_CreateRawText;\n      binding.rebound = __CreateRawText === __issue45_wrapper_CreateRawText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateImage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateImage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateImage = __CreateImage;\n    var __issue45_wrapper_CreateImage = function () {\n      probe.counts[\"__CreateImage\"] = (probe.counts[\"__CreateImage\"] || 0) + 1;\n      return __issue45_original_CreateImage.apply(this, arguments);\n    };\n    try {\n      __CreateImage = __issue45_wrapper_CreateImage;\n      binding.rebound = __CreateImage === __issue45_wrapper_CreateImage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateList === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateList\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateList = __CreateList;\n    var __issue45_wrapper_CreateList = function () {\n      probe.counts[\"__CreateList\"] = (probe.counts[\"__CreateList\"] || 0) + 1;\n      return __issue45_original_CreateList.apply(this, arguments);\n    };\n    try {\n      __CreateList = __issue45_wrapper_CreateList;\n      binding.rebound = __CreateList === __issue45_wrapper_CreateList;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __UpdateListCallbacks === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__UpdateListCallbacks\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_UpdateListCallbacks = __UpdateListCallbacks;\n    var __issue45_wrapper_UpdateListCallbacks = function () {\n      probe.counts[\"__UpdateListCallbacks\"] = (probe.counts[\"__UpdateListCallbacks\"] || 0) + 1;\n      return __issue45_original_UpdateListCallbacks.apply(this, arguments);\n    };\n    try {\n      __UpdateListCallbacks = __issue45_wrapper_UpdateListCallbacks;\n      binding.rebound = __UpdateListCallbacks === __issue45_wrapper_UpdateListCallbacks;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetElementUniqueID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetElementUniqueID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetElementUniqueID = __GetElementUniqueID;\n    var __issue45_wrapper_GetElementUniqueID = function () {\n      probe.counts[\"__GetElementUniqueID\"] = (probe.counts[\"__GetElementUniqueID\"] || 0) + 1;\n      return __issue45_original_GetElementUniqueID.apply(this, arguments);\n    };\n    try {\n      __GetElementUniqueID = __issue45_wrapper_GetElementUniqueID;\n      binding.rebound = __GetElementUniqueID === __issue45_wrapper_GetElementUniqueID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetParent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetParent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetParent = __GetParent;\n    var __issue45_wrapper_GetParent = function () {\n      probe.counts[\"__GetParent\"] = (probe.counts[\"__GetParent\"] || 0) + 1;\n      return __issue45_original_GetParent.apply(this, arguments);\n    };\n    try {\n      __GetParent = __issue45_wrapper_GetParent;\n      binding.rebound = __GetParent === __issue45_wrapper_GetParent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ElementIsEqual === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ElementIsEqual\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ElementIsEqual = __ElementIsEqual;\n    var __issue45_wrapper_ElementIsEqual = function () {\n      probe.counts[\"__ElementIsEqual\"] = (probe.counts[\"__ElementIsEqual\"] || 0) + 1;\n      return __issue45_original_ElementIsEqual.apply(this, arguments);\n    };\n    try {\n      __ElementIsEqual = __issue45_wrapper_ElementIsEqual;\n      binding.rebound = __ElementIsEqual === __issue45_wrapper_ElementIsEqual;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AppendElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AppendElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AppendElement = __AppendElement;\n    var __issue45_wrapper_AppendElement = function () {\n      probe.counts[\"__AppendElement\"] = (probe.counts[\"__AppendElement\"] || 0) + 1;\n      return __issue45_original_AppendElement.apply(this, arguments);\n    };\n    try {\n      __AppendElement = __issue45_wrapper_AppendElement;\n      binding.rebound = __AppendElement === __issue45_wrapper_AppendElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __InsertElementBefore === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__InsertElementBefore\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_InsertElementBefore = __InsertElementBefore;\n    var __issue45_wrapper_InsertElementBefore = function () {\n      probe.counts[\"__InsertElementBefore\"] = (probe.counts[\"__InsertElementBefore\"] || 0) + 1;\n      return __issue45_original_InsertElementBefore.apply(this, arguments);\n    };\n    try {\n      __InsertElementBefore = __issue45_wrapper_InsertElementBefore;\n      binding.rebound = __InsertElementBefore === __issue45_wrapper_InsertElementBefore;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __RemoveElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__RemoveElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_RemoveElement = __RemoveElement;\n    var __issue45_wrapper_RemoveElement = function () {\n      probe.counts[\"__RemoveElement\"] = (probe.counts[\"__RemoveElement\"] || 0) + 1;\n      return __issue45_original_RemoveElement.apply(this, arguments);\n    };\n    try {\n      __RemoveElement = __issue45_wrapper_RemoveElement;\n      binding.rebound = __RemoveElement === __issue45_wrapper_RemoveElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ReplaceElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ReplaceElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ReplaceElement = __ReplaceElement;\n    var __issue45_wrapper_ReplaceElement = function () {\n      probe.counts[\"__ReplaceElement\"] = (probe.counts[\"__ReplaceElement\"] || 0) + 1;\n      return __issue45_original_ReplaceElement.apply(this, arguments);\n    };\n    try {\n      __ReplaceElement = __issue45_wrapper_ReplaceElement;\n      binding.rebound = __ReplaceElement === __issue45_wrapper_ReplaceElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetClasses === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetClasses\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetClasses = __SetClasses;\n    var __issue45_wrapper_SetClasses = function () {\n      probe.counts[\"__SetClasses\"] = (probe.counts[\"__SetClasses\"] || 0) + 1;\n      return __issue45_original_SetClasses.apply(this, arguments);\n    };\n    try {\n      __SetClasses = __issue45_wrapper_SetClasses;\n      binding.rebound = __SetClasses === __issue45_wrapper_SetClasses;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetInlineStyles === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetInlineStyles\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetInlineStyles = __SetInlineStyles;\n    var __issue45_wrapper_SetInlineStyles = function () {\n      probe.counts[\"__SetInlineStyles\"] = (probe.counts[\"__SetInlineStyles\"] || 0) + 1;\n      return __issue45_original_SetInlineStyles.apply(this, arguments);\n    };\n    try {\n      __SetInlineStyles = __issue45_wrapper_SetInlineStyles;\n      binding.rebound = __SetInlineStyles === __issue45_wrapper_SetInlineStyles;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetCSSId === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetCSSId\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetCSSId = __SetCSSId;\n    var __issue45_wrapper_SetCSSId = function () {\n      probe.counts[\"__SetCSSId\"] = (probe.counts[\"__SetCSSId\"] || 0) + 1;\n      return __issue45_original_SetCSSId.apply(this, arguments);\n    };\n    try {\n      __SetCSSId = __issue45_wrapper_SetCSSId;\n      binding.rebound = __SetCSSId === __issue45_wrapper_SetCSSId;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetAttribute === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetAttribute\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetAttribute = __SetAttribute;\n    var __issue45_wrapper_SetAttribute = function () {\n      probe.counts[\"__SetAttribute\"] = (probe.counts[\"__SetAttribute\"] || 0) + 1;\n      return __issue45_original_SetAttribute.apply(this, arguments);\n    };\n    try {\n      __SetAttribute = __issue45_wrapper_SetAttribute;\n      binding.rebound = __SetAttribute === __issue45_wrapper_SetAttribute;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetDataset === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetDataset\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetDataset = __SetDataset;\n    var __issue45_wrapper_SetDataset = function () {\n      probe.counts[\"__SetDataset\"] = (probe.counts[\"__SetDataset\"] || 0) + 1;\n      return __issue45_original_SetDataset.apply(this, arguments);\n    };\n    try {\n      __SetDataset = __issue45_wrapper_SetDataset;\n      binding.rebound = __SetDataset === __issue45_wrapper_SetDataset;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AddEvent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AddEvent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AddEvent = __AddEvent;\n    var __issue45_wrapper_AddEvent = function () {\n      probe.counts[\"__AddEvent\"] = (probe.counts[\"__AddEvent\"] || 0) + 1;\n      return __issue45_original_AddEvent.apply(this, arguments);\n    };\n    try {\n      __AddEvent = __issue45_wrapper_AddEvent;\n      binding.rebound = __AddEvent === __issue45_wrapper_AddEvent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetID = __SetID;\n    var __issue45_wrapper_SetID = function () {\n      probe.counts[\"__SetID\"] = (probe.counts[\"__SetID\"] || 0) + 1;\n      return __issue45_original_SetID.apply(this, arguments);\n    };\n    try {\n      __SetID = __issue45_wrapper_SetID;\n      binding.rebound = __SetID === __issue45_wrapper_SetID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __FlushElementTree === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__FlushElementTree\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_FlushElementTree = __FlushElementTree;\n    var __issue45_wrapper_FlushElementTree = function () {\n      probe.counts[\"__FlushElementTree\"] = (probe.counts[\"__FlushElementTree\"] || 0) + 1;\n      return __issue45_original_FlushElementTree.apply(this, arguments);\n    };\n    try {\n      __FlushElementTree = __issue45_wrapper_FlushElementTree;\n      binding.rebound = __FlushElementTree === __issue45_wrapper_FlushElementTree;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  function report() {\n    try {\n      console.log(\"__ISSUE45_N1_RESULT__\" + JSON.stringify(probe));\n    } catch (error) {\n      probe.reportError = String(error);\n    }\n  }\n  try {\n    lynx.requestAnimationFrame(function () {\n      lynx.requestAnimationFrame(report);\n    });\n  } catch (error) {\n    probe.reportError = String(error);\n    if (typeof setTimeout === 'function') setTimeout(report, 50);\n    else report();\n  }\n})();"
+          },
+          "vendored": {
+            "bytes": 444709,
+            "sha256": "cf87f652cdc2844b09689f72d21dba989770c561926bbd92bb0f715da0cdcbd3",
+            "mtsSha256": "684a253782280c9653388169ed2d5fc118ebf7324d21290f2e3c1d9b5512c44a"
+          },
+          "cleanBuild": {
+            "mtsByteExactWithVendored": true
+          },
+          "bundle": {
+            "bytes": 453377,
+            "sha256": "a604836349255455a884e01c681df833c615c57ca8bfd1ac520f773fec4a9f35",
+            "markerPresent": true
+          }
+        }
+      },
+      "octane": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "domPredicate": {
+          "query": "col-label",
+          "resultCount": 1000
+        },
+        "devtoolSessionId": 5,
+        "bindings": {
+          "present": 24,
+          "rebound": 24,
+          "assignmentErrors": []
+        },
+        "reportError": null,
+        "consoleErrors": [],
+        "methodCounts": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__CreateView": 848,
+          "__SetAttribute": 3360,
+          "__SetClasses": 3360,
+          "__CreateText": 2512,
+          "__CreateRawText": 2512,
+          "__AddEvent": 1676,
+          "__InsertElementBefore": 5861
+        },
+        "segmentCounts": {
+          "create": 5873,
+          "props": 6720,
+          "events": 1676,
+          "topology": 5861,
+          "read": 1,
+          "flush": 0
+        },
+        "buildReceipt": {
+          "source": {
+            "repository": "octanejs/octane",
+            "commit": "d5175ca89fdebb8542063b265c6c84b0c7689090",
+            "dirty": false
+          },
+          "rows": 1000,
+          "build": {
+            "core": "universal",
+            "blockMode": null,
+            "distTag": null
+          },
+          "deviceMessageChannelFallback": {
+            "applied": true,
+            "placement": "BTS app source before staging",
+            "anchor": "const _stormChannel = new MessageChannel();",
+            "sha256": "9bdc076af5b77e8959944c3bb6af321b35f01f8493f95562eb36874ca20a136b"
+          },
+          "promiseAllSettledPolyfill": {
+            "placement": "after the unique injected-runtime Promise alias in background JS, before TASM encoding",
+            "sha256": "3741086cf98f1e2fb6f2d47ba8a1054ebf05e9c9d51c3a5d86e3265409498993",
+            "source": ";/* issue #45 N1: SDK 4.0 BTS compatibility; exact evidence template */\n  if (typeof __ISSUE45_PROMISE__.allSettled !== 'function') {\n    __ISSUE45_PROMISE__.allSettled = function (values) {\n      return __ISSUE45_PROMISE__.all(Array.from(values, function (value) {\n        return __ISSUE45_PROMISE__.resolve(value).then(function (result) {\n          return { status: 'fulfilled', value: result };\n        }, function (reason) {\n          return { status: 'rejected', reason: reason };\n        });\n      }));\n    };\n  }",
+            "markerPresentInFinalBundle": true
+          },
+          "injection": {
+            "placement": "MTS asset prefix before TASM encoding",
+            "sha256": "6b047fbac0c9e1e3ac5873a6c850eb5001f56ab65f020ebf2074ca3caf696b3b",
+            "source": ";/* issue #45 N1: exact count-only MTS prefix; generated, do not minify separately */\n(function () {\n  var probe = globalThis.__ISSUE45_N1__ = {\n    protocol: \"lynx-bench-pipeline-native-counts-v1\",\n    entry: \"octane\",\n    rows: 1000,\n    bindings: {},\n    counts: {},\n    reportError: null\n  };\n\n  (function () {\n    var binding = { present: typeof __CreatePage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreatePage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreatePage = __CreatePage;\n    var __issue45_wrapper_CreatePage = function () {\n      probe.counts[\"__CreatePage\"] = (probe.counts[\"__CreatePage\"] || 0) + 1;\n      return __issue45_original_CreatePage.apply(this, arguments);\n    };\n    try {\n      __CreatePage = __issue45_wrapper_CreatePage;\n      binding.rebound = __CreatePage === __issue45_wrapper_CreatePage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateElement = __CreateElement;\n    var __issue45_wrapper_CreateElement = function () {\n      probe.counts[\"__CreateElement\"] = (probe.counts[\"__CreateElement\"] || 0) + 1;\n      return __issue45_original_CreateElement.apply(this, arguments);\n    };\n    try {\n      __CreateElement = __issue45_wrapper_CreateElement;\n      binding.rebound = __CreateElement === __issue45_wrapper_CreateElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateView = __CreateView;\n    var __issue45_wrapper_CreateView = function () {\n      probe.counts[\"__CreateView\"] = (probe.counts[\"__CreateView\"] || 0) + 1;\n      return __issue45_original_CreateView.apply(this, arguments);\n    };\n    try {\n      __CreateView = __issue45_wrapper_CreateView;\n      binding.rebound = __CreateView === __issue45_wrapper_CreateView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateScrollView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateScrollView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateScrollView = __CreateScrollView;\n    var __issue45_wrapper_CreateScrollView = function () {\n      probe.counts[\"__CreateScrollView\"] = (probe.counts[\"__CreateScrollView\"] || 0) + 1;\n      return __issue45_original_CreateScrollView.apply(this, arguments);\n    };\n    try {\n      __CreateScrollView = __issue45_wrapper_CreateScrollView;\n      binding.rebound = __CreateScrollView === __issue45_wrapper_CreateScrollView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateText = __CreateText;\n    var __issue45_wrapper_CreateText = function () {\n      probe.counts[\"__CreateText\"] = (probe.counts[\"__CreateText\"] || 0) + 1;\n      return __issue45_original_CreateText.apply(this, arguments);\n    };\n    try {\n      __CreateText = __issue45_wrapper_CreateText;\n      binding.rebound = __CreateText === __issue45_wrapper_CreateText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateRawText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateRawText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateRawText = __CreateRawText;\n    var __issue45_wrapper_CreateRawText = function () {\n      probe.counts[\"__CreateRawText\"] = (probe.counts[\"__CreateRawText\"] || 0) + 1;\n      return __issue45_original_CreateRawText.apply(this, arguments);\n    };\n    try {\n      __CreateRawText = __issue45_wrapper_CreateRawText;\n      binding.rebound = __CreateRawText === __issue45_wrapper_CreateRawText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateImage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateImage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateImage = __CreateImage;\n    var __issue45_wrapper_CreateImage = function () {\n      probe.counts[\"__CreateImage\"] = (probe.counts[\"__CreateImage\"] || 0) + 1;\n      return __issue45_original_CreateImage.apply(this, arguments);\n    };\n    try {\n      __CreateImage = __issue45_wrapper_CreateImage;\n      binding.rebound = __CreateImage === __issue45_wrapper_CreateImage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateList === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateList\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateList = __CreateList;\n    var __issue45_wrapper_CreateList = function () {\n      probe.counts[\"__CreateList\"] = (probe.counts[\"__CreateList\"] || 0) + 1;\n      return __issue45_original_CreateList.apply(this, arguments);\n    };\n    try {\n      __CreateList = __issue45_wrapper_CreateList;\n      binding.rebound = __CreateList === __issue45_wrapper_CreateList;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __UpdateListCallbacks === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__UpdateListCallbacks\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_UpdateListCallbacks = __UpdateListCallbacks;\n    var __issue45_wrapper_UpdateListCallbacks = function () {\n      probe.counts[\"__UpdateListCallbacks\"] = (probe.counts[\"__UpdateListCallbacks\"] || 0) + 1;\n      return __issue45_original_UpdateListCallbacks.apply(this, arguments);\n    };\n    try {\n      __UpdateListCallbacks = __issue45_wrapper_UpdateListCallbacks;\n      binding.rebound = __UpdateListCallbacks === __issue45_wrapper_UpdateListCallbacks;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetElementUniqueID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetElementUniqueID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetElementUniqueID = __GetElementUniqueID;\n    var __issue45_wrapper_GetElementUniqueID = function () {\n      probe.counts[\"__GetElementUniqueID\"] = (probe.counts[\"__GetElementUniqueID\"] || 0) + 1;\n      return __issue45_original_GetElementUniqueID.apply(this, arguments);\n    };\n    try {\n      __GetElementUniqueID = __issue45_wrapper_GetElementUniqueID;\n      binding.rebound = __GetElementUniqueID === __issue45_wrapper_GetElementUniqueID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetParent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetParent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetParent = __GetParent;\n    var __issue45_wrapper_GetParent = function () {\n      probe.counts[\"__GetParent\"] = (probe.counts[\"__GetParent\"] || 0) + 1;\n      return __issue45_original_GetParent.apply(this, arguments);\n    };\n    try {\n      __GetParent = __issue45_wrapper_GetParent;\n      binding.rebound = __GetParent === __issue45_wrapper_GetParent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ElementIsEqual === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ElementIsEqual\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ElementIsEqual = __ElementIsEqual;\n    var __issue45_wrapper_ElementIsEqual = function () {\n      probe.counts[\"__ElementIsEqual\"] = (probe.counts[\"__ElementIsEqual\"] || 0) + 1;\n      return __issue45_original_ElementIsEqual.apply(this, arguments);\n    };\n    try {\n      __ElementIsEqual = __issue45_wrapper_ElementIsEqual;\n      binding.rebound = __ElementIsEqual === __issue45_wrapper_ElementIsEqual;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AppendElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AppendElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AppendElement = __AppendElement;\n    var __issue45_wrapper_AppendElement = function () {\n      probe.counts[\"__AppendElement\"] = (probe.counts[\"__AppendElement\"] || 0) + 1;\n      return __issue45_original_AppendElement.apply(this, arguments);\n    };\n    try {\n      __AppendElement = __issue45_wrapper_AppendElement;\n      binding.rebound = __AppendElement === __issue45_wrapper_AppendElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __InsertElementBefore === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__InsertElementBefore\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_InsertElementBefore = __InsertElementBefore;\n    var __issue45_wrapper_InsertElementBefore = function () {\n      probe.counts[\"__InsertElementBefore\"] = (probe.counts[\"__InsertElementBefore\"] || 0) + 1;\n      return __issue45_original_InsertElementBefore.apply(this, arguments);\n    };\n    try {\n      __InsertElementBefore = __issue45_wrapper_InsertElementBefore;\n      binding.rebound = __InsertElementBefore === __issue45_wrapper_InsertElementBefore;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __RemoveElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__RemoveElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_RemoveElement = __RemoveElement;\n    var __issue45_wrapper_RemoveElement = function () {\n      probe.counts[\"__RemoveElement\"] = (probe.counts[\"__RemoveElement\"] || 0) + 1;\n      return __issue45_original_RemoveElement.apply(this, arguments);\n    };\n    try {\n      __RemoveElement = __issue45_wrapper_RemoveElement;\n      binding.rebound = __RemoveElement === __issue45_wrapper_RemoveElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ReplaceElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ReplaceElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ReplaceElement = __ReplaceElement;\n    var __issue45_wrapper_ReplaceElement = function () {\n      probe.counts[\"__ReplaceElement\"] = (probe.counts[\"__ReplaceElement\"] || 0) + 1;\n      return __issue45_original_ReplaceElement.apply(this, arguments);\n    };\n    try {\n      __ReplaceElement = __issue45_wrapper_ReplaceElement;\n      binding.rebound = __ReplaceElement === __issue45_wrapper_ReplaceElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetClasses === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetClasses\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetClasses = __SetClasses;\n    var __issue45_wrapper_SetClasses = function () {\n      probe.counts[\"__SetClasses\"] = (probe.counts[\"__SetClasses\"] || 0) + 1;\n      return __issue45_original_SetClasses.apply(this, arguments);\n    };\n    try {\n      __SetClasses = __issue45_wrapper_SetClasses;\n      binding.rebound = __SetClasses === __issue45_wrapper_SetClasses;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetInlineStyles === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetInlineStyles\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetInlineStyles = __SetInlineStyles;\n    var __issue45_wrapper_SetInlineStyles = function () {\n      probe.counts[\"__SetInlineStyles\"] = (probe.counts[\"__SetInlineStyles\"] || 0) + 1;\n      return __issue45_original_SetInlineStyles.apply(this, arguments);\n    };\n    try {\n      __SetInlineStyles = __issue45_wrapper_SetInlineStyles;\n      binding.rebound = __SetInlineStyles === __issue45_wrapper_SetInlineStyles;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetCSSId === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetCSSId\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetCSSId = __SetCSSId;\n    var __issue45_wrapper_SetCSSId = function () {\n      probe.counts[\"__SetCSSId\"] = (probe.counts[\"__SetCSSId\"] || 0) + 1;\n      return __issue45_original_SetCSSId.apply(this, arguments);\n    };\n    try {\n      __SetCSSId = __issue45_wrapper_SetCSSId;\n      binding.rebound = __SetCSSId === __issue45_wrapper_SetCSSId;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetAttribute === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetAttribute\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetAttribute = __SetAttribute;\n    var __issue45_wrapper_SetAttribute = function () {\n      probe.counts[\"__SetAttribute\"] = (probe.counts[\"__SetAttribute\"] || 0) + 1;\n      return __issue45_original_SetAttribute.apply(this, arguments);\n    };\n    try {\n      __SetAttribute = __issue45_wrapper_SetAttribute;\n      binding.rebound = __SetAttribute === __issue45_wrapper_SetAttribute;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetDataset === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetDataset\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetDataset = __SetDataset;\n    var __issue45_wrapper_SetDataset = function () {\n      probe.counts[\"__SetDataset\"] = (probe.counts[\"__SetDataset\"] || 0) + 1;\n      return __issue45_original_SetDataset.apply(this, arguments);\n    };\n    try {\n      __SetDataset = __issue45_wrapper_SetDataset;\n      binding.rebound = __SetDataset === __issue45_wrapper_SetDataset;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AddEvent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AddEvent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AddEvent = __AddEvent;\n    var __issue45_wrapper_AddEvent = function () {\n      probe.counts[\"__AddEvent\"] = (probe.counts[\"__AddEvent\"] || 0) + 1;\n      return __issue45_original_AddEvent.apply(this, arguments);\n    };\n    try {\n      __AddEvent = __issue45_wrapper_AddEvent;\n      binding.rebound = __AddEvent === __issue45_wrapper_AddEvent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetID = __SetID;\n    var __issue45_wrapper_SetID = function () {\n      probe.counts[\"__SetID\"] = (probe.counts[\"__SetID\"] || 0) + 1;\n      return __issue45_original_SetID.apply(this, arguments);\n    };\n    try {\n      __SetID = __issue45_wrapper_SetID;\n      binding.rebound = __SetID === __issue45_wrapper_SetID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __FlushElementTree === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__FlushElementTree\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_FlushElementTree = __FlushElementTree;\n    var __issue45_wrapper_FlushElementTree = function () {\n      probe.counts[\"__FlushElementTree\"] = (probe.counts[\"__FlushElementTree\"] || 0) + 1;\n      return __issue45_original_FlushElementTree.apply(this, arguments);\n    };\n    try {\n      __FlushElementTree = __issue45_wrapper_FlushElementTree;\n      binding.rebound = __FlushElementTree === __issue45_wrapper_FlushElementTree;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  function report() {\n    try {\n      console.log(\"__ISSUE45_N1_RESULT__\" + JSON.stringify(probe));\n    } catch (error) {\n      probe.reportError = String(error);\n    }\n  }\n  try {\n    lynx.requestAnimationFrame(function () {\n      lynx.requestAnimationFrame(report);\n    });\n  } catch (error) {\n    probe.reportError = String(error);\n    if (typeof setTimeout === 'function') setTimeout(report, 50);\n    else report();\n  }\n})();"
+          },
+          "vendored": {
+            "bytes": 490295,
+            "sha256": "4b8e839f27df63a10f8c80033d98b4b9e4dd02e7b91ecd0ebc6d69bcf76e3c4b",
+            "mtsSha256": "05828024879ca967093204508cca59dd658e0f08dbb2a85a570a9523c83c35d3"
+          },
+          "cleanBuild": {
+            "mtsByteExactWithVendored": false,
+            "compilerEquivalence": {
+              "kind": "generated-debug-metadata-and-alpha-rename-only",
+              "staticDecodedSectionsEqualVendored": true,
+              "mtsAlphaRename": "3<->8",
+              "btsAlphaRename": "3<->6"
+            }
+          },
+          "bundle": {
+            "bytes": 498753,
+            "sha256": "543579f2889a369ceedbe2cb6c76e02be72cffd43002979ab4a254a64dd03500",
+            "markerPresent": true
+          }
+        }
+      },
+      "react": {
+        "requestedRows": 1000,
+        "committedRows": 1000,
+        "domPredicate": {
+          "query": "col-label",
+          "resultCount": 1000
+        },
+        "devtoolSessionId": 6,
+        "bindings": {
+          "present": 24,
+          "rebound": 24,
+          "assignmentErrors": []
+        },
+        "reportError": null,
+        "consoleErrors": [],
+        "methodCounts": {
+          "__CreatePage": 1,
+          "__GetElementUniqueID": 1,
+          "__SetCSSId": 1,
+          "__CreateView": 1015,
+          "__SetClasses": 4028,
+          "__CreateText": 3013,
+          "__SetAttribute": 3013,
+          "__AppendElement": 6028,
+          "__AddEvent": 2012,
+          "__CreateRawText": 2000,
+          "__FlushElementTree": 1
+        },
+        "segmentCounts": {
+          "create": 6029,
+          "props": 7042,
+          "events": 2012,
+          "topology": 6028,
+          "read": 1,
+          "flush": 1
+        },
+        "buildReceipt": {
+          "source": {
+            "repository": "Huxpro/vue-lynx",
+            "commit": "28f7acbab990b3b574f04944e0d21c769719cc68",
+            "exactEntryPatchSha256": "a8745f5c560f381fcad062682cd9820b3c3a4bce6182eb10718c1bc1efaf72b1"
+          },
+          "rows": 1000,
+          "injection": {
+            "placement": "MTS asset prefix before TASM encoding; ROOT_LEPUS transplanted onto vendored sections",
+            "sha256": "aa3ac9a39fd9c19a8cbf45b0462efe34356c81b34f4572ea5cef614b5ca30ba0",
+            "source": ";/* issue #45 N1: exact count-only MTS prefix; generated, do not minify separately */\n(function () {\n  var probe = globalThis.__ISSUE45_N1__ = {\n    protocol: \"lynx-bench-pipeline-native-counts-v1\",\n    entry: \"react\",\n    rows: 1000,\n    bindings: {},\n    counts: {},\n    reportError: null\n  };\n\n  (function () {\n    var binding = { present: typeof __CreatePage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreatePage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreatePage = __CreatePage;\n    var __issue45_wrapper_CreatePage = function () {\n      probe.counts[\"__CreatePage\"] = (probe.counts[\"__CreatePage\"] || 0) + 1;\n      return __issue45_original_CreatePage.apply(this, arguments);\n    };\n    try {\n      __CreatePage = __issue45_wrapper_CreatePage;\n      binding.rebound = __CreatePage === __issue45_wrapper_CreatePage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateElement = __CreateElement;\n    var __issue45_wrapper_CreateElement = function () {\n      probe.counts[\"__CreateElement\"] = (probe.counts[\"__CreateElement\"] || 0) + 1;\n      return __issue45_original_CreateElement.apply(this, arguments);\n    };\n    try {\n      __CreateElement = __issue45_wrapper_CreateElement;\n      binding.rebound = __CreateElement === __issue45_wrapper_CreateElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateView = __CreateView;\n    var __issue45_wrapper_CreateView = function () {\n      probe.counts[\"__CreateView\"] = (probe.counts[\"__CreateView\"] || 0) + 1;\n      return __issue45_original_CreateView.apply(this, arguments);\n    };\n    try {\n      __CreateView = __issue45_wrapper_CreateView;\n      binding.rebound = __CreateView === __issue45_wrapper_CreateView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateScrollView === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateScrollView\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateScrollView = __CreateScrollView;\n    var __issue45_wrapper_CreateScrollView = function () {\n      probe.counts[\"__CreateScrollView\"] = (probe.counts[\"__CreateScrollView\"] || 0) + 1;\n      return __issue45_original_CreateScrollView.apply(this, arguments);\n    };\n    try {\n      __CreateScrollView = __issue45_wrapper_CreateScrollView;\n      binding.rebound = __CreateScrollView === __issue45_wrapper_CreateScrollView;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateText = __CreateText;\n    var __issue45_wrapper_CreateText = function () {\n      probe.counts[\"__CreateText\"] = (probe.counts[\"__CreateText\"] || 0) + 1;\n      return __issue45_original_CreateText.apply(this, arguments);\n    };\n    try {\n      __CreateText = __issue45_wrapper_CreateText;\n      binding.rebound = __CreateText === __issue45_wrapper_CreateText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateRawText === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateRawText\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateRawText = __CreateRawText;\n    var __issue45_wrapper_CreateRawText = function () {\n      probe.counts[\"__CreateRawText\"] = (probe.counts[\"__CreateRawText\"] || 0) + 1;\n      return __issue45_original_CreateRawText.apply(this, arguments);\n    };\n    try {\n      __CreateRawText = __issue45_wrapper_CreateRawText;\n      binding.rebound = __CreateRawText === __issue45_wrapper_CreateRawText;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateImage === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateImage\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateImage = __CreateImage;\n    var __issue45_wrapper_CreateImage = function () {\n      probe.counts[\"__CreateImage\"] = (probe.counts[\"__CreateImage\"] || 0) + 1;\n      return __issue45_original_CreateImage.apply(this, arguments);\n    };\n    try {\n      __CreateImage = __issue45_wrapper_CreateImage;\n      binding.rebound = __CreateImage === __issue45_wrapper_CreateImage;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __CreateList === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__CreateList\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_CreateList = __CreateList;\n    var __issue45_wrapper_CreateList = function () {\n      probe.counts[\"__CreateList\"] = (probe.counts[\"__CreateList\"] || 0) + 1;\n      return __issue45_original_CreateList.apply(this, arguments);\n    };\n    try {\n      __CreateList = __issue45_wrapper_CreateList;\n      binding.rebound = __CreateList === __issue45_wrapper_CreateList;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __UpdateListCallbacks === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__UpdateListCallbacks\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_UpdateListCallbacks = __UpdateListCallbacks;\n    var __issue45_wrapper_UpdateListCallbacks = function () {\n      probe.counts[\"__UpdateListCallbacks\"] = (probe.counts[\"__UpdateListCallbacks\"] || 0) + 1;\n      return __issue45_original_UpdateListCallbacks.apply(this, arguments);\n    };\n    try {\n      __UpdateListCallbacks = __issue45_wrapper_UpdateListCallbacks;\n      binding.rebound = __UpdateListCallbacks === __issue45_wrapper_UpdateListCallbacks;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetElementUniqueID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetElementUniqueID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetElementUniqueID = __GetElementUniqueID;\n    var __issue45_wrapper_GetElementUniqueID = function () {\n      probe.counts[\"__GetElementUniqueID\"] = (probe.counts[\"__GetElementUniqueID\"] || 0) + 1;\n      return __issue45_original_GetElementUniqueID.apply(this, arguments);\n    };\n    try {\n      __GetElementUniqueID = __issue45_wrapper_GetElementUniqueID;\n      binding.rebound = __GetElementUniqueID === __issue45_wrapper_GetElementUniqueID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __GetParent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__GetParent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_GetParent = __GetParent;\n    var __issue45_wrapper_GetParent = function () {\n      probe.counts[\"__GetParent\"] = (probe.counts[\"__GetParent\"] || 0) + 1;\n      return __issue45_original_GetParent.apply(this, arguments);\n    };\n    try {\n      __GetParent = __issue45_wrapper_GetParent;\n      binding.rebound = __GetParent === __issue45_wrapper_GetParent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ElementIsEqual === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ElementIsEqual\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ElementIsEqual = __ElementIsEqual;\n    var __issue45_wrapper_ElementIsEqual = function () {\n      probe.counts[\"__ElementIsEqual\"] = (probe.counts[\"__ElementIsEqual\"] || 0) + 1;\n      return __issue45_original_ElementIsEqual.apply(this, arguments);\n    };\n    try {\n      __ElementIsEqual = __issue45_wrapper_ElementIsEqual;\n      binding.rebound = __ElementIsEqual === __issue45_wrapper_ElementIsEqual;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AppendElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AppendElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AppendElement = __AppendElement;\n    var __issue45_wrapper_AppendElement = function () {\n      probe.counts[\"__AppendElement\"] = (probe.counts[\"__AppendElement\"] || 0) + 1;\n      return __issue45_original_AppendElement.apply(this, arguments);\n    };\n    try {\n      __AppendElement = __issue45_wrapper_AppendElement;\n      binding.rebound = __AppendElement === __issue45_wrapper_AppendElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __InsertElementBefore === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__InsertElementBefore\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_InsertElementBefore = __InsertElementBefore;\n    var __issue45_wrapper_InsertElementBefore = function () {\n      probe.counts[\"__InsertElementBefore\"] = (probe.counts[\"__InsertElementBefore\"] || 0) + 1;\n      return __issue45_original_InsertElementBefore.apply(this, arguments);\n    };\n    try {\n      __InsertElementBefore = __issue45_wrapper_InsertElementBefore;\n      binding.rebound = __InsertElementBefore === __issue45_wrapper_InsertElementBefore;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __RemoveElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__RemoveElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_RemoveElement = __RemoveElement;\n    var __issue45_wrapper_RemoveElement = function () {\n      probe.counts[\"__RemoveElement\"] = (probe.counts[\"__RemoveElement\"] || 0) + 1;\n      return __issue45_original_RemoveElement.apply(this, arguments);\n    };\n    try {\n      __RemoveElement = __issue45_wrapper_RemoveElement;\n      binding.rebound = __RemoveElement === __issue45_wrapper_RemoveElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __ReplaceElement === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__ReplaceElement\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_ReplaceElement = __ReplaceElement;\n    var __issue45_wrapper_ReplaceElement = function () {\n      probe.counts[\"__ReplaceElement\"] = (probe.counts[\"__ReplaceElement\"] || 0) + 1;\n      return __issue45_original_ReplaceElement.apply(this, arguments);\n    };\n    try {\n      __ReplaceElement = __issue45_wrapper_ReplaceElement;\n      binding.rebound = __ReplaceElement === __issue45_wrapper_ReplaceElement;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetClasses === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetClasses\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetClasses = __SetClasses;\n    var __issue45_wrapper_SetClasses = function () {\n      probe.counts[\"__SetClasses\"] = (probe.counts[\"__SetClasses\"] || 0) + 1;\n      return __issue45_original_SetClasses.apply(this, arguments);\n    };\n    try {\n      __SetClasses = __issue45_wrapper_SetClasses;\n      binding.rebound = __SetClasses === __issue45_wrapper_SetClasses;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetInlineStyles === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetInlineStyles\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetInlineStyles = __SetInlineStyles;\n    var __issue45_wrapper_SetInlineStyles = function () {\n      probe.counts[\"__SetInlineStyles\"] = (probe.counts[\"__SetInlineStyles\"] || 0) + 1;\n      return __issue45_original_SetInlineStyles.apply(this, arguments);\n    };\n    try {\n      __SetInlineStyles = __issue45_wrapper_SetInlineStyles;\n      binding.rebound = __SetInlineStyles === __issue45_wrapper_SetInlineStyles;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetCSSId === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetCSSId\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetCSSId = __SetCSSId;\n    var __issue45_wrapper_SetCSSId = function () {\n      probe.counts[\"__SetCSSId\"] = (probe.counts[\"__SetCSSId\"] || 0) + 1;\n      return __issue45_original_SetCSSId.apply(this, arguments);\n    };\n    try {\n      __SetCSSId = __issue45_wrapper_SetCSSId;\n      binding.rebound = __SetCSSId === __issue45_wrapper_SetCSSId;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetAttribute === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetAttribute\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetAttribute = __SetAttribute;\n    var __issue45_wrapper_SetAttribute = function () {\n      probe.counts[\"__SetAttribute\"] = (probe.counts[\"__SetAttribute\"] || 0) + 1;\n      return __issue45_original_SetAttribute.apply(this, arguments);\n    };\n    try {\n      __SetAttribute = __issue45_wrapper_SetAttribute;\n      binding.rebound = __SetAttribute === __issue45_wrapper_SetAttribute;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetDataset === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetDataset\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetDataset = __SetDataset;\n    var __issue45_wrapper_SetDataset = function () {\n      probe.counts[\"__SetDataset\"] = (probe.counts[\"__SetDataset\"] || 0) + 1;\n      return __issue45_original_SetDataset.apply(this, arguments);\n    };\n    try {\n      __SetDataset = __issue45_wrapper_SetDataset;\n      binding.rebound = __SetDataset === __issue45_wrapper_SetDataset;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __AddEvent === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__AddEvent\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_AddEvent = __AddEvent;\n    var __issue45_wrapper_AddEvent = function () {\n      probe.counts[\"__AddEvent\"] = (probe.counts[\"__AddEvent\"] || 0) + 1;\n      return __issue45_original_AddEvent.apply(this, arguments);\n    };\n    try {\n      __AddEvent = __issue45_wrapper_AddEvent;\n      binding.rebound = __AddEvent === __issue45_wrapper_AddEvent;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __SetID === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__SetID\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_SetID = __SetID;\n    var __issue45_wrapper_SetID = function () {\n      probe.counts[\"__SetID\"] = (probe.counts[\"__SetID\"] || 0) + 1;\n      return __issue45_original_SetID.apply(this, arguments);\n    };\n    try {\n      __SetID = __issue45_wrapper_SetID;\n      binding.rebound = __SetID === __issue45_wrapper_SetID;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  (function () {\n    var binding = { present: typeof __FlushElementTree === 'function', rebound: false, assignmentError: null };\n    probe.bindings[\"__FlushElementTree\"] = binding;\n    if (!binding.present) return;\n    var __issue45_original_FlushElementTree = __FlushElementTree;\n    var __issue45_wrapper_FlushElementTree = function () {\n      probe.counts[\"__FlushElementTree\"] = (probe.counts[\"__FlushElementTree\"] || 0) + 1;\n      return __issue45_original_FlushElementTree.apply(this, arguments);\n    };\n    try {\n      __FlushElementTree = __issue45_wrapper_FlushElementTree;\n      binding.rebound = __FlushElementTree === __issue45_wrapper_FlushElementTree;\n    } catch (error) {\n      binding.assignmentError = String(error);\n    }\n  })();\n\n  function report() {\n    try {\n      console.log(\"__ISSUE45_N1_RESULT__\" + JSON.stringify(probe));\n    } catch (error) {\n      probe.reportError = String(error);\n    }\n  }\n  try {\n    lynx.requestAnimationFrame(function () {\n      lynx.requestAnimationFrame(report);\n    });\n  } catch (error) {\n    probe.reportError = String(error);\n    if (typeof setTimeout === 'function') setTimeout(report, 50);\n    else report();\n  }\n})();"
+          },
+          "vendored": {
+            "bytes": 102957,
+            "sha256": "893caede546f1825159ceb1c538c780c4ffafd2ea1536ef806a265164525fa34",
+            "mtsSha256": "f1183fb1a1e9a2b27a66ff576b927ee35fb8f1b4d8c9f266d23727436367c3c2"
+          },
+          "cleanBuild": {
+            "mtsByteExactWithVendored": true
+          },
+          "transplant": {
+            "mtsPayloadOffset": 51527,
+            "baselineVendorDifferingByteCount": 288,
+            "allBaselineVendorDifferencesBeforeMts": true,
+            "restoredVendoredScriptBytes": 49571,
+            "decodedNonMtsSectionsEqualVendored": true
+          },
+          "bundle": {
+            "bytes": 110270,
+            "sha256": "1aeea8c1b870fbbc863fe14702057fdd211d240bddd0e559566036623ff383f2",
+            "markerPresent": true
+          }
+        }
+      }
+    },
+    "webOracle": {
+      "sourceRun": "results/runs/2026-08-30T10-54-22-65160668d8d9-issue-44-post-fix-pipeline-v2.json",
+      "entry": "octane-hux",
+      "workload": "create",
+      "scale": 1000,
+      "methodCounts": {
+        "__AddEvent": 2000,
+        "__CreateRawText": 3000,
+        "__CreateText": 3000,
+        "__CreateView": 1000,
+        "__FlushElementTree": 1,
+        "__InsertElementBefore": 7000,
+        "__SetClasses": 4000
+      },
+      "segmentCounts": {
+        "create": 7000,
+        "props": 4000,
+        "events": 2000,
+        "topology": 7000,
+        "read": 0,
+        "flush": 1
+      },
+      "equality": false,
+      "exactMethodDifferences": {
+        "__AddEvent": {
+          "native": 2012,
+          "web": 2000,
+          "delta": 12
+        },
+        "__AppendElement": {
+          "native": 7041,
+          "web": 0,
+          "delta": 7041
+        },
+        "__CreatePage": {
+          "native": 1,
+          "web": 0,
+          "delta": 1
+        },
+        "__CreateRawText": {
+          "native": 3013,
+          "web": 3000,
+          "delta": 13
+        },
+        "__CreateText": {
+          "native": 3013,
+          "web": 3000,
+          "delta": 13
+        },
+        "__CreateView": {
+          "native": 1015,
+          "web": 1000,
+          "delta": 15
+        },
+        "__GetElementUniqueID": {
+          "native": 1,
+          "web": 0,
+          "delta": 1
+        },
+        "__InsertElementBefore": {
+          "native": 0,
+          "web": 7000,
+          "delta": -7000
+        },
+        "__SetAttribute": {
+          "native": 4028,
+          "web": 0,
+          "delta": 4028
+        },
+        "__SetClasses": {
+          "native": 4028,
+          "web": 4000,
+          "delta": 28
+        }
+      },
+      "explanation": "Native captures the whole mount, including the app shell and static attributes; the Web oracle captures row creation after its shell exists. Native uses __AppendElement where the Web oracle uses __InsertElementBefore."
+    }
+  },
+  "N2": {
+    "status": "NO-GO",
+    "reason": "The finest Lepus clock is monotonic Date.now() at 1 ms; performance.now and lynx.performance.now are unavailable. One millisecond is far coarser than an individual ElementPAPI call, so wrapper overhead and signal cannot be separated.",
+    "timingArmsRun": 0,
+    "timingRecordsPublished": 0
+  },
+  "outputs": {
+    "audit": "results/audits/2026-08-30-issue45-native-pipeline.json",
+    "run": "results/runs/2026-08-30T12-10-00-native-pipeline-counts.json"
+  }
+}

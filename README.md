@@ -151,7 +151,7 @@ source, manifest, patch, and bundle receipts are rechecked before completion.
 | layer | metrics | how |
 | --- | --- | --- |
 | time | Web `latency`/`fcp`/`settled`; Native `latency` and pipeline startup where available | real input; harness-specific boundaries are stored on every record |
-| element pipeline | Web-only synchronous ElementPAPI segment self-time/calls + outside-PAPI residual | dedicated capture page; raw tree/call controls gate derived comparisons; Native is unsupported |
+| element pipeline | Web synchronous ElementPAPI self-time/calls + residual; isolated Native whole-mount counts | Web capture page for comparisons; real-device Native probe is count-only and never ranked |
 | storm semantics | Web-only elapsed time, observable frames/ticks, contract outcome, wire bytes/tick | dedicated shared-driver page; every-tick failure is descriptive data, final-state permits coalescing |
 | list virtualization | startup, one-viewport recycle, fixed-velocity fling; raw counts/times/wire plus derived per-cell rates | separate declarative `list`/`list-item` fixture; Web and Native observers are isolated; absent fixtures are unsupported |
 | staging Pareto | exact scale- and regime-matched artifact/MTS gzip × startup FCP median and CI | collector-derived static artifact records + one FCP regime (Web JIT 1× by default); lower-left frontier only, never a score |

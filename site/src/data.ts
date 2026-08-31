@@ -331,6 +331,7 @@ export interface TimelineSnapshot {
   machines: Record<string, Machine>;
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
+  nativePipelineAttributionRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   pipelineCoverage: PipelineCoverage;
   listCoverage: ListCoverage;
@@ -472,6 +473,7 @@ const collected = latest as unknown as {
   labComparisonRecords: BenchRecord[];
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
+  nativePipelineAttributionRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
   pipelineCoverage: PipelineCoverage;
   listCoverage: ListCoverage;
@@ -577,6 +579,9 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     machines,
     nativeObservations: [],
     nativeObservationRecords: [],
+    nativePipelineAttributionRecords: checkpoint.current
+      ? collected.nativePipelineAttributionRecords
+      : [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
     pipelineCoverage: checkpoint.pipelineCoverage ?? EMPTY_PIPELINE_COVERAGE,
     listCoverage: checkpoint.listCoverage ?? EMPTY_LIST_COVERAGE,

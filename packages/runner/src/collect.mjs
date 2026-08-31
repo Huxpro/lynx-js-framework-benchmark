@@ -51,7 +51,13 @@ const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
-const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite);
+export const ISOLATED_ATTRIBUTION_SUITES = Object.freeze(['pipeline-native']);
+export const isIsolatedAttributionSuite = (suite) =>
+  ISOLATED_ATTRIBUTION_SUITES.includes(suite);
+// Isolated attribution evidence remains available in its immutable raw run,
+// but is never merged into latest.json, ranked, or treated as a campaign cell.
+const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite)
+  && !isIsolatedAttributionSuite(r.suite);
 const isRankingEligible = (record) => record.rankingEligible !== false;
 const isComparisonVisible = (record) => isRankingEligible(record)
   || record.descriptiveEligible === true
@@ -883,8 +889,9 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
-    // Exact-observation suites have dedicated selectors below. They are
-    // descriptive evidence and must never replace or inflate the main
+    // Exact-observation suites have dedicated selectors below. Native count
+    // evidence is excluded earlier by isBenchmarkRecord(). They must never
+    // replace or inflate the main
     // table/startup comparison cohort.
     && !['pipeline', 'storm', 'list'].includes(record.suite)
     && record.harness === harness
@@ -1798,6 +1805,7 @@ export function collectRuns({
   const machines = {};
   const merged = new Map();
   const runs = [];
+  const isolatedAttributionRuns = [];
   const incompleteCheckpointFiles = new Set();
   let comparisonRun = null;
   let latestSourceGeneratedAt = null;
@@ -1826,7 +1834,25 @@ export function collectRuns({
       }
       incompleteCheckpointFiles.add(file);
     }
-    const run = normalizeRun(rawRun, file);
+    const normalizedRun = normalizeRun(rawRun, file);
+    const isolatedAttributionRecords = normalizedRun.records.filter(
+      (record) => isIsolatedAttributionSuite(record.suite));
+    if (isolatedAttributionRecords.length > 0) {
+      isolatedAttributionRuns.push({
+        file,
+        run: { ...normalizedRun, records: isolatedAttributionRecords },
+      });
+    }
+    const ordinaryRecords = normalizedRun.records.filter(
+      (record) => !isIsolatedAttributionSuite(record.suite));
+    if (ordinaryRecords.length !== normalizedRun.records.length) {
+      log(`[collect] isolate ${file}: ${normalizedRun.records.length - ordinaryRecords.length} `
+        + 'Native attribution evidence records routed to the descriptive outlet only');
+    }
+    if (ordinaryRecords.length === 0) continue;
+    const run = ordinaryRecords.length === normalizedRun.records.length
+      ? normalizedRun
+      : { ...normalizedRun, records: ordinaryRecords };
     runs.push({ file, run });
     runsSeen += 1;
     const m = run.meta.machine;
@@ -2054,6 +2080,21 @@ export function collectRuns({
   const archiveStaticRecords = currentEntries.flatMap((entry) =>
     (staticByEntry.get(entry.id) ?? []).map((record) => annotateStatic(entry, record)));
 
+  const nativePipelineAttribution = [...isolatedAttributionRuns].sort((left, right) =>
+    left.run.meta.generatedAt.localeCompare(right.run.meta.generatedAt)
+      || left.file.localeCompare(right.file)).at(-1) ?? null;
+  const nativePipelineAttributionRecords = nativePipelineAttribution == null ? []
+    : nativePipelineAttribution.run.records.map((record) => ({
+      ...annotate(
+        nativePipelineAttribution.run,
+        nativePipelineAttribution.file,
+        record,
+        'isolated-observation',
+      ),
+      rankingEligible: false,
+      descriptiveEligible: true,
+    }));
+
   const out = {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: generatedAt ?? latestSourceGeneratedAt,
@@ -2070,6 +2111,10 @@ export function collectRuns({
     labComparisonRecords,
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
+    // Count-only real-device ElementPAPI evidence. This dedicated outlet is
+    // consumed by one descriptive card and never joins records, comparison,
+    // ranking, history, or a Native campaign matrix.
+    nativePipelineAttributionRecords,
     nativeCoverage,
     pipelineCoverage,
     listCoverage,

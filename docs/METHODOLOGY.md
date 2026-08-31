@@ -98,7 +98,7 @@ metric rather than silently changing the upstream interaction formula.
   commit-only, one-directional). Bytes are the UTF-8 length of a stable JSON serialization —
   a structured-clone-cost proxy applied identically to every entry (documented limitation:
   transferables are size-tagged, not serialized).
-- **Element pipeline (Web-only)**: a dedicated `/pipeline` harness page intercepts the one
+- **Element pipeline (Web)**: a dedicated `/pipeline` harness page intercepts the one
   `Object.assign` that installs web-core's ElementPAPI surface onto its same-origin sandboxed MTS
   iframe. The outer hook is installed before web-core boots and wraps every framework identically.
   Each sample retains synchronous self-time and call counts for `create / props / events /
@@ -111,8 +111,23 @@ metric rather than silently changing the upstream interaction formula.
   pointerdown→predicate interval minus synchronous PAPI self-time; it includes
   framework script, scheduling, and asynchronous style/layout/paint and is **not** labelled
   framework-only time. Likewise, `__FlushElementTree` self-time is synchronous web-core flush
-  bookkeeping/root attach, not the browser's full layout/commit cost. Native is explicitly
-  unsupported because it has no equivalent framework-neutral seam; no proxy value is emitted.
+  bookkeeping/root attach, not the browser's full layout/commit cost.
+- **Element pipeline (Native probe)**: issue #45 proved on a real Aries10 / SDK 4 device that all
+  24 tested ElementPAPI builtins can be rebound by an exact MTS prefix. The isolated
+  `pipeline-native` suite therefore publishes whole-mount method and segment **counts only** for
+  upstream Octane, Octane-Hux, and ReactLynx at 1k rows. It is not the Web operation interval:
+  shell creation and static attributes are included, and topology may use `__AppendElement`
+  instead of Web's `__InsertElementBefore`. The collector never merges these records into
+  ordinary `latest.json` records, a ranking, history, or a Native campaign cohort. It exposes the
+  newest isolated run only through `nativePipelineAttributionRecords`, a dedicated descriptive
+  outlet for the counts-only site card.
+
+  Native self-time remains unsupported. The finest available Lepus clock was monotonic
+  `Date.now()` at 1 ms; `performance.now()` and `lynx.performance.now()` were unavailable. That is
+  too coarse for individual PAPI calls, so no timing arms ran and no timing record was emitted. A
+  future valid timing metric must be labelled **“engine + JNI bridge, as seen from Lepus”**.
+  The exact prefixes, bundle hashes, raw counts, clock probe, and Web-oracle differences are in
+  `results/audits/2026-08-30-issue45-native-pipeline.json`.
 - **List virtualization (capability-gated)**: `list-startup@1k/10k` attaches a separately built,
   prepopulated declarative list and observes the first visible content frame. `list-recycle@10k`
   moves exactly one 390×640 viewport twenty times and retains raw elapsed time, recycled-cell count,

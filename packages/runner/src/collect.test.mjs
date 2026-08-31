@@ -11,6 +11,7 @@ import {
   collectRuns,
   DATASET_CHECKPOINT_SPECS,
   HISTORY_REPLAY_SPEC,
+  isIsolatedAttributionSuite,
 } from './collect.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
@@ -41,6 +42,12 @@ const record = (entry, workload = 'create') => ({
 const nativeRecord = (entry, workload = 'create', environment = 'native-test') => ({
   ...record(entry, workload), harness: 'native', environment,
   boundary: 'native-input-handler-to-second-native-frame',
+});
+
+test('Native pipeline attribution is an isolated evidence suite', () => {
+  assert.equal(isIsolatedAttributionSuite('pipeline-native'), true);
+  assert.equal(isIsolatedAttributionSuite('pipeline'), false);
+  assert.equal(isIsolatedAttributionSuite('table'), false);
 });
 
 const nativeEntries = (ids) => ids.map((id) => ({
@@ -231,6 +238,50 @@ test('collect keeps record calibration and charts one coherent broadest run', ()
     assert.equal(oldReact.calibration.score, 100);
     assert.equal(newOctane.calibration.score, 110);
     assert.equal(out.machines.a.latestCalibration.score, 110);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector never merges or ranks pipeline-native evidence', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-native-attribution-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'ranked-web.json', {
+      machineId: 'web', score: 100, entries: ['react', 'vue'],
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/native-attribution.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-02T00:00:00Z',
+        machine: machine('native-attribution'),
+        calibration: null,
+      },
+      records: [{
+        ...nativeRecord('react'),
+        suite: 'pipeline-native',
+        metric: 'papiCreateCalls',
+        boundary: 'lepus-main-thread-element-papi-call-count-as-seen-from-lepus',
+        unit: 'count',
+        samples: [42],
+      }],
+    }));
+
+    const out = collectRuns({
+      root, generatedAt: 'test', log: () => {}, entryTiers: entryTiers(['react', 'vue']),
+    });
+    assert.equal(out.comparison.runFile, 'ranked-web.json');
+    assert.equal(out.records.some((candidate) => candidate.suite === 'pipeline-native'), false);
+    assert.equal(out.comparisonRecords.some(
+      (candidate) => candidate.suite === 'pipeline-native'), false);
+    assert.equal(Object.hasOwn(out.machines, 'native-attribution'), false);
+    assert.equal(out.sources.runFiles.includes('native-attribution.json'), false);
+    assert.equal(out.nativePipelineAttributionRecords.length, 1);
+    assert.equal(out.nativePipelineAttributionRecords[0].metric, 'papiCreateCalls');
+    assert.equal(out.nativePipelineAttributionRecords[0].comparisonKind,
+      'isolated-observation');
+    assert.equal(out.nativePipelineAttributionRecords[0].rankingEligible, false);
+    assert.equal(out.nativePipelineAttributionRecords[0].descriptiveEligible, true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
