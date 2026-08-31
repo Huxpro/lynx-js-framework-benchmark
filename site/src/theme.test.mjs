@@ -42,11 +42,15 @@ test('mobile advanced regimes unfold into a touch-scrollable rail', () => {
   assert.match(scroll, /-webkit-overflow-scrolling\s*:\s*touch/);
   assert.match(switcher, /width\s*:\s*max-content/);
   assert.match(mobile, /grid-template-areas/);
-  assert.match(mobile, /'view environment toggle preferences'/);
-  assert.match(mobile, /'advanced advanced advanced advanced'/);
+  assert.match(mobile, /'view \. environment toggle preferences'/);
+  assert.match(mobile, /grid-template-columns:\s*auto minmax\(0, 1fr\) auto auto auto/);
+  assert.match(mobile, /\.view-switch\s*\{[^}]*margin-right:\s*0/);
+  assert.match(mobile, /'advanced advanced advanced advanced advanced'/);
   assert.doesNotMatch(mobile, /'toggle toggle/);
   assert.match(mobile, /\.advanced-toggle/);
+  assert.match(mobile, /\.harness-switch button\[aria-pressed='true'\]/);
   assert.match(mobile, /\.workspace-advanced/);
+  assert.match(css, /clip-path:\s*polygon\(0 0, 100% 0, 50% 100%\)/);
   assert.doesNotMatch(css, /\.workspace-advanced\[hidden\]/);
 });
 
