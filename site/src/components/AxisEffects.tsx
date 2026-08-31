@@ -13,13 +13,41 @@ const AXES: AxisName[] = [
   'invalidation', 'recompute', 'sharing', 'staging', 'residency', 'handover',
 ];
 
-const AXIS_LABELS: Record<AxisName, { short: string; label: [string, string]; instrument: string }> = {
-  invalidation: { short: 'INV', label: ['Invalidation', '失效触发'], instrument: 'update · storm' },
-  recompute: { short: 'REC', label: ['Recompute', '重算范围'], instrument: 'update · storm' },
-  sharing: { short: 'SHR', label: ['Sharing', '结果共享'], instrument: 'bundle · adoption' },
-  staging: { short: 'STG', label: ['Staging', '执行形态'], instrument: 'pipeline' },
-  residency: { short: 'RES', label: ['Residency', '线程位置'], instrument: 'realm CPU' },
-  handover: { short: 'HND', label: ['Handover', '线程交接'], instrument: 'wire' },
+const AXIS_LABELS: Record<AxisName, {
+  label: [string, string];
+  question: [string, string];
+  instrument: string;
+}> = {
+  invalidation: {
+    label: ['Invalidation trigger', '失效触发'],
+    question: ['What change makes old output stale?', '什么变化会让旧结果失效？'],
+    instrument: 'update · storm',
+  },
+  recompute: {
+    label: ['Recompute scope', '重算范围'],
+    question: ['How much work is recomputed?', '每次需要重算多少工作？'],
+    instrument: 'update · storm',
+  },
+  sharing: {
+    label: ['Result sharing', '结果共享'],
+    question: ['Which work or results can be shared?', '哪些工作或结果可以共享？'],
+    instrument: 'bundle · adoption',
+  },
+  staging: {
+    label: ['Execution form', '执行形态'],
+    question: ['In what form is the work executed?', '工作以什么形态执行？'],
+    instrument: 'pipeline',
+  },
+  residency: {
+    label: ['Thread residency', '线程位置'],
+    question: ['Which thread performs the work?', '工作在哪个线程执行？'],
+    instrument: 'realm CPU',
+  },
+  handover: {
+    label: ['Thread handover', '线程交接'],
+    question: ['What crosses the thread boundary?', '两个线程之间需要交接什么？'],
+    instrument: 'wire',
+  },
 };
 
 const COPY: Record<string, { title: [string, string]; conclusion: [string, string] }> = {
@@ -178,7 +206,7 @@ function EvidenceDetail({ comparison }: { comparison: AxisEvidenceComparison }) 
               const changed = comparison.changedAxes.includes(axis);
               return (
                 <span className={changed ? 'is-changed' : ''} key={axis}>
-                  <i>{index + 1}</i><b>{AXIS_LABELS[axis].short}</b><small>{changed ? text('changed', '变化') : text('fixed', '不变')}</small>
+                  <i>{index + 1}</i><b>{AXIS_LABELS[axis].label[zh ? 1 : 0]}</b><small>{changed ? text('changed', '变化') : text('fixed', '不变')}</small>
                 </span>
               );
             })}
@@ -248,14 +276,30 @@ export function AxisEffects() {
         </div>
       </div>
 
+      <div className="axis-definition-heading">
+        <b>{text('Six coordinates, six questions', '六条轴，分别回答六个问题')}</b>
+        <span>{text('A comparison changes an axis when its answer changes.', '一组对照中，只要答案改变，对应坐标就算发生变化。')}</span>
+      </div>
+      <ol className="axis-definitions" aria-label={text('Definitions of the six architecture axes', '六条架构轴的定义')}>
+        {AXES.map((axis, index) => (
+          <li key={axis}>
+            <i>{index + 1}</i>
+            <span>
+              <b>{AXIS_LABELS[axis].label[zh ? 1 : 0]}</b>
+              <small>{AXIS_LABELS[axis].question[zh ? 1 : 0]}</small>
+            </span>
+          </li>
+        ))}
+      </ol>
+
       <div className="axis-matrix-scroll">
         <table className="axis-matrix">
           <thead>
             <tr>
               <th>{text('Experiment', '实验')}</th>
               {AXES.map((axis, index) => (
-                <th title={AXIS_LABELS[axis].label[zh ? 1 : 0]} key={axis}>
-                  <span>{index + 1}</span>{AXIS_LABELS[axis].short}
+                <th key={axis}>
+                  <span>{index + 1}</span>{AXIS_LABELS[axis].label[zh ? 1 : 0]}
                 </th>
               ))}
               <th>{text('Verdict', '判定')}</th>

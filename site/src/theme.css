@@ -1330,12 +1330,22 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 .axis-summary-strip { display: flex; align-items: baseline; gap: 1rem; }
 .axis-summary-strip span { display: flex; align-items: baseline; gap: 0.28rem; color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; }
 .axis-summary-strip b { color: var(--text-primary); font: 750 0.92rem/1 ui-monospace, Menlo, monospace; }
+.axis-definition-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding: 0.65rem 0 0.45rem; border-top: 1px solid var(--border-strong); }
+.axis-definition-heading b { font-size: 0.78rem; }
+.axis-definition-heading span { color: var(--text-muted); font-size: 0.68rem; }
+.axis-definitions { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0 0 1.2rem; padding: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); list-style: none; }
+.axis-definitions li { display: grid; grid-template-columns: auto 1fr; gap: 0.45rem; min-width: 0; padding: 0.62rem 0.55rem; }
+.axis-definitions li + li { border-left: 1px solid var(--border); }
+.axis-definitions li > i { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--accent); font: 650 0.62rem/1 ui-monospace, Menlo, monospace; }
+.axis-definitions li > span { display: grid; gap: 0.18rem; min-width: 0; }
+.axis-definitions b { font-size: 0.68rem; line-height: 1.2; }
+.axis-definitions small { color: var(--text-muted); font-size: 0.6rem; line-height: 1.35; }
 .axis-matrix-scroll { max-width: 100%; overflow-x: auto; border-top: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); scrollbar-width: thin; }
-.axis-matrix { width: 100%; min-width: 58rem; border-collapse: collapse; table-layout: fixed; font-size: 0.72rem; }
+.axis-matrix { width: 100%; min-width: 70rem; border-collapse: collapse; table-layout: fixed; font-size: 0.72rem; }
 .axis-matrix th, .axis-matrix td { height: 2.8rem; padding: 0.35rem 0.48rem; border-bottom: 1px solid var(--border); }
-.axis-matrix thead th { height: 2rem; color: var(--text-muted); font: 650 0.62rem/1 ui-monospace, Menlo, monospace; text-align: center; }
-.axis-matrix thead th:first-child { width: 36%; text-align: left; }
-.axis-matrix thead th:last-child { width: 12%; text-align: left; }
+.axis-matrix thead th { height: 2.4rem; color: var(--text-secondary); font-size: 0.65rem; font-weight: 650; line-height: 1.15; text-align: center; }
+.axis-matrix thead th:first-child { width: 32%; text-align: left; }
+.axis-matrix thead th:last-child { width: 10%; text-align: left; }
 .axis-matrix thead th span { display: inline-grid; place-items: center; width: 1rem; height: 1rem; margin-right: 0.28rem; border: 1px solid var(--border); border-radius: 50%; color: var(--text-secondary); font-size: 0.55rem; }
 .axis-group-row th { height: 1.65rem; padding-block: 0.2rem; background: var(--surface-2); color: var(--text-muted); font: 650 0.62rem/1 ui-monospace, Menlo, monospace; letter-spacing: 0.05em; text-align: left; text-transform: uppercase; }
 .axis-matrix tbody th { padding: 0; text-align: left; }
@@ -1379,11 +1389,10 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 .axis-detail.is-implementation-residue .axis-bar-row > i span.is-after { background: var(--good); }
 .axis-bar-row b { min-width: 4.7rem; font: 650 0.62rem/1 ui-monospace, Menlo, monospace; text-align: right; }
 .axis-empty-observation { margin: 0; color: var(--text-muted); font-size: 0.75rem; }
-.axis-coordinate-map { display: grid; grid-template-columns: repeat(6, 1fr); margin-bottom: 1rem; }
-.axis-coordinate-map > span { display: grid; place-items: center; gap: 0.15rem; padding: 0.28rem 0.08rem; border: 1px solid var(--border); border-right: 0; }
-.axis-coordinate-map > span:last-child { border-right: 1px solid var(--border); }
+.axis-coordinate-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; margin-bottom: 1rem; }
+.axis-coordinate-map > span { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.35rem; min-width: 0; padding: 0.38rem 0.42rem; border: 1px solid var(--border); }
 .axis-coordinate-map i { display: grid; place-items: center; width: 0.95rem; height: 0.95rem; border-radius: 50%; color: var(--text-muted); font: 0.55rem/1 ui-monospace, Menlo, monospace; }
-.axis-coordinate-map b { font: 650 0.56rem/1 ui-monospace, Menlo, monospace; }
+.axis-coordinate-map b { overflow: hidden; font-size: 0.6rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .axis-coordinate-map small { color: var(--text-muted); font-size: 0.53rem; }
 .axis-coordinate-map .is-changed { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .axis-coordinate-map .is-changed i { background: var(--accent); color: white; }
@@ -1414,6 +1423,9 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
 @media (max-width: 800px) {
   .lab-header { grid-template-columns: 1fr; align-items: start; }
   .axis-section-heading { align-items: start; flex-direction: column; }
+  .axis-definitions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .axis-definitions li:nth-child(4) { border-left: 0; }
+  .axis-definitions li:nth-child(n + 4) { border-top: 1px solid var(--border); }
   .axis-detail-head { grid-template-columns: 1fr; gap: 0.35rem; }
   .axis-detail-grid { grid-template-columns: 1fr; }
   .axis-coordinate-audit { border-top: 1px solid var(--border); border-left: 0; }
@@ -1429,6 +1441,10 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   .axis-summary-strip { width: 100%; justify-content: space-between; gap: 0.5rem; }
   .axis-summary-strip span { display: grid; gap: 0.1rem; }
   .axis-summary-strip b { font-size: 1rem; }
+  .axis-definition-heading { display: grid; gap: 0.15rem; }
+  .axis-definitions { grid-auto-flow: column; grid-auto-columns: minmax(10.5rem, 58vw); grid-template-columns: none; overflow-x: auto; scrollbar-width: thin; }
+  .axis-definitions li:nth-child(n) { border-top: 0; border-left: 1px solid var(--border); }
+  .axis-definitions li:first-child { border-left: 0; }
   .axis-matrix-key b { display: none; }
   .axis-detail-head h3 { white-space: normal; }
   .axis-observations { grid-template-columns: 1fr; }

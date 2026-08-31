@@ -5,6 +5,13 @@ import test from 'node:test';
 test('axis Lab view leads with an interactive six-axis matrix and keeps audit detail secondary', () => {
   const source = fs.readFileSync(new URL('./components/AxisEffects.tsx', import.meta.url), 'utf8');
   assert.match(source, /Six-axis experiment ledger/);
+  assert.match(source, /Six coordinates, six questions/);
+  assert.match(source, /What change makes old output stale/);
+  assert.match(source, /How much work is recomputed/);
+  assert.match(source, /Which work or results can be shared/);
+  assert.match(source, /In what form is the work executed/);
+  assert.match(source, /Which thread performs the work/);
+  assert.match(source, /What crosses the thread boundary/);
   assert.match(source, /className="axis-matrix"/);
   assert.match(source, /setRequestedId\(comparison\.id\)/);
   assert.match(source, /Architecture comparisons/);
@@ -13,6 +20,7 @@ test('axis Lab view leads with an interactive six-axis matrix and keeps audit de
   assert.match(source, /Coordinate delta/);
   assert.match(source, /Axis instruments/);
   assert.match(source, /Single-axis attribution requires the same codebase/);
+  assert.doesNotMatch(source, /\bINV\b|\bREC\b|\bSHR\b|\bSTG\b|\bRES\b|\bHND\b/);
   assert.doesNotMatch(source, /axis-card-grid|axis-story-lede|single-axis causal effects/);
 });
 
