@@ -8,6 +8,8 @@ import {
 import { useMediaQuery } from '../hooks';
 import { localizedCheckpoint, useI18n } from '../i18n';
 
+export type BenchmarkPage = 'overview' | 'scale' | 'lab';
+
 export function TimelineSlider({
   snapshots,
   index,
@@ -26,8 +28,8 @@ export function TimelineSlider({
   snapshots: TimelineSnapshot[];
   index: number;
   onChange: (index: number) => void;
-  page: 'overview' | 'scale';
-  onPageChange: (page: 'overview' | 'scale') => void;
+  page: BenchmarkPage;
+  onPageChange: (page: BenchmarkPage) => void;
   harness: string;
   onHarnessChange: (harness: string) => void;
   regime: WebRegime;
@@ -65,13 +67,17 @@ export function TimelineSlider({
       <div className="timeline-workspace">
         <div className={`workspace-toolbar${showAdvanced ? ' is-advanced-open' : ''}`}>
           <nav className="view-switch" aria-label={text('Benchmark views', '基准测试视图')}>
-            {(['overview', 'scale'] as const).map((view) => (
+            {(['overview', 'scale', 'lab'] as const).map((view) => (
               <button
                 key={view}
                 type="button"
                 aria-current={page === view ? 'page' : undefined}
                 onClick={() => onPageChange(view)}
-              >{view === 'overview' ? text('Overview', '总览') : text('Scale', '规模')}</button>
+              >{{
+                overview: text('Overview', '总览'),
+                scale: text('Scale', '规模'),
+                lab: 'Lab',
+              }[view]}</button>
             ))}
           </nav>
           <div className="workspace-environment">

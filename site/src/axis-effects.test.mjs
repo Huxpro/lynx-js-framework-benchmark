@@ -4,6 +4,7 @@ import test from 'node:test';
 
 test('axis Lab view leads with a plain-language answer and keeps audit detail secondary', () => {
   const source = fs.readFileSync(new URL('./components/AxisEffects.tsx', import.meta.url), 'utf8');
+  assert.match(source, /Lab overview · architecture evidence/);
   assert.match(source, /What do these experiments actually prove/);
   assert.match(source, /do not give one axis credit for a combined change/);
   assert.match(source, /only a same-codebase experiment that changes exactly one axis/);

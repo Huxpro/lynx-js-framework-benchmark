@@ -173,7 +173,7 @@ export function AxisEffects() {
     <section className="axis-effects" aria-labelledby="axis-effects-title">
       <header className="axis-story-head">
         <div>
-          <p className="section-kicker">⚗ Lab · {text('architecture evidence', '架构证据')}</p>
+          <p className="section-kicker">⚗ {text('Lab overview · architecture evidence', 'Lab 概览 · 架构证据')}</p>
           <h2 id="axis-effects-title">{text('What do these experiments actually prove?', '这些实验到底证明了什么？')}</h2>
           <p className="axis-story-lede">{text(
             'They show large differences, but none of the first architecture comparisons changes only one axis. So the honest answer is not “no difference”; it is “do not give one axis credit for a combined change.”',

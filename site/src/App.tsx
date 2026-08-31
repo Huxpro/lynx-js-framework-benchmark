@@ -16,7 +16,7 @@ import { RankedBars } from './components/RankedBars';
 import { ResponsiveCopy } from './components/ResponsiveCopy';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
-import { TimelineSlider } from './components/TimelineSlider';
+import { TimelineSlider, type BenchmarkPage } from './components/TimelineSlider';
 import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
 import {
   ENTRIES,
@@ -69,8 +69,6 @@ function syncUrl(selected: Set<string>, defaultIds: string[]) {
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
-type Page = 'overview' | 'scale';
-
 const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 
 function initialSnapshotIndex(): number {
@@ -109,7 +107,7 @@ function AppContent({
   const [theme, toggleTheme] = useTheme();
   const [heatPalette, toggleHeatPalette] = useHeatPalette();
   const { select, snapshot, workloadScales } = useBenchmarkData();
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPage] = useState<BenchmarkPage>('overview');
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
   const cohortEntryIds = snapshot.comparison.harnesses
@@ -135,6 +133,7 @@ function AppContent({
   })), [availableIds, harness, selected]);
   const changeHarness = (next: string) => {
     setHarness(next);
+    if (next === 'native' && page === 'lab') setPage('overview');
     const params = new URLSearchParams(location.search);
     if (next === 'web') params.delete('harness');
     else params.set('harness', next);
@@ -287,7 +286,10 @@ function AppContent({
         index={snapshotIndex}
         onChange={onSnapshotChange}
         page={page}
-        onPageChange={setPage}
+        onPageChange={(nextPage) => {
+          setPage(nextPage);
+          if (nextPage === 'lab' && harness !== 'web') changeHarness('web');
+        }}
         harness={harness}
         onHarnessChange={changeHarness}
         regime={regime}
@@ -299,7 +301,23 @@ function AppContent({
       />
       <MeasurementReceipt harness={harness} />
 
-      {harness === 'native' && !nativeHasData ? (
+      {page === 'lab' ? (
+        <>
+          <h1>{text('Architecture Lab', '架构实验室')}</h1>
+          <ResponsiveCopy className="subtitle">
+            {text(
+              'A causality ledger for framework authors: start with what the current experiments can prove, then inspect the comparisons, controls, and measurement limits below.',
+              '面向 framework author 的因果证据账本：先看当前实验能够证明什么，再向下检查对照、控制条件与测量边界。',
+            )}
+          </ResponsiveCopy>
+          {snapshot.id === 'current-main' ? <AxisEffects /> : (
+            <div className="empty-state">
+              <p><b>{text('Lab evidence is published at the current checkpoint.', 'Lab 证据发布在当前节点。')}</b></p>
+              <p>{text('Move the timeline to the latest checkpoint to inspect the architecture comparisons.', '请把时间线移到最新节点，再查看架构对照。')}</p>
+            </div>
+          )}
+        </>
+      ) : harness === 'native' && !nativeHasData ? (
         page === 'overview' ? (
           <>
             <h1>{text('How fast is each framework on Lynx?', '各框架在 Lynx 上有多快？')}</h1>
@@ -435,7 +453,6 @@ function AppContent({
             {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
           <ListCoverage harness={harness} />
-          {harness === 'web' && snapshot.id === 'current-main' && <AxisEffects />}
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (
