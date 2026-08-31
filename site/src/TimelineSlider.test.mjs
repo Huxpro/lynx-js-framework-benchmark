@@ -139,6 +139,8 @@ test('Web regime facet is explicit, URL-addressable, and cannot mix ranking reco
 test('mobile workspace folds advanced regimes without hiding primary controls', () => {
   assert.match(source, /useMediaQuery\('\(max-width: 48rem\)'\)/);
   assert.match(source, /className="advanced-toggle"/);
+  assert.match(source, /className="fold-indicator"/);
+  assert.doesNotMatch(source, />⌄</);
   assert.match(source, /aria-expanded=\{advancedOpen\}/);
   assert.match(source, /aria-controls=\{advancedId\}/);
   assert.match(source, /showAdvanced = harness === 'web' && \(!compact \|\| advancedOpen\)/);
@@ -148,8 +150,11 @@ test('mobile workspace folds advanced regimes without hiding primary controls', 
   assert.match(source, /<span>JS<\/span>/);
   assert.match(source, /className="workspace-preferences"/);
   assert.match(source, /className="harness-switch"/);
-  assert.match(themeSource, /grid-template-areas: 'view environment toggle preferences';/);
-  assert.match(themeSource, /\.workspace-toolbar\.is-advanced-open\s*\{[\s\S]*?'advanced advanced advanced advanced'/);
+  assert.match(themeSource, /grid-template-areas: 'view \. environment toggle preferences';/);
+  assert.match(themeSource, /grid-template-columns: auto minmax\(0, 1fr\) auto auto auto/);
+  assert.match(themeSource, /\.advanced-toggle output \{ display: none; \}/);
+  assert.match(themeSource, /clip-path: polygon\(0 0, 100% 0, 50% 100%\)/);
+  assert.match(themeSource, /\.workspace-toolbar\.is-advanced-open\s*\{[\s\S]*?'advanced advanced advanced advanced advanced'/);
 });
 
 test('regime measurement details are available from the compact information disclosure', () => {

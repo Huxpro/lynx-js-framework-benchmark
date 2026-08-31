@@ -26,6 +26,14 @@ test('toolbar exposes a compact non-color-only palette toggle', () => {
   assert.match(css, /\.palette-toggle\[aria-pressed='true'\]::after/);
 });
 
+test('theme toggle uses a consistent vector icon instead of font glyphs', () => {
+  assert.match(timeline, /className="theme-icon"/);
+  assert.match(timeline, /Use light theme/);
+  assert.match(timeline, /Use dark theme/);
+  assert.doesNotMatch(timeline, /☀|☾/);
+  assert.match(css, /\.theme-icon\s*\{[\s\S]*?stroke:\s*currentColor/);
+});
+
 test('GitHub-style blue-orange heat tokens are calibrated separately for light and dark', () => {
   assert.match(css, /--primer-data-blue-light: 0, 110, 219/);
   assert.match(css, /--primer-data-orange-light: 235, 103, 15/);

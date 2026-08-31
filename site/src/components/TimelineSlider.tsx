@@ -109,7 +109,7 @@ export function TimelineSlider({
             >
               <span>JS</span>
               <output>{activeRegime?.label ?? text('Regime', '政权')}</output>
-              <i aria-hidden="true">⌄</i>
+              <i className="fold-indicator" aria-hidden="true" />
             </button>
           )}
           {showAdvanced && (
@@ -201,8 +201,27 @@ export function TimelineSlider({
               <i aria-hidden="true">/</i>
               <span className={locale === 'zh-CN' ? 'is-active' : ''}>中</span>
             </button>
-            <button className="theme-toggle" type="button" onClick={onThemeToggle} aria-label={text('Toggle theme', '切换主题')}>
-              {theme === 'dark' ? '☀' : '☾'}
+            <button
+              className="theme-toggle"
+              type="button"
+              onClick={onThemeToggle}
+              aria-label={theme === 'dark'
+                ? text('Use light theme', '使用浅色主题')
+                : text('Use dark theme', '使用深色主题')}
+              title={theme === 'dark'
+                ? text('Use light theme', '使用浅色主题')
+                : text('Use dark theme', '使用深色主题')}
+            >
+              <svg className="theme-icon" viewBox="0 0 24 24" aria-hidden="true">
+                {theme === 'dark' ? (
+                  <>
+                    <circle cx="12" cy="12" r="3.25" />
+                    <path d="M12 2.75v1.5M12 19.75v1.5M4.22 4.22l1.06 1.06M18.72 18.72l1.06 1.06M2.75 12h1.5M19.75 12h1.5M4.22 19.78l1.06-1.06M18.72 5.28l1.06-1.06" />
+                  </>
+                ) : (
+                  <path d="M19.25 15.36A7.65 7.65 0 0 1 8.64 4.75a7.75 7.75 0 1 0 10.61 10.61Z" />
+                )}
+              </svg>
             </button>
           </div>
         </div>
