@@ -32,7 +32,7 @@ export function ListCoverage({ harness }: { harness: string }) {
   const label = (status: ListCoverageStatus) => LABELS[status][locale === 'zh-CN' ? 1 : 0];
 
   return (
-    <section className="native-coverage list-coverage" aria-labelledby="list-coverage-title">
+    <section className="native-coverage list-coverage" id="lab-list" aria-labelledby="list-coverage-title">
       <div className="coverage-heading">
         <div>
           <div className="observation-kicker">
@@ -46,8 +46,8 @@ export function ListCoverage({ harness }: { harness: string }) {
       </div>
       <ResponsiveCopy className="section-copy">
         {text(
-          'A separate fixture capability for declarative list/list-item workloads. Startup, one-viewport recycle, and fixed-velocity fling never reuse eager-table numbers. Blank frames are measured data; only a failed driver or capture is DNF.',
-          '这是声明式 list/list-item workload 的独立 fixture 能力。启动、单 viewport recycle 与固定速度 fling 绝不复用 eager-table 数字。空白帧属于测量数据；只有 driver 或采集失败才是 DNF。',
+          'Dedicated list/list-item fixture; startup, recycle, and fling never reuse eager-table data.',
+          '独立 list/list-item fixture；启动、回收与 fling 不复用 eager-table 数据。',
         )}
       </ResponsiveCopy>
       <div className="coverage-summary" aria-label={text('List capability totals', '列表能力状态总计')}>

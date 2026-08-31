@@ -95,11 +95,11 @@ export function StormCoalescing({
   if (policyRows.every((policy) => policy.rows.length === 0)) return null;
 
   return (
-    <section className="card storm-coalescing" aria-labelledby="storm-coalescing-title">
+    <section className="card storm-coalescing" id="lab-storm" aria-labelledby="storm-coalescing-title">
       <CardCaption title={<span id="storm-coalescing-title">{text('Storm commit semantics', 'Storm 提交语义')}</span>}>
         {text(
-          'A separate shared-driver suite. Each row is one real sample nearest that entry’s latency median: observable committed frames / issued pointer ticks, with wire bytes divided only during collection. Coalescing under every-tick is an expected strategy observation, not an error; only DNF is a failure state.',
-          '独立的共享 driver suite。每行采用最接近该条目 latency 中位数的同一个真实样本：可观察提交帧 / 已发 pointer tick；wire bytes 仅在 collect 阶段做除法。every-tick 下发生合并是预期的策略观测，不是错误；只有 DNF 属于失败状态。',
+          'Committed frames / issued ticks from one median-nearest sample. Coalescing is neutral; only DNF is an error.',
+          '同一个中位数近邻样本中的提交帧 / 已发 tick。合并是中性观测；只有 DNF 是错误。',
         )}
       </CardCaption>
       <div className="chips storm-cell-rail" aria-label={text('Storm workload', 'Storm workload')}>

@@ -1289,186 +1289,168 @@ h2 { font-size: 1.2rem; line-height: var(--leading-heading); letter-spacing: -0.
   border-top: 1px solid var(--border);
 }
 
-.axis-effects {
-  container-type: inline-size;
-  margin-top: clamp(1.75rem, 4vw, 3rem);
-  padding-top: clamp(1.25rem, 2.5vw, 2rem);
-  border-top: 2px solid var(--text-primary);
-}
-.axis-story-head {
+.lab-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 18rem);
-  gap: clamp(2rem, 6vw, 6rem);
+  grid-template-columns: minmax(13rem, 0.36fr) minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
   align-items: end;
+  margin-top: 1.35rem;
 }
-.axis-story-head h2 {
-  max-width: 21ch;
-  margin: 0.15rem 0 0.65rem;
-  font-size: clamp(1.8rem, 3.5vw, 3.4rem);
-  line-height: 1.05;
-  letter-spacing: -0.045em;
-}
-.axis-story-lede {
-  max-width: 72ch;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: clamp(1rem, 1.3vw, 1.18rem);
-  line-height: 1.55;
-  text-wrap: pretty;
-}
-.axis-answer {
+.lab-header h1 { margin: 0.12rem 0 0; font-size: 1.75rem; letter-spacing: -0.025em; }
+.lab-header > div > p:last-child { margin: 0.15rem 0 0; color: var(--text-secondary); font-size: 0.82rem; }
+.lab-suite-index { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--border-strong); }
+.lab-suite-index a {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: 0.8rem;
-  align-items: baseline;
-  padding: 0.2rem 0 0.25rem 1.25rem;
-  border-left: 1px solid var(--border-strong);
-}
-.axis-answer > span {
-  grid-column: 1 / -1;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  font-weight: 720;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.axis-answer strong {
-  font-size: clamp(3.8rem, 7vw, 6.2rem);
-  font-weight: 500;
-  line-height: 0.95;
-  letter-spacing: -0.07em;
-}
-.axis-answer b { max-width: 10ch; line-height: 1.15; }
-.axis-answer small {
-  grid-column: 1 / -1;
-  margin-top: 0.5rem;
-  color: var(--text-muted);
-}
-.axis-plain-key {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
-  gap: 1rem 2rem;
-  margin-top: clamp(2rem, 4vw, 3.5rem);
-  padding: 1.1rem 0;
-  border-top: 1px solid var(--border-strong);
-  border-bottom: 1px solid var(--border-strong);
-}
-.axis-plain-key p { margin: 0; line-height: 1.5; }
-.axis-plain-key > div { display: grid; gap: 0.35rem; align-content: center; }
-.axis-plain-key span { font-size: 0.8rem; font-weight: 650; }
-.axis-plain-key .is-coupled { color: color-mix(in srgb, var(--accent) 78%, var(--text-primary)); }
-.axis-plain-key .is-residue { color: var(--good); }
-.axis-ledger-group { margin-top: clamp(2.8rem, 6vw, 5.5rem); }
-.axis-ledger-group > header {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  gap: 1rem;
-  max-width: 64rem;
-  margin-bottom: 1.4rem;
-}
-.axis-ledger-group > header > span {
-  color: var(--accent);
-  font: 500 1.25rem/1 ui-monospace, Menlo, monospace;
-}
-.axis-ledger-group > header h3 { margin: 0; font-size: clamp(1.2rem, 2vw, 1.7rem); letter-spacing: -0.025em; }
-.axis-ledger-group > header p { margin: 0.4rem 0 0; color: var(--text-secondary); line-height: 1.5; }
-.axis-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.axis-card {
-  display: flex;
-  flex-direction: column;
+  gap: 0.02rem 0.55rem;
   min-width: 0;
-  padding: clamp(1.15rem, 2.5vw, 1.65rem);
-  border: 1px solid var(--border);
-  border-top: 3px solid color-mix(in srgb, var(--accent) 62%, var(--border));
-  background: color-mix(in srgb, var(--surface-1) 92%, var(--accent) 8%);
-}
-.axis-card.is-implementation-residue {
-  border-top-color: var(--good);
-  background: color-mix(in srgb, var(--surface-1) 94%, var(--good) 6%);
-}
-.axis-card header { display: grid; gap: 0.5rem; }
-.axis-card h4 { margin: 0; font-size: 1.08rem; line-height: 1.3; letter-spacing: -0.015em; }
-.axis-status {
-  width: fit-content;
-  padding: 0.18rem 0.42rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: color-mix(in srgb, var(--accent) 78%, var(--text-primary));
-  font-size: 0.67rem;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.is-implementation-residue .axis-status { background: color-mix(in srgb, var(--good) 12%, transparent); color: var(--good); }
-.axis-conclusion { margin: 0.75rem 0 1rem; color: var(--text-secondary); line-height: 1.55; text-wrap: pretty; }
-.axis-moved { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin-top: auto; }
-.axis-moved b { width: 100%; margin-bottom: 0.1rem; color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
-.axis-moved span { padding: 0.25rem 0.48rem; border: 1px solid var(--border); border-radius: 999px; font-size: 0.72rem; }
-.axis-moved .is-fixed { border-color: color-mix(in srgb, var(--good) 42%, var(--border)); color: var(--good); }
-.axis-facts { display: grid; gap: 0; margin: 1rem 0 0; padding: 0; border-top: 1px solid var(--border); list-style: none; }
-.axis-fact { display: grid; grid-template-columns: minmax(8rem, 1fr) auto auto; gap: 0.65rem; align-items: center; padding: 0.58rem 0; border-bottom: 1px solid var(--border); font-size: 0.75rem; }
-.axis-fact > span { color: var(--text-secondary); }
-.axis-fact b { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.axis-fact b i { margin: 0 0.35rem; color: var(--text-muted); font-style: normal; }
-.axis-fact em { color: var(--text-muted); font-style: normal; font-variant-numeric: tabular-nums; }
-.axis-fact.is-improved em { color: var(--good); }
-.axis-audit { margin-top: 0.85rem; font-size: 0.75rem; }
-.axis-audit summary,
-.axis-method-note summary { cursor: pointer; color: var(--text-secondary); font-size: 0.8rem; }
-.axis-audit p { margin: 0.6rem 0 0; color: var(--text-muted); line-height: 1.45; }
-.axis-audit a { display: inline-block; margin-top: 0.55rem; color: var(--accent); text-decoration: none; }
-.axis-instruments { margin-top: clamp(2.8rem, 6vw, 5rem); padding: 1.35rem; border: 1px solid var(--border); }
-.axis-instruments h3 { margin: 0; font-size: 1rem; }
-.axis-instruments > p { margin: 0.35rem 0 1rem; color: var(--text-secondary); font-size: 0.85rem; }
-.axis-instruments ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; border-top: 1px solid var(--border); list-style: none; }
-.axis-instruments li { display: grid; grid-template-columns: auto 1fr; gap: 0.2rem 0.5rem; padding: 0.85rem; border-bottom: 1px solid var(--border); }
-.axis-instruments li + li { border-left: 1px solid var(--border); }
-.axis-instruments li b { grid-row: 1 / 3; color: var(--accent); font-size: 1.25rem; font-weight: 500; }
-.axis-instruments li span { font-size: 0.78rem; font-weight: 700; }
-.axis-instruments li small { color: var(--text-muted); font-size: 0.7rem; }
-.axis-method-note {
-  margin-top: 1rem;
-  padding: 1rem 0;
-  border-top: 1px solid var(--border-strong);
+  padding: 0.62rem 0.75rem 0.55rem;
   border-bottom: 1px solid var(--border-strong);
+  color: inherit;
+  text-decoration: none;
 }
-.axis-method-note ul {
-  margin: 0.85rem 0 0;
-  padding-left: 1.2rem;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
+.lab-suite-index a + a { border-left: 1px solid var(--border); }
+.lab-suite-index a:hover { background: var(--surface-2); }
+.lab-suite-index a > span { grid-row: 1 / 3; color: var(--accent); font: 650 0.72rem/1.3 ui-monospace, Menlo, monospace; }
+.lab-suite-index a > b { font-size: 0.8rem; line-height: 1.15; }
+.lab-suite-index a > small { color: var(--text-muted); font: 0.64rem/1.2 ui-monospace, Menlo, monospace; }
+.lab-suite-index a > i { grid-column: 1 / -1; display: flex; align-items: end; gap: 0.18rem; height: 0.6rem; margin-top: 0.28rem; }
+.lab-suite-index a > i em { display: block; background: var(--border-strong); }
+.lab-suite-index .is-axis em { width: 0.42rem; height: 0.42rem; border-radius: 50%; }
+.lab-suite-index .is-axis em:nth-child(2), .lab-suite-index .is-axis em:nth-child(5) { background: var(--accent); }
+.lab-suite-index .is-storm em { width: 0.65rem; height: 0.12rem; }
+.lab-suite-index .is-storm em:nth-child(2) { height: 0.5rem; }
+.lab-suite-index .is-storm em:nth-child(4) { height: 0.32rem; }
+.lab-suite-index .is-list { display: grid; grid-template-columns: repeat(3, 0.42rem); gap: 0.12rem; }
+.lab-suite-index .is-list em { width: 0.42rem; height: 0.22rem; }
+
+.axis-effects { margin-top: 2.4rem; padding-top: 1rem; border-top: 2px solid var(--text-primary); scroll-margin-top: 8rem; }
+.axis-section-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: end; margin-bottom: 0.8rem; }
+.axis-section-heading h2 { margin: 0.08rem 0 0; font-size: 1.35rem; letter-spacing: -0.02em; }
+.axis-summary-strip { display: flex; align-items: baseline; gap: 1rem; }
+.axis-summary-strip span { display: flex; align-items: baseline; gap: 0.28rem; color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; }
+.axis-summary-strip b { color: var(--text-primary); font: 750 0.92rem/1 ui-monospace, Menlo, monospace; }
+.axis-definition-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding: 0.65rem 0 0.45rem; border-top: 1px solid var(--border-strong); }
+.axis-definition-heading b { font-size: 0.78rem; }
+.axis-definition-heading span { color: var(--text-muted); font-size: 0.68rem; }
+.axis-definitions { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin: 0 0 1.2rem; padding: 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); list-style: none; }
+.axis-definitions li { display: grid; grid-template-columns: auto 1fr; gap: 0.45rem; min-width: 0; padding: 0.62rem 0.55rem; }
+.axis-definitions li + li { border-left: 1px solid var(--border); }
+.axis-definitions li > i { display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--accent); font: 650 0.62rem/1 ui-monospace, Menlo, monospace; }
+.axis-definitions li > span { display: grid; gap: 0.18rem; min-width: 0; }
+.axis-definitions b { font-size: 0.68rem; line-height: 1.2; }
+.axis-definitions small { color: var(--text-muted); font-size: 0.6rem; line-height: 1.35; }
+.axis-matrix-scroll { max-width: 100%; overflow-x: auto; border-top: 1px solid var(--border-strong); border-bottom: 1px solid var(--border-strong); scrollbar-width: thin; }
+.axis-matrix { width: 100%; min-width: 70rem; border-collapse: collapse; table-layout: fixed; font-size: 0.72rem; }
+.axis-matrix th, .axis-matrix td { height: 2.8rem; padding: 0.35rem 0.48rem; border-bottom: 1px solid var(--border); }
+.axis-matrix thead th { height: 2.4rem; color: var(--text-secondary); font-size: 0.65rem; font-weight: 650; line-height: 1.15; text-align: center; }
+.axis-matrix thead th:first-child { width: 32%; text-align: left; }
+.axis-matrix thead th:last-child { width: 10%; text-align: left; }
+.axis-matrix thead th span { display: inline-grid; place-items: center; width: 1rem; height: 1rem; margin-right: 0.28rem; border: 1px solid var(--border); border-radius: 50%; color: var(--text-secondary); font-size: 0.55rem; }
+.axis-group-row th { height: 1.65rem; padding-block: 0.2rem; background: var(--surface-2); color: var(--text-muted); font: 650 0.62rem/1 ui-monospace, Menlo, monospace; letter-spacing: 0.05em; text-align: left; text-transform: uppercase; }
+.axis-matrix tbody th { padding: 0; text-align: left; }
+.axis-matrix tbody th button { display: grid; width: 100%; height: 100%; gap: 0.05rem; padding: 0.38rem 0.5rem; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.axis-matrix tbody th button span { font-weight: 680; }
+.axis-matrix tbody th button small { overflow: hidden; color: var(--text-muted); font: 0.61rem/1.2 ui-monospace, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.axis-matrix tbody tr:not(.axis-group-row):hover, .axis-matrix tbody tr.is-selected { background: color-mix(in srgb, var(--accent) 6%, var(--surface-1)); }
+.axis-matrix tbody tr.is-selected th { box-shadow: inset 3px 0 var(--accent); }
+.axis-matrix td { text-align: center; }
+.axis-matrix td > span, .axis-matrix-key i { display: inline-block; width: 0.55rem; height: 0.55rem; border: 1px solid var(--border-strong); border-radius: 50%; }
+.axis-matrix td[data-changed='true'] > span, .axis-matrix-key i.is-changed { border-color: var(--accent); background: var(--accent); }
+.axis-matrix td:last-child { text-align: left; }
+.axis-row-verdict { color: var(--text-secondary); font-size: 0.68rem; white-space: nowrap; }
+.axis-matrix-key { display: flex; gap: 0.85rem; align-items: center; min-height: 2rem; color: var(--text-muted); font-size: 0.65rem; }
+.axis-matrix-key span { display: flex; gap: 0.3rem; align-items: center; }
+.axis-matrix-key i { width: 0.45rem; height: 0.45rem; }
+.axis-matrix-key b { margin-left: auto; color: var(--text-secondary); font-weight: 500; }
+
+.axis-detail { margin-top: 0.75rem; border: 1px solid var(--border); background: var(--surface-1); }
+.axis-detail-head { display: grid; grid-template-columns: minmax(14rem, 0.75fr) minmax(0, 1.25fr); gap: 1.2rem; align-items: center; min-height: 4.5rem; padding: 0.7rem var(--panel-padding); border-bottom: 1px solid var(--border); }
+.axis-detail-head > div { display: flex; gap: 0.55rem; align-items: center; min-width: 0; }
+.axis-detail-head h3 { overflow: hidden; margin: 0; font-size: 0.96rem; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.axis-detail-head p { margin: 0; color: var(--text-secondary); font-size: 0.76rem; line-height: 1.4; }
+.axis-verdict { flex: none; padding: 0.13rem 0.3rem; border: 1px solid var(--border-strong); color: var(--text-muted); font: 650 0.58rem/1.1 ui-monospace, Menlo, monospace; text-transform: uppercase; }
+.axis-detail.is-implementation-residue .axis-verdict { border-color: color-mix(in srgb, var(--good) 55%, var(--border)); color: var(--good); }
+.axis-detail-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(17rem, 0.55fr); }
+.axis-detail-grid > section, .axis-coordinate-audit { min-width: 0; padding: var(--panel-padding); }
+.axis-coordinate-audit { border-left: 1px solid var(--border); }
+.axis-detail-grid h4 { margin: 0 0 0.55rem; color: var(--text-muted); font: 650 0.62rem/1 ui-monospace, Menlo, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+.axis-observations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.4rem; margin: 0; padding: 0; list-style: none; }
+.axis-observation { min-width: 0; }
+.axis-observation-label { display: flex; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.28rem; font-size: 0.69rem; }
+.axis-observation-label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axis-observation-label em { color: var(--text-muted); font-style: normal; font-variant-numeric: tabular-nums; }
+.axis-observation.is-improved .axis-observation-label em { color: var(--good); }
+.axis-bar-row { display: grid; grid-template-columns: minmax(3.5rem, 0.7fr) minmax(4rem, 1.3fr) auto; gap: 0.45rem; align-items: center; min-height: 1.15rem; }
+.axis-bar-row small { overflow: hidden; color: var(--text-muted); font: 0.58rem/1 ui-monospace, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.axis-bar-row > i { display: block; height: 0.32rem; background: var(--surface-2); }
+.axis-bar-row > i span { display: block; height: 100%; background: var(--border-strong); }
+.axis-bar-row > i span.is-after { background: var(--accent); }
+.axis-detail.is-implementation-residue .axis-bar-row > i span.is-after { background: var(--good); }
+.axis-bar-row b { min-width: 4.7rem; font: 650 0.62rem/1 ui-monospace, Menlo, monospace; text-align: right; }
+.axis-empty-observation { margin: 0; color: var(--text-muted); font-size: 0.75rem; }
+.axis-coordinate-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem; margin-bottom: 1rem; }
+.axis-coordinate-map > span { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.35rem; min-width: 0; padding: 0.38rem 0.42rem; border: 1px solid var(--border); }
+.axis-coordinate-map i { display: grid; place-items: center; width: 0.95rem; height: 0.95rem; border-radius: 50%; color: var(--text-muted); font: 0.55rem/1 ui-monospace, Menlo, monospace; }
+.axis-coordinate-map b { overflow: hidden; font-size: 0.6rem; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
+.axis-coordinate-map small { color: var(--text-muted); font-size: 0.53rem; }
+.axis-coordinate-map .is-changed { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.axis-coordinate-map .is-changed i { background: var(--accent); color: white; }
+.axis-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.25rem 0.7rem; margin: 0; padding: 0; list-style: none; }
+.axis-controls li { display: flex; gap: 0.35rem; align-items: center; color: var(--text-secondary); font-size: 0.63rem; }
+.axis-controls li i { width: 1rem; color: var(--text-muted); font: 650 0.68rem/1 ui-monospace, Menlo, monospace; text-align: center; }
+.axis-controls li[data-state='yes'] i { color: var(--good); }
+.axis-controls li[data-state='no'] i { color: var(--bad); }
+.axis-audit { margin-top: 0.7rem; border-top: 1px dotted var(--border); color: var(--text-muted); font-size: 0.62rem; }
+.axis-audit summary { padding-top: 0.45rem; cursor: pointer; }
+.axis-audit span { margin-right: 0.75rem; }
+.axis-audit a { color: var(--accent); text-decoration: none; }
+
+.axis-instrument-map { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 1.2rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.axis-instrument-map > span { display: grid; grid-template-columns: auto 1fr; gap: 0.05rem 0.4rem; min-width: 0; padding: 0.55rem; }
+.axis-instrument-map > span + span { border-left: 1px solid var(--border); }
+.axis-instrument-map i { grid-row: 1 / 3; display: grid; place-items: center; width: 1.1rem; height: 1.1rem; border: 1px solid var(--border-strong); border-radius: 50%; color: var(--accent); font: 650 0.55rem/1 ui-monospace, Menlo, monospace; }
+.axis-instrument-map b { overflow: hidden; font-size: 0.64rem; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.axis-instrument-map small { overflow: hidden; color: var(--text-muted); font: 0.55rem/1.2 ui-monospace, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.axis-method-note { padding: 0.55rem 0; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.68rem; }
+.axis-method-note summary { cursor: pointer; color: var(--text-secondary); }
+.axis-method-note span { display: block; max-width: 100ch; margin-top: 0.4rem; }
+
+.lab-research { margin-top: 2.75rem; padding-top: 1rem; border-top: 2px solid var(--text-primary); }
+.lab-research > .storm-coalescing { margin-top: 0; scroll-margin-top: 8rem; }
+.lab-research > .list-coverage { margin-top: 3rem; padding-top: 1rem; border-top: 2px solid var(--text-primary); scroll-margin-top: 8rem; }
+
+@media (max-width: 800px) {
+  .lab-header { grid-template-columns: 1fr; align-items: start; }
+  .axis-section-heading { align-items: start; flex-direction: column; }
+  .axis-definitions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .axis-definitions li:nth-child(4) { border-left: 0; }
+  .axis-definitions li:nth-child(n + 4) { border-top: 1px solid var(--border); }
+  .axis-detail-head { grid-template-columns: 1fr; gap: 0.35rem; }
+  .axis-detail-grid { grid-template-columns: 1fr; }
+  .axis-coordinate-audit { border-top: 1px solid var(--border); border-left: 0; }
+  .axis-instrument-map { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .axis-instrument-map > span:nth-child(4) { border-left: 0; }
+  .axis-instrument-map > span:nth-child(n + 4) { border-top: 1px solid var(--border); }
 }
-.lab-research {
-  margin-top: clamp(3rem, 7vw, 6rem);
-  padding-top: clamp(1.25rem, 2.5vw, 2rem);
-  border-top: 2px solid var(--text-primary);
-}
-.lab-research > .section-heading h2 {
-  margin-top: 0.15rem;
-  font-size: clamp(1.35rem, 2.2vw, 2rem);
-}
-.lab-research > .storm-coalescing { margin-top: clamp(1.5rem, 3vw, 2.25rem); }
-.lab-research > .list-coverage { margin-top: clamp(3rem, 6vw, 5rem); }
-@container (max-width: 760px) {
-  .axis-story-head,
-  .axis-plain-key,
-  .axis-card-grid { grid-template-columns: 1fr; }
-  .axis-story-head { gap: 1.5rem; }
-  .axis-answer {
-    grid-template-columns: auto auto 1fr;
-    justify-content: start;
-    padding: 1rem 0 0;
-    border-top: 1px solid var(--border);
-    border-left: 0;
-  }
-  .axis-answer > span,
-  .axis-answer small { grid-column: 1 / -1; }
-  .axis-answer strong { font-size: 3rem; }
-  .axis-answer b { max-width: none; }
-  .axis-instruments ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .axis-instruments li:nth-child(3) { border-left: 0; }
-  .axis-fact { grid-template-columns: 1fr auto; }
-  .axis-fact em { grid-column: 2; }
+
+@media (max-width: 520px) {
+  .lab-suite-index { grid-template-columns: 1fr; }
+  .lab-suite-index a + a { border-left: 0; }
+  .lab-suite-index a > i { display: none; }
+  .axis-summary-strip { width: 100%; justify-content: space-between; gap: 0.5rem; }
+  .axis-summary-strip span { display: grid; gap: 0.1rem; }
+  .axis-summary-strip b { font-size: 1rem; }
+  .axis-definition-heading { display: grid; gap: 0.15rem; }
+  .axis-definitions { grid-auto-flow: column; grid-auto-columns: minmax(10.5rem, 58vw); grid-template-columns: none; overflow-x: auto; scrollbar-width: thin; }
+  .axis-definitions li:nth-child(n) { border-top: 0; border-left: 1px solid var(--border); }
+  .axis-definitions li:first-child { border-left: 0; }
+  .axis-matrix-key b { display: none; }
+  .axis-detail-head h3 { white-space: normal; }
+  .axis-observations { grid-template-columns: 1fr; }
+  .axis-instrument-map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .axis-instrument-map > span:nth-child(odd) { border-left: 0; }
+  .axis-instrument-map > span:nth-child(n + 3) { border-top: 1px solid var(--border); }
 }
 .section-heading { max-width: var(--measure-lead); }
 .section-heading h2 { margin: 0.08rem 0 0.18rem; font-size: 1.35rem; line-height: var(--leading-heading); }
