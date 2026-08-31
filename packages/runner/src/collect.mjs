@@ -29,6 +29,8 @@ import {
 } from '@lynx-bench/shared/workloads';
 
 import { bundleRecords } from './bundles.mjs';
+import { loadAxisEvidenceSources } from './axis-evidence.mjs';
+import { buildAxisEffectView, loadAxisObservationRuns } from './axis-effects.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
@@ -2305,6 +2307,16 @@ export function collectRuns({
   const archiveStaticRecords = currentEntries.flatMap((entry) =>
     (staticByEntry.get(entry.id) ?? []).map((record) => annotateStatic(entry, record)));
 
+  // Axis attribution is a Lab-only derivative over immutable source runs. It
+  // is intentionally not appended to comparisonRecords, labComparisonRecords,
+  // history, or any ranking input.
+  const axisEffects = buildAxisEffectView({
+    entries: currentEntries,
+    runs: [...retainedRuns, ...loadAxisObservationRuns({ root })],
+    evidenceSources: loadAxisEvidenceSources({ root }),
+    root,
+  });
+
   const out = {
     schemaVersion: SCHEMA_VERSION,
     generatedAt: generatedAt ?? latestSourceGeneratedAt,
@@ -2326,6 +2338,7 @@ export function collectRuns({
     pipelineCoverage,
     listCoverage,
     listDerivedRecords,
+    axisEffects,
   };
   out.history = buildHistory({
     runs: retainedRuns,

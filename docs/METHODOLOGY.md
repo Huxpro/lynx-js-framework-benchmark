@@ -160,6 +160,37 @@ metric rather than silently changing the upstream interaction formula.
   closed. Contract-failed observations remain visible in the dedicated view but cannot enter a
   ranking; final-state observations expose coalescing rather than treating it as missing work.
 
+## Six-axis attribution
+
+The coordinate view asks a narrower question than the framework ranking: what changed along one
+architecture axis inside one controlled implementation lineage? A framework label cannot answer
+that question. Cross-framework numbers remain useful descriptive context, but never become an axis
+effect.
+
+An ablation is eligible only when manifests and run evidence prove the same source codebase,
+fixture, commit/build recipe, physical run, measurement matrix, and controls. The build-parameter
+diff and coordinate diff must agree exactly with the declaration. A pair changing one coordinate
+can enter that axis's effect table. A controlled pair changing additional declared coordinates is
+shown as a coupled descriptive observation; an undeclared change or failed control is invalid.
+
+Effects remain local to their full coordinate and workload cell. The view reports pairwise median
+deltas, relative deltas, conservative confidence intervals, raw-range overlap, and direction
+consistency across eligible pairs. It deliberately fits no regression and estimates no interaction
+terms: the initial matrix is too sparse and too coupled for those coefficients to be epistemically
+honest.
+
+Ceilings are not silently treated as optimized instances of the measured point. When both ends of
+an ablation have matched hand-written ceilings, `target ceiling − base ceiling` estimates the
+axis effect while `point − own ceiling` reports implementation residue separately. With only one
+ceiling, only that endpoint's residue is reported. The first Lab cohort backfills the #163
+`BENCH_CORE` switch, interpreted-template/program and adoption-inversion comparisons; classifies
+the Vue baseline/Vapor/IFR-ET matrix; and adds #229/#233 same-coordinate before/after controls.
+The architecture comparisons remain coupled or descriptive, while #229/#233 are explicitly
+implementation residue. Key published values remain cited aggregate evidence; the #163 C7 file
+separately retains raw observations. Axis ④'s ElementPAPI segment view depends on #200. Instrument readiness is reported
+separately from effect availability: #200 sources make the instrument ready, but its effect table
+stays empty until an attributable controlled pair exercises it. No proxy instrument is substituted.
+
 ## Fairness
 
 - **Seeded PRNG** (mulberry32) replaces `Math.random` in both realms before app boot — row

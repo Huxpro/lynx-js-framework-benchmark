@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
+import { AxisEffects } from './components/AxisEffects';
 import { Legend } from './components/Legend';
 import { ListCoverage } from './components/ListCoverage';
 import { HeatGrid } from './components/HeatGrid';
@@ -15,7 +16,7 @@ import { RankedBars } from './components/RankedBars';
 import { ResponsiveCopy } from './components/ResponsiveCopy';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
 import { ThreadsPage } from './components/Threads';
-import { TimelineSlider } from './components/TimelineSlider';
+import { TimelineSlider, type BenchmarkPage } from './components/TimelineSlider';
 import { BenchmarkDataProvider, useBenchmarkData } from './data-context';
 import {
   ENTRIES,
@@ -68,8 +69,6 @@ function syncUrl(selected: Set<string>, defaultIds: string[]) {
   history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
 }
 
-type Page = 'overview' | 'scale';
-
 const scaleLabel = (s: number) => (s >= 1000 ? `${s / 1000}k` : String(s));
 
 function initialSnapshotIndex(): number {
@@ -109,7 +108,7 @@ function AppContent({
   const [theme, toggleTheme] = useTheme();
   const [heatPalette, toggleHeatPalette] = useHeatPalette();
   const { select, snapshot, workloadScales } = useBenchmarkData();
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPage] = useState<BenchmarkPage>('overview');
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
   const cohortEntryIds = snapshot.comparison.harnesses
@@ -299,7 +298,37 @@ function AppContent({
       />
       <MeasurementReceipt harness={harness} />
 
-      {harness === 'native' && !nativeHasData ? (
+      {page === 'lab' ? (
+        <>
+          <h1>{text('Benchmark Lab', '基准实验室')}</h1>
+          <ResponsiveCopy className="subtitle">
+            {text(
+              'Research suites for framework authors. Start with the published finding, then inspect the stress behavior, capability contracts, controls, and raw measurement boundaries below.',
+              '面向 framework author 的研究性 suite：先看已发布结论，再向下检查压力行为、能力合约、控制条件与原始测量边界。',
+            )}
+          </ResponsiveCopy>
+          {harness === 'web' && snapshot.id === 'current-main' ? <AxisEffects /> : harness === 'web' ? (
+            <div className="empty-state">
+              <p><b>{text('Lab evidence is published at the current checkpoint.', 'Lab 证据发布在当前节点。')}</b></p>
+              <p>{text('Move the timeline to the latest checkpoint to inspect the architecture comparisons.', '请把时间线移到最新节点，再查看架构对照。')}</p>
+            </div>
+          ) : null}
+          <section className="lab-research" aria-labelledby="lab-research-title">
+            <div className="section-heading">
+              <div className="section-kicker">{text('Research suites', '研究性 suite')}</div>
+              <h2 id="lab-research-title">{text('Behavior beyond the headline ranking', '主排名之外的行为')}</h2>
+              <ResponsiveCopy className="section-copy">
+                {text(
+                  'These instruments answer narrower research questions. They stay out of the default benchmark story, but their contracts and records remain fully auditable here.',
+                  '这些仪器回答更窄的研究问题，不进入默认 benchmark 叙事；它们的合约与 records 仍在此完整可审计。',
+                )}
+              </ResponsiveCopy>
+            </div>
+            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
+            <ListCoverage harness={harness} />
+          </section>
+        </>
+      ) : harness === 'native' && !nativeHasData ? (
         page === 'overview' ? (
           <>
             <h1>{text('How fast is each framework on Lynx?', '各框架在 Lynx 上有多快？')}</h1>
@@ -320,7 +349,6 @@ function AppContent({
               </p>
             </div>
             <NativeObservations theme={theme} />
-            <ListCoverage harness={harness} />
             <NativeCoverage />
           </>
         ) : (
@@ -432,9 +460,7 @@ function AppContent({
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
             {harness === 'web' && <PipelineAttribution theme={theme} selected={activeSelected} />}
-            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
-          <ListCoverage harness={harness} />
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (

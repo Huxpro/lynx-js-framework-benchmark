@@ -1,0 +1,350 @@
+{
+  "schemaVersion": "axis-evidence-source-v1",
+  "cohortId": "octane-204-first-backfill",
+  "points": [
+    {
+      "id": "octane-c163-interpreted",
+      "label": "Octane #163 · interpreted template",
+      "framework": "octane",
+      "fixture": "octane-lynx-table-v1",
+      "tier": "lab",
+      "coordinates": {
+        "invalidation": "runtime",
+        "recompute": "block",
+        "sharing": "compile-time-data",
+        "staging": "ops",
+        "residency": { "firstFrame": "main", "steadyState": "background" },
+        "handover": "tree-description"
+      },
+      "provenance": {
+        "source": "https://github.com/Huxpro/octane",
+        "ref": "test/lynx-c6-attribution",
+        "commit": "2afa126627858c716e821ab9623fdce7a2cc8855",
+        "patched": false,
+        "patchFile": null,
+        "buildCommand": "node benchmarks/lynx-table/stages/papi-run.mjs --cells octane,octane-mts-program,octane-direct",
+        "buildParameters": { "cell": "octane" }
+      }
+    },
+    {
+      "id": "octane-c163-program",
+      "label": "Octane #163 · compiled program",
+      "framework": "octane",
+      "fixture": "octane-lynx-table-v1",
+      "tier": "lab",
+      "coordinates": {
+        "invalidation": "runtime",
+        "recompute": "block",
+        "sharing": "compile-time-code",
+        "staging": "code",
+        "residency": { "firstFrame": "main", "steadyState": "background" },
+        "handover": "slot-state"
+      },
+      "ablation": {
+        "against": "octane-c163-interpreted",
+        "axis": "staging",
+        "delta": "ops→code",
+        "coupled": ["sharing", "handover"],
+        "provenance": {
+          "kind": "same-build-matrix",
+          "evidence": "https://github.com/Huxpro/octane/blob/2afa126627858c716e821ab9623fdce7a2cc8855/benchmarks/lynx-table/stages/papi-run.mjs",
+          "varyingBuildParameters": ["cell"]
+        }
+      },
+      "provenance": {
+        "source": "https://github.com/Huxpro/octane",
+        "ref": "test/lynx-c6-attribution",
+        "commit": "2afa126627858c716e821ab9623fdce7a2cc8855",
+        "patched": false,
+        "patchFile": null,
+        "buildCommand": "node benchmarks/lynx-table/stages/papi-run.mjs --cells octane,octane-mts-program,octane-direct",
+        "buildParameters": { "cell": "octane-mts-program" }
+      }
+    },
+    {
+      "id": "octane-c163-direct",
+      "label": "Octane #163 · hand-written ceiling",
+      "framework": "octane",
+      "fixture": "octane-lynx-table-v1",
+      "tier": "lab",
+      "ceilingFor": "octane-c163-program",
+      "coordinates": {
+        "invalidation": "runtime",
+        "recompute": "block",
+        "sharing": "compile-time-code",
+        "staging": "code",
+        "residency": { "firstFrame": "main", "steadyState": "background" },
+        "handover": "slot-state"
+      },
+      "provenance": {
+        "source": "https://github.com/Huxpro/octane",
+        "ref": "test/lynx-c6-attribution",
+        "commit": "2afa126627858c716e821ab9623fdce7a2cc8855",
+        "patched": false,
+        "patchFile": null,
+        "buildCommand": "node benchmarks/lynx-table/stages/papi-run.mjs --cells octane,octane-mts-program,octane-direct",
+        "buildParameters": { "cell": "octane-direct" }
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "octane-core-switch",
+      "group": "architecture",
+      "shape": "pair",
+      "title": "BENCH_CORE: universal → block",
+      "source": {
+        "label": "Octane #163 C1 core-switch report",
+        "url": "https://github.com/Huxpro/octane/issues/163#issuecomment-5410566561"
+      },
+      "subjects": ["universal", "block"],
+      "relationship": "same-codebase",
+      "intendedAxis": "recompute",
+      "changedAxes": ["recompute", "sharing"],
+      "controls": {
+        "sameCodebase": true,
+        "sameFixture": true,
+        "singlePhysicalRun": null,
+        "singleBuildVariable": true
+      },
+      "observations": [
+        {
+          "label": "background bundle gzip",
+          "metric": "bundleGzip",
+          "unit": "bytes",
+          "lowerIsBetter": true,
+          "before": { "label": "universal", "value": 78164 },
+          "after": { "label": "block", "value": 51552 }
+        },
+        {
+          "label": "main-thread bundle gzip",
+          "metric": "bundleGzip",
+          "unit": "bytes",
+          "lowerIsBetter": true,
+          "before": { "label": "universal", "value": 90304 },
+          "after": { "label": "block", "value": 90304 }
+        }
+      ]
+    },
+    {
+      "id": "octane-template-program",
+      "group": "architecture",
+      "shape": "pair",
+      "title": "interpreted template → compiled program",
+      "source": {
+        "label": "Octane #163 C0 pricing spike",
+        "url": "https://github.com/Huxpro/octane/issues/163#issuecomment-5408499456"
+      },
+      "subjects": ["octane-c163-interpreted", "octane-c163-program"],
+      "relationship": "same-codebase",
+      "intendedAxis": "staging",
+      "changedAxes": ["sharing", "staging", "handover"],
+      "pairRef": "octane-c163-interpreted→octane-c163-program",
+      "controls": {
+        "sameCodebase": true,
+        "sameFixture": true,
+        "singlePhysicalRun": true,
+        "singleBuildVariable": true
+      },
+      "observations": [
+        {
+          "label": "first screen @1k",
+          "metric": "fcp",
+          "scale": 1000,
+          "unit": "ms",
+          "lowerIsBetter": true,
+          "before": { "label": "interpreted template", "value": 214.6, "n": 5 },
+          "after": { "label": "compiled program", "value": 132.3, "n": 5 }
+        },
+        {
+          "label": "first screen @10k",
+          "metric": "fcp",
+          "scale": 10000,
+          "unit": "ms",
+          "lowerIsBetter": true,
+          "before": { "label": "interpreted template", "value": 1403.1, "n": 5 },
+          "after": { "label": "compiled program", "value": 892.1, "n": 5 }
+        },
+        {
+          "label": "first screen @30k",
+          "metric": "fcp",
+          "scale": 30000,
+          "unit": "ms",
+          "lowerIsBetter": true,
+          "before": { "label": "interpreted template", "value": 4218.7, "n": 5 },
+          "after": { "label": "compiled program", "value": 2432.5, "n": 5 }
+        }
+      ]
+    },
+    {
+      "id": "octane-adoption-inversion",
+      "group": "architecture",
+      "shape": "pair",
+      "title": "tree-description adoption → slot-state adoption",
+      "source": {
+        "label": "Octane #163 C0 adoption count",
+        "url": "https://github.com/Huxpro/octane/issues/163#issuecomment-5408499456"
+      },
+      "subjects": ["octane-c163-interpreted", "octane-c163-program"],
+      "relationship": "same-codebase",
+      "intendedAxis": "handover",
+      "changedAxes": ["sharing", "staging", "handover"],
+      "pairRef": "octane-c163-interpreted→octane-c163-program",
+      "controls": {
+        "sameCodebase": true,
+        "sameFixture": true,
+        "singlePhysicalRun": true,
+        "singleBuildVariable": true
+      },
+      "observations": [
+        {
+          "label": "adoption selectors @1k",
+          "metric": "octaneRefSelectors",
+          "scale": 1000,
+          "unit": "count",
+          "lowerIsBetter": true,
+          "before": { "label": "tree description", "value": 4028 },
+          "after": { "label": "slot state", "value": 0 }
+        },
+        {
+          "label": "adoption selectors @10k",
+          "metric": "octaneRefSelectors",
+          "scale": 10000,
+          "unit": "count",
+          "lowerIsBetter": true,
+          "before": { "label": "tree description", "value": 40028 },
+          "after": { "label": "slot state", "value": 0 }
+        },
+        {
+          "label": "adoption selectors @30k",
+          "metric": "octaneRefSelectors",
+          "scale": 30000,
+          "unit": "count",
+          "lowerIsBetter": true,
+          "before": { "label": "tree description", "value": 120028 },
+          "after": { "label": "slot state", "value": 0 }
+        }
+      ]
+    },
+    {
+      "id": "vue-feature-matrix",
+      "group": "architecture",
+      "shape": "point-set",
+      "title": "Vue baseline × Vapor × IFR/ET matrix",
+      "source": {
+        "label": "checked-in seven-entry Web cohort",
+        "url": "https://github.com/Huxpro/lynx-js-framework-benchmark/pull/37"
+      },
+      "subjects": ["vue-vdom", "vue-vdom-ifr-et", "vue-vapor", "vue-vapor-ifr"],
+      "relationship": "same-codebase",
+      "intendedAxis": "residency",
+      "changedAxes": ["recompute", "sharing", "staging", "residency", "handover"],
+      "pairRef": "vue-vapor→vue-vapor-ifr",
+      "controls": {
+        "sameCodebase": true,
+        "sameFixture": true,
+        "singlePhysicalRun": true,
+        "singleBuildVariable": false
+      },
+      "observations": []
+    },
+    {
+      "id": "octane-sync-residue",
+      "group": "residue",
+      "shape": "pair",
+      "title": "upstream sync before → after",
+      "source": {
+        "label": "Octane PR #229",
+        "url": "https://github.com/Huxpro/octane/pull/229"
+      },
+      "subjects": ["pre-sync 07115d67", "post-sync PR #229"],
+      "relationship": "same-codebase",
+      "intendedAxis": null,
+      "changedAxes": [],
+      "controls": {
+        "sameCodebase": true,
+        "sameFixture": true,
+        "singlePhysicalRun": true,
+        "singleBuildVariable": false
+      },
+      "observations": [
+        {
+          "label": "nine-cell gap vs upstream",
+          "metric": "weightedRatio",
+          "unit": "ratio",
+          "lowerIsBetter": true,
+          "before": { "label": "pre-sync", "value": 1.1131 },
+          "after": { "label": "post-sync", "value": 1.0951 },
+          "effect": { "ratio": 0.9839, "ci95Low": 0.915, "ci95High": 1.0661 }
+        },
+        {
+          "label": "create @10k vs upstream",
+          "metric": "latencyRatio",
+          "scale": 10000,
+          "unit": "ratio",
+          "lowerIsBetter": true,
+          "before": { "label": "pre-sync", "value": 1.652 },
+          "after": { "label": "post-sync", "value": 1.663 }
+        }
+      ]
+    },
+    {
+      "id": "octane-wire-fix-residue",
+      "group": "residue",
+      "shape": "pair",
+      "title": "wire reply defects before → after",
+      "source": {
+        "label": "Octane PR #233",
+        "url": "https://github.com/Huxpro/octane/pull/233"
+      },
+      "subjects": ["before PR #233", "after PR #233"],
+      "relationship": "same-codebase",
+      "intendedAxis": null,
+      "changedAxes": [],
+      "controls": {
+        "sameCodebase": true,
+        "sameFixture": true,
+        "singlePhysicalRun": true,
+        "singleBuildVariable": false
+      },
+      "observations": [
+        {
+          "label": "MTS→BTS wire @10k",
+          "metric": "wireToBtsBytes",
+          "scale": 10000,
+          "unit": "bytes",
+          "lowerIsBetter": true,
+          "before": { "label": "before", "value": 17420700, "n": 7 },
+          "after": { "label": "after", "value": 727, "n": 7 }
+        },
+        {
+          "label": "latency @10k",
+          "metric": "latency",
+          "scale": 10000,
+          "unit": "ms",
+          "lowerIsBetter": true,
+          "before": { "label": "before", "value": 2470, "ci95": 90, "n": 7 },
+          "after": { "label": "after", "value": 2268, "ci95": 164, "n": 7 }
+        },
+        {
+          "label": "BTS CPU @10k",
+          "metric": "btsCpu",
+          "scale": 10000,
+          "unit": "ms",
+          "lowerIsBetter": true,
+          "before": { "label": "before", "value": 963, "ci95": 107, "n": 7 },
+          "after": { "label": "after", "value": 536, "ci95": 203, "n": 7 }
+        },
+        {
+          "label": "heap after clear @10k",
+          "metric": "heapMtsAfterClear",
+          "scale": 10000,
+          "unit": "bytes",
+          "lowerIsBetter": true,
+          "before": { "label": "before", "value": 17850904, "n": 7 },
+          "after": { "label": "after", "value": 17863780, "n": 7 }
+        }
+      ]
+    }
+  ]
+}

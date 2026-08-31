@@ -11,6 +11,7 @@ const heatGridSource = fs.readFileSync(new URL('./components/HeatGrid.tsx', impo
 const costSpaceSource = fs.readFileSync(new URL('./components/CostSpace.tsx', import.meta.url), 'utf8');
 const methodSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
 const scaleTrendsSource = fs.readFileSync(new URL('./components/ScaleTrends.tsx', import.meta.url), 'utf8');
+const timelineSource = fs.readFileSync(new URL('./components/TimelineSlider.tsx', import.meta.url), 'utf8');
 
 test('rank by dataset is the final content section', () => {
   const history = source.indexOf('<HistoryRanking');
@@ -53,12 +54,41 @@ test('Native empty snapshots lead with at-a-glance and end with the coverage app
   assert.ok(observations < coverage, 'coverage contract must remain the final Native appendix');
 });
 
-test('Threads and method are inlined instead of competing page tabs', () => {
-  assert.match(source, /type Page = 'overview' \| 'scale'/);
+test('Lab is a first-class view while Threads and method stay inlined', () => {
+  assert.match(timelineSource, /BenchmarkPage = 'overview' \| 'scale' \| 'lab'/);
+  assert.match(timelineSource, /\['overview', 'scale', 'lab'\]/);
+  assert.match(timelineSource, /overview: text\('Overview', '总览'\)/);
+  assert.match(timelineSource, /scale: text\('Scale', '规模'\)/);
+  assert.match(source, /page === 'lab'/);
+  assert.match(source, /<h1>\{text\('Benchmark Lab', '基准实验室'\)\}<\/h1>/);
   assert.doesNotMatch(source, /page === 'threads'/);
   assert.doesNotMatch(source, /page === 'method'/);
   assert.match(source, /<ThreadsPage harness=\{harness\}/);
   assert.match(source, /<MeasurementReceipt harness=\{harness\}/);
+});
+
+test('research-only Storm semantics and list contracts live in Lab, not Overview', () => {
+  const lab = source.indexOf("page === 'lab'");
+  const overview = source.indexOf(") : harness === 'native'", lab);
+  const labSource = source.slice(lab, overview);
+  const overviewSource = source.slice(overview);
+
+  assert.match(labSource, /<StormCoalescing theme=\{theme\} selected=\{activeSelected\}/);
+  assert.match(labSource, /<ListCoverage harness=\{harness\}/);
+  assert.doesNotMatch(overviewSource, /<StormCoalescing/);
+  assert.doesNotMatch(overviewSource, /<ListCoverage/);
+  assert.doesNotMatch(source, /next === 'native' && page === 'lab'/);
+});
+
+test('Lab owns axis evidence instead of appending it to Overview', () => {
+  const lab = source.indexOf("page === 'lab'");
+  const axisEvidence = source.indexOf('<AxisEffects />', lab);
+  const overview = source.indexOf(") : page === 'overview'", axisEvidence);
+
+  assert.notEqual(lab, -1);
+  assert.ok(axisEvidence > lab, 'Lab should render the axis evidence');
+  assert.ok(axisEvidence < overview, 'axis evidence should finish before Overview begins');
+  assert.equal(source.indexOf('<AxisEffects />', axisEvidence + 1), -1);
 });
 
 test('endpoint rows are a collapsed data appendix owned by the wire visualization', () => {

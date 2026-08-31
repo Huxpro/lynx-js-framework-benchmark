@@ -110,7 +110,7 @@ test('framework hover cards own source links and exact plugin options', () => {
 
 test('sticky workspace owns view and environment navigation', () => {
   assert.match(source, /`workspace-toolbar\$\{/);
-  assert.match(source, /\(\['overview', 'scale'\] as const\)/);
+  assert.match(source, /\(\['overview', 'scale', 'lab'\] as const\)/);
   assert.match(source, /<span>\{text\('Lynx for', 'Lynx 环境'\)\}<\/span>/);
   assert.match(source, /candidate === 'web' \? 'Web' : 'Native'/);
   assert.doesNotMatch(source, /Native engine/);

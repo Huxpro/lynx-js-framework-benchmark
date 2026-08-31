@@ -4,6 +4,15 @@
   "framework": "vue-lynx",
   "frameworkVersion": "vue 3.6.0-beta.17 / vue-lynx 0.4.2",
   "config": "vdom, IFR off, ET off",
+  "fixture": "js-framework-benchmark-keyed-table-v1",
+  "coordinates": {
+    "invalidation": "runtime",
+    "recompute": "tree",
+    "sharing": "none",
+    "staging": "ops",
+    "residency": { "firstFrame": "background", "steadyState": "background" },
+    "handover": "operation-stream"
+  },
   "tags": [
     "baseline"
   ],
@@ -22,6 +31,11 @@
     "patched": true,
     "patchFile": "entries/_patches/vue-lynx-bench.patch",
     "buildCommand": "node scripts/build-vue-featured.mjs <vue-lynx-checkout>",
+    "buildParameters": {
+      "app": "ui-vdom",
+      "BENCH_ENABLE_IFR": "0",
+      "BENCH_ENABLE_ET": "0"
+    },
     "builtAt": "2026-07-18T06:43:49+08:00",
     "sha256": {
       "rows-0/main.web.bundle": "0c39a76db2e820e1742e4024fa6992edcdf5278ab97b5454db4726ef85133904",

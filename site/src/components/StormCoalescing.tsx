@@ -17,7 +17,6 @@ type StormRow =
     ticks: number | null;
     frames: number | null;
     ratio: number | null;
-    pass: boolean;
     toBtsBytesPerTick: number | null;
     toMtsBytesPerTick: number | null;
     declaredInterval: number | null;
@@ -86,7 +85,6 @@ export function StormCoalescing({
         ticks: value('ticksIssued'),
         frames: value('committedFrames'),
         ratio: value('coalescingRatio'),
-        pass: value('contractPass') === 1,
         toBtsBytesPerTick: value('wireToBtsBytesPerTick'),
         toMtsBytesPerTick: value('wireToMtsBytesPerTick'),
         declaredInterval: detail?.tickIntervalMs ?? null,
@@ -100,8 +98,8 @@ export function StormCoalescing({
     <section className="card storm-coalescing" aria-labelledby="storm-coalescing-title">
       <CardCaption title={<span id="storm-coalescing-title">{text('Storm commit semantics', 'Storm 提交语义')}</span>}>
         {text(
-          'A separate shared-driver suite. Each row is one real sample nearest that entry’s latency median: observable committed frames / issued pointer ticks, with wire bytes divided only during collection. A failed every-tick contract is retained evidence, not DNF.',
-          '独立的共享 driver suite。每行采用最接近该条目 latency 中位数的同一个真实样本：可观察提交帧 / 已发 pointer tick；wire bytes 仅在 collect 阶段做除法。every-tick contract 失败会保留为证据，不记作 DNF。',
+          'A separate shared-driver suite. Each row is one real sample nearest that entry’s latency median: observable committed frames / issued pointer ticks, with wire bytes divided only during collection. Coalescing under every-tick is an expected strategy observation, not an error; only DNF is a failure state.',
+          '独立的共享 driver suite。每行采用最接近该条目 latency 中位数的同一个真实样本：可观察提交帧 / 已发 pointer tick；wire bytes 仅在 collect 阶段做除法。every-tick 下发生合并是预期的策略观测，不是错误；只有 DNF 属于失败状态。',
         )}
       </CardCaption>
       <div className="chips storm-cell-rail" aria-label={text('Storm workload', 'Storm workload')}>
@@ -126,15 +124,14 @@ export function StormCoalescing({
             <header>
               <b>{commitPolicy}</b>
               <span>{commitPolicy === 'every-tick'
-                ? text('one observable frame per tick', '每 tick 一个可观察帧')
-                : text('terminal state only; coalescing allowed', '只要求终态；允许合并')}</span>
+                ? text('observes whether each tick becomes a frame', '观察每个 tick 是否形成一帧')
+                : text('observes the terminal state; coalescing expected', '观察终态；预期允许合并')}</span>
             </header>
             <div className="storm-table-wrap">
               <table className="storm-table">
                 <thead><tr>
                   <th>{text('Entry', '条目')}</th>
-                  <th>{text('Outcome', '结果')}</th>
-                  <th>{text('Frames / ticks', '帧 / tick')}</th>
+                  <th>{text('Observation', '观测')}</th>
                   <th>{text('Latency', '延迟')}</th>
                   <th>MTS→BTS / tick</th>
                   <th>BTS→MTS / tick</th>
@@ -142,14 +139,18 @@ export function StormCoalescing({
                 </tr></thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.entry.id} data-outcome={row.dnf ? 'dnf' : row.pass ? 'pass' : 'fail'}>
+                    <tr key={row.entry.id} data-outcome={row.dnf ? 'dnf' : 'observed'}>
                       <th><i style={{ background: entryColor(row.entry.id, theme) }} />{shortLabel(row.entry.id)}</th>
                       {row.dnf ? (
-                        <td colSpan={6}><strong>DNF</strong> · {row.failure}</td>
+                        <td colSpan={5}><strong>DNF</strong> · {row.failure}</td>
                       ) : (
                         <>
-                          <td><strong>{row.pass ? text('pass', '通过') : text('contract fail', 'contract 失败')}</strong></td>
-                          <td>{row.frames}/{row.ticks} <small>{row.ratio == null ? '—' : `${(row.ratio * 100).toFixed(0)}%`}</small></td>
+                          <td><strong>{row.frames == null || row.ticks == null
+                            ? text('observed', '已观测')
+                            : row.frames < row.ticks
+                              ? text(`coalesced to ${row.frames}/${row.ticks} frames`, `合并后 ${row.frames}/${row.ticks} 帧`)
+                              : text(`${row.frames}/${row.ticks} frames observed`, `观测到 ${row.frames}/${row.ticks} 帧`)}</strong>{' '}
+                            <small>{row.ratio == null ? '—' : `${(row.ratio * 100).toFixed(0)}%`}</small></td>
                           <td>{fmtMs(row.operationMs)}</td>
                           <td>{fmtBytes(row.toBtsBytesPerTick)}</td>
                           <td>{fmtBytes(row.toMtsBytesPerTick)}</td>
