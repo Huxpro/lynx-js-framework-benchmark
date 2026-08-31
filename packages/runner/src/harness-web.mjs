@@ -19,6 +19,7 @@ import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
+import { assertProcessThrottleProbe, runProcessThrottleProbe } from './preflight.mjs';
 import { derivePipelineSample, emitPipelineRecords } from './pipeline-attribution.mjs';
 import {
   deriveStormSample,
@@ -28,6 +29,13 @@ import {
 } from './storm-contract.mjs';
 
 const SETTLE_MS = 30;
+const PROCESS_CGROUP_TRANSPORT_IDLE_MS = 500;
+const PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS = 30000;
+const PROCESS_CGROUP_READINESS_BARRIER = Object.freeze({
+  method: 'wire-idle-v1',
+  idleMs: PROCESS_CGROUP_TRANSPORT_IDLE_MS,
+  timeoutMs: PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS,
+});
 
 async function evalX(page, expr) {
   return page.evaluate(`(() => { const x = globalThis.__x; return (${expr}); })()`);
@@ -61,6 +69,45 @@ async function settle(page, extraMs = SETTLE_MS) {
 
 async function wireSnapshot(page) {
   return page.evaluate(() => globalThis.__LYNX_WIRE_SNAPSHOT__());
+}
+
+const wireSignature = (wire) => [
+  wire.toBts.messages,
+  wire.toBts.bytes,
+  wire.toMts.messages,
+  wire.toMts.bytes,
+].join(':');
+
+/**
+ * Wait until the two-thread transport has stopped changing for a complete
+ * quiet window. A visible "ready" title can precede listener/commit readiness
+ * when a whole Chromium process tree shares a CFS quota; clicking in that
+ * window loses the first untimed setup action for block-program entries.
+ */
+export async function waitForTransportIdle(snapshot, {
+  idleMs = PROCESS_CGROUP_TRANSPORT_IDLE_MS,
+  timeoutMs = PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS,
+  pollMs = 50,
+  now = Date.now,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+} = {}) {
+  const startedAt = now();
+  let quietSince = startedAt;
+  let previous = wireSignature(await snapshot());
+  while (now() - startedAt <= timeoutMs) {
+    await sleep(pollMs);
+    const observedAt = now();
+    const current = wireSignature(await snapshot());
+    if (current !== previous) {
+      previous = current;
+      quietSince = observedAt;
+    } else if (observedAt - quietSince >= idleMs) {
+      return { idleMs: observedAt - quietSince, signature: current };
+    }
+  }
+  throw new Error(
+    `transport did not become idle for ${idleMs}ms within ${timeoutMs}ms`,
+  );
 }
 
 function wireDelta(before, after) {
@@ -126,6 +173,7 @@ async function openBenchPage({
   origin,
   bundleUrl,
   cdp,
+  cpuThrottle = 1,
   viewW = 800,
   viewH = 640,
   harnessPath = '/',
@@ -133,7 +181,7 @@ async function openBenchPage({
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   page.on('pageerror', (err) => console.error('  [pageerror]', String(err).slice(0, 200)));
   await page.goto(`${origin}${harnessPath}`, { waitUntil: 'load' });
-  const attach = await attachToPageAndWorkers(cdp, origin);
+  const attach = await attachToPageAndWorkers(cdp, origin, { cpuThrottle });
   attach.client = cdp;
   await page.evaluate(
     ({ url, w, h }) => globalThis.__x.createView(url, w, h),
@@ -142,13 +190,17 @@ async function openBenchPage({
   return { page, attach };
 }
 
-async function waitReady(page, timeoutMs = 120000) {
+async function waitReady(page, timeoutMs = 120000, { requireTransportIdle = false } = {}) {
   await page.waitForFunction(
     (needle) => globalThis.__x.findText(needle),
     READY_TEXT,
     { timeout: timeoutMs, polling: 16 },
   );
   await settle(page);
+  if (requireTransportIdle) {
+    await waitForTransportIdle(() => wireSnapshot(page));
+    await settle(page);
+  }
 }
 
 /** Establish a case's pre-state (untimed). */
@@ -313,6 +365,11 @@ export async function runTableSuite({
   cdp,
   log,
   includeMemory = true,
+  jsRegime = 'jit',
+  cpuThrottle = 1,
+  throttleScope = 'none',
+  verifiedSlowdown = null,
+  cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
   const bundle = bundleFor(entry, { rows: 0 });
@@ -323,8 +380,12 @@ export async function runTableSuite({
   const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
 
   // Warm page shared by non-storm cases.
-  const { page, attach } = await openBenchPage({ browser, origin, bundleUrl, cdp });
-  await waitReady(page);
+  const { page, attach } = await openBenchPage({
+    browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+  });
+  await waitReady(page, 120000, {
+    requireTransportIdle: throttleScope === 'process-cgroup',
+  });
   const profiler = await profilerFor(page, attach);
 
   // Warmup: two create/clear cycles.
@@ -382,6 +443,7 @@ export async function runTableSuite({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, attemptedCount: reps,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -395,10 +457,15 @@ export async function runTableSuite({
   try {
     if (!includeMemory) return await runStormCases({
       entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+      jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
     });
-    const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
+    const fresh = await openBenchPage({
+      browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+    });
     memoryPage = fresh.page;
-    await waitReady(memoryPage);
+    await waitReady(memoryPage, 120000, {
+      requireTransportIdle: throttleScope === 'process-cgroup',
+    });
     await clickButton(memoryPage, CREATE_BUTTON[10000]);
     await untilPredicate(memoryPage, { type: 'rowCount', value: 10000 }, 240000);
     await settle(memoryPage, 200);
@@ -420,6 +487,7 @@ export async function runTableSuite({
         boundary: 'gc-heap-with-10k-rows',
         unit: 'bytes',
         value: usedSize,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
     }
     await clickButton(memoryPage, 'Clear');
@@ -437,6 +505,7 @@ export async function runTableSuite({
         boundary: 'gc-heap-after-clearing-10k-rows',
         unit: 'bytes',
         value: usedSize,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
     }
     log(
@@ -450,6 +519,7 @@ export async function runTableSuite({
 
   return runStormCases({
     entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+    jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
   });
 }
 
@@ -651,6 +721,7 @@ export async function runStormSuite({
 
 async function runStormCases({
   entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
+  jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle = cpuThrottle,
 }) {
   // Storm cases: fresh page per rep.
   for (const kase of cases) {
@@ -661,9 +732,13 @@ async function runStormCases({
       let dnfCount = 0;
       const failures = [];
       for (let rep = 0; rep < stormReps; rep++) {
-        const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp });
+        const fresh = await openBenchPage({
+          browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+        });
         try {
-          await waitReady(fresh.page);
+          await waitReady(fresh.page, 120000, {
+            requireTransportIdle: throttleScope === 'process-cgroup',
+          });
           const freshProfiler = await profilerFor(fresh.page, fresh.attach);
           await ensurePre(fresh.page, kase, scale);
           await gc(fresh.page);
@@ -709,6 +784,7 @@ async function runStormCases({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, failures, attemptedCount: stormReps,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -724,9 +800,13 @@ function fmtSummary(samples) {
 
 function emitOpRecords({
   entry, kase, scale, samples, dnfCount, failures = [], attemptedCount,
+  jsRegime = 'jit', cpuThrottle = 1, throttleScope = 'none', verifiedSlowdown = null,
 }) {
   const records = [];
-  const base = { suite: 'table', entry: entry.id, workload: kase.name, scale };
+  const base = {
+    suite: 'table', entry: entry.id, workload: kase.name, scale,
+    jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
+  };
   records.push(makeRecord({
     ...base,
     metric: 'latency',
@@ -784,7 +864,11 @@ function emitOpRecords({
   return records;
 }
 
-export async function runStartupSuite({ entry, scales, reps, browser, origin, cdp, log }) {
+export async function runStartupSuite({
+  entry, scales, reps, browser, origin, cdp, log, jsRegime = 'jit', cpuThrottle = 1,
+  throttleScope = 'none', verifiedSlowdown = null,
+  cdpCpuThrottle = cpuThrottle,
+}) {
   const records = [];
   const kase = STARTUP_CASES[0];
   for (const scale of kase.scales.filter((s) => scales.includes(s))) {
@@ -800,7 +884,9 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
       const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
       try {
         await page.goto(`${origin}/`, { waitUntil: 'load' });
-        const attach = await attachToPageAndWorkers(cdp, origin);
+        const attach = await attachToPageAndWorkers(cdp, origin, {
+          cpuThrottle: cdpCpuThrottle,
+        });
         attach.client = cdp;
         // Profile from before view attach; the bg worker session joins on boot.
         const pageProfiler = new RealmProfiler(cdp, [{ key: 'mts', sessionId: attach.pageSession }]);
@@ -835,7 +921,10 @@ export async function runStartupSuite({ entry, scales, reps, browser, origin, cd
         await page.close();
       }
     }
-    const base = { suite: 'startup', entry: entry.id, workload: 'startup', scale };
+    const base = {
+      suite: 'startup', entry: entry.id, workload: 'startup', scale,
+      jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
+    };
     records.push(makeRecord({
       ...base,
       metric: 'fcp',
@@ -895,25 +984,57 @@ export async function runWebHarness({
   stormCases = [],
   suites,
   scales,
+  startupScales = null,
   reps = 7,
   stormReps = 3,
   startupReps = 5,
   log = console.log,
   includeMemory = true,
+  jit = 'jit',
+  cpuThrottle = 1,
+  throttleScope = 'none',
+  processThrottleControl = null,
+  processQuotaPercent = null,
 }) {
   const bundleRoots = {};
   for (const e of entries) bundleRoots[e.id] = e.distDir;
   const server = await startServer({ bundleRoots });
-  const { browser, cdpPort, executablePath, browserVersion } = await launchBrowser();
+  const {
+    browser, cdpPort, executablePath, browserVersion, processThrottle, closeBrowser,
+  } = await launchBrowser({ jit, cpuThrottle, throttleScope, processQuotaPercent });
+  const processThrottleReceipt = processThrottle == null
+    ? null
+    : { ...processThrottle, readinessBarrier: PROCESS_CGROUP_READINESS_BARRIER };
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
+  const processThrottleEntryVerifications = [];
+  const cdpCpuThrottle = throttleScope === 'page-cdp' ? cpuThrottle : 1;
   try {
     for (const entry of entries) {
       log(`[entry] ${entry.id} (${entry.label})`);
+      const processThrottleVerification = throttleScope === 'process-cgroup'
+        ? assertProcessThrottleProbe({
+          control: processThrottleControl,
+          throttled: await runProcessThrottleProbe(browser, {
+            requireWebHarness: true, jsRegime: jit,
+          }),
+          cpuThrottle,
+          mechanism: processThrottleReceipt,
+        })
+        : null;
+      const verifiedSlowdown = processThrottleVerification?.verifiedSlowdown ?? null;
+      if (processThrottleVerification != null) {
+        processThrottleEntryVerifications.push({ entry: entry.id, ...processThrottleVerification });
+        log(
+          `  [verify:process-cgroup] ${entry.id}: ${verifiedSlowdown.toFixed(2)}x `
+          + `(accepted ${processThrottleVerification.acceptedRange.join('–')}x)`,
+        );
+      }
       if (suites.includes('table')) {
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
           browser, origin: server.origin, cdp, log, includeMemory,
+          jsRegime: jit, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
         }));
       }
       if (suites.includes('pipeline')) {
@@ -943,16 +1064,30 @@ export async function runWebHarness({
       if (suites.includes('startup')) {
         records.push(...await runStartupSuite({
           entry,
-          scales: [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
+          scales: startupScales
+            ?? [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
+          jsRegime: jit, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
         }));
       }
     }
   } finally {
     cdp.close();
-    await browser.close();
+    await closeBrowser();
     await server.close();
   }
-  return { records, executablePath, browserVersion };
+  return {
+    records: records.map((record) => ({
+      ...record,
+      environment: { ...record.environment, throttleScope },
+    })),
+    executablePath,
+    browserVersion,
+    processThrottle: processThrottleReceipt,
+    processThrottleEntryVerifications,
+    verifiedSlowdownByEntry: Object.fromEntries(
+      processThrottleEntryVerifications.map(({ entry, verifiedSlowdown }) => [entry, verifiedSlowdown]),
+    ),
+  };
 }

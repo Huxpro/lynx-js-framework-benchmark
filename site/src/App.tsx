@@ -21,7 +21,11 @@ import {
   ENTRIES,
   ENTRY_BY_ID,
   TIMELINE_SNAPSHOTS,
+  DEFAULT_WEB_REGIME,
+  WEB_REGIMES,
+  WebRegime,
   entrySupportsHarness,
+  webRegimeId,
 } from './data';
 import { useHeatPalette, useTheme } from './hooks';
 import { localizedWorkload, useI18n } from './i18n';
@@ -76,12 +80,30 @@ function initialSnapshotIndex(): number {
   return current >= 0 ? current : TIMELINE_SNAPSHOTS.length - 1;
 }
 
+function initialWebRegime(): WebRegime {
+  const requested = new URLSearchParams(location.search).get('regime') ?? 'web';
+  const id = requested === 'web-interp-4x-cg' ? 'web-interp-4x' : requested;
+  const match = WEB_REGIMES.find((candidate) => candidate.id === id);
+  return match == null
+    ? DEFAULT_WEB_REGIME
+    : {
+      jsRegime: match.jsRegime,
+      jsFlags: match.jsFlags,
+      cpuThrottle: match.cpuThrottle,
+      throttleScope: match.throttleScope,
+    };
+}
+
 function AppContent({
   snapshotIndex,
   onSnapshotChange,
+  regime,
+  onRegimeChange,
 }: {
   snapshotIndex: number;
   onSnapshotChange: (index: number) => void;
+  regime: WebRegime;
+  onRegimeChange: (regime: WebRegime) => void;
 }) {
   const { locale, text } = useI18n();
   const [theme, toggleTheme] = useTheme();
@@ -91,8 +113,12 @@ function AppContent({
   const [harness, setHarness] = useState<string>(() =>
     new URLSearchParams(location.search).get('harness') === 'native' ? 'native' : 'web');
   const cohortEntryIds = snapshot.comparison.harnesses
-    .find((cohort) => cohort.harness === harness)?.entryIds ?? [];
-  const cohortKey = `${snapshot.id}:${harness}`;
+    .find((cohort) => cohort.harness === harness && (harness !== 'web'
+      || (cohort.jsRegime === regime.jsRegime
+        && cohort.jsFlags === regime.jsFlags
+        && cohort.cpuThrottle === regime.cpuThrottle
+        && cohort.throttleScope === regime.throttleScope)))?.entryIds ?? [];
+  const cohortKey = `${snapshot.id}:${harness}:${webRegimeId(regime)}`;
   const previousCohort = useRef(cohortKey);
   const [selected, setSelected] = useState<Set<string>>(() => initialSelection(cohortEntryIds));
   const availableIds = useMemo(() => new Set(cohortEntryIds), [cohortEntryIds]);
@@ -112,6 +138,15 @@ function AppContent({
     const params = new URLSearchParams(location.search);
     if (next === 'web') params.delete('harness');
     else params.set('harness', next);
+    const query = params.toString();
+    history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+  };
+  const changeRegime = (next: WebRegime) => {
+    onRegimeChange(next);
+    const params = new URLSearchParams(location.search);
+    const id = webRegimeId(next);
+    if (id === 'web') params.delete('regime');
+    else params.set('regime', id);
     const query = params.toString();
     history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
   };
@@ -255,6 +290,8 @@ function AppContent({
         onPageChange={setPage}
         harness={harness}
         onHarnessChange={changeHarness}
+        regime={regime}
+        onRegimeChange={changeRegime}
         theme={theme}
         onThemeToggle={toggleTheme}
         heatPalette={heatPalette}
@@ -420,6 +457,7 @@ function AppContent({
 
       <HistoryRanking
         harness={harness}
+        regime={regime}
         onHarnessChange={changeHarness}
         theme={theme}
         snapshotIndex={snapshotIndex}
@@ -441,19 +479,33 @@ function AppContent({
 
 export default function App() {
   const [snapshotIndex, setSnapshotIndex] = useState(initialSnapshotIndex);
+  const [regime, setRegime] = useState<WebRegime>(initialWebRegime);
   const snapshot = TIMELINE_SNAPSHOTS[snapshotIndex];
   const changeSnapshot = (index: number) => {
     setSnapshotIndex(index);
     const params = new URLSearchParams(location.search);
     const candidate = TIMELINE_SNAPSHOTS[index];
+    const regimeAvailable = candidate.comparison.harnesses.some((cohort) => cohort.harness === 'web'
+      && cohort.jsRegime === regime.jsRegime && cohort.jsFlags === regime.jsFlags
+      && cohort.cpuThrottle === regime.cpuThrottle
+      && cohort.throttleScope === regime.throttleScope);
+    if (!regimeAvailable) {
+      setRegime(DEFAULT_WEB_REGIME);
+      params.delete('regime');
+    }
     if (candidate.id === 'current-main') params.delete('snapshot');
     else params.set('snapshot', candidate.id);
     const query = params.toString();
     history.replaceState(null, '', query ? `?${query}` : location.pathname);
   };
   return (
-    <BenchmarkDataProvider snapshot={snapshot}>
-      <AppContent snapshotIndex={snapshotIndex} onSnapshotChange={changeSnapshot} />
+    <BenchmarkDataProvider snapshot={snapshot} regime={regime}>
+      <AppContent
+        snapshotIndex={snapshotIndex}
+        onSnapshotChange={changeSnapshot}
+        regime={regime}
+        onRegimeChange={setRegime}
+      />
     </BenchmarkDataProvider>
   );
 }

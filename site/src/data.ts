@@ -21,9 +21,10 @@ export interface BenchRecord {
   suite: string;
   harness: string;
   environment: string;
-  jsRegime?: 'jit' | 'interp' | null;
-  jsFlags?: string | null;
-  cpuThrottle?: number | null;
+  jsRegime: 'jit' | 'interp' | null;
+  jsFlags: string | null;
+  cpuThrottle: number | null;
+  throttleScope: 'none' | 'page-cdp' | 'process-cgroup' | null;
   entry: string;
   workload: string;
   scale: number;
@@ -72,7 +73,7 @@ export interface BenchRecord {
   runGeneratedAt: string | null;
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
-  comparisonKind: 'same-run' | 'same-machine' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
+  comparisonKind: 'same-run' | 'same-machine' | 'same-machine-regime' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
   comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work' | 'contract-failed';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
@@ -137,6 +138,10 @@ export interface ComparisonRun {
   harnesses: {
     harness: string;
     environment: string | null;
+    jsRegime: 'jit' | 'interp' | null;
+    jsFlags: string | null;
+    cpuThrottle: number | null;
+    throttleScope: 'none' | 'page-cdp' | 'process-cgroup' | null;
     generatedAt: string;
     machineId: string;
     calibration: { probeVersion: number; score: number } | null;
@@ -353,6 +358,10 @@ export interface HistoryRecord extends BenchRecord {
 export interface HistoryCohort {
   harness: string;
   environment: string | null;
+  jsRegime: 'jit' | 'interp' | null;
+  jsFlags: string | null;
+  cpuThrottle: number | null;
+  throttleScope: 'none' | 'page-cdp' | 'process-cgroup' | null;
   machineId: string;
   sourceRunFiles: string[];
   entryIds: string[];
@@ -400,6 +409,7 @@ export interface HistorySource {
   machineId: string;
   harnesses: string[];
   environments: string[];
+  regimes?: string[];
   entryIds: string[];
   entryCommits: Record<string, string>;
   machine: Machine;
@@ -478,6 +488,41 @@ const collected = latest as unknown as {
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
+export interface WebRegime {
+  jsRegime: 'jit' | 'interp';
+  jsFlags: string;
+  cpuThrottle: number;
+  throttleScope: 'none' | 'page-cdp' | 'process-cgroup';
+}
+const JIT_FLAGS = '--expose-gc';
+const INTERP_FLAGS = '--expose-gc,--no-opt,--no-sparkplug,--no-maglev';
+export const DEFAULT_WEB_REGIME: WebRegime = {
+  jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none',
+};
+export const WEB_REGIMES: (WebRegime & { id: string; label: string })[] = [
+  { id: 'web', label: 'JIT', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
+  { id: 'web-interp', label: 'Interp', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
+  { id: 'web-interp-4x', label: 'Interp 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'process-cgroup' },
+];
+export function isPublicWebRegime(regime: WebRegime): boolean {
+  return WEB_REGIMES.some((candidate) => candidate.jsRegime === regime.jsRegime
+    && candidate.jsFlags === regime.jsFlags
+    && candidate.cpuThrottle === regime.cpuThrottle
+    && candidate.throttleScope === regime.throttleScope);
+}
+export function webRegimeId(regime: WebRegime): string {
+  return WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime
+    && candidate.jsFlags === regime.jsFlags
+    && candidate.cpuThrottle === regime.cpuThrottle
+    && candidate.throttleScope === regime.throttleScope)?.id
+    ?? `${regime.jsRegime}-${regime.cpuThrottle}x-${regime.throttleScope}`;
+}
+export function recordMatchesWebRegime(record: BenchRecord, regime: WebRegime): boolean {
+  return record.harness !== 'web'
+    || (record.jsRegime === regime.jsRegime && record.jsFlags === regime.jsFlags
+      && record.cpuThrottle === regime.cpuThrottle
+      && record.throttleScope === regime.throttleScope);
+}
 const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   version: 'history-no-native-data',
   contractSha256: '',
@@ -541,13 +586,25 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
   const harnesses = checkpoint.harnesses.map((cohort) => ({
     harness: cohort.harness,
     environment: cohort.environment,
+    jsRegime: cohort.jsRegime ?? null,
+    jsFlags: cohort.jsFlags ?? null,
+    cpuThrottle: cohort.cpuThrottle ?? null,
+    throttleScope: cohort.throttleScope ?? null,
     generatedAt: checkpoint.generatedAt,
     machineId: cohort.machineId,
     calibration: null,
     sourceRunFiles: cohort.sourceRunFiles,
     entryIds: cohort.entryIds,
-    sourceRecordCount: records.filter((record) => record.harness === cohort.harness).length,
-    recordCount: records.filter((record) => record.harness === cohort.harness).length,
+    sourceRecordCount: records.filter((record) => record.harness === cohort.harness
+      && (cohort.harness !== 'web' || (record.jsRegime === cohort.jsRegime
+        && record.jsFlags === cohort.jsFlags
+        && record.cpuThrottle === cohort.cpuThrottle
+        && record.throttleScope === cohort.throttleScope))).length,
+    recordCount: records.filter((record) => record.harness === cohort.harness
+      && (cohort.harness !== 'web' || (record.jsRegime === cohort.jsRegime
+        && record.jsFlags === cohort.jsFlags
+        && record.cpuThrottle === cohort.cpuThrottle
+        && record.throttleScope === cohort.throttleScope))).length,
   }));
   const sources = checkpoint.sourceIndexes.map((index) => BENCHMARK_HISTORY.sources[index]);
   const machines = Object.fromEntries(sources.map((source) => [source.machineId, {
@@ -627,6 +684,10 @@ export interface RecordFilter {
   scale?: number;
   metric?: string;
   environment?: string;
+  jsRegime?: 'jit' | 'interp' | null;
+  jsFlags?: string | null;
+  cpuThrottle?: number | null;
+  throttleScope?: 'none' | 'page-cdp' | 'process-cgroup' | null;
   boundary?: string;
   unit?: string;
   contractVersion?: number;
@@ -645,6 +706,10 @@ export function filterRecords(records: BenchRecord[], filter: RecordFilter): Ben
     && (filter.scale == null || r.scale === filter.scale)
     && (filter.metric == null || r.metric === filter.metric)
     && (filter.environment == null || r.environment === filter.environment)
+    && (filter.jsRegime == null || r.jsRegime === filter.jsRegime)
+    && (filter.jsFlags == null || r.jsFlags === filter.jsFlags)
+    && (filter.cpuThrottle == null || r.cpuThrottle === filter.cpuThrottle)
+    && (filter.throttleScope == null || r.throttleScope === filter.throttleScope)
     && (filter.boundary == null || r.boundary === filter.boundary)
     && (filter.unit == null || r.unit === filter.unit)
     && (filter.contractVersion == null || r.contractVersion === filter.contractVersion)

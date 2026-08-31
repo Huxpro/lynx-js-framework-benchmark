@@ -22,8 +22,10 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, environment, entry, workload, scale, metric, boundary, unit,
-  plus nullable contract version / commit policy dimensions;
+- record identity: suite, harness, entry, workload, scale, metric, boundary, unit, plus nullable
+  contract version / commit policy dimensions. Schema v4 stores the Web execution regime as
+  `environment: { jsRegime, jsFlags, cpuThrottle, throttleScope, verifiedSlowdown? }`; Native keeps
+  its device-environment string and cannot carry Web regime fields;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
@@ -36,9 +38,27 @@ These are the only files/fields that require an update when their real-world inp
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
+Schema v4 extends the Web JS-execution regime to
+`environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number,
+throttleScope: "none" | "page-cdp" | "process-cgroup", verifiedSlowdown?: number }`.
+`jsFlags` is the exact V8 payload; the scope distinguishes page-target CDP throttling from a
+whole-process OS quota. `verifiedSlowdown` is required for newly produced `process-cgroup` records
+and must be within 0.5× of the declared throttle. Native records
+keep their schema-v2 environment string byte-for-byte and never gain Web regime fields. Schema-v2
+Web records default to `{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1,
+throttleScope: "none" }`, except the historical `lynx-for-web-interp` label, which remains in the
+interpreter lane; throttled schema-v3 records normalize to `"page-cdp"`.
+That normalization is archival compatibility, not a runnable or public lane: new 4× runs must use
+`"process-cgroup"`, while the old page-CDP records remain available only as historical calibration
+evidence.
+The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
+keyed by machine × regime so the Web lanes cannot overwrite, average, or rank together.
+
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
-legacy final endpoint sample. It never treats stored aggregate statistics as authoritative.
+legacy final endpoint sample. The schema-v2 `lynx-for-web-interp` label is normalized to the
+interpreter lane; all other legacy Web labels default to JIT 1×. It never treats stored aggregate
+statistics as authoritative.
 
 ### When an entry is built or vendored
 
@@ -48,6 +68,13 @@ legacy final endpoint sample. It never treats stored aggregate statistics as aut
 
 Bundle byte/gzip/section metrics are **not** benchmark observations. They are recalculated from
 the current bundle files whenever collection runs.
+
+Current-entry eligibility is artifact-aware but fail-closed. A Web observation matches its current
+manifest when either the source commit is identical or the run's complete set of Web bundle
+receipts is byte-identical to every manifest Web bundle checksum. This permits a source-only or
+Native-only commit change to retain the same measured Web artifact without relabelling changed
+bytes. A missing or different Web checksum remains stale. Native eligibility stays commit-exact;
+Web artifact equivalence never crosses the harness boundary.
 
 ## Derived data
 
@@ -71,7 +98,13 @@ Everything else is derived, including:
 - comparability/work classification. Incomplete or unverified work and prospective
   sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
   the source archive and audit index, but do not become Dataset Time Machine checkpoints or enter
-  ranked views. Pipeline control identities and cross-entry committed-tree eligibility are also
+  ranked views. The same applies to `btsCpu` from `cpuThrottle > 1` with
+  `throttleScope: "page-cdp"`: CDP throttling is target-scoped and the page setting does not cover
+  `lynx-bg`, so those samples are classified
+  `invalid-measurement`. A `process-cgroup` source without an accepted per-entry
+  `verifiedSlowdown` is invalid for the same reason: an OS-limiter receipt alone does not prove the
+  entry's renderer inherited it. Pipeline control identities and cross-entry committed-tree
+  eligibility are also
   derived here; unstable call multisets or mismatched trees cannot enter comparisons. Prospective
   Lab estimates must match the selected Web cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
@@ -131,6 +164,9 @@ Everything else is derived, including:
     their cell keys do not overlap, and one ordered receipt chain is an exact receipt-for-receipt
     prefix of the other. The longer chain is published; same-serial forks remain archive-only.
     Missing, unavailable, malformed, or mismatched connector/lease evidence is archive-only.
+    Web split checkpoints likewise require the same machine, normalized execution regime, and
+    prospective comparability receipt; a matching machine/regime cannot bridge different control
+    receipts.
 11. The pre-cell expiry boundary is derived from the configured worst single-cell envelope: formal
     repetitions, thermal gate, page/session plus long-workload timeouts, all transport attempts and
     reconnect windows, and cleanup margin. An override can only increase this derived minimum.

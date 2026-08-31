@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import { LEGACY_SCHEMA_VERSIONS, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 
 import { nativeCellKey, nativeStartupMetricContracts } from './native-coverage.mjs';
 import {
@@ -141,8 +141,9 @@ export function validateNativeResumeCheckpoint(run, {
   methodRevisionInputReceiptSha256 = null,
   methodRevisionApproval = NATIVE_TRANSPORT_CONTAINMENT_REVISION,
 }) {
-  if (run?.schemaVersion !== SCHEMA_VERSION || run.meta?.checkpoint !== true) {
-    throw new Error('Native resume source is not a schema-v2 checkpoint.');
+  if ((run?.schemaVersion !== SCHEMA_VERSION
+    && !LEGACY_SCHEMA_VERSIONS.includes(run?.schemaVersion)) || run.meta?.checkpoint !== true) {
+    throw new Error('Native resume source is not a supported schema checkpoint.');
   }
   if (run.meta.checkpointComplete === true) throw new Error('Native resume source is already complete.');
   if (!jsonEqual(run.meta.matrixContract, matrixContract)) {

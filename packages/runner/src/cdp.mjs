@@ -59,7 +59,14 @@ export class CdpClient {
  * Attach to the page target whose URL matches `urlPrefix` and auto-attach to
  * its dedicated workers. Returns session handles for profiling.
  */
-export async function attachToPageAndWorkers(client, urlPrefix) {
+export async function setCPUThrottlingRate(client, sessionId, cpuThrottle = 1) {
+  if (typeof cpuThrottle !== 'number' || !Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
+    throw new Error(`invalid CPU throttling rate: ${cpuThrottle}`);
+  }
+  await client.send('Emulation.setCPUThrottlingRate', { rate: cpuThrottle }, sessionId);
+}
+
+export async function attachToPageAndWorkers(client, urlPrefix, { cpuThrottle = 1 } = {}) {
   const { targetInfos } = await client.send('Target.getTargets');
   const page = targetInfos.find((t) => t.type === 'page' && t.url.startsWith(urlPrefix));
   if (!page) throw new Error(`no page target matching ${urlPrefix}`);
@@ -67,6 +74,7 @@ export async function attachToPageAndWorkers(client, urlPrefix) {
     targetId: page.targetId,
     flatten: true,
   });
+  await setCPUThrottlingRate(client, pageSession, cpuThrottle);
 
   const workers = new Map(); // targetId -> { sessionId, url, name }
   client.onEvent((method, params, sessionId) => {

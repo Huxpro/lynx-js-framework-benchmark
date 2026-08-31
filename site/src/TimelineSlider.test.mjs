@@ -3,9 +3,13 @@ import fs from 'node:fs';
 import test from 'node:test';
 
 const source = fs.readFileSync(new URL('./components/TimelineSlider.tsx', import.meta.url), 'utf8');
+const themeSource = fs.readFileSync(new URL('./theme.css', import.meta.url), 'utf8');
 const legendSource = fs.readFileSync(new URL('./components/Legend.tsx', import.meta.url), 'utf8');
 const receiptSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
 const rankingSource = fs.readFileSync(new URL('./components/HistoryRanking.tsx', import.meta.url), 'utf8');
+const appSource = fs.readFileSync(new URL('./App.tsx', import.meta.url), 'utf8');
+const contextSource = fs.readFileSync(new URL('./data-context.tsx', import.meta.url), 'utf8');
+const dataSource = fs.readFileSync(new URL('./data.ts', import.meta.url), 'utf8');
 const entry = (id) => JSON.parse(fs.readFileSync(
   new URL(`../../entries/${id}/entry.json`, import.meta.url),
   'utf8',
@@ -105,11 +109,64 @@ test('framework hover cards own source links and exact plugin options', () => {
 });
 
 test('sticky workspace owns view and environment navigation', () => {
-  assert.match(source, /className="workspace-toolbar"/);
+  assert.match(source, /`workspace-toolbar\$\{/);
   assert.match(source, /\(\['overview', 'scale'\] as const\)/);
   assert.match(source, /<span>\{text\('Lynx for', 'Lynx 环境'\)\}<\/span>/);
   assert.match(source, /candidate === 'web' \? 'Web' : 'Native'/);
   assert.doesNotMatch(source, /Native engine/);
+});
+
+test('Web regime facet is explicit, URL-addressable, and cannot mix ranking records', () => {
+  assert.match(source, /JavaScript execution regime/);
+  assert.match(source, /WEB_REGIMES\.map/);
+  assert.match(source, /cohort\.jsRegime === candidate\.jsRegime/);
+  assert.match(source, /cohort\.jsFlags === candidate\.jsFlags/);
+  assert.match(source, /cohort\.cpuThrottle === candidate\.cpuThrottle/);
+  assert.match(appSource, /params\.set\('regime', id\)/);
+  assert.doesNotMatch(appSource, /regime-disclaimer|Directional probe — interpreter-only/);
+  assert.match(dataSource, /label: 'JIT'/);
+  assert.match(dataSource, /label: 'Interp'/);
+  assert.match(dataSource, /id: 'web-interp-4x', label: 'Interp 4×'[\s\S]*throttleScope: 'process-cgroup'/);
+  assert.doesNotMatch(dataSource, /label: 'Interp · mixed 4×'/);
+  assert.doesNotMatch(dataSource, /id: 'web-interp-4x-cg'/);
+  assert.doesNotMatch(`${source}\n${receiptSource}\n${appSource}\n${dataSource}`, /Ignition/);
+  assert.match(contextSource, /recordMatchesWebRegime\(record, regime\)/);
+  assert.match(rankingSource, /record\.jsRegime === regime\.jsRegime/);
+  assert.match(rankingSource, /record\.jsFlags === regime\.jsFlags/);
+  assert.match(rankingSource, /record\.cpuThrottle === regime\.cpuThrottle/);
+});
+
+test('mobile workspace folds advanced regimes without hiding primary controls', () => {
+  assert.match(source, /useMediaQuery\('\(max-width: 48rem\)'\)/);
+  assert.match(source, /className="advanced-toggle"/);
+  assert.match(source, /className="fold-indicator"/);
+  assert.doesNotMatch(source, />⌄</);
+  assert.match(source, /aria-expanded=\{advancedOpen\}/);
+  assert.match(source, /aria-controls=\{advancedId\}/);
+  assert.match(source, /showAdvanced = harness === 'web' && \(!compact \|\| advancedOpen\)/);
+  assert.match(source, /workspace-toolbar\$\{showAdvanced \? ' is-advanced-open' : ''\}/);
+  assert.match(source, /\{showAdvanced && \(\s*<div className="workspace-advanced" id=\{advancedId\}>/);
+  assert.doesNotMatch(source, /className="workspace-advanced"[^>]*hidden=/);
+  assert.match(source, /<span>JS<\/span>/);
+  assert.match(source, /className="workspace-preferences"/);
+  assert.match(source, /className="harness-switch"/);
+  assert.match(themeSource, /grid-template-areas: 'view \. environment toggle preferences';/);
+  assert.match(themeSource, /grid-template-columns: auto minmax\(0, 1fr\) auto auto auto/);
+  assert.match(themeSource, /\.advanced-toggle output \{ display: none; \}/);
+  assert.match(themeSource, /clip-path: polygon\(0 0, 100% 0, 50% 100%\)/);
+  assert.match(themeSource, /\.workspace-toolbar\.is-advanced-open\s*\{[\s\S]*?'advanced advanced advanced advanced advanced'/);
+});
+
+test('regime measurement details are available from the compact information disclosure', () => {
+  assert.match(source, /<details className="regime-info">/);
+  assert.match(source, /How these lanes are measured/);
+  assert.match(source, /Chromium runs the default V8 compilation tiers/);
+  assert.match(source, /V8 JavaScript compiler tiers are disabled; Wasm stays compiled/);
+  assert.match(source, /inherited, calibrated OS quota for the Chromium process tree/);
+  assert.match(source, /Every entry must verify 3\.5–4\.5× slowdown/);
+  assert.match(source, /Interp 4× always means whole-process throttling/);
+  assert.doesNotMatch(source, /page\/MTS target|mixed 4×/i);
+  assert.match(source, /Rankings stay separate across every lane/);
 });
 
 test('sticky workspace gives its second row entirely to the dataset slider', () => {

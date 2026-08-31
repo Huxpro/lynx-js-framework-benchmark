@@ -186,10 +186,10 @@ function nativeCampaignMeta(entries, {
 
 const writeRun = (root, file, {
   machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z', entryCommits = null,
-  receipt = null,
+  receipt = null, schemaVersion = 2, regime = null,
 }) => {
   fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion,
     meta: {
       generatedAt,
       machine: machine(machineId),
@@ -197,7 +197,9 @@ const writeRun = (root, file, {
       ...(entryCommits ? { entryCommits } : {}),
       ...(receipt ? { receipt } : {}),
     },
-    records: entries.map((entry) => record(entry)),
+    records: entries.map((entry) => schemaVersion === 3
+      ? { ...record(entry), environment: regime }
+      : record(entry)),
   }));
 };
 
@@ -231,6 +233,182 @@ test('collect keeps record calibration and charts one coherent broadest run', ()
     assert.equal(oldReact.calibration.score, 100);
     assert.equal(newOctane.calibration.score, 110);
     assert.equal(out.machines.a.latestCalibration.score, 110);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector accepts byte-identical Web artifacts across source commits', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-web-artifact-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  const entries = [
+    {
+      id: 'peer',
+      distDir: path.join(root, 'missing-peer'),
+      provenance: { commit: 'peer-current' },
+    },
+    {
+      id: 'equivalent',
+      distDir: path.join(root, 'missing-equivalent'),
+      provenance: {
+        commit: 'equivalent-current',
+        sha256: {
+          'rows-0/main.web.bundle': 'web-zero',
+          'rows-1000/main.web.bundle': 'web-one-thousand',
+          'rows-0/main.lynx.bundle': 'native-current',
+        },
+      },
+    },
+    {
+      id: 'stale',
+      distDir: path.join(root, 'missing-stale'),
+      provenance: {
+        commit: 'stale-current',
+        sha256: { 'rows-0/main.web.bundle': 'web-current' },
+      },
+    },
+  ];
+  try {
+    fs.writeFileSync(path.join(root, 'results/runs/web.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z',
+        machine: machine('web'),
+        calibration: { probeVersion: 1, score: 100 },
+        entryCommits: {
+          peer: 'peer-current',
+          equivalent: 'equivalent-older-source',
+          stale: 'stale-older-source',
+        },
+        receipt: {
+          comparabilityCohort: 'sha256:web-artifact-identity',
+          entryBundles: {
+            equivalent: {
+              'rows-0/main.web.bundle': 'web-zero',
+              'rows-1000/main.web.bundle': 'web-one-thousand',
+              'rows-0/main.lynx.bundle': 'native-older-and-irrelevant-to-web',
+            },
+            stale: { 'rows-0/main.web.bundle': 'web-older' },
+          },
+        },
+      },
+      records: entries.map(({ id }) => ({
+        ...record(id),
+        environment: {
+          jsRegime: 'jit',
+          jsFlags: '--expose-gc',
+          cpuThrottle: 1,
+          throttleScope: 'none',
+        },
+        attemptedCount: 1,
+        acceptedCount: 1,
+      })),
+    }));
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(entries.map(({ id }) => id)),
+      entries,
+    });
+
+    assert.deepEqual(out.comparison.entryIds, ['equivalent', 'peer']);
+    assert.equal(out.comparisonRecords.some(({ entry }) => entry === 'stale'), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector defaults historical Web records to jit x1 and never mixes regime rankings', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-regime-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'baseline-v2.json', {
+      machineId: 'same-machine', score: 100, entries: ['react', 'vue'],
+      generatedAt: '2026-01-01T00:00:00Z',
+    });
+    writeRun(root, 'interp-react-v3.json', {
+      machineId: 'same-machine', score: 50, entries: ['react'],
+      generatedAt: '2026-01-02T00:00:00Z', schemaVersion: 3,
+      regime: {
+        jsRegime: 'interp',
+        jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+        cpuThrottle: 4,
+      },
+    });
+    writeRun(root, 'interp-vue-v3.json', {
+      machineId: 'same-machine', score: 51, entries: ['vue'],
+      generatedAt: '2026-01-03T00:00:00Z', schemaVersion: 3,
+      regime: {
+        jsRegime: 'interp',
+        jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+        cpuThrottle: 4,
+      },
+    });
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue']),
+    });
+    const webCohorts = out.comparison.harnesses.filter(({ harness }) => harness === 'web');
+    assert.deepEqual(webCohorts.map(({ jsRegime, cpuThrottle }) =>
+      [jsRegime, cpuThrottle]), [['jit', 1], ['interp', 4]]);
+    assert.deepEqual(webCohorts.map(({ sourceRunFiles }) => sourceRunFiles), [
+      ['baseline-v2.json'],
+      ['interp-react-v3.json', 'interp-vue-v3.json'],
+    ]);
+    assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'jit').length, 2);
+    assert.equal(out.comparisonRecords.filter((candidate) => candidate.jsRegime === 'interp').length, 2);
+    assert.deepEqual(Object.keys(out.machineRegimes).sort(), [
+      'same-machine|interp:--expose-gc,--no-opt,--no-sparkplug,--no-maglev:4:page-cdp',
+      'same-machine|jit:--expose-gc:1:none',
+    ]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('prospective Web checkpoints never combine across control receipts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-regime-cohort-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const regime = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+    };
+    writeRun(root, 'react.json', {
+      machineId: 'same-machine', score: 50, entries: ['react'], schemaVersion: 3, regime,
+      generatedAt: '2026-01-02T00:00:00Z',
+      receipt: { comparabilityCohort: 'cohort-react' },
+    });
+    writeRun(root, 'vue.json', {
+      machineId: 'same-machine', score: 51, entries: ['vue'], schemaVersion: 3, regime,
+      generatedAt: '2026-01-03T00:00:00Z',
+      receipt: { comparabilityCohort: 'cohort-vue' },
+    });
+    for (const file of ['react.json', 'vue.json']) {
+      const runPath = path.join(root, 'results/runs', file);
+      const run = JSON.parse(fs.readFileSync(runPath, 'utf8'));
+      run.records = run.records.map((candidate) => ({
+        ...candidate,
+        attemptedCount: 1,
+        acceptedCount: 1,
+      }));
+      fs.writeFileSync(runPath, JSON.stringify(run));
+    }
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['react', 'vue']),
+    });
+    assert.deepEqual(out.comparison.entryIds, ['vue']);
+    assert.deepEqual(out.comparison.harnesses[0].sourceRunFiles, ['vue.json']);
+    assert.equal(out.comparisonRecords.length, 1);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -1079,6 +1257,155 @@ test('collector keeps incomplete historical storms auditable but removes them fr
   }
 });
 
+test('collector archives but never ranks background CPU from a page-only throttled lane', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-throttled-bts-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const environment = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+    };
+    const measured = (metric) => ({
+      suite: 'table', harness: 'web', environment, entry: 'react', workload: 'create', scale: 10000,
+      metric,
+      boundary: metric === 'btsCpu'
+        ? 'sampled-js-cpu-background-realm'
+        : 'pointerdown-to-dom-predicate',
+      unit: 'ms', samples: [10, 11], attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/throttled.json'), JSON.stringify({
+      schemaVersion: 3,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+        receipt: { comparabilityCohort: 'sha256:throttled' },
+      },
+      records: [measured('latency'), measured('btsCpu')],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    const archived = out.records.find(({ metric }) => metric === 'btsCpu');
+    assert.equal(archived.comparabilityStatus, 'invalid-measurement');
+    assert.deepEqual(archived.comparabilityReasons, [
+      'cpu-throttle-does-not-cover-background-worker',
+    ]);
+    assert.equal(archived.rankingEligible, false);
+    assert.equal(out.comparisonRecords.some(({ metric }) => metric === 'btsCpu'), false);
+    assert.equal(out.comparisonRecords.some(({ metric }) => metric === 'latency'), true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector keeps background CPU eligible for a whole-process throttled lane', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-process-throttled-bts-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    const environment = {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+      throttleScope: 'process-cgroup',
+      verifiedSlowdown: 4.06,
+    };
+    const measured = (metric) => ({
+      suite: 'table', harness: 'web', environment, entry: 'react', workload: 'create', scale: 10000,
+      metric,
+      boundary: metric === 'btsCpu'
+        ? 'sampled-js-cpu-background-realm'
+        : 'pointerdown-to-dom-predicate',
+      unit: 'ms', samples: [10, 11], attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+    });
+    fs.writeFileSync(path.join(root, 'results/runs/throttled.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 25 },
+        receipt: { comparabilityCohort: 'sha256:process-throttled' },
+      },
+      records: [measured('latency'), measured('btsCpu')],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    const bts = out.comparisonRecords.find(({ metric }) => metric === 'btsCpu');
+    assert.equal(bts?.throttleScope, 'process-cgroup');
+    assert.equal(bts?.verifiedSlowdown, 4.06);
+    assert.notEqual(bts?.comparabilityStatus, 'invalid-measurement');
+    assert.equal(bts?.rankingEligible, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector marks the pre-verifier process-cgroup run invalid-measurement', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-invalid-process-throttle-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    fs.writeFileSync(path.join(root, 'results/runs/throttled.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-01T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 25 },
+        receipt: { comparabilityCohort: 'sha256:invalid-process-throttle' },
+        measurementValidity: {
+          status: 'invalid-measurement',
+          reasons: ['process-throttle-not-inherited-at-launch'],
+        },
+      },
+      records: [{
+        suite: 'table', harness: 'web',
+        environment: {
+          jsRegime: 'interp',
+          jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+          cpuThrottle: 4,
+          throttleScope: 'process-cgroup',
+        },
+        entry: 'react', workload: 'create', scale: 10000, metric: 'latency',
+        boundary: 'pointerdown-to-dom-predicate', unit: 'ms', samples: [10, 11],
+        attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+      }],
+    }));
+    fs.writeFileSync(path.join(root, 'results/runs/control.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-02T00:00:00Z', machine: machine('a'),
+        calibration: { probeVersion: 1, score: 100 },
+        receipt: { comparabilityCohort: 'sha256:control' },
+      },
+      records: [{
+        suite: 'table', harness: 'web',
+        environment: {
+          jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1, throttleScope: 'none',
+        },
+        entry: 'react', workload: 'create', scale: 10000, metric: 'latency',
+        boundary: 'pointerdown-to-dom-predicate', unit: 'ms', samples: [5, 6],
+        attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+      }],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {}, entryTiers: entryTiers(['react']), generatedAt: 'test',
+    });
+    const archived = out.records.find(({ throttleScope }) => throttleScope === 'process-cgroup');
+    assert.equal(archived.comparabilityStatus, 'invalid-measurement');
+    assert.deepEqual(archived.comparabilityReasons, [
+      'process-throttle-not-inherited-at-launch',
+      'process-throttle-slowdown-unverified',
+    ]);
+    assert.equal(archived.rankingEligible, false);
+    assert.equal(out.comparisonRecords.some(
+      ({ throttleScope }) => throttleScope === 'process-cgroup',
+    ), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector rejects prospective sampling mismatches and preserves complete storm cohorts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -1252,7 +1579,22 @@ test('history audits every run but publishes only complete source-defined featur
   const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
   assert.equal(bundleScale.length, 144);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
-  assert.equal(retainedRecords.length, 2991);
+  // The invalidated pre-verifier process-cgroup source remains archive-only.
+  // The replacement run contributes one verified 108-record matrix for every
+  // current comparison entry. The older Hux source commit is admissible here
+  // because its complete Web bundle receipt is byte-identical to the manifest.
+  const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
+    '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
+  assert.equal(verifiedProcessRun.length, 756);
+  assert.deepEqual(
+    [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
+    ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom',
+      'vue-vdom-ifr-et'],
+  );
+  assert.ok(verifiedProcessRun.every((record) =>
+    record.throttleScope === 'process-cgroup'
+    && record.cpuThrottle === 4));
+  assert.equal(retainedRecords.length, 5175);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1267,12 +1609,24 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
+  // Source commits may differ only when the complete Web artifact receipt is
+  // byte-identical, so both Octane identities remain in every Web regime.
   assert.equal(currentWeb.entryIds.length, 7);
+  assert.equal(currentWeb.entryIds.includes('octane'), true);
+  assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
+  ), false);
+  const currentInterpWeb = out.history.checkpoints.at(-1).harnesses.find(
+    (cohort) => cohort.harness === 'web'
+      && cohort.jsRegime === 'interp'
+      && cohort.cpuThrottle === 1,
+  );
+  assert.equal(currentInterpWeb.sourceRunFiles.includes(
     '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.some((file) =>

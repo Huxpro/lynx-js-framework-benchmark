@@ -21,8 +21,32 @@ pnpm bench collect        # explicitly regenerate the derived results/latest.jso
 pnpm site:dev             # regenerates the cache, then starts the results site
 ```
 
+Web runs default to the historical V8 JIT / unthrottled regime. The directional interpreter
+probes are explicit and remain Web-only:
+
+```bash
+pnpm bench run --harness web --jit=interp --cpu-throttle=1 --label web-interp
+pnpm bench run --harness web --jit=interp --cpu-throttle=4 \
+  --throttle-scope=process-cgroup --label web-interp-4x
+```
+
+`Interp 4×` always means the whole-process calibration lane. It starts Chromium inside an
+inherited CPU cgroup: writable
+cgroup-v2 `cpu.max` when delegated, or cgroup-v1 `cgexec` with non-interactive `sudo` on the lab
+runner. It never chases renderer PIDs with `cpulimit`. Before every entry, three in-page probes use
+their median score to verify a 3.5–4.5× slowdown; the observed `verifiedSlowdown` is written into
+every record. The former page-target CDP lane is frozen as historical source evidence; the CLI
+rejects new `--throttle-scope=page-cdp` runs.
+
+`--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;
+the default remains `0,1000,10000,30000`.
+
 Requires Node ≥ 20 and a Chromium (auto-resolved from the Playwright cache, or
 `npx playwright install chromium`, or `PLAYWRIGHT_CHROMIUM_PATH`).
+The interpreter lanes disable TurboFan, Sparkplug, and Maglev while retaining compiled Wasm.
+Before a formal interpreter run, the runner uses a one-off `--allow-natives-syntax` control to
+prove a hot function stays never-optimized in Ignition and Wasm still instantiates. The measured
+browser never receives that diagnostic flag.
 
 For a leased Lynx Sandbox Android device:
 

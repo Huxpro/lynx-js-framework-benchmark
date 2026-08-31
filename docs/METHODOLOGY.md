@@ -291,6 +291,124 @@ metric rather than silently changing the upstream interaction formula.
   the same policy is in the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
   calibration or an outlier filter.
 
+## Web JavaScript execution regimes
+
+The Web harness publicly exposes three separately ranked execution lanes. `web` is Chromium's
+normal V8 JIT
+with CPU throttling disabled (`environment: { jsRegime: "jit", jsFlags: "--expose-gc",
+cpuThrottle: 1, throttleScope: "none" }`). `web-interp` uses
+`--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev`, leaving JavaScript on Ignition while
+Wasm keeps its normal compiled pipeline, and leaves CPU throttling disabled. Public
+`web-interp-4x` keeps the same interpreter flags but applies one calibrated OS quota to the whole
+Chromium process tree. Chromium is launched *inside* the quota so every renderer inherits it from
+birth: the runner uses cgroup-v2 `cpu.max` when delegated, or creates a cgroup-v1 CPU controller
+and enters it through `cgexec` on the lab host. Calibration begins at 25% of one CPU and records
+each adjustment needed to bring the page probe to nominal 4×. `cpulimit` PID/fork monitoring is
+not an accepted backend because it can miss renderer startup. Immediately before each entry's
+measured phase, the same interpreter-only Chromium runs the fixed page probe three times and uses
+the median score; the window fails
+closed unless `control.score / throttled.score` is within [3.5, 4.5]. Every accepted record stores
+that value as `environment.verifiedSlowdown`, while the backend and every per-entry verification
+remain in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope:
+"process-cgroup"`. `Interp 4×` therefore always means process-wide throttling in the runner, site,
+and shareable URL.
+Because the whole Chromium tree shares one CFS quota, exhausting that quota can freeze both MTS
+and BTS until the next scheduler period; the resulting cross-thread round-trip amplification can
+exceed the nominal 4× compute slowdown and is published as an end-to-end latency effect rather than
+normalized away.
+
+The former page-target CDP campaign is frozen historical evidence. It used the same interpreter
+flags but applied `Emulation.setCPUThrottlingRate` only to the page/MTS target; the separately
+attached `lynx-bg` BTS worker remained full-speed. Those records normalize to `throttleScope:
+"page-cdp"` and can still be audited, but they are absent from the public regime facet and new runs
+are rejected. The mixed regime was defensible only for end-to-end latency, never per-side metrics;
+all 84 raw `btsCpu` samples remain source evidence classified `invalid-measurement` and excluded
+from charts and rankings.
+
+The 30 August `cpulimit` campaign is retained only as an invalid-measurement cautionary example.
+Its one global 4.12× preflight did not prove the later entry windows: most renderer windows matched
+the unthrottled lane, while upstream interactions alone were caught after startup. The collector
+marks every record from that source run `invalid-measurement`; none of its ranks or scope-difference
+claims remain published.
+
+The
+historical default is exactly `web`; a
+schema-v2 record without regime fields normalizes to JIT / `--expose-gc` / 1×. The machine fingerprint does not
+change, but collection keys and comparison cohorts include all four environment dimensions, so
+lanes never overwrite, average, or rank together.
+
+All interpreter lanes are **directional probes — interpreter regime under V8; not Native, not
+PrimJS**. V8 Ignition is not LepusNG/PrimJS: JavaScript keeps Ignition's ICs, hidden classes, and
+feedback vectors (but no compiled JavaScript), plus V8's generational garbage collector; Wasm and
+RegExp remain compiled. Before a formal interpreter run, a one-off browser adds
+`--allow-natives-syntax`, warms a pure-JavaScript function, and asserts that a JIT control compiles
+while the interpreter process reports never-optimized Ignition; it also instantiates a minimal
+Wasm module. Measured processes omit the diagnostic flag. Full `--jitless` was rejected because it
+also disables Wasm, and restoring Wasm through DrumBrake would require a custom, non-reproducible
+Chromium build. These lanes are suitable for ordering,
+scale-shape, regression, and "what was JIT hiding?" leads, never absolute device-time prediction.
+
+### Rank-stability calibration against device rounds 1–3
+
+The current calibration uses the same-machine 29 August featured Web campaign, with upstream
+Octane at `9779569e`, Huxpro/new-lynx at `8938c126`, and the now-retired page-CDP campaign
+(`throttleScope: "page-cdp"`) as the directional probe. Its pre-fix device anchors are the
+real-device round-1 and round-2 windows in
+[Huxpro/octane#194](https://github.com/Huxpro/octane/issues/194). Those device windows used older
+Octane tips and different instrumentation boundaries, so the table below tests only ordering,
+completion cliffs, and scaling direction. It does not compare absolute times or claim a controlled
+revision A/B.
+
+| Device anchor | Matching historical page-CDP observation | Rank/shape verdict |
+| --- | --- | --- |
+| Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is the one cross-framework rank anchor shared by both instruments. |
+| Round 1 program versus template at 1k: program 12,717 ms versus template 14,354 ms; after the round-2 ledger fix, program 657 ms versus template 2,149 ms. | Hux Octane startup@1k is 1,588.1 ms versus upstream Octane 1,485.2 ms. | **Ordering disagrees.** The Web probe does not reproduce the Native compiled-program advantage. |
+| Formal Native ReactLynx startup grows from 63.8 ms at 0 rows to 1,434.1 ms at 1k, then is DNF at 10k and 30k. The device rounds also hit the ART/PaintingContext capacity boundary at eager 10k. | ReactLynx grows from 110.2 ms to 923.5 ms at 1k but completes at 8,706.4 ms / 25,934.3 ms for 10k / 30k. Every featured Web entry completes both large scales. | **Only the increasing direction agrees; the scaling shape and capacity cliff do not.** Compiled Wasm plus browser host objects cannot expose the Native JNI global-reference ceiling. |
+| Round-2 `mountProgram` bookkeeping falls from 8,565 ms to 4 ms after the ledger fix. | No Web record has a boundary equivalent to Native `mountProgram`. | **Not rank-calibratable.** It remains a Native-only internal anchor and is not imputed into Web. |
+
+The first post-fix anchors use new-lynx `8938c1260` on the same `aries_10` protocol. They are kept
+separate from the pre-fix table because they answer transport shape and measurement fidelity, not
+an absolute-time revision A/B.
+
+| Post-fix device anchor | Matching Web observation | Rank/shape verdict |
+| --- | --- | --- |
+| Two create→clear→re-create sequences at 1k each emit 2 MTS→BTS messages and exactly 1 ACK per commit. Create uses compact-v1 with 7,000 acknowledged hosts; encoded ContextProxy totals are 182 B for create and 222 B for clear. | The post-fix Web create commit is likewise constant-size instead of the former 17.4 MB / 23,799-message storm. | **Transport shape agrees.** Native ContextProxy payload bytes and Web RPC-envelope bytes have different boundaries, so this is a post-fix shape anchor, not a ranking anchor. |
+| Native clear@1k produces valid state/frame receipts, but Hux and upstream wait for an Octane transport ACK while ReactLynx exposes no equivalent ACK. Upstream's create→clear preparation path also DNF'd, requiring an eager-1k clear probe instead. | Web-interp reports a stable Octane-family clear gap under one shared DOM predicate and transport boundary. | **Not rank-calibratable.** The Native producer receipts are not settlement-equivalent, so this round neither validates nor falsifies the Web clear ratio. It defines the fidelity boundary and grants no device prediction stake. |
+
+Within Web itself, turning off compiled JavaScript changes the winning entry in 5 of the 16 shared
+latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Comparing normal JIT with
+the historical page-CDP campaign changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does
+hide material ordering differences, but the device calibration above is too weak for an
+interpreter lane to substitute for device rounds: use it to choose confirmation cells, not to
+publish Native ranks.
+The inherited-launch process-scope campaign passed all seven per-entry gates at 3.86–4.07× with no
+DNF. Against the page-CDP lane, it changes the winner in 8 of the same 16 latency/FCP cells and
+reverses 78 of 336 pairwise entry orderings (23.2%); every one of the 12 latency cells has a changed
+full order.
+
+The frozen mixed lane's useful learning is its *shape*, not another public leaderboard. Relative to
+unthrottled Interp, its median slowdown clusters at 3.65–3.90× for create/replace/append/clear, but
+only 1.16–1.61× for select/swap/update@1k; large selection and update cells sit between those groups.
+That separation diagnoses how much an end-to-end cell is page/MTS-bound. Moving from mixed to the
+whole-process quota then costs a 1.27–2.70× entry-level latency geomean across the seven featured
+entries, while wire bytes and message counts stay approximately 1×. The wide spread is evidence of
+different BTS and cross-thread quota sensitivity, not a transport-protocol change. It is also why
+the mixed lane is not retained publicly: process-scope is the sole canonical `Interp 4×` lane;
+page-CDP raw records remain an immutable historical calibration, receive no new runs, and do not
+appear in the site regime facet or public rankings.
+
+### Issue #42 measurement-boundary audits
+
+- `btsCpu` under the historical page-CDP campaign is invalid. The runner sent
+  `Emulation.setCPUThrottlingRate` only to the page session; the `lynx-bg` worker is a separate CDP
+  target. This explains why create@10k BTS samples stayed near the unthrottled interpreter lane and
+  why the Hux/upstream order could invert. The collector preserves those raw samples for audit but
+  gives them `rankingEligible: false`; no throttled BTS CPU claim remains published.
+- ReactLynx startup uses the same harness page, `/bundles/<entry>/rows-N/main.web.bundle` serving
+  route, `viewAttachTime` origin, composed-tree `contentCount >= 5` first-frame predicate, and
+  400 ms content-count quiescence rule as Octane and every Vue entry. There is no React-specific
+  startup branch. Its 40%+ FCP advantage therefore stands as a result at this Web boundary.
+
 ## Harness separation
 
 - `harness: "web"` — Lynx for Web in headless Chromium. Measures architectural behavior

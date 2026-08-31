@@ -121,14 +121,19 @@ dimensions. One record per (entry × workload × scale × metric):
 
 ```jsonc
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "meta": { "generatedAt": "…", "machine": { "id": "…", "platform": "…", "cpuModel": "…",
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
   "records": [{
     "suite": "table" | "startup" | "pipeline" | "storm" | "list",
     "harness": "web" | "native",
-    "environment": "lynx-for-web",       // e.g. lynx-for-web, lynx-native-<device>
+    "environment": {                     // Web only
+      "jsRegime": "jit",                // jit | interp
+      "jsFlags": "--expose-gc",         // exact V8 payload
+      "cpuThrottle": 1,                  // CPU slowdown multiplier
+      "throttleScope": "none"            // none | page-cdp | process-cgroup
+    },
     "entry": "vue-vdom",
     "workload": "update10th",
     "scale": 10000,
@@ -144,7 +149,15 @@ dimensions. One record per (entry × workload × scale × metric):
 ```
 
 **Comparability policy** (inherited): two records may be charted against each other only when
-`harness`, `environment`, `workload`, `scale`, `metric`, `boundary`, and `unit` all agree.
+`harness`, normalized `environment` regime, `workload`, `scale`, `metric`, `boundary`, and `unit`
+all agree. Native retains its existing device-environment string and has no Web regime fields.
+Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
+`Emulation.setCPUThrottlingRate` is target-scoped; the recorded multiplier applies to the page
+target and is not inherited by `lynx-bg`. Consequently `btsCpu` records with `cpuThrottle > 1`
+and `throttleScope: "page-cdp"` are retained only as invalid source evidence and never enter a
+chart or ranking. The page-CDP lane is retired from the public site and runner; its latency remains
+historical calibration evidence only. Public `Interp 4×` means a `process-cgroup` run applying one
+OS quota to the Chromium tree.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
 
@@ -263,11 +276,16 @@ calibration output, `latest.json`, and every site score/visual are derived.
   score are embedded. Native files are atomically rewritten after every completed cell; the
   `meta.checkpoint` marker, `checkpointComplete`, stable device cohort, ordered lease chain,
   per-cell lease attribution, and 115-cell coverage ledger identify this resumable format.
+- Each Web run contains exactly one JS regime. Collection groups by physical machine × regime and
+  selects a coherent comparison run independently for each lane; no ranking table contains records
+  from more than one regime.
 - `bench preflight` (also auto-run before `run`) executes a fixed, versioned CPU probe in the
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
-  (harness, environment, entry, workload, scale, metric, machineId); cross-machine records
+  (harness, environment, jsRegime, jsFlags, cpuThrottle, throttleScope, entry, workload, scale,
+  metric, machineId);
+  cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
   one coherent physical run for the weighted Web comparison (featured-entry coverage, then featured
   matrix coverage, then newest). Dedicated pipeline/storm views may attach the best coherent

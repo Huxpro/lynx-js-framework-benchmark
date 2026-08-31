@@ -145,6 +145,7 @@ summary:focus-visible,
   display: flex;
   align-self: stretch;
   gap: 0.1rem;
+  margin-right: auto;
 }
 .view-switch button {
   position: relative;
@@ -173,7 +174,7 @@ summary:focus-visible,
   display: flex;
   align-items: center;
   gap: 0.42rem;
-  margin-left: auto;
+  margin-left: 0;
   color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 650;
@@ -200,6 +201,163 @@ summary:focus-visible,
 .harness-switch button + button { border-left: 1px solid var(--border); }
 .harness-switch button[aria-pressed='true'] { background: var(--text-primary); color: var(--surface-1); }
 
+.workspace-advanced {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.38rem;
+}
+.workspace-regime-heading {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.28rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+.regime-scroll {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+.regime-scroll:focus-visible {
+  border-radius: 0.5rem;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.regime-switch {
+  display: flex;
+  width: max-content;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.regime-switch button {
+  min-height: 1.9rem;
+  border: 0;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font: 600 0.7rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.22rem 0.48rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.regime-switch button + button { border-left: 1px solid var(--border); }
+.regime-switch button[aria-pressed='true'] { background: var(--text-primary); color: var(--surface-1); }
+.regime-switch button:disabled { cursor: not-allowed; opacity: 0.38; }
+.regime-info {
+  position: relative;
+  display: inline-flex;
+}
+.regime-info > summary {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-1);
+  color: var(--text-muted);
+  cursor: help;
+  font: 680 0.62rem/1 ui-monospace, Menlo, monospace;
+  list-style: none;
+}
+.regime-info > summary::-webkit-details-marker { display: none; }
+.regime-info > summary::before {
+  position: absolute;
+  inset: -0.45rem;
+  content: '';
+}
+.regime-info > summary:hover,
+.regime-info > summary:focus-visible,
+.regime-info[open] > summary {
+  border-color: var(--text-muted);
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+.regime-method {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 0.48rem);
+  left: -0.2rem;
+  display: none;
+  width: min(27rem, calc(100vw - 2rem));
+  max-height: min(32rem, calc(100vh - 8rem));
+  overflow: auto;
+  padding: 0.72rem 0.78rem;
+  border: 1px solid #34363f;
+  border-radius: 0.55rem;
+  background: #1b1d23;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
+  color: #b5b4ab;
+  font: 0.72rem/1.48 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  white-space: normal;
+}
+.regime-info:hover .regime-method,
+.regime-info:focus-within .regime-method,
+.regime-info[open] .regime-method { display: block; }
+.regime-method strong { display: block; color: #f2f1ea; font-size: 0.78rem; }
+.regime-method dl { display: grid; gap: 0; margin: 0.55rem 0 0; }
+.regime-method dl > div {
+  display: grid;
+  grid-template-columns: 4.8rem minmax(0, 1fr);
+  gap: 0.65rem;
+  padding: 0.42rem 0;
+  border-top: 1px solid #34363f;
+}
+.regime-method dt { color: #f2f1ea; font: 650 0.68rem/1.45 ui-monospace, Menlo, monospace; }
+.regime-method dd { margin: 0; }
+.regime-method p { margin: 0.45rem 0 0; color: #8f8e86; }
+
+.advanced-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.advanced-toggle span { color: var(--text-primary); font-size: 0.72rem; font-weight: 680; }
+.advanced-toggle output {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font: 620 0.66rem/1 ui-monospace, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.advanced-toggle i {
+  display: block;
+  flex: none;
+  width: 0.48rem;
+  height: 0.32rem;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  color: var(--text-muted);
+  transform-origin: 50% 45%;
+  transition: color 140ms ease-out, transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.advanced-toggle[aria-expanded='true'] {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+.advanced-toggle[aria-expanded='true'] i {
+  color: var(--accent);
+  transform: rotate(180deg);
+}
+.advanced-toggle:hover span,
+.advanced-toggle:focus-visible span { color: var(--accent); }
+
 .workspace-preferences {
   display: flex;
   align-items: center;
@@ -220,6 +378,21 @@ summary:focus-visible,
 }
 .theme-toggle,
 .palette-toggle { width: 2rem; }
+.theme-toggle {
+  display: grid;
+  place-items: center;
+}
+.theme-icon {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+  vector-effect: non-scaling-stroke;
+}
 .palette-toggle { position: relative; }
 .palette-pair {
   display: inline-flex;
@@ -1883,6 +2056,7 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .appendix-chevron { transition: none; }
   .card-caption-chevron,
   .history-status-chevron { transition: none; }
+  .advanced-toggle i { transition: none; }
   .history-choice-scroll button::after,
   .history-legend button,
   .history-series path,
@@ -1894,6 +2068,13 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
 }
 @media (pointer: coarse) {
   .history-choice-scroll button { min-height: 2.75rem; padding-inline: 0.72rem; }
+  .view-switch button,
+  .harness-switch button,
+  .regime-switch button,
+  .theme-toggle,
+  .palette-toggle,
+  .locale-toggle,
+  .advanced-toggle { min-height: 2.75rem; }
   .pipeline-cell-choice { min-height: 2.75rem; padding-inline: 0.65rem; }
   .pipeline-detail-toggle { min-width: 2.75rem; min-height: 2.75rem; }
   .pipeline-scale-mode button { min-height: 2.75rem; padding-inline: 0.65rem; }
@@ -1903,12 +2084,63 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
   .site-title { font-size: 0.92rem; }
   .timeline-sticky { top: 0.2rem; margin-left: -0.25rem; margin-right: -0.25rem; }
   .timeline-workspace { border-radius: 0.65rem; }
-  .workspace-toolbar { min-height: 2.45rem; gap: 0.35rem; padding: 0.28rem 0.4rem; }
-  .view-switch { min-width: 0; }
+  .workspace-toolbar {
+    display: grid;
+    grid-template-areas: 'view . environment toggle preferences';
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+    gap: 0.18rem 0.35rem;
+    min-height: 2.45rem;
+    padding: 0.28rem 0.4rem;
+  }
+  .workspace-toolbar.is-advanced-open {
+    grid-template-areas:
+      'view . environment toggle preferences'
+      'advanced advanced advanced advanced advanced';
+  }
+  .view-switch { grid-area: view; min-width: 0; margin-right: 0; }
   .view-switch button { font-size: 0.74rem; padding-inline: 0.42rem; }
   .view-switch button::after { right: 0.38rem; left: 0.38rem; bottom: -0.31rem; }
-  .workspace-environment { gap: 0.3rem; font-size: 0.7rem; }
-  .harness-switch button { min-height: 1.8rem; padding-inline: 0.48rem; font-size: 0.7rem; }
+  .workspace-environment { grid-area: environment; width: auto; margin-left: 0; gap: 0.3rem; font-size: 0.7rem; }
+  .workspace-environment > span { display: none; }
+  .harness-switch { border-radius: 0.42rem; }
+  .harness-switch button {
+    min-height: 1.8rem;
+    padding-inline: 0.38rem;
+    font-size: 0.68rem;
+    font-weight: 620;
+  }
+  .harness-switch button[aria-pressed='true'] {
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+  .workspace-advanced {
+    grid-area: advanced;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 0.4rem;
+    padding: 0.42rem 0 0.18rem;
+    border-top: 1px solid var(--border);
+  }
+  .workspace-regime-heading { min-height: 1.8rem; }
+  .regime-method {
+    left: -3.8rem;
+    width: calc(100vw - 2rem);
+  }
+  .regime-scroll { flex: 1 1 auto; padding: 0 0 0.28rem; }
+  .regime-switch button { min-height: 1.8rem; padding-inline: 0.58rem; font-size: 0.67rem; }
+  .workspace-preferences { grid-area: preferences; justify-self: end; margin-left: 0; }
+  .advanced-toggle {
+    grid-area: toggle;
+    display: flex;
+    justify-self: start;
+    width: max-content;
+    max-width: 100%;
+    min-height: 1.8rem;
+    overflow: hidden;
+    padding: 0.22rem 0.4rem;
+  }
+  .advanced-toggle output { display: none; }
   .theme-toggle,
   .palette-toggle { width: 1.85rem; min-height: 1.8rem; }
   .locale-toggle { min-width: 3.1rem; min-height: 1.8rem; padding-inline: 0.28rem; }
@@ -1959,16 +2191,27 @@ details.data-table th:first-child, details.data-table td:first-child { text-alig
 }
 
 @media (max-width: 25rem) {
-  .workspace-toolbar { gap: 0.2rem; }
-  .view-switch button { padding-inline: 0.3rem; }
+  .workspace-toolbar { gap: 0.12rem; }
+  .view-switch button { padding-inline: 0.22rem; font-size: 0.68rem; }
   .workspace-environment { gap: 0.2rem; }
-  .workspace-environment > span { display: none; }
-  .harness-switch button { padding-inline: 0.36rem; }
-  .workspace-preferences { gap: 0.18rem; }
+  .harness-switch button { padding-inline: 0.24rem; font-size: 0.66rem; }
+  .workspace-preferences { gap: 0.1rem; }
+  .advanced-toggle { padding-inline: 0.36rem; }
   .theme-toggle,
-  .palette-toggle { width: 1.75rem; }
-  .locale-toggle { min-width: 2.85rem; gap: 0.14rem; padding-inline: 0.2rem; }
+  .palette-toggle { width: 1.65rem; }
+  .locale-toggle { min-width: 2.65rem; gap: 0.1rem; padding-inline: 0.16rem; }
   .measurement-receipt > summary { grid-template-columns: minmax(6.5rem, 0.45fr) minmax(0, 1fr); gap: 0.5rem; }
   .measurement-receipt > summary .receipt-context { font-size: 0.61rem; line-height: 1.45; }
   h1 { font-size: 1.55rem; }
+}
+
+@media (max-width: 22rem) {
+  .workspace-toolbar { gap: 0.08rem; }
+  .view-switch button { padding-inline: 0.08rem; font-size: 0.62rem; }
+  .harness-switch button { padding-inline: 0.1rem; font-size: 0.62rem; }
+  .advanced-toggle { gap: 0.2rem; padding-inline: 0.28rem; }
+  .workspace-preferences { gap: 0; }
+  .theme-toggle,
+  .palette-toggle { width: 1.45rem; }
+  .locale-toggle { min-width: 2.3rem; gap: 0.06rem; padding-inline: 0.08rem; font-size: 0.72rem; }
 }
