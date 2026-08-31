@@ -22,59 +22,103 @@ These are the only files/fields that require an update when their real-world inp
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
-- record identity: suite, harness, Web `environment: { jsRegime, jsFlags, cpuThrottle }` or the unchanged
-  Native device-environment string, entry,
-  workload, scale, metric, boundary, unit;
+- record identity: suite, harness, entry, workload, scale, metric, boundary, unit, plus nullable
+  contract version / commit policy dimensions. Schema v4 stores the Web execution regime as
+  `environment: { jsRegime, jsFlags, cpuThrottle, throttleScope, verifiedSlowdown? }`; Native keeps
+  its device-environment string and cannot carry Web regime fields;
 - repeated observations: `samples`;
 - one-shot observations: `value`;
 - failures: `dnfCount` plus optional per-repetition structured `failures` evidence (category,
   phase, timeout, trigger mode, message, and observed device state);
 - per-repetition wire endpoint observations: `detailSamples`;
+- per-repetition pipeline controls in `detailSamples`: requested/committed rows, the complete
+  ElementPAPI call multiset, and the intercepted host-surface receipt;
+- per-repetition storm controls in `detailSamples`: the versioned declared stimulus, actual pointer
+  issue offsets, rAF-observed state transitions, and terminal state;
 - sampling accounting: prospective records retain `attemptedCount` and `acceptedCount`; rejected
   incomplete storms keep their measured latency/CPU/wire evidence in the structured failure.
 
-Schema v3 adds the Web JS-execution regime as
-`environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number }`, where
-`jsFlags` is the exact V8 payload and the throttle is a finite
-multiplier ≥1. Native records keep their schema-v2 environment string byte-for-byte and never gain
-Web regime fields. Schema-v2 Web records normalize to
-`{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1 }`.
+Schema v4 extends the Web JS-execution regime to
+`environment: { jsRegime: "jit" | "interp", jsFlags: string, cpuThrottle: number,
+throttleScope: "none" | "page-cdp" | "process-cgroup", verifiedSlowdown?: number }`.
+`jsFlags` is the exact V8 payload; the scope distinguishes page-target CDP throttling from a
+whole-process OS quota. `verifiedSlowdown` is required for newly produced `process-cgroup` records
+and must be within 0.5× of the declared throttle. Native records
+keep their schema-v2 environment string byte-for-byte and never gain Web regime fields. Schema-v2
+Web records default to `{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1,
+throttleScope: "none" }`, except the historical `lynx-for-web-interp` label, which remains in the
+interpreter lane; throttled schema-v3 records normalize to `"page-cdp"`.
+That normalization is archival compatibility, not a runnable or public lane: new 4× runs must use
+`"process-cgroup"`, while the old page-CDP records remain available only as historical calibration
+evidence.
 The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
-keyed by machine × regime so the three Web lanes cannot overwrite, average, or rank together.
+keyed by machine × regime so the Web lanes cannot overwrite, average, or rank together.
 
 Older schema-v2 run files did not retain `value` or `detailSamples`. The collector treats an
 `n=1`/`samples=null` median as a labelled legacy scalar source and treats `detail` as a labelled
-legacy final endpoint sample. It never treats stored aggregate statistics as authoritative.
+legacy final endpoint sample. The schema-v2 `lynx-for-web-interp` label is normalized to the
+interpreter lane; all other legacy Web labels default to JIT 1×. It never treats stored aggregate
+statistics as authoritative.
 
 ### When an entry is built or vendored
 
 - `entries/*/entry.json`: entry identity, tier, presentation color, provenance, commit, and bundle
-  checksums;
+  checksums, plus an optional versioned `listFixture` capability declaration;
 - `entries/*/dist/**`: the actual web/native bundles.
 
 Bundle byte/gzip/section metrics are **not** benchmark observations. They are recalculated from
 the current bundle files whenever collection runs.
+
+Current-entry eligibility is artifact-aware but fail-closed. A Web observation matches its current
+manifest when either the source commit is identical or the run's complete set of Web bundle
+receipts is byte-identical to every manifest Web bundle checksum. This permits a source-only or
+Native-only commit change to retain the same measured Web artifact without relabelling changed
+bytes. A missing or different Web checksum remains stale. Native eligibility stays commit-exact;
+Web artifact equivalence never crosses the harness boundary.
 
 ## Derived data
 
 Everything else is derived, including:
 
 - `n`, min/max, mean, median, standard deviation, p95, and 95% confidence interval;
+- `outsidePapiTime`, materialized only by `collect` by subtracting the six synchronous
+  ElementPAPI self-time series from each aligned `operationTime` source sample;
+- storm `contractPass`, `coalescingRatio`, and wire-per-tick metrics, materialized only by `collect`
+  from aligned raw schedules, transitions, counts, and wire totals. A semantic every-tick miss is
+  descriptive `contract-failed` data with `dnfCount: 0`; timeouts and driver failures are DNF;
+- scale-indexed `bundle-scale` records, recalculated from each exact `rows-N` artifact. They retain
+  artifact path/SHA-256/flavor/section receipts and are always descriptive/non-ranking. Total gzip
+  uses the selected harness artifact; MTS gzip exists only for a structurally readable
+  `lepusCode.root`. Pareto membership and FCP error-bar coordinates are site derivatives. The FCP
+  side is selected from exactly one execution regime (Web JIT 1× by default), never pooled;
 - the endpoint sample selected for display;
 - normalized legacy entry IDs and source annotations;
 - newest-per-cell archives and latest-machine metadata;
-- newest-per-cell archives and calibration metadata grouped by physical machine × Web regime;
 - featured cohort selection, Lab source selection, calibration ratios and calibrated samples;
 - comparability/work classification. Incomplete or unverified work and prospective
   sampling-account mismatches (including accepted/attempted/DNF underflow or overflow) remain in
   the source archive and audit index, but do not become Dataset Time Machine checkpoints or enter
-  ranked views. Prospective Lab estimates must match the selected Web cohort exactly;
+  ranked views. The same applies to `btsCpu` from `cpuThrottle > 1` with
+  `throttleScope: "page-cdp"`: CDP throttling is target-scoped and the page setting does not cover
+  `lynx-bg`, so those samples are classified
+  `invalid-measurement`. A `process-cgroup` source without an accepted per-entry
+  `verifiedSlowdown` is invalid for the same reason: an OS-limiter receipt alone does not prove the
+  entry's renderer inherited it. Pipeline control identities and cross-entry committed-tree
+  eligibility are also
+  derived here; unstable call multisets or mismatched trees cannot enter comparisons. Prospective
+  Lab estimates must match the selected Web cohort exactly;
 - separately selected Native observations for current featured entries measured outside the
   published cohort; each observation comes from one source run and is never merged outside an
   explicitly validated lease chain or included in cross-entry rankings;
 - the Native 115-cell coverage classification and totals. Each cell is derived as measured,
   measured-with-DNF, DNF, unsupported, unscheduled, invalid/incomparable, or a
   display/derivation bug;
+- the list-workload capability ledger. Its 7 featured entries × 2 isolated harnesses × 4
+  startup/recycle/fling cases are derived from manifest declarations, contract hashes, fixture
+  artifacts, and list-suite source records. An absent fixture is `unsupported`; it is never a
+  table proxy or DNF. Per-cell recycle costs/rates and fling p50/p99/materialized-per-second values
+  are derived from aligned raw elapsed/count/wire/materialization observations. Blank frames remain
+  source data regardless of value;
 - the editorial exact-source history index. Every valid run has a source audit row, but only the
   small explicit checkpoint list becomes Dataset Time Machine stops. A Web checkpoint additionally
   requires one unscoped physical run and publishes only the complete intersection of eligible cells
@@ -120,6 +164,9 @@ Everything else is derived, including:
     their cell keys do not overlap, and one ordered receipt chain is an exact receipt-for-receipt
     prefix of the other. The longer chain is published; same-serial forks remain archive-only.
     Missing, unavailable, malformed, or mismatched connector/lease evidence is archive-only.
+    Web split checkpoints likewise require the same machine, normalized execution regime, and
+    prospective comparability receipt; a matching machine/regime cannot bridge different control
+    receipts.
 11. The pre-cell expiry boundary is derived from the configured worst single-cell envelope: formal
     repetitions, thermal gate, page/session plus long-workload timeouts, all transport attempts and
     reconnect windows, and cleanup margin. An override can only increase this derived minimum.
@@ -128,6 +175,13 @@ Everything else is derived, including:
     prefix-compatible multi-lease continuation.
 13. History source coverage equals the full valid run-file list, and each checkpoint references
    exact source records rather than a date cutoff or newest-per-cell archive.
+14. List records never enter table/startup rankings. Web and Native use separate observers and
+    remain separate cohorts; missing fixture capability is explicit `unsupported`, while DNF is
+    reserved for an attempted fixture whose driver or capture failed.
+15. `bundle-scale` records never enter benchmark-matrix selection or any score. A Pareto point must
+    join the same entry, harness, scale, and one normalized execution regime; a frontier containing
+    more than one regime fails closed. Historical checkpoints cannot reuse a current artifact when
+    their exact per-scale bytes were not retained (retroactive only where those bytes exist).
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

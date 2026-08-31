@@ -11,6 +11,35 @@
 import { launchBrowser } from './browser.mjs';
 
 export const PROBE_VERSION = 1;
+export const PROCESS_THROTTLE_PROBE_REPETITIONS = 3;
+
+const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+};
+
+export function summarizeProcessThrottleProbes(probes) {
+  if (!Array.isArray(probes) || probes.length !== PROCESS_THROTTLE_PROBE_REPETITIONS) {
+    throw new Error(
+      `process throttle verification requires exactly ${PROCESS_THROTTLE_PROBE_REPETITIONS} probes`,
+    );
+  }
+  const probeVersion = probes[0]?.probeVersion;
+  if (!Number.isInteger(probeVersion)
+    || probes.some((probe) => probe?.probeVersion !== probeVersion
+      || !Number.isFinite(probe.score)
+      || !Number.isInteger(probe.iterations))) {
+    throw new Error('process throttle verification received incompatible probe samples');
+  }
+  return {
+    probeVersion,
+    score: median(probes.map(({ score }) => score)),
+    iterations: median(probes.map(({ iterations }) => iterations)),
+    aggregation: 'median',
+    repetitions: PROCESS_THROTTLE_PROBE_REPETITIONS,
+    samples: probes,
+  };
+}
 
 export function assertWebHarnessCapabilities(
   { webAssembly },
@@ -62,7 +91,7 @@ export function assertInterpreterFlagProbe({ jit, interp }) {
 }
 
 async function optimizationStatusProbe(jit) {
-  const { browser, executablePath, browserVersion } = await launchBrowser({
+  const { browser, closeBrowser } = await launchBrowser({
     jit,
     allowNativesSyntax: true,
   });
@@ -75,7 +104,7 @@ async function optimizationStatusProbe(jit) {
       await page.close();
     }
   } finally {
-    await browser.close();
+    await closeBrowser();
   }
 }
 
@@ -87,6 +116,102 @@ export async function verifyInterpreterFlags() {
   };
   assertInterpreterFlagProbe(result);
   return result;
+}
+
+export function assertProcessThrottleProbe({ control, throttled, cpuThrottle, mechanism }) {
+  if (mechanism?.scope !== 'process-cgroup'
+    || !['cgroup-v2', 'cgroup-v1-cgexec'].includes(mechanism?.backend)
+    || mechanism?.inheritance !== 'launch-cgroup') {
+    throw new Error('whole-process CPU throttle did not produce an inherited-cgroup mechanism receipt');
+  }
+  const observedSlowdown = control.score / throttled.score;
+  const minimumSlowdown = cpuThrottle - 0.5;
+  const maximumSlowdown = cpuThrottle + 0.5;
+  if (!Number.isFinite(observedSlowdown)
+    || observedSlowdown < minimumSlowdown
+    || observedSlowdown > maximumSlowdown) {
+    throw new Error(
+      `whole-process CPU throttle preflight failed: expected about ${cpuThrottle}x, `
+      + `observed ${observedSlowdown.toFixed(2)}x`,
+    );
+  }
+  return {
+    method: 'same-interpreter-probe-median-ratio-v2',
+    control,
+    throttled,
+    expectedSlowdown: cpuThrottle,
+    acceptedRange: [minimumSlowdown, maximumSlowdown],
+    verifiedSlowdown: Math.round(observedSlowdown * 100) / 100,
+    observedSlowdown: Math.round(observedSlowdown * 100) / 100,
+    mechanism,
+  };
+}
+
+export async function calibrateProcessThrottle({
+  jit,
+  cpuThrottle,
+  control,
+  requireWebHarness = true,
+  maxAttempts = 6,
+}) {
+  const calibrationTargetRange = [cpuThrottle - 0.2, cpuThrottle + 0.2];
+  let quotaPercent = 100 / cpuThrottle;
+  const attempts = [];
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const launched = await launchBrowser({
+      jit,
+      cpuThrottle,
+      throttleScope: 'process-cgroup',
+      processQuotaPercent: quotaPercent,
+    });
+    try {
+      const probe = await runProcessThrottleProbe(launched.browser, {
+        requireWebHarness,
+        jsRegime: jit,
+      });
+      const observedSlowdown = control.score / probe.score;
+      attempts.push({
+        attempt,
+        quotaPercent: launched.processThrottle.quotaPercent,
+        observedSlowdown: Math.round(observedSlowdown * 100) / 100,
+      });
+      try {
+        const verification = assertProcessThrottleProbe({
+          control,
+          throttled: probe,
+          cpuThrottle,
+          mechanism: launched.processThrottle,
+        });
+        if (observedSlowdown >= calibrationTargetRange[0]
+          && observedSlowdown <= calibrationTargetRange[1]) {
+          return {
+            probe,
+            browser: {
+              name: 'chromium',
+              version: launched.browserVersion,
+              executablePath: launched.executablePath,
+            },
+            processThrottle: launched.processThrottle,
+            processThrottleVerification: {
+              ...verification,
+              calibrationTargetRange,
+              calibrationAttempts: attempts,
+            },
+            processQuotaPercent: launched.processThrottle.quotaPercent,
+          };
+        }
+      } catch (error) {
+        if (!String(error.message).includes('preflight failed') || attempt === maxAttempts) throw error;
+      }
+      quotaPercent = Math.round(Math.min(
+        100,
+        Math.max(1, quotaPercent * observedSlowdown / cpuThrottle),
+      ) * 100) / 100;
+    } finally {
+      await launched.closeBrowser();
+    }
+  }
+  throw new Error('whole-process CPU throttle calibration exhausted without a verified window');
 }
 
 export const PROBE_JS = `(() => {
@@ -150,4 +275,12 @@ export async function runPreflight(
   } finally {
     await page.close();
   }
+}
+
+export async function runProcessThrottleProbe(browser, options = {}) {
+  const probes = [];
+  for (let repetition = 0; repetition < PROCESS_THROTTLE_PROBE_REPETITIONS; repetition++) {
+    probes.push(await runPreflight(browser, options));
+  }
+  return summarizeProcessThrottleProbes(probes);
 }

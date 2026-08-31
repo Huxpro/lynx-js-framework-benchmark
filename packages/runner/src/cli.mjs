@@ -2,31 +2,45 @@
 // lynx-bench CLI.
 //
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
-//                  [--suite table,startup] [--reps N] [--quick] [--label x]
+//                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
+//                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
 //                  [--jit jit|interp] [--cpu-throttle N]
+//                  [--throttle-scope none|process-cgroup]
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
+//   lynx-bench list-coverage
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-import { TABLE_CASES } from '@lynx-bench/shared/workloads';
+import {
+  STORM_CASES,
+  STORM_COMMIT_POLICIES,
+  TABLE_CASES,
+} from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
+import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
 import { runNativeHarness } from './harness-native.mjs';
-import { bundleRecords } from './bundles.mjs';
+import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
-import { runPreflight, verifyInterpreterFlags } from './preflight.mjs';
+import {
+  calibrateProcessThrottle,
+  runPreflight,
+  runProcessThrottleProbe,
+  verifyInterpreterFlags,
+} from './preflight.mjs';
 import { jsFlagsForRegime, launchBrowser } from './browser.mjs';
 import { runReceipt } from './provenance.mjs';
 import { stringifyResult } from './result-json.mjs';
 import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
+import { resolveThrottleScope } from './web-regime-policy.mjs';
 import {
   assertConnectorPackageTrees,
   resolveConnectorPackageTrees,
@@ -38,6 +52,7 @@ import {
   nativeCellKey,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
+import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   NATIVE_SANDBOX_POLICY,
@@ -89,8 +104,12 @@ async function cmdRun(args) {
   if (!Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
     throw new Error(`--cpu-throttle must be a finite number >= 1; received ${args['cpu-throttle']}`);
   }
-  if (harness === 'native' && (args.jit != null || args['cpu-throttle'] != null)) {
-    throw new Error('--jit and --cpu-throttle are Web-only; Native cohort policy is unchanged.');
+  const throttleScope = resolveThrottleScope(args, cpuThrottle);
+  if (harness === 'native'
+    && (args.jit != null || args['cpu-throttle'] != null || args['throttle-scope'] != null)) {
+    throw new Error(
+      '--jit, --cpu-throttle, and --throttle-scope are Web-only; Native cohort policy is unchanged.',
+    );
   }
 
   let entries = discoverEntries({ only: list(args.entry) });
@@ -103,9 +122,32 @@ async function cmdRun(args) {
   const cases = caseNames
     ? TABLE_CASES.filter((c) => caseNames.includes(c.name))
     : TABLE_CASES;
-  const suites = list(args.suite) ?? ['table', 'startup'];
+  const commitPolicies = list(args.commit) ?? STORM_COMMIT_POLICIES;
+  const unknownPolicies = commitPolicies.filter((policy) =>
+    !STORM_COMMIT_POLICIES.includes(policy));
+  if (unknownPolicies.length) {
+    throw new Error(`unknown storm commit policy/policies: ${unknownPolicies.join(', ')}`);
+  }
+  const stormCases = STORM_CASES.filter((kase) =>
+    (caseNames == null || caseNames.includes(kase.name))
+    && commitPolicies.includes(kase.commitPolicy));
+  if (caseNames) {
+    const knownCases = new Set([...TABLE_CASES, ...STORM_CASES].map((kase) => kase.name));
+    const unknownCases = caseNames.filter((name) => !knownCases.has(name));
+    if (unknownCases.length) throw new Error(`unknown case(s): ${unknownCases.join(', ')}`);
+  }
+  const suites = list(args.suite)
+    ?? (harness === 'web' ? ['table', 'startup', 'pipeline', 'storm'] : ['table', 'startup']);
+  const unknownSuites = suites.filter((suite) =>
+    !['table', 'startup', 'pipeline', 'storm'].includes(suite));
+  if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
   if (harness === 'native') {
+    if (suites.includes('pipeline') || suites.includes('storm')) {
+      throw new Error(
+        'The pipeline and storm suites are Web-only; use the standard Native table/startup matrix.',
+      );
+    }
     if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
       throw new Error('Native run requires --adapter <module.mjs>.');
     }
@@ -348,7 +390,11 @@ async function cmdRun(args) {
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
 
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
-  console.log(`[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; scales: ${scales.join(', ')}; reps=${reps}`);
+  console.log(
+    `[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; `
+    + `storm: ${stormCases.map((c) => `${c.name}/${c.commitPolicy}`).join(', ')}; `
+    + `scales: ${scales.join(', ')}; reps=${reps}; stormReps=${stormReps}`,
+  );
 
   // Only the one-off verifier gets --allow-natives-syntax. Measured processes never do.
   const flagVerification = jit === 'interp' ? await verifyInterpreterFlags() : null;
@@ -361,18 +407,41 @@ async function cmdRun(args) {
 
   // Preflight in the same browser configuration that will measure.
   const preflight = await (async () => {
-    const { browser, executablePath, browserVersion } = await launchBrowser({ jit });
-    try {
-      return {
-        probe: await runPreflight(browser, {
-          cpuThrottle,
+    if (throttleScope === 'process-cgroup') {
+      const control = await launchBrowser({ jit });
+      let controlProbe;
+      try {
+        controlProbe = await runProcessThrottleProbe(control.browser, {
           requireWebHarness: true,
           jsRegime: jit,
-        }),
-        browser: { name: 'chromium', version: browserVersion, executablePath },
+        });
+      } finally {
+        await control.closeBrowser();
+      }
+      return calibrateProcessThrottle({
+        jit, cpuThrottle, control: controlProbe, requireWebHarness: true,
+      });
+    }
+    const launched = await launchBrowser({ jit, cpuThrottle, throttleScope });
+    try {
+      const probe = await runPreflight(launched.browser, {
+        cpuThrottle: throttleScope === 'page-cdp' ? cpuThrottle : 1,
+        requireWebHarness: true,
+        jsRegime: jit,
+      });
+      return {
+        probe,
+        browser: {
+          name: 'chromium',
+          version: launched.browserVersion,
+          executablePath: launched.executablePath,
+        },
+        processThrottle: launched.processThrottle,
+        processThrottleVerification: null,
+        processQuotaPercent: null,
       };
     } finally {
-      await browser.close();
+      await launched.closeBrowser();
     }
   })();
   const { probe } = preflight;
@@ -382,21 +451,39 @@ async function cmdRun(args) {
     entries, reps, stormReps, startupReps,
     execution: {
       harness: 'web', browser: preflight.browser, jsRegime: jit, jsFlags, cpuThrottle,
+      throttleScope,
+      ...(preflight.processQuotaPercent == null
+        ? {}
+        : { processQuotaPercent: preflight.processQuotaPercent }),
     },
   });
 
-  const { records, executablePath, browserVersion } = await runWebHarness({
-    entries, cases, suites, scales, startupScales, reps, stormReps, startupReps,
-    jit, cpuThrottle,
+  const {
+    records, executablePath, browserVersion, processThrottle,
+    processThrottleEntryVerifications, verifiedSlowdownByEntry,
+  } = await runWebHarness({
+    entries, cases, stormCases, suites, scales, startupScales, reps, stormReps, startupReps,
+    jit, cpuThrottle, throttleScope,
+    processThrottleControl: preflight.processThrottleVerification?.control ?? null,
+    processQuotaPercent: preflight.processQuotaPercent,
   });
   if (browserVersion !== preflight.browser.version
     || executablePath !== preflight.browser.executablePath) {
     throw new Error('browser identity changed between preflight and benchmark execution');
   }
-  for (const entry of entries) records.push(...bundleRecords(entry).map((record) => ({
-    ...record,
-    environment: { jsRegime: jit, jsFlags, cpuThrottle },
-  })));
+  if ((processThrottle?.backend ?? null) !== (preflight.processThrottle?.backend ?? null)) {
+    throw new Error('whole-process throttle backend changed between preflight and benchmark execution');
+  }
+  if ((processThrottle?.quotaPercent ?? null) !== (preflight.processThrottle?.quotaPercent ?? null)) {
+    throw new Error('whole-process throttle quota changed between preflight and benchmark execution');
+  }
+  for (const entry of entries) records.push(...bundleRecords(entry).map((record) =>
+    attachWebBundleEnvironment(record, {
+      jsRegime: jit, jsFlags, cpuThrottle, throttleScope,
+      ...(verifiedSlowdownByEntry[entry.id] == null
+        ? {}
+        : { verifiedSlowdown: verifiedSlowdownByEntry[entry.id] }),
+    })));
 
   const machine = machineFingerprint();
   const now = new Date();
@@ -409,8 +496,15 @@ async function cmdRun(args) {
       calibration: probe,
       chromium: executablePath,
       browser: { name: 'chromium', version: browserVersion, executablePath },
-      environment: { jsRegime: jit, jsFlags, cpuThrottle },
+      environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
       ...(flagVerification == null ? {} : { flagVerification }),
+      ...(preflight.processThrottleVerification == null
+        ? {}
+        : { processThrottleVerification: preflight.processThrottleVerification }),
+      ...(processThrottle == null ? {} : { processThrottle }),
+      ...(processThrottleEntryVerifications.length === 0
+        ? {}
+        : { processThrottleEntryVerifications }),
       argv: process.argv.slice(2),
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),
@@ -438,20 +532,46 @@ async function cmdPreflight(args) {
   if (!Number.isFinite(cpuThrottle) || cpuThrottle < 1) {
     throw new Error(`--cpu-throttle must be a finite number >= 1; received ${args['cpu-throttle']}`);
   }
+  const throttleScope = resolveThrottleScope(args, cpuThrottle);
   const flagVerification = jit === 'interp' ? await verifyInterpreterFlags() : null;
-  const { browser } = await launchBrowser({ jit });
+  if (throttleScope === 'process-cgroup') {
+    const control = await launchBrowser({ jit });
+    let controlProbe;
+    try {
+      controlProbe = await runProcessThrottleProbe(control.browser, { requireWebHarness: true });
+    } finally {
+      await control.closeBrowser();
+    }
+    const calibrated = await calibrateProcessThrottle({
+      jit, cpuThrottle, control: controlProbe, requireWebHarness: true,
+    });
+    const jsFlags = jsFlagsForRegime(jit);
+    console.log(JSON.stringify({
+      machine: machineFingerprint(),
+      environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
+      calibration: calibrated.probe,
+      ...(flagVerification == null ? {} : { flagVerification }),
+      processThrottleVerification: calibrated.processThrottleVerification,
+      processThrottle: calibrated.processThrottle,
+    }, null, 2));
+    return;
+  }
+  const launched = await launchBrowser({ jit, cpuThrottle, throttleScope });
   try {
-    const probe = await runPreflight(browser, { cpuThrottle, requireWebHarness: true });
+    const probe = await runPreflight(launched.browser, {
+      cpuThrottle: throttleScope === 'page-cdp' ? cpuThrottle : 1,
+      requireWebHarness: true,
+    });
     const jsFlags = jsFlagsForRegime(jit);
     const machine = machineFingerprint();
     console.log(JSON.stringify({
       machine,
-      environment: { jsRegime: jit, jsFlags, cpuThrottle },
+      environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
       calibration: probe,
       ...(flagVerification == null ? {} : { flagVerification }),
     }, null, 2));
   } finally {
-    await browser.close();
+    await launched.closeBrowser();
   }
 }
 
@@ -461,9 +581,21 @@ function cmdList() {
     const scales = fs.existsSync(e.distDir)
       ? fs.readdirSync(e.distDir).filter((d) => d.startsWith('rows-')).map((d) => d.slice(5)).join(',')
       : 'no dist';
-    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}`);
+    const listFixture = e.listFixture == null ? 'unsupported' : e.listFixture.protocol ?? 'invalid';
+    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}; list: ${listFixture}`);
   }
-  console.log('\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ') + ', startup');
+  console.log(
+    '\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ')
+    + ', updateStorm, selectStorm, startup, pipeline, '
+    + LIST_CASES.map((kase) => kase.name).join(', ')
+    + '; storm policies: '
+    + STORM_COMMIT_POLICIES.join(', '),
+  );
+}
+
+function cmdListCoverage() {
+  const coverage = assertListCoverage(buildListCoverage({ entries: discoverEntries() }));
+  console.log(JSON.stringify(coverage, null, 2));
 }
 
 const args = parseArgs(process.argv.slice(2));
@@ -473,6 +605,7 @@ try {
   else if (cmd === 'preflight') await cmdPreflight(args);
   else if (cmd === 'collect') collectRuns();
   else if (cmd === 'list') cmdList();
+  else if (cmd === 'list-coverage') cmdListCoverage();
   else {
     console.error(`unknown command: ${cmd}`);
     process.exit(2);

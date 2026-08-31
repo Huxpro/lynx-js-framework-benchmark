@@ -2,6 +2,21 @@
 // run observations first; entry manifests are discovered automatically.
 import latest from '../../results/latest.json';
 
+export interface StormDetail {
+  contractVersion?: number;
+  commitPolicy?: 'every-tick' | 'final-state';
+  ticks?: number;
+  tickIntervalMs?: number;
+  scheduleToleranceMs?: number;
+  mutationWidth?: Record<string, unknown>;
+  observation?: Record<string, unknown>;
+  action?: Record<string, unknown>;
+  actualIssueOffsetsMs?: number[];
+  transitions?: { atMs: number; state: unknown; issuedTicks: number }[];
+  finalState?: unknown;
+  expectedFinalState?: unknown;
+}
+
 export interface BenchRecord {
   suite: string;
   harness: string;
@@ -9,6 +24,7 @@ export interface BenchRecord {
   jsRegime: 'jit' | 'interp' | null;
   jsFlags: string | null;
   cpuThrottle: number | null;
+  throttleScope: 'none' | 'page-cdp' | 'process-cgroup' | null;
   entry: string;
   workload: string;
   scale: number;
@@ -25,8 +41,20 @@ export interface BenchRecord {
   max?: number | null;
   value?: number | null;
   samples: number[] | null;
-  detail: { byName?: Record<string, { messages: number; bytes: number }> } | null;
-  detailSamples?: { byName?: Record<string, { messages: number; bytes: number }> }[] | null;
+  detail: ({
+    byName?: Record<string, { messages: number; bytes: number }>;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  } & StormDetail) | null;
+  detailSamples?: ({
+    byName?: Record<string, { messages: number; bytes: number }>;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  } & StormDetail)[] | null;
   detailKind?: 'sample-nearest-median' | 'legacy-last-sample' | null;
   dnfCount: number;
   attemptedCount?: number;
@@ -46,14 +74,38 @@ export interface BenchRecord {
   calibration: { probeVersion: number; score: number } | null;
   entryCommit: string | null;
   comparisonKind: 'same-run' | 'same-machine' | 'same-machine-regime' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
-  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incomplete-work' | 'unverified-work';
+  comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work' | 'contract-failed';
   comparabilityReasons?: string[];
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
+  descriptiveEligible?: boolean;
+  contractVersion?: number | string | null;
+  commitPolicy?: 'every-tick' | 'final-state' | null;
+  derivedFrom?: { kind: string; metrics: string[] };
+  artifact?: {
+    path: string;
+    sha256: string;
+    flavor: 'web' | 'lynx';
+    section: 'whole-artifact' | 'lepusCode.root';
+  };
   workClassification?: {
     status: 'complete' | 'incomplete' | 'unverified';
     expectedSequentialCommits: number;
     observed: Record<string, unknown> | null;
+  };
+  pipelineControl?: {
+    status: 'controlled' | 'invalid' | 'incomplete';
+    reason?: string;
+    requestedRows?: number;
+    committedRows?: number;
+    callMultiset?: Record<string, number>;
+    surfaceNames?: string[];
+  };
+  stormControl?: StormDetail & {
+    status: 'controlled' | 'invalid' | 'incomplete' | 'contract-failed';
+    reason?: string;
+    passedSamples?: number;
+    observedSamples?: number;
   };
   sourceEntry?: string;
   sourceMedian?: number | null;
@@ -89,6 +141,7 @@ export interface ComparisonRun {
     jsRegime: 'jit' | 'interp' | null;
     jsFlags: string | null;
     cpuThrottle: number | null;
+    throttleScope: 'none' | 'page-cdp' | 'process-cgroup' | null;
     generatedAt: string;
     machineId: string;
     calibration: { probeVersion: number; score: number } | null;
@@ -166,9 +219,100 @@ export interface NativeCoverage {
   version: string;
   contractSha256: string;
   expectedCellCount: number;
+  sourceRunFiles: Record<'web' | 'native', string[]>;
   entryIds: string[];
   summary: Partial<Record<NativeCoverageStatus, number>>;
   cells: NativeCoverageCell[];
+}
+
+export type PipelineCoverageStatus =
+  | 'measured'
+  | 'measured-with-dnf'
+  | 'dnf'
+  | 'unscheduled'
+  | 'invalid-incomparable'
+  | 'display-derivation-bug';
+
+export interface PipelineCoverageCell {
+  entry: string;
+  suite: 'pipeline';
+  harness: 'web';
+  workload: string;
+  scale: number;
+  metric: 'operationTime';
+  unit: 'ms';
+  boundary: string;
+  key: string;
+  status: PipelineCoverageStatus;
+  reason: string | null;
+  record: {
+    n: number;
+    dnfCount: number;
+    attemptedCount: number | null;
+    acceptedCount: number | null;
+    median: number | null;
+    runFile: string | null;
+    machineId: string | null;
+    failureCategories: string[];
+  } | null;
+}
+
+export interface PipelineCoverage {
+  version: string;
+  contractSha256: string;
+  expectedCellCount: number;
+  entryIds: string[];
+  summary: Partial<Record<PipelineCoverageStatus, number>>;
+  cells: PipelineCoverageCell[];
+}
+
+export type ListCoverageStatus =
+  | 'measured'
+  | 'dnf'
+  | 'unsupported'
+  | 'unscheduled'
+  | 'invalid-incomparable';
+
+export interface ListCoverageCell {
+  entry: string;
+  harness: 'web' | 'native';
+  workload: 'list-startup' | 'list-recycle' | 'list-fling';
+  scale: number;
+  key: string;
+  status: ListCoverageStatus;
+  reason: string | null;
+  recordCount: number;
+  fixture: {
+    kind: 'entry-manifest' | 'entry-manifest-and-artifact';
+    declared: boolean;
+    protocol?: string | null;
+    contractSha256?: string | null;
+    bundle?: string;
+    sha256?: string;
+    actualSha256?: string;
+  };
+  sourceMetrics: string[];
+  derivedMetrics: string[];
+}
+
+export interface ListCoverage {
+  version: string;
+  contractSha256: string;
+  fixtureProtocol: string;
+  config: {
+    viewport: { widthPx: number; heightPx: number };
+    row: { estimatedHeightPx: number; itemKey: string };
+    buffer: { leadingRows: number; trailingRows: number };
+    recycle: { distancePx: number; repetitions: number };
+    fling: { velocityPxPerSecond: number; durationMs: number };
+    observation: { web: string; native: string };
+    input: Record<'web' | 'native', { recycle: string; fling: string }>;
+    semantics: { materializedCell: string; blankFrame: string };
+  };
+  entryIds: string[];
+  expectedCellCount: number;
+  summary: Partial<Record<ListCoverageStatus, number>>;
+  cells: ListCoverageCell[];
 }
 
 export interface NativeObservation {
@@ -193,6 +337,8 @@ export interface TimelineSnapshot {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
+  pipelineCoverage: PipelineCoverage;
+  listCoverage: ListCoverage;
 }
 
 export interface HistoryTransportEvidence {
@@ -215,6 +361,7 @@ export interface HistoryCohort {
   jsRegime: 'jit' | 'interp' | null;
   jsFlags: string | null;
   cpuThrottle: number | null;
+  throttleScope: 'none' | 'page-cdp' | 'process-cgroup' | null;
   machineId: string;
   sourceRunFiles: string[];
   entryIds: string[];
@@ -252,6 +399,8 @@ export interface HistoryCheckpoint {
   sourceIndexes: number[];
   harnesses: HistoryCohort[];
   nativeCoverage?: NativeCoverage;
+  pipelineCoverage?: PipelineCoverage;
+  listCoverage?: ListCoverage;
 }
 
 export interface HistorySource {
@@ -315,6 +464,12 @@ export interface EntryMeta {
   tier?: 'featured' | 'lab' | 'archive';
   /** Harnesses this public entry is eligible to run in. Omitted means both. */
   harnesses?: ('web' | 'native')[];
+  listFixture?: {
+    protocol: string;
+    contractSha256: string;
+    bundles: Partial<Record<'web' | 'native', string>>;
+    sha256: Partial<Record<'web' | 'native', string>>;
+  };
   color: string;
   presentation: { order: number; colorLight: string; colorDark: string };
   provenance: { source: string; ref: string; commit: string; buildCommand: string };
@@ -328,6 +483,8 @@ const collected = latest as unknown as {
   nativeObservations: NativeObservation[];
   nativeObservationRecords: BenchRecord[];
   nativeCoverage: NativeCoverage;
+  pipelineCoverage: PipelineCoverage;
+  listCoverage: ListCoverage;
   history: BenchmarkHistory;
 };
 export const BENCHMARK_HISTORY = collected.history;
@@ -335,33 +492,73 @@ export interface WebRegime {
   jsRegime: 'jit' | 'interp';
   jsFlags: string;
   cpuThrottle: number;
+  throttleScope: 'none' | 'page-cdp' | 'process-cgroup';
 }
 const JIT_FLAGS = '--expose-gc';
 const INTERP_FLAGS = '--expose-gc,--no-opt,--no-sparkplug,--no-maglev';
 export const DEFAULT_WEB_REGIME: WebRegime = {
-  jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1,
+  jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none',
 };
 export const WEB_REGIMES: (WebRegime & { id: string; label: string })[] = [
-  { id: 'web', label: 'JIT · 1×', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1 },
-  { id: 'web-interp', label: 'Ignition · 1×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1 },
-  { id: 'web-interp-4x', label: 'Ignition · 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4 },
+  { id: 'web', label: 'JIT', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
+  { id: 'web-interp', label: 'Interp', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
+  { id: 'web-interp-4x', label: 'Interp 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'process-cgroup' },
 ];
+export function isPublicWebRegime(regime: WebRegime): boolean {
+  return WEB_REGIMES.some((candidate) => candidate.jsRegime === regime.jsRegime
+    && candidate.jsFlags === regime.jsFlags
+    && candidate.cpuThrottle === regime.cpuThrottle
+    && candidate.throttleScope === regime.throttleScope);
+}
 export function webRegimeId(regime: WebRegime): string {
   return WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime
     && candidate.jsFlags === regime.jsFlags
-    && candidate.cpuThrottle === regime.cpuThrottle)?.id
-    ?? `${regime.jsRegime}-${regime.cpuThrottle}x`;
+    && candidate.cpuThrottle === regime.cpuThrottle
+    && candidate.throttleScope === regime.throttleScope)?.id
+    ?? `${regime.jsRegime}-${regime.cpuThrottle}x-${regime.throttleScope}`;
 }
 export function recordMatchesWebRegime(record: BenchRecord, regime: WebRegime): boolean {
   return record.harness !== 'web'
     || (record.jsRegime === regime.jsRegime && record.jsFlags === regime.jsFlags
-      && record.cpuThrottle === regime.cpuThrottle);
+      && record.cpuThrottle === regime.cpuThrottle
+      && record.throttleScope === regime.throttleScope);
 }
 const EMPTY_NATIVE_COVERAGE: NativeCoverage = {
   version: 'history-no-native-data',
   contractSha256: '',
   expectedCellCount: 0,
+  sourceRunFiles: { web: [], native: [] },
   entryIds: [],
+  summary: {},
+  cells: [],
+};
+const EMPTY_PIPELINE_COVERAGE: PipelineCoverage = {
+  version: 'history-no-pipeline-data',
+  contractSha256: '',
+  expectedCellCount: 0,
+  entryIds: [],
+  summary: {},
+  cells: [],
+};
+const EMPTY_LIST_COVERAGE: ListCoverage = {
+  version: 'history-no-list-contract',
+  contractSha256: '',
+  fixtureProtocol: '',
+  config: {
+    viewport: { widthPx: 0, heightPx: 0 },
+    row: { estimatedHeightPx: 0, itemKey: '' },
+    buffer: { leadingRows: 0, trailingRows: 0 },
+    recycle: { distancePx: 0, repetitions: 0 },
+    fling: { velocityPxPerSecond: 0, durationMs: 0 },
+    observation: { web: '', native: '' },
+    input: {
+      web: { recycle: '', fling: '' },
+      native: { recycle: '', fling: '' },
+    },
+    semantics: { materializedCell: '', blankFrame: '' },
+  },
+  entryIds: [],
+  expectedCellCount: 0,
   summary: {},
   cells: [],
 };
@@ -381,13 +578,18 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
   // evidence chart, but comparison consumers see a real gap rather than a
   // deceptively fast value.
   const records = historyRecordsForCheckpoint(checkpoint)
-    .filter((record) => record.rankEligible !== false);
+    .filter((record) => record.rankEligible !== false
+      || record.descriptiveEligible === true
+      || (record.comparabilityStatus === 'incomplete-work'
+        && record.n === 0
+        && record.dnfCount > 0)) as BenchRecord[];
   const harnesses = checkpoint.harnesses.map((cohort) => ({
     harness: cohort.harness,
     environment: cohort.environment,
     jsRegime: cohort.jsRegime ?? null,
     jsFlags: cohort.jsFlags ?? null,
     cpuThrottle: cohort.cpuThrottle ?? null,
+    throttleScope: cohort.throttleScope ?? null,
     generatedAt: checkpoint.generatedAt,
     machineId: cohort.machineId,
     calibration: null,
@@ -396,11 +598,13 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     sourceRecordCount: records.filter((record) => record.harness === cohort.harness
       && (cohort.harness !== 'web' || (record.jsRegime === cohort.jsRegime
         && record.jsFlags === cohort.jsFlags
-        && record.cpuThrottle === cohort.cpuThrottle))).length,
+        && record.cpuThrottle === cohort.cpuThrottle
+        && record.throttleScope === cohort.throttleScope))).length,
     recordCount: records.filter((record) => record.harness === cohort.harness
       && (cohort.harness !== 'web' || (record.jsRegime === cohort.jsRegime
         && record.jsFlags === cohort.jsFlags
-        && record.cpuThrottle === cohort.cpuThrottle))).length,
+        && record.cpuThrottle === cohort.cpuThrottle
+        && record.throttleScope === cohort.throttleScope))).length,
   }));
   const sources = checkpoint.sourceIndexes.map((index) => BENCHMARK_HISTORY.sources[index]);
   const machines = Object.fromEntries(sources.map((source) => [source.machineId, {
@@ -431,6 +635,8 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     nativeObservations: [],
     nativeObservationRecords: [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
+    pipelineCoverage: checkpoint.pipelineCoverage ?? EMPTY_PIPELINE_COVERAGE,
+    listCoverage: checkpoint.listCoverage ?? EMPTY_LIST_COVERAGE,
   };
 });
 
@@ -481,13 +687,17 @@ export interface RecordFilter {
   jsRegime?: 'jit' | 'interp' | null;
   jsFlags?: string | null;
   cpuThrottle?: number | null;
+  throttleScope?: 'none' | 'page-cdp' | 'process-cgroup' | null;
   boundary?: string;
   unit?: string;
+  contractVersion?: number;
+  commitPolicy?: 'every-tick' | 'final-state';
 }
 
 export function filterRecords(records: BenchRecord[], filter: RecordFilter): BenchRecord[] {
   return records.filter((r) =>
     (r.rankingEligible !== false
+      || r.descriptiveEligible === true
       || (r.comparabilityStatus === 'incomplete-work' && r.n === 0 && r.dnfCount > 0))
     && (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)
@@ -499,8 +709,11 @@ export function filterRecords(records: BenchRecord[], filter: RecordFilter): Ben
     && (filter.jsRegime == null || r.jsRegime === filter.jsRegime)
     && (filter.jsFlags == null || r.jsFlags === filter.jsFlags)
     && (filter.cpuThrottle == null || r.cpuThrottle === filter.cpuThrottle)
+    && (filter.throttleScope == null || r.throttleScope === filter.throttleScope)
     && (filter.boundary == null || r.boundary === filter.boundary)
-    && (filter.unit == null || r.unit === filter.unit),
+    && (filter.unit == null || r.unit === filter.unit)
+    && (filter.contractVersion == null || r.contractVersion === filter.contractVersion)
+    && (filter.commitPolicy == null || r.commitPolicy === filter.commitPolicy),
   );
 }
 

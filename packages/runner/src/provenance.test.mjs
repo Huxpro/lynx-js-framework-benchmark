@@ -13,10 +13,18 @@ test('run receipt binds Git state, runtime integrity, workload files, bundles, a
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-receipt-'));
   try {
     fs.mkdirSync(path.join(root, 'packages/shared/src'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'packages/runner/src'), { recursive: true });
     fs.mkdirSync(path.join(root, 'entries/example/dist/rows-0'), { recursive: true });
     fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
     fs.writeFileSync(path.join(root, 'packages/shared/src/workloads.mjs'), 'contract-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/shared/src/driver-client.mjs'), 'driver-v1\n');
     fs.writeFileSync(path.join(root, 'packages/shared/src/page-instrument.mjs'), 'predicate-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/shared/src/pipeline.mjs'), 'segments-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/shared/src/list-workloads.mjs'), 'list-contract-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/runner/src/pipeline-attribution.mjs'), 'records-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/runner/src/list-coverage.mjs'), 'list-coverage-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/runner/src/list-derivation.mjs'), 'list-derived-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/runner/src/storm-contract.mjs'), 'storm-v1\n');
     fs.writeFileSync(path.join(root, 'entries/example/dist/rows-0/main.web.bundle'), 'bundle-v1\n');
     fs.writeFileSync(path.join(root, 'pnpm-lock.yaml'), `lockfileVersion: '9.0'
 

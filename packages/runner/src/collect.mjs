@@ -2,7 +2,9 @@
 // (machine × entry × suite × every comparability dimension, including
 // boundary and unit);
 // records from different machines coexist, each tagged with its source run and
-// calibration. Web featured comparisonRecords come from one coherent run;
+// calibration. Web weighted comparison records come from one coherent run;
+// dedicated exact-observation suites attach their own coherent campaigns without
+// entering that matrix.
 // Native featured records may come from checkpoints of one campaign, but only
 // when every record belongs to the same machine, lease, method and input receipt. Opt-in Lab
 // records are separate, explicitly calibrated historical estimates.
@@ -11,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {
+  BOUNDARIES,
   comparisonKey,
   deriveRecord,
   LEGACY_SCHEMA_VERSIONS,
@@ -18,6 +21,7 @@ import {
   SCHEMA_VERSION,
   webRegimeKey,
 } from '@lynx-bench/shared/schema';
+import { PAPI_SEGMENTS } from '@lynx-bench/shared/pipeline';
 import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
@@ -29,19 +33,32 @@ import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
 import {
+  assertPipelineCoverage,
+  classifyPipelineCoverage,
+} from './pipeline-coverage.mjs';
+import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   assertNativeDeviceCohort,
   assertNativeLeaseChain,
   assertNativeMethodRevisionChain,
 } from './native-protocol.mjs';
+import { stormContractPass } from './storm-contract.mjs';
+import {
+  assertListCoverage,
+  buildListCoverage,
+  selectListCampaignRecords,
+} from './list-coverage.mjs';
+import { deriveListRecords } from './list-derivation.mjs';
 
 const recordKey = (machineId, r) =>
   [machineId, r.entry, r.suite, comparisonKey(r)].join('|');
 
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
-const isBenchmarkRecord = (r) => r.suite !== 'bundle';
+const DEFAULT_WEB_REGIME_KEY = webRegimeKey({ harness: 'web' });
+const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite);
 const isRankingEligible = (record) => record.rankingEligible !== false;
 const isComparisonVisible = (record) => isRankingEligible(record)
+  || record.descriptiveEligible === true
   || (record.comparabilityStatus === 'incomplete-work'
     && observationValues(record).length === 0
     && (record.dnfCount ?? 0) > 0);
@@ -97,6 +114,357 @@ function stormWorkClassification(records, record) {
   return { status: 'unverified', expectedSequentialCommits: expected, observed };
 }
 
+const pipelineOperationKey = (record) => [
+  record.suite,
+  record.harness,
+  record.environment,
+  record.workload,
+  record.scale,
+].join('|');
+
+const stableJson = (value) => JSON.stringify(value);
+
+const pipelineTimeMetric = (segment) =>
+  `papi${segment[0].toUpperCase()}${segment.slice(1)}Time`;
+
+/**
+ * Materialize the residual only in the derived dataset. Raw run files retain
+ * operation time and host-boundary self-times, never their subtraction.
+ */
+export function derivePipelineResidualRecords(records) {
+  const residuals = [];
+  for (const operation of records.filter((record) =>
+    record.suite === 'pipeline' && record.metric === 'operationTime')) {
+    const siblings = records.filter((candidate) =>
+      operationCellKey(candidate) === operationCellKey(operation));
+    const segmentRecords = PAPI_SEGMENTS.map((segment) => {
+      const metric = pipelineTimeMetric(segment);
+      const matches = siblings.filter((candidate) => candidate.metric === metric);
+      if (matches.length !== 1) {
+        throw new Error(`pipeline operation requires exactly one ${metric} source record`);
+      }
+      return matches[0];
+    });
+    const operationSamples = operation.samples ?? [];
+    for (const segment of segmentRecords) {
+      if (!Array.isArray(segment.samples) || segment.samples.length !== operationSamples.length) {
+        throw new Error(`pipeline metric ${segment.metric} must align with operationTime samples`);
+      }
+      if (stableJson(segment.detailSamples) !== stableJson(operation.detailSamples)) {
+        throw new Error(`pipeline metric ${segment.metric} must share operationTime controls`);
+      }
+    }
+    const samples = operationSamples.map((operationMs, index) => {
+      const selfMs = segmentRecords.reduce((sum, segment) => sum + segment.samples[index], 0);
+      if (!Number.isFinite(operationMs) || !Number.isFinite(selfMs)) {
+        throw new Error('pipeline residual inputs must be finite');
+      }
+      if (selfMs > operationMs + 0.05) {
+        throw new Error(`pipeline PAPI self time ${selfMs}ms exceeds operation time ${operationMs}ms`);
+      }
+      return Math.max(0, operationMs - selfMs);
+    });
+    residuals.push(deriveRecord({
+      ...operation,
+      metric: 'outsidePapiTime',
+      boundary: BOUNDARIES.pipelineResidual,
+      samples,
+      detailSamples: operation.detailSamples,
+      derivedFrom: {
+        kind: 'aligned-sample-subtraction',
+        metrics: ['operationTime', ...segmentRecords.map((record) => record.metric)],
+      },
+    }));
+  }
+  return [...records, ...residuals];
+}
+
+const stormCellKey = (record, includeEntry = true) => [
+  record.suite,
+  record.harness,
+  record.environment,
+  includeEntry ? record.entry : null,
+  record.workload,
+  record.scale,
+  record.contractVersion,
+  record.commitPolicy,
+].join('|');
+
+const STORM_SOURCE_METRICS = [
+  'ticksIssued',
+  'committedFrames',
+  'wireToBtsBytes',
+  'wireToBtsMsgs',
+  'wireToMtsBytes',
+  'wireToMtsMsgs',
+];
+
+const stormDeclaredControl = (detail) => detail == null ? null : ({
+  contractVersion: detail.contractVersion,
+  commitPolicy: detail.commitPolicy,
+  ticks: detail.ticks,
+  tickIntervalMs: detail.tickIntervalMs,
+  scheduleToleranceMs: detail.scheduleToleranceMs,
+  mutationWidth: detail.mutationWidth,
+  observation: detail.observation,
+  action: detail.action,
+});
+
+/** Materialize semantic outcomes and per-tick values from aligned raw samples. */
+export function deriveStormRecords(records) {
+  const derived = [];
+  for (const operation of records.filter((record) =>
+    record.suite === 'storm' && record.metric === 'operationTime')) {
+    const siblings = records.filter((candidate) =>
+      stormCellKey(candidate) === stormCellKey(operation));
+    const sources = new Map(STORM_SOURCE_METRICS.map((metric) => {
+      const matches = siblings.filter((candidate) => candidate.metric === metric);
+      if (matches.length !== 1) {
+        throw new Error(`storm operation requires exactly one ${metric} source record`);
+      }
+      return [metric, matches[0]];
+    }));
+    const operationSamples = operation.samples ?? [];
+    if (!Array.isArray(operation.detailSamples)
+      || operation.detailSamples.length !== operationSamples.length) {
+      throw new Error('storm operation detailSamples must align with source samples');
+    }
+    for (const source of sources.values()) {
+      if (!Array.isArray(source.samples) || source.samples.length !== operationSamples.length) {
+        throw new Error(`storm metric ${source.metric} must align with operationTime samples`);
+      }
+      if (source.detailSamples != null
+        && (!Array.isArray(source.detailSamples)
+          || source.detailSamples.length !== operationSamples.length)) {
+        throw new Error(`storm metric ${source.metric} has misaligned endpoint details`);
+      }
+    }
+    const ticks = sources.get('ticksIssued').samples;
+    const frames = sources.get('committedFrames').samples;
+    for (let index = 0; index < operationSamples.length; index++) {
+      const control = operation.detailSamples[index];
+      if (ticks[index] !== control.actualIssueOffsetsMs?.length
+        || frames[index] !== control.transitions?.length) {
+        throw new Error('storm count metrics disagree with raw schedule/transition evidence');
+      }
+    }
+    const makeDerived = (metric, boundary, unit, samples, sourceMetrics) => {
+      derived.push(deriveRecord({
+        ...operation,
+        metric,
+        boundary,
+        unit,
+        samples,
+        detailSamples: operation.detailSamples,
+        derivedFrom: { kind: 'aligned-sample-transform', metrics: sourceMetrics },
+      }));
+    };
+    makeDerived(
+      'contractPass',
+      BOUNDARIES.stormContract,
+      'boolean-count',
+      operation.detailSamples.map((control) => Number(stormContractPass(control))),
+      ['operationTime', 'ticksIssued', 'committedFrames'],
+    );
+    makeDerived(
+      'coalescingRatio',
+      BOUNDARIES.stormCoalescing,
+      'ratio',
+      frames.map((value, index) => value / ticks[index]),
+      ['committedFrames', 'ticksIssued'],
+    );
+    for (const metric of [
+      'wireToBtsBytes',
+      'wireToBtsMsgs',
+      'wireToMtsBytes',
+      'wireToMtsMsgs',
+    ]) {
+      const source = sources.get(metric);
+      makeDerived(
+        `${metric}PerTick`,
+        BOUNDARIES.stormPerTick,
+        metric.endsWith('Bytes') ? 'bytes/tick' : 'messages/tick',
+        source.samples.map((value, index) => value / ticks[index]),
+        [metric, 'ticksIssued'],
+      );
+    }
+  }
+  return [...records, ...derived];
+}
+
+export function stormContractClassification(records, record) {
+  if (record.suite !== 'storm') return null;
+  const operations = records.filter((candidate) =>
+    candidate.metric === 'operationTime'
+    && stormCellKey(candidate) === stormCellKey(record));
+  if (operations.length !== 1) {
+    return { status: 'invalid', reason: 'storm-operation-source-record-count-invalid' };
+  }
+  const operation = operations[0];
+  const values = observationValues(operation);
+  if ((operation.dnfCount ?? 0) > 0) {
+    return { status: 'incomplete', reason: 'storm-dnf-observed' };
+  }
+  if (values.length === 0 || !Array.isArray(operation.detailSamples)
+    || operation.detailSamples.length !== values.length) {
+    return { status: 'invalid', reason: 'storm-control-sample-count-mismatch' };
+  }
+  const identities = [];
+  const outcomes = [];
+  for (const detail of operation.detailSamples) {
+    const declared = stormDeclaredControl(detail);
+    if (
+      !Number.isInteger(declared?.contractVersion)
+      || declared.contractVersion !== operation.contractVersion
+      || !['every-tick', 'final-state'].includes(declared.commitPolicy)
+      || declared.commitPolicy !== operation.commitPolicy
+      || !Number.isInteger(declared.ticks)
+      || declared.ticks < 1
+      || !Number.isFinite(declared.tickIntervalMs)
+      || declared.tickIntervalMs < 0
+      || !Number.isFinite(declared.scheduleToleranceMs)
+      || declared.scheduleToleranceMs < 0
+      || declared.mutationWidth == null
+      || declared.observation == null
+      || declared.action == null
+      || !Array.isArray(detail.actualIssueOffsetsMs)
+      || detail.actualIssueOffsetsMs.length !== declared.ticks
+      || !Array.isArray(detail.transitions)
+      || detail.transitions.length > declared.ticks
+      || detail.finalState !== detail.expectedFinalState
+    ) {
+      return { status: 'invalid', reason: 'storm-control-sample-invalid' };
+    }
+    let previous = -Infinity;
+    for (const [index, offset] of detail.actualIssueOffsetsMs.entries()) {
+      if (!Number.isFinite(offset) || offset < previous || (index === 0 && offset > 0.05)) {
+        return { status: 'invalid', reason: 'storm-input-schedule-invalid' };
+      }
+      if (index > 0 && offset - previous > declared.tickIntervalMs + declared.scheduleToleranceMs) {
+        return { status: 'invalid', reason: 'storm-input-schedule-outside-tolerance' };
+      }
+      previous = offset;
+    }
+    previous = -Infinity;
+    for (const transition of detail.transitions) {
+      if (!Number.isFinite(transition?.atMs)
+        || transition.atMs < previous
+        || !Number.isInteger(transition.issuedTicks)
+        || transition.issuedTicks < 1
+        || transition.issuedTicks > declared.ticks) {
+        return { status: 'invalid', reason: 'storm-transition-evidence-invalid' };
+      }
+      previous = transition.atMs;
+    }
+    identities.push(stableJson(declared));
+    outcomes.push(stormContractPass(detail));
+  }
+  if (new Set(identities).size !== 1) {
+    return { status: 'invalid', reason: 'storm-declared-contract-varies-across-samples' };
+  }
+  const declared = stormDeclaredControl(operation.detailSamples[0]);
+  const peers = records.filter((candidate) =>
+    candidate.suite === 'storm'
+    && candidate.metric === 'operationTime'
+    && stormCellKey(candidate, false) === stormCellKey(operation, false));
+  const peerIdentities = peers.flatMap((peer) =>
+    peer.detailSamples?.[0] ? [stableJson(stormDeclaredControl(peer.detailSamples[0]))] : []);
+  if (new Set(peerIdentities).size > 1) {
+    return { status: 'invalid', reason: 'storm-declared-contract-mismatch-between-entries' };
+  }
+  if (outcomes.some((outcome) => !outcome)) {
+    return {
+      ...declared,
+      status: 'contract-failed',
+      reason: 'storm-every-tick-observable-commit-contract-failed',
+      passedSamples: outcomes.filter(Boolean).length,
+      observedSamples: outcomes.length,
+    };
+  }
+  return {
+    ...declared,
+    status: 'controlled',
+    passedSamples: outcomes.length,
+    observedSamples: outcomes.length,
+  };
+}
+
+export function pipelineRecordControl(record) {
+  const values = observationValues(record);
+  if (values.length === 0) {
+    return (record.dnfCount ?? 0) > 0
+      ? { status: 'incomplete', reason: 'pipeline-dnf-without-observation' }
+      : { status: 'invalid', reason: 'pipeline-has-no-observation-or-dnf' };
+  }
+  if (!Array.isArray(record.detailSamples) || record.detailSamples.length !== values.length) {
+    return { status: 'invalid', reason: 'pipeline-control-sample-count-mismatch' };
+  }
+  const identities = [];
+  for (const detail of record.detailSamples) {
+    if (
+      !Number.isInteger(detail?.requestedRows)
+      || !Number.isInteger(detail?.committedRows)
+      || detail.requestedRows !== record.scale
+      || detail.callMultiset == null
+      || typeof detail.callMultiset !== 'object'
+      || !Array.isArray(detail.surfaceNames)
+      || !detail.surfaceNames.includes('__FlushElementTree')
+    ) {
+      return { status: 'invalid', reason: 'pipeline-control-sample-invalid' };
+    }
+    identities.push(stableJson({
+      requestedRows: detail.requestedRows,
+      committedRows: detail.committedRows,
+      callMultiset: detail.callMultiset,
+      surfaceNames: detail.surfaceNames,
+    }));
+  }
+  if (new Set(identities).size !== 1) {
+    return { status: 'invalid', reason: 'pipeline-call-or-tree-control-varies-across-samples' };
+  }
+  const detail = record.detailSamples[0];
+  if ((record.dnfCount ?? 0) > 0) {
+    return {
+      status: 'incomplete',
+      reason: 'pipeline-dnf-observed',
+      requestedRows: detail.requestedRows,
+      committedRows: detail.committedRows,
+      callMultiset: detail.callMultiset,
+      surfaceNames: detail.surfaceNames,
+    };
+  }
+  return {
+    status: 'controlled',
+    requestedRows: detail.requestedRows,
+    committedRows: detail.committedRows,
+    callMultiset: detail.callMultiset,
+    surfaceNames: detail.surfaceNames,
+  };
+}
+
+export function pipelineWorkClassification(records, record) {
+  if (record.suite !== 'pipeline') return null;
+  const own = pipelineRecordControl(record);
+  if (own.status !== 'controlled') return own;
+
+  // Comparison eligibility is conservative at the whole operation cell: if
+  // any observed peer committed a different tree size, no segment in that
+  // cell is publishable as a cross-entry comparison.
+  const peerControls = records
+    .filter((candidate) => candidate.suite === 'pipeline'
+      && candidate.metric === 'operationTime'
+      && pipelineOperationKey(candidate) === pipelineOperationKey(record))
+    .map(pipelineRecordControl)
+    .filter((control) => control.status === 'controlled');
+  if (new Set(peerControls.map((control) => control.requestedRows)).size > 1) {
+    return { ...own, status: 'invalid', reason: 'pipeline-requested-tree-mismatch-between-entries' };
+  }
+  if (new Set(peerControls.map((control) => control.committedRows)).size > 1) {
+    return { ...own, status: 'invalid', reason: 'pipeline-committed-tree-mismatch-between-entries' };
+  }
+  return own;
+}
+
 function samplingProblems(run, record) {
   if (
     !run.meta.receipt
@@ -114,7 +482,13 @@ function samplingProblems(run, record) {
   if (!Number.isInteger(record.attemptedCount) || record.attemptedCount < sourceCount) {
     problems.push('attempted-count-invalid');
   }
-  if (record.metric === 'latency' || record.metric === 'fcp' || record.metric === 'settled') {
+  if (
+    record.metric === 'latency'
+    || record.metric === 'fcp'
+    || record.metric === 'settled'
+    || record.suite === 'pipeline'
+    || record.suite === 'storm'
+  ) {
     if (Number.isInteger(record.attemptedCount)) {
       const accounted = sourceCount + (record.dnfCount ?? 0);
       if (accounted < record.attemptedCount) problems.push('attempt-accounting-underflow');
@@ -128,16 +502,60 @@ function classifyComparability(run, records) {
   const cohort = run.meta.receipt?.comparabilityCohort ?? null;
   return records.map((record) => {
     const work = stormWorkClassification(records, record);
+    const pipeline = pipelineWorkClassification(records, record);
+    const storm = stormContractClassification(records, record);
     const problems = samplingProblems(run, record);
+    const unthrottledWorkerCpu = record.harness === 'web'
+      && record.metric === 'btsCpu'
+      && record.cpuThrottle > 1
+      && record.throttleScope === 'page-cdp';
+    const invalidatedRun = run.meta.measurementValidity?.status === 'invalid-measurement';
+    const unverifiedProcessThrottle = record.harness === 'web'
+      && record.throttleScope === 'process-cgroup'
+      && (!Number.isFinite(record.verifiedSlowdown)
+        || record.verifiedSlowdown < record.cpuThrottle - 0.5
+        || record.verifiedSlowdown > record.cpuThrottle + 0.5);
     let comparabilityStatus = null;
     const comparabilityReasons = [];
-    if (problems.length) {
+    if (invalidatedRun || unverifiedProcessThrottle) {
+      comparabilityStatus = 'invalid-measurement';
+      if (invalidatedRun) {
+        comparabilityReasons.push(...(
+          run.meta.measurementValidity.reasons ?? ['source-run-invalidated']
+        ));
+      }
+      if (unverifiedProcessThrottle) {
+        comparabilityReasons.push('process-throttle-slowdown-unverified');
+      }
+    } else if (unthrottledWorkerCpu) {
+      // Emulation.setCPUThrottlingRate is target-scoped. The issue-40 runner
+      // applied it to the page target, while lynx-bg runs in a separately
+      // attached worker target. Preserve the raw samples as source evidence,
+      // but never chart or rank them as throttled BTS CPU.
+      comparabilityStatus = 'invalid-measurement';
+      comparabilityReasons.push('cpu-throttle-does-not-cover-background-worker');
+    } else if (problems.length) {
       comparabilityStatus = 'incompatible-sampling';
       comparabilityReasons.push(...problems);
     }
-    if (problems.length) {
-      // Sampling accounting is a prospective source-integrity contract and
-      // takes precedence over any derived work classification.
+    if (invalidatedRun || unverifiedProcessThrottle || unthrottledWorkerCpu || problems.length) {
+      // Source-integrity failures and measurement invalidation take
+      // precedence over any derived work classification.
+    } else if (storm?.status === 'invalid') {
+      comparabilityStatus = 'incompatible-controls';
+      comparabilityReasons.push(storm.reason);
+    } else if (storm?.status === 'incomplete') {
+      comparabilityStatus = 'incomplete-work';
+      comparabilityReasons.push(storm.reason);
+    } else if (storm?.status === 'contract-failed') {
+      comparabilityStatus = 'contract-failed';
+      comparabilityReasons.push(storm.reason);
+    } else if (pipeline?.status === 'invalid') {
+      comparabilityStatus = 'incompatible-controls';
+      comparabilityReasons.push(pipeline.reason);
+    } else if (pipeline?.status === 'incomplete') {
+      comparabilityStatus = 'incomplete-work';
+      comparabilityReasons.push(pipeline.reason);
     } else if (work?.status === 'incomplete') {
       comparabilityStatus = 'incomplete-work';
       comparabilityReasons.push('storm-transport-below-sequential-tick-contract');
@@ -152,7 +570,11 @@ function classifyComparability(run, records) {
     }
     const rankingEligible = comparabilityStatus !== 'incomplete-work'
       && comparabilityStatus !== 'unverified-work'
-      && comparabilityStatus !== 'incompatible-sampling';
+      && comparabilityStatus !== 'incompatible-sampling'
+      && comparabilityStatus !== 'invalid-measurement'
+      && comparabilityStatus !== 'incompatible-controls'
+      && comparabilityStatus !== 'contract-failed';
+    const descriptiveEligible = comparabilityStatus === 'contract-failed';
     if (comparabilityStatus === null && cohort === null) {
       return { ...record, comparabilityStatus: 'legacy-unverified' };
     }
@@ -162,7 +584,10 @@ function classifyComparability(run, records) {
       ...(comparabilityReasons.length ? { comparabilityReasons } : {}),
       ...(cohort ? { comparabilityCohort: cohort } : {}),
       rankingEligible,
+      ...(descriptiveEligible ? { descriptiveEligible: true } : {}),
       ...(work ? { workClassification: work } : {}),
+      ...(pipeline ? { pipelineControl: pipeline } : {}),
+      ...(storm ? { stormControl: storm } : {}),
     };
   });
 }
@@ -277,12 +702,18 @@ const normalizedEntryId = (run, entry) => {
 const normalizeRecord = (run, record) => {
   const entry = normalizedEntryId(run, record.entry);
   const regime = normalizeWebRegime(record);
-  // Source schema-v3 Web records devote `environment` to the execution-regime
+  // Prospective Web records devote `environment` to the execution-regime
   // object requested by issue #40. The derived dataset retains the historical
   // runtime label for existing site consumers and exposes normalized lane
   // fields alongside it. Native environment strings are never rewritten.
   const withRegime = record.harness === 'web'
-    ? { ...record, environment: 'lynx-for-web', ...regime }
+    ? {
+      ...record,
+      environment: typeof record.environment === 'string'
+        ? record.environment
+        : 'lynx-for-web',
+      ...regime,
+    }
     : { ...record };
   if (record.harness === 'web') {
     if (regime.jsRegime !== 'jit' && regime.jsRegime !== 'interp') {
@@ -296,6 +727,14 @@ const normalizeRecord = (run, record) => {
     }
     if (!Number.isFinite(regime.cpuThrottle) || regime.cpuThrottle < 1) {
       throw new Error(`invalid Web cpuThrottle: ${regime.cpuThrottle}`);
+    }
+    if (!['none', 'page-cdp', 'process-cgroup'].includes(regime.throttleScope)) {
+      throw new Error(`invalid Web throttleScope: ${regime.throttleScope}`);
+    }
+    if ((regime.cpuThrottle === 1) !== (regime.throttleScope === 'none')) {
+      throw new Error(
+        `Web throttleScope ${regime.throttleScope} is incompatible with ${regime.cpuThrottle}x CPU`,
+      );
     }
   }
   const normalized = entry === record.entry
@@ -316,13 +755,14 @@ const normalizeRun = (rawRun, file) => {
       if (environment == null || typeof environment !== 'object' || Array.isArray(environment)
         || !Object.hasOwn(environment, 'jsRegime')
         || !Object.hasOwn(environment, 'jsFlags')
-        || !Object.hasOwn(environment, 'cpuThrottle')) {
+        || !Object.hasOwn(environment, 'cpuThrottle')
+        || !Object.hasOwn(environment, 'throttleScope')) {
         throw new Error(
           `${file}: schema v${SCHEMA_VERSION} Web record ${index} is missing its environment regime`,
         );
       }
       if (Object.hasOwn(record, 'jsRegime') || Object.hasOwn(record, 'jsFlags')
-        || Object.hasOwn(record, 'cpuThrottle')) {
+        || Object.hasOwn(record, 'cpuThrottle') || Object.hasOwn(record, 'throttleScope')) {
         throw new Error(
           `${file}: schema v${SCHEMA_VERSION} Web record ${index} stores its regime outside environment`,
         );
@@ -330,8 +770,19 @@ const normalizeRun = (rawRun, file) => {
     }
     if (record.harness !== 'web'
       && (record.jsRegime != null || record.jsFlags != null || record.cpuThrottle != null
+        || record.throttleScope != null
         || (record.environment != null && typeof record.environment === 'object'))) {
       throw new Error(`${file}: record ${index} attaches a Web JS regime to ${record.harness}`);
+    }
+    if (record.suite === 'pipeline' && record.metric === 'outsidePapiTime') {
+      throw new Error(`${file}: outsidePapiTime is derived and must not be source-authored`);
+    }
+    if (record.suite === 'storm' && (
+      record.metric === 'contractPass'
+      || record.metric === 'coalescingRatio'
+      || record.metric.endsWith('PerTick')
+    )) {
+      throw new Error(`${file}: storm outcomes and per-tick metrics must not be source-authored`);
     }
     const hasRepeatedSource = Array.isArray(record.samples);
     const hasScalarSource = typeof record.value === 'number' && Number.isFinite(record.value);
@@ -352,7 +803,10 @@ const normalizeRun = (rawRun, file) => {
     }
     return normalizeRecord(rawRun, record);
   });
-  const records = classifyComparability(rawRun, normalizedRecords);
+  const records = classifyComparability(
+    rawRun,
+    deriveStormRecords(derivePipelineResidualRecords(normalizedRecords)),
+  );
   const seen = new Set();
   for (const record of records) {
     const key = [record.entry, cellKey(record)].join('|');
@@ -395,13 +849,34 @@ const comparisonRank = (run, featuredIds) => {
   return [entries.size, sharedCells, minimumCoverage, uniqueRecords];
 };
 
-const commitMatchesManifest = (run, record, entryById) => {
+const webBundleReceiptMatchesManifest = (run, record, entry) => {
+  if (record.harness !== 'web') return false;
+  const sourceId = record.sourceEntry ?? record.entry;
+  const runBundles = run.meta.receipt?.entryBundles?.[sourceId];
+  const manifestBundles = entry.provenance?.sha256;
+  if (runBundles == null || typeof runBundles !== 'object' || Array.isArray(runBundles)
+    || manifestBundles == null || typeof manifestBundles !== 'object'
+    || Array.isArray(manifestBundles)) return false;
+  // Native-only or source-only changes may move a commit without changing the
+  // measured Web program. Admit that case only when the complete Web artifact
+  // set is byte-identical; one missing, extra, or changed bundle fails closed.
+  const expected = Object.entries(manifestBundles)
+    .filter(([relative]) => relative.endsWith('.web.bundle'));
+  const observed = Object.entries(runBundles)
+    .filter(([relative]) => relative.endsWith('.web.bundle'));
+  return expected.length > 0
+    && observed.length === expected.length
+    && expected.every(([relative, sha256]) => runBundles[relative] === sha256);
+};
+
+const entryIdentityMatchesManifest = (run, record, entryById) => {
   const entry = entryById.get(record.entry);
   if (!entry) return true;
   const sourceId = record.sourceEntry ?? record.entry;
   const runCommit = run.meta.entryCommits?.[sourceId];
   const manifestCommit = entry.provenance?.commit;
-  return Boolean(runCommit && manifestCommit && runCommit === manifestCommit);
+  return Boolean(runCommit && manifestCommit && runCommit === manifestCommit)
+    || webBundleReceiptMatchesManifest(run, record, entry);
 };
 
 const isPublishableRecord = (run, record) => !(
@@ -523,11 +998,82 @@ const comparisonView = (run, featuredIds, entryById, harness) => ({
   ...run,
   records: run.records.filter((record) => featuredIds.has(record.entry)
     && isBenchmarkRecord(record)
+    // Exact-observation suites have dedicated selectors below. They are
+    // descriptive evidence and must never replace or inflate the main
+    // table/startup comparison cohort.
+    && !['pipeline', 'storm', 'list'].includes(record.suite)
     && record.harness === harness
     && isComparisonVisible(record)
     && isPublishableRecord(run, record)
-    && commitMatchesManifest(run, record, entryById)),
+    && entryIdentityMatchesManifest(run, record, entryById)),
 });
+
+const currentPipelineCampaign = (runs, featuredIds, entryById) => {
+  let selected = null;
+  const entries = [...featuredIds].map((id) => entryById.get(id)).filter(Boolean);
+  for (const candidate of runs) {
+    const records = candidate.run.records.filter((record) =>
+      featuredIds.has(record.entry)
+      && record.harness === 'web'
+      && record.suite === 'pipeline'
+      && isBenchmarkRecord(record)
+      && isPublishableRecord(candidate.run, record));
+    if (!records.length) continue;
+    const coverage = classifyPipelineCoverage({
+      entries,
+      sourceRecords: records,
+      publishedRecords: records,
+    });
+    try {
+      assertPipelineCoverage(coverage);
+    } catch {
+      continue;
+    }
+    const score = [candidate.run.meta.generatedAt ?? candidate.file, candidate.file];
+    if (!selected || score[0] > selected.score[0]
+      || (score[0] === selected.score[0] && score[1] > selected.score[1])) {
+      selected = { ...candidate, records, coverage, score };
+    }
+  }
+  return selected;
+};
+
+const currentStormCampaigns = (runs, featuredIds, entryById) => {
+  const selected = new Map();
+  for (const candidate of runs) {
+    const records = candidate.run.records.filter((record) =>
+      featuredIds.has(record.entry)
+      && record.harness === 'web'
+      && record.suite === 'storm'
+      && isBenchmarkRecord(record)
+      && isComparisonVisible(record)
+      && isPublishableRecord(candidate.run, record));
+    for (const environment of new Set(records.map((record) => record.environment))) {
+      const environmentRecords = records.filter((record) => record.environment === environment);
+      for (const commitPolicy of new Set(environmentRecords.map((record) =>
+        record.commitPolicy ?? null))) {
+        const campaignRecords = environmentRecords.filter((record) =>
+          (record.commitPolicy ?? null) === commitPolicy);
+        const key = `${environment}:${commitPolicy ?? 'none'}`;
+        const score = [
+          new Set(campaignRecords.map((record) => record.entry)).size,
+          new Set(campaignRecords.map(cellKey)).size,
+          candidate.run.meta.generatedAt ?? candidate.file,
+          candidate.file,
+        ];
+        const current = selected.get(key);
+        if (!current || score[0] > current.score[0]
+          || (score[0] === current.score[0] && score[1] > current.score[1])
+          || (score[0] === current.score[0] && score[1] === current.score[1]
+            && (score[2] > current.score[2]
+              || (score[2] === current.score[2] && score[3] > current.score[3])))) {
+          selected.set(key, { ...candidate, records: campaignRecords, score });
+        }
+      }
+    }
+  }
+  return [...selected.values()];
+};
 
 const isBetterComparisonRun = (candidate, current, featuredIds) => {
   if (!current) return true;
@@ -720,6 +1266,33 @@ const annotate = (run, file, record, comparisonKind = 'archive') => ({
   comparisonKind,
 });
 
+// Raw pipeline files deliberately repeat controls beside every source metric
+// so each record is independently auditable. The materialized site dataset is
+// not another source archive: keep full controls on operationTime, then retain
+// only aligned samples/accounting on its segment and residual siblings.
+const compactPipelineOutputRecord = (record) => {
+  if (record.suite !== 'pipeline') return record;
+  if (record.metric === 'operationTime') {
+    const compactDetail = (detail) => {
+      if (detail == null) return detail;
+      const { surfaceNames: _surfaceNames, ...rest } = detail;
+      return rest;
+    };
+    return {
+      ...record,
+      detail: compactDetail(record.detail),
+      detailSamples: record.detailSamples?.map(compactDetail) ?? record.detailSamples,
+    };
+  }
+  const {
+    detail: _detail,
+    detailSamples: _detailSamples,
+    pipelineControl: _pipelineControl,
+    ...compact
+  } = record;
+  return compact;
+};
+
 const annotateStatic = (entry, record) => ({
   ...deriveRecord(record),
   machineId: null,
@@ -746,6 +1319,22 @@ const publicHistoryEntry = (run, record) => {
 const sourceCommit = (run, record) =>
   run.meta.entryCommits?.[record.sourceEntry ?? record.entry] ?? null;
 
+const exactObservationHistoryFields = (record) =>
+  ['pipeline', 'storm'].includes(record.suite) ? {
+    samples: record.samples,
+    attemptedCount: record.attemptedCount,
+    acceptedCount: record.acceptedCount,
+    ...(record.metric === 'operationTime' ? { detailSamples: record.detailSamples } : {}),
+    ...(record.derivedFrom ? { derivedFrom: record.derivedFrom } : {}),
+    ...(record.comparabilityReasons?.length
+      ? { comparabilityReasons: record.comparabilityReasons } : {}),
+    ...(record.comparabilityCohort != null
+      ? { comparabilityCohort: record.comparabilityCohort } : {}),
+    ...(record.workClassification ? { workClassification: record.workClassification } : {}),
+    ...(record.pipelineControl ? { pipelineControl: record.pipelineControl } : {}),
+    ...(record.stormControl ? { stormControl: record.stormControl } : {}),
+  } : {};
+
 const stormTransportEvidence = (run, record) => {
   if (record.harness !== 'web' || record.metric !== 'latency'
     || !['updateStorm', 'selectStorm'].includes(record.workload)) return null;
@@ -758,6 +1347,7 @@ const stormTransportEvidence = (run, record) => {
     && candidate.jsRegime === record.jsRegime
     && candidate.jsFlags === record.jsFlags
     && candidate.cpuThrottle === record.cpuThrottle
+    && candidate.throttleScope === record.throttleScope
     && candidate.workload === record.workload
     && candidate.scale === record.scale
     && candidate.metric === metric)?.median ?? null;
@@ -793,10 +1383,13 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     jsRegime: record.jsRegime,
     jsFlags: record.jsFlags,
     cpuThrottle: record.cpuThrottle,
+    throttleScope: record.throttleScope,
     entry,
     ...(sourceEntry === entry ? {} : { sourceEntry }),
     workload: record.workload,
     scale: record.scale,
+    ...(record.contractVersion != null ? { contractVersion: record.contractVersion } : {}),
+    ...(record.commitPolicy != null ? { commitPolicy: record.commitPolicy } : {}),
     metric: record.metric,
     boundary: record.boundary,
     unit: record.unit,
@@ -804,7 +1397,9 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     median: record.median,
     ci95: record.ci95,
     dnfCount: record.dnfCount,
-    detail: record.detail,
+    detail: ['pipeline', 'storm'].includes(record.suite) && record.metric !== 'operationTime'
+      ? null
+      : record.detail,
     detailKind: record.detailKind,
     ...(record.failures?.length ? { failures: record.failures } : {}),
     machineId: run.meta.machine.id,
@@ -813,8 +1408,11 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     entryCommit: sourceCommit(run, record),
     comparisonKind,
     cohortId,
-    rankEligible: transport?.comparable ?? true,
+    rankEligible: isRankingEligible(record) && (transport?.comparable ?? true),
+    ...(record.descriptiveEligible ? { descriptiveEligible: true } : {}),
+    ...(record.comparabilityStatus ? { comparabilityStatus: record.comparabilityStatus } : {}),
     ...(transport ? { transport } : {}),
+    ...exactObservationHistoryFields(record),
   };
 };
 
@@ -836,7 +1434,7 @@ const historySourceSummary = ({ file, run }, recordCount, entryIds, rankEligible
   reason,
 });
 
-const requestsFullWebMatrix = (run) => !['--suite', '--case', '--scale'].some((option) =>
+const requestsFullWebMatrix = (run) => !['--suite', '--case', '--scale', '--commit'].some((option) =>
   run.meta.argv?.some((argument) => argument === option || argument.startsWith(`${option}=`)));
 
 const identityPointers = (checkpointRecords, entryById) => {
@@ -1176,21 +1774,56 @@ const buildHistory = ({
     }
   }
 
-  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) =>
-    completeMatrixRecords(
-      current.records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment
+  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
+    const cohortRecords = current.records.filter((record) => record.harness === cohort.harness
+      && ((record.suite === 'bundle-scale'
+        && (cohort.harness !== 'web'
+          || (cohort.jsRegime === 'jit'
+            && cohort.cpuThrottle === 1
+            && cohort.throttleScope === 'none'))) || (
+        record.environment === cohort.environment
         && (cohort.harness !== 'web'
           || (record.jsRegime === cohort.jsRegime
             && record.jsFlags === cohort.jsFlags
-            && record.cpuThrottle === cohort.cpuThrottle))),
+            && record.cpuThrottle === cohort.cpuThrottle
+            && record.throttleScope === cohort.throttleScope)))));
+    const matrixRecords = completeMatrixRecords(
+      cohortRecords.filter((record) => !['pipeline', 'storm'].includes(record.suite)),
       cohort.entryIds,
-    ).map((record) => ({
-      ...record,
-      cohortId: `current:${cohort.harness}:${cohort.machineId}:`
-        + `${cohort.jsRegime ?? 'native'}:${cohort.jsFlags ?? ''}:${cohort.cpuThrottle ?? 0}`,
-      rankEligible: true,
-    })));
+    );
+    const matrixSet = new Set(matrixRecords);
+    const descriptiveExactRecords = cohortRecords.filter((record) =>
+      !matrixSet.has(record)
+      && ['pipeline', 'storm'].includes(record.suite)
+      && isComparisonVisible(record));
+    const descriptiveStaticRecords = cohortRecords.filter((record) =>
+      record.suite === 'bundle-scale' && record.descriptiveEligible === true);
+    return [...matrixRecords, ...descriptiveExactRecords, ...descriptiveStaticRecords].map((record) => {
+      const sourceEntry = record.sourceEntry ?? record.entry;
+      const syntheticRun = {
+        meta: {
+          machine: { id: record.machineId },
+          generatedAt: record.runGeneratedAt,
+          entryCommits: { [sourceEntry]: record.entryCommit },
+        },
+        records: cohortRecords,
+      };
+      const history = historyRecord(
+        syntheticRun,
+        record.runFile,
+        record,
+        record.comparisonKind,
+        `current:${cohort.harness}:${cohort.machineId}:`
+          + `${cohort.jsRegime ?? 'native'}:${cohort.jsFlags ?? ''}:${cohort.cpuThrottle ?? 0}:`
+          + `${cohort.throttleScope ?? 'native'}`,
+      );
+      return matrixSet.has(record) ? history : {
+        ...history,
+        rankEligible: false,
+        descriptiveEligible: true,
+      };
+    });
+  });
   const currentActiveRecordIndexes = currentHistoryRecords.map(
     (_, index) => records.length + index,
   );
@@ -1199,13 +1832,15 @@ const buildHistory = ({
     id: 'current-main',
     generatedAt: current.generatedAt,
     label: 'Current · merged upstream',
-    description: 'Upstream Octane advances to 9779569e and the Huxpro/new-lynx block core to 8938c126. '
-      + 'The same-machine featured cohort is published as three independent Web rankings: V8 JIT, '
-      + 'Ignition-only JavaScript, and Ignition-only JavaScript with 4× CPU throttling. Across the formal '
-      + 'runs, disabling compiled JavaScript changes 63 of 336 pairwise time-cell orderings; regimes remain '
-      + 'separate from each other and from Native. Storm experiments remain archive evidence.',
+    description: 'Current manifests are upstream Octane 9779569e and Huxpro/new-lynx e9f1fb14. '
+      + 'Every Web regime publishes both identities: the earlier Hux source commit is accepted only '
+      + 'because its complete Web bundle receipt is byte-identical to e9f1fb14. Regimes remain separate '
+      + 'from each other and from Native. Complete pipeline and storm campaigns attach as descriptive '
+      + 'exact evidence and never enter the weighted matrix.',
     current: true,
     nativeCoverage: current.nativeCoverage,
+    pipelineCoverage: current.pipelineCoverage,
+    listCoverage: current.listCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
     identityPointers: identityPointers(currentHistoryRecords, entryById),
     sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
@@ -1215,6 +1850,7 @@ const buildHistory = ({
       harness: cohort.harness, environment: cohort.environment, machineId: cohort.machineId,
       jsRegime: cohort.jsRegime ?? null, jsFlags: cohort.jsFlags ?? null,
       cpuThrottle: cohort.cpuThrottle ?? null,
+      throttleScope: cohort.throttleScope ?? null,
       sourceRunFiles: cohort.sourceRunFiles, entryIds: cohort.entryIds, rankEligible: true,
     })),
   });
@@ -1228,18 +1864,17 @@ const buildHistory = ({
   };
 };
 
-const assertCurrentEntryCommit = (run, entryId, entry, label) => {
+const assertCurrentEntryIdentity = (run, entryId, entry, label) => {
   if (!entry) return;
   const record = run.records.find((candidate) => candidate.entry === entryId);
+  if (record && entryIdentityMatchesManifest(run, record, new Map([[entryId, entry]]))) return;
   const sourceId = record?.sourceEntry ?? entryId;
   const runCommit = run.meta.entryCommits?.[sourceId];
   const manifestCommit = entry.provenance?.commit;
-  if (!runCommit || !manifestCommit || runCommit !== manifestCommit) {
-    throw new Error(
-      `${label} ${entryId}: source run commit ${runCommit ?? 'missing'} does not match `
-      + `current entry manifest ${manifestCommit ?? 'missing'}; rerun the benchmark`,
-    );
-  }
+  throw new Error(
+    `${label} ${entryId}: source run commit ${runCommit ?? 'missing'} and Web bundle receipt `
+    + `do not match current entry manifest ${manifestCommit ?? 'missing'}; rerun the benchmark`,
+  );
 };
 
 const scaleNumber = (value, ratio) => value == null ? value : value * ratio;
@@ -1366,7 +2001,7 @@ export function collectRuns({
         ...m,
         machineRegimeId,
         ...(regimeKey === 'native'
-          ? { jsRegime: null, jsFlags: null, cpuThrottle: null }
+          ? { jsRegime: null, jsFlags: null, cpuThrottle: null, throttleScope: null }
           : normalizeWebRegime(run.records.find((record) => record.harness === 'web'))),
         latestCalibration: run.meta.calibration,
         latestRunFile: file,
@@ -1388,11 +2023,18 @@ export function collectRuns({
         records: view.records.filter((record) => webRegimeKey(record) === candidateRegime),
       };
       const candidate = { file, run: regimeView };
-      if (rawRun.schemaVersion === SCHEMA_VERSION) {
-        const groupId = `${m.id}|${candidateRegime}`;
+      if (rawRun.schemaVersion === SCHEMA_VERSION || rawRun.schemaVersion === 3) {
+        // Split checkpoints may be combined only inside the same prospective
+        // control receipt. A machine/regime match alone does not make two runs
+        // attributable or even comparable.
+        const cohortKey = regimeView.meta.receipt?.comparabilityCohort
+          ?? regimeView.records[0]?.comparabilityCohort
+          ?? 'unverified';
+        const groupId = `${m.id}|${candidateRegime}|${cohortKey}`;
         const group = prospectiveWebGroups.get(groupId) ?? {
           machineId: m.id,
           regimeKey: candidateRegime,
+          cohortKey,
           cells: new Map(),
           latest: candidate,
         };
@@ -1433,7 +2075,7 @@ export function collectRuns({
     }
   }
 
-  comparisonRun = comparisonRuns.get('jit:1')
+  comparisonRun = comparisonRuns.get(DEFAULT_WEB_REGIME_KEY)
     ?? [...comparisonRuns.values()].sort((left, right) =>
       String(right.run.meta.generatedAt).localeCompare(String(left.run.meta.generatedAt)))[0]
     ?? null;
@@ -1443,8 +2085,8 @@ export function collectRuns({
   }
   const selectedWebComparisons = [...comparisonRuns.entries()]
     .sort(([left], [right]) => {
-      if (left === 'jit:1') return -1;
-      if (right === 'jit:1') return 1;
+      if (left === DEFAULT_WEB_REGIME_KEY) return -1;
+      if (right === DEFAULT_WEB_REGIME_KEY) return 1;
       return left.localeCompare(right, undefined, { numeric: true });
     })
     .map(([regimeKey, candidate]) => ({ regimeKey, ...candidate }));
@@ -1455,7 +2097,7 @@ export function collectRuns({
       record,
     }))).filter(({ record }) => featuredIds.has(record.entry) && isBenchmarkRecord(record));
     for (const source of recordSources) {
-      assertCurrentEntryCommit(
+      assertCurrentEntryIdentity(
         source.run,
         source.record.entry,
         entryById.get(source.record.entry),
@@ -1469,6 +2111,28 @@ export function collectRuns({
     const entry = entryById.get(entryId);
     return entry ? (staticByEntry.get(entryId) ?? []).map((record) => annotateStatic(entry, record)) : [];
   });
+  const pipelineCampaign = currentPipelineCampaign(runs, featuredIds, entryById);
+  const pipelineSourceRecords = pipelineCampaign == null ? [] : pipelineCampaign.records.map(
+    (record) => compactPipelineOutputRecord(
+      annotate(pipelineCampaign.run, pipelineCampaign.file, record, 'same-run'),
+    ),
+  );
+  const pipelineCoverage = pipelineCampaign?.coverage ?? classifyPipelineCoverage({
+    entries: [...featuredIds].map((id) => entryById.get(id)).filter(Boolean),
+  });
+  const stormCampaigns = currentStormCampaigns(
+    runs,
+    featuredIds,
+    entryById,
+  );
+  const stormSourceRecords = stormCampaigns.flatMap((candidate) =>
+    candidate.records.map((record) => annotate(
+      candidate.run,
+      candidate.file,
+      record,
+      'same-run',
+    )));
+  const exactSourceRecords = [...pipelineSourceRecords, ...stormSourceRecords];
   const comparisonRecords = [
     ...webComparisonSources.flatMap((source) => {
       const sourceFiles = new Set(source.recordSources.map(({ file }) => file));
@@ -1476,6 +2140,7 @@ export function collectRuns({
       return source.recordSources.map((recordSource) =>
         annotate(recordSource.run, recordSource.file, recordSource.record, comparisonKind));
     }),
+    ...exactSourceRecords,
     ...comparisonStaticRecords,
   ];
   const { selected: nativeCohort, archiveOnlyFiles: nativeArchiveOnlyFiles } =
@@ -1506,6 +2171,16 @@ export function collectRuns({
       && retainedRunFiles.has(record.runFile)),
   });
   if (nativeCohort) assertNativeCoverage(nativeCoverage);
+  const listSourceRecords = selectListCampaignRecords(
+    [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile)),
+    currentEntries,
+  );
+  const listCoverage = buildListCoverage({
+    entries: currentEntries,
+    sourceRecords: listSourceRecords,
+  });
+  assertListCoverage(listCoverage);
+  const listDerivedRecords = deriveListRecords(listSourceRecords);
   if (nativeCohort) {
     const sources = [...nativeCohort.entries.values()].flatMap((entry) =>
       [...entry.cells.values()]);
@@ -1559,6 +2234,9 @@ export function collectRuns({
     harnesses: [
       ...webComparisonSources.map((source) => {
         const regime = normalizeWebRegime(source.records[0] ?? { harness: 'web' });
+        const exactForRegime = exactSourceRecords.filter((record) =>
+          record.machineId === source.run.meta.machine.id
+          && webRegimeKey(record) === source.regimeKey);
         return {
         harness: 'web',
         environment: source.records[0]?.environment ?? null,
@@ -1567,10 +2245,13 @@ export function collectRuns({
         machineId: source.run.meta.machine.id,
         machineRegimeId: `${source.run.meta.machine.id}|${source.regimeKey}`,
         calibration: source.run.meta.calibration,
-        sourceRunFiles: [...new Set(source.recordSources.map(({ file }) => file))].sort(),
+        sourceRunFiles: [...new Set([
+          ...source.recordSources.map(({ file }) => file),
+          ...exactForRegime.map(({ runFile }) => runFile),
+        ])].sort(),
         entryIds: [...new Set(source.records.map((r) => r.entry))].sort(),
         sourceRecordCount: source.records.length,
-        recordCount: source.records.length + comparisonStaticRecords.length,
+        recordCount: source.records.length + exactForRegime.length + comparisonStaticRecords.length,
         };
       }),
       ...(nativeComparison ? [nativeComparison] : []),
@@ -1591,7 +2272,7 @@ export function collectRuns({
     if (!source) continue;
     const records = source.run.records.filter((r) =>
       r.entry === entryId && isBenchmarkRecord(r) && isRankingEligible(r));
-    assertCurrentEntryCommit(source.run, entryId, entryById.get(entryId), 'Lab comparison');
+    assertCurrentEntryIdentity(source.run, entryId, entryById.get(entryId), 'Lab comparison');
     const sourceCalibration = source.run.meta.calibration;
     const targetCalibration = comparisonRun.run.meta.calibration;
     const compatibleCalibration = sourceCalibration?.probeVersion === targetCalibration?.probeVersion
@@ -1634,6 +2315,7 @@ export function collectRuns({
     machines,
     machineRegimes,
     records: [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile))
+      .map(compactPipelineOutputRecord)
       .concat(archiveStaticRecords),
     comparison,
     comparisonRecords,
@@ -1641,6 +2323,9 @@ export function collectRuns({
     nativeObservations: nativeObservations.observations,
     nativeObservationRecords: nativeObservations.records,
     nativeCoverage,
+    pipelineCoverage,
+    listCoverage,
+    listDerivedRecords,
   };
   out.history = buildHistory({
     runs: retainedRuns,
@@ -1657,6 +2342,8 @@ export function collectRuns({
       nativeObservations: out.nativeObservations,
       nativeObservationRecords: out.nativeObservationRecords,
       nativeCoverage: out.nativeCoverage,
+      pipelineCoverage: out.pipelineCoverage,
+      listCoverage: out.listCoverage,
     },
   });
   fs.mkdirSync(path.dirname(outPath), { recursive: true });

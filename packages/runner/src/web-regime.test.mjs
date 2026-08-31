@@ -1,15 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { makeRecord } from '@lynx-bench/shared/schema';
+import { makeRecord, normalizeWebRegime } from '@lynx-bench/shared/schema';
 
 import { chromiumArgs } from './browser.mjs';
 import { setCPUThrottlingRate } from './cdp.mjs';
 import {
+  assertProcessThrottleProbe,
   assertInterpreterFlagProbe,
   assertWebHarnessCapabilities,
+  summarizeProcessThrottleProbes,
 } from './preflight.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
+import { resolveThrottleScope } from './web-regime-policy.mjs';
 
 test('default Chromium arguments remain byte-for-byte identical', () => {
   assert.deepEqual(chromiumArgs(), [
@@ -68,9 +71,77 @@ test('interpreter preflight requires a JIT control, never-optimized Ignition, an
   }), /WebAssembly/);
 });
 
+test('whole-process throttle preflight requires inherited launch and a 3.5–4.5x slowdown', () => {
+  assert.deepEqual(assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 25 },
+    cpuThrottle: 4,
+    mechanism: {
+      scope: 'process-cgroup', backend: 'cgroup-v1-cgexec', inheritance: 'launch-cgroup',
+    },
+  }).verifiedSlowdown, 4);
+  assert.throws(() => assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 90 },
+    cpuThrottle: 4,
+    mechanism: {
+      scope: 'process-cgroup', backend: 'cgroup-v1-cgexec', inheritance: 'launch-cgroup',
+    },
+  }), /preflight failed/);
+  assert.throws(() => assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 25 },
+    cpuThrottle: 4,
+    mechanism: { scope: 'process-cgroup', backend: 'cpulimit' },
+  }), /inherited-cgroup/);
+  assert.throws(() => assertProcessThrottleProbe({
+    control: { score: 100 },
+    throttled: { score: 25 },
+    cpuThrottle: 4,
+    mechanism: null,
+  }), /mechanism receipt/);
+});
+
+test('whole-process throttle verification uses a fixed three-probe median', () => {
+  const summary = summarizeProcessThrottleProbes([
+    { probeVersion: 1, score: 20, iterations: 20 },
+    { probeVersion: 1, score: 27, iterations: 27 },
+    { probeVersion: 1, score: 25, iterations: 25 },
+  ]);
+  assert.deepEqual(summary, {
+    probeVersion: 1,
+    score: 25,
+    iterations: 25,
+    aggregation: 'median',
+    repetitions: 3,
+    samples: [
+      { probeVersion: 1, score: 20, iterations: 20 },
+      { probeVersion: 1, score: 27, iterations: 27 },
+      { probeVersion: 1, score: 25, iterations: 25 },
+    ],
+  });
+  assert.throws(() => summarizeProcessThrottleProbes(summary.samples.slice(0, 2)), /exactly 3/);
+  assert.throws(() => summarizeProcessThrottleProbes([
+    summary.samples[0], summary.samples[1], { ...summary.samples[2], probeVersion: 2 },
+  ]), /incompatible/);
+});
+
 test('no-collect policy applies equally to Web and Native run completion', () => {
   assert.equal(shouldCollectAfterRun({}), true);
   assert.equal(shouldCollectAfterRun({ 'no-collect': true }), false);
+});
+
+test('new 4× runs use whole-process throttling and reject the retired mixed scope', () => {
+  assert.equal(resolveThrottleScope({}, 1), 'none');
+  assert.equal(resolveThrottleScope({}, 4), 'process-cgroup');
+  assert.equal(
+    resolveThrottleScope({ 'throttle-scope': 'process-cgroup' }, 4),
+    'process-cgroup',
+  );
+  assert.throws(
+    () => resolveThrottleScope({ 'throttle-scope': 'page-cdp' }, 4),
+    /page-cdp is retired/,
+  );
 });
 
 test('schema records Web regimes and rejects applying them to Native', () => {
@@ -80,7 +151,7 @@ test('schema records Web regimes and rejects applying them to Native', () => {
   };
   const historicalDefault = makeRecord(base);
   assert.deepEqual(historicalDefault.environment, {
-    jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1,
+    jsRegime: 'jit', jsFlags: '--expose-gc', cpuThrottle: 1, throttleScope: 'none',
   });
   assert.equal(Object.hasOwn(historicalDefault, 'jsRegime'), false);
   assert.equal(Object.hasOwn(historicalDefault, 'cpuThrottle'), false);
@@ -89,7 +160,17 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     jsRegime: 'interp',
     jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
     cpuThrottle: 4,
+    throttleScope: 'page-cdp',
   });
+  const processProbe = makeRecord({
+    ...base, jsRegime: 'interp', cpuThrottle: 4, throttleScope: 'process-cgroup',
+    verifiedSlowdown: 4.08,
+  });
+  assert.equal(processProbe.environment.throttleScope, 'process-cgroup');
+  assert.equal(processProbe.environment.verifiedSlowdown, 4.08);
+  assert.throws(() => makeRecord({
+    ...base, jsRegime: 'interp', cpuThrottle: 4, throttleScope: 'process-cgroup',
+  }), /verifiedSlowdown/);
   const native = makeRecord({ ...base, harness: 'native', environment: 'device' });
   assert.equal(native.environment, 'device');
   assert.equal(Object.hasOwn(native, 'jsRegime'), false);
@@ -101,5 +182,19 @@ test('schema records Web regimes and rejects applying them to Native', () => {
     jsRegime: 'interp',
     jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
     cpuThrottle: 4,
+    throttleScope: 'process-cgroup',
   }), /Web-only/);
+});
+
+test('schema-v2 interpreter labels remain in a distinct historical regime lane', () => {
+  assert.deepEqual(normalizeWebRegime({
+    harness: 'web',
+    environment: 'lynx-for-web-interp',
+  }), {
+    jsRegime: 'interp',
+    jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+    cpuThrottle: 1,
+    throttleScope: 'none',
+    verifiedSlowdown: null,
+  });
 });

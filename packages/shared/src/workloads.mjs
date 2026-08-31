@@ -20,6 +20,10 @@ export const CREATE_BUTTON = {
 
 export const STORM_UPDATE_TICKS = 50;
 export const STORM_SELECT_TICKS = 30;
+export const STORM_CONTRACT_VERSION = 1;
+export const STORM_COMMIT_POLICIES = ['every-tick', 'final-state'];
+export const STORM_TICK_INTERVAL_MS = 8;
+export const STORM_SCHEDULE_TOLERANCE_MS = 50;
 
 // suite: "table" — interactive ops, measured pointerdown → dom-predicate.
 // `scales` lists the row counts the op runs at; `defaultScales` is the
@@ -125,6 +129,41 @@ export const EXPERIMENTAL_STORM_CASES = [
     timeoutMs: 240000,
   },
 ];
+
+// Featured storm stimuli are emitted by the shared /storm driver through the
+// existing standard black-box actions. The archived app-authored storm
+// buttons above remain source history and are never reused as this contract.
+const STORM_SHAPES = [
+  {
+    name: 'updateStorm',
+    pre: 'rows',
+    ticks: STORM_UPDATE_TICKS,
+    action: { kind: 'button', label: 'Update every 10th row' },
+    observation: { kind: 'label-suffix', rowIndex: 0, suffix: ' !!!' },
+    mutationWidth: { kind: 'row-stride', stride: 10, field: 'label' },
+  },
+  {
+    name: 'selectStorm',
+    pre: 'rows+preselect',
+    ticks: STORM_SELECT_TICKS,
+    action: { kind: 'alternating-cells', rowIndices: [1, 2], cls: 'col-label' },
+    observation: { kind: 'alternating-selection', rowIndices: [1, 2] },
+    mutationWidth: { kind: 'single-row-selection' },
+  },
+];
+
+export const STORM_CASES = STORM_SHAPES.flatMap((shape) =>
+  STORM_COMMIT_POLICIES.map((commitPolicy) => ({
+    ...shape,
+    suite: 'storm',
+    contractVersion: STORM_CONTRACT_VERSION,
+    commitPolicy,
+    tickIntervalMs: STORM_TICK_INTERVAL_MS,
+    scheduleToleranceMs: STORM_SCHEDULE_TOLERANCE_MS,
+    scales: [1000, 10000],
+    defaultScales: [1000, 10000],
+    timeoutMs: 240000,
+  })));
 
 // suite: "startup" — view attach → first content / settled, measured on the
 // autoRows bundle variants. scale = pre-populated row count.

@@ -2,12 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CostSpace } from './components/CostSpace';
 import { Legend } from './components/Legend';
+import { ListCoverage } from './components/ListCoverage';
 import { HeatGrid } from './components/HeatGrid';
 import { HistoryRanking } from './components/HistoryRanking';
 import { InteractionScaleComposite } from './components/InteractionScaleComposite';
 import { MeasurementReceipt } from './components/Method';
 import { NativeCoverage } from './components/NativeCoverage';
 import { NativeObservations } from './components/NativeObservations';
+import { PipelineAttribution } from './components/PipelineAttribution';
+import { StormCoalescing } from './components/StormCoalescing';
 import { RankedBars } from './components/RankedBars';
 import { ResponsiveCopy } from './components/ResponsiveCopy';
 import { ScaleTrend, trendSpecsForHarness } from './components/ScaleTrends';
@@ -78,11 +81,17 @@ function initialSnapshotIndex(): number {
 }
 
 function initialWebRegime(): WebRegime {
-  const id = new URLSearchParams(location.search).get('regime') ?? 'web';
+  const requested = new URLSearchParams(location.search).get('regime') ?? 'web';
+  const id = requested === 'web-interp-4x-cg' ? 'web-interp-4x' : requested;
   const match = WEB_REGIMES.find((candidate) => candidate.id === id);
   return match == null
     ? DEFAULT_WEB_REGIME
-    : { jsRegime: match.jsRegime, jsFlags: match.jsFlags, cpuThrottle: match.cpuThrottle };
+    : {
+      jsRegime: match.jsRegime,
+      jsFlags: match.jsFlags,
+      cpuThrottle: match.cpuThrottle,
+      throttleScope: match.throttleScope,
+    };
 }
 
 function AppContent({
@@ -107,7 +116,8 @@ function AppContent({
     .find((cohort) => cohort.harness === harness && (harness !== 'web'
       || (cohort.jsRegime === regime.jsRegime
         && cohort.jsFlags === regime.jsFlags
-        && cohort.cpuThrottle === regime.cpuThrottle)))?.entryIds ?? [];
+        && cohort.cpuThrottle === regime.cpuThrottle
+        && cohort.throttleScope === regime.throttleScope)))?.entryIds ?? [];
   const cohortKey = `${snapshot.id}:${harness}:${webRegimeId(regime)}`;
   const previousCohort = useRef(cohortKey);
   const [selected, setSelected] = useState<Set<string>>(() => initialSelection(cohortEntryIds));
@@ -288,14 +298,6 @@ function AppContent({
         onHeatPaletteToggle={toggleHeatPalette}
       />
       <MeasurementReceipt harness={harness} />
-      {harness === 'web' && regime.jsRegime === 'interp' && (
-        <p className="regime-disclaimer" role="note">
-          {text(
-            'Directional probe — Ignition-only JavaScript under V8; not Native, not PrimJS.',
-            '方向性探针——V8 下仅用 Ignition 解释 JavaScript；不是 Native，也不是 PrimJS。',
-          )}
-        </p>
-      )}
 
       {harness === 'native' && !nativeHasData ? (
         page === 'overview' ? (
@@ -318,6 +320,7 @@ function AppContent({
               </p>
             </div>
             <NativeObservations theme={theme} />
+            <ListCoverage harness={harness} />
             <NativeCoverage />
           </>
         ) : (
@@ -428,7 +431,10 @@ function AppContent({
               </ResponsiveCopy>
             </div>
             <ThreadsPage harness={harness} theme={theme} selected={activeSelected} />
+            {harness === 'web' && <PipelineAttribution theme={theme} selected={activeSelected} />}
+            {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
           </section>
+          <ListCoverage harness={harness} />
           {harness === 'native' && <NativeCoverage />}
         </>
       ) : (
@@ -481,7 +487,8 @@ export default function App() {
     const candidate = TIMELINE_SNAPSHOTS[index];
     const regimeAvailable = candidate.comparison.harnesses.some((cohort) => cohort.harness === 'web'
       && cohort.jsRegime === regime.jsRegime && cohort.jsFlags === regime.jsFlags
-      && cohort.cpuThrottle === regime.cpuThrottle);
+      && cohort.cpuThrottle === regime.cpuThrottle
+      && cohort.throttleScope === regime.throttleScope);
     if (!regimeAvailable) {
       setRegime(DEFAULT_WEB_REGIME);
       params.delete('regime');

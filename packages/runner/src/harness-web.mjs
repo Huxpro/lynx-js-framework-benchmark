@@ -19,8 +19,23 @@ import { launchBrowser } from './browser.mjs';
 import { startServer } from './server.mjs';
 import { CdpClient, attachToPageAndWorkers, RealmProfiler } from './cdp.mjs';
 import { bundleFor } from './entries.mjs';
+import { assertProcessThrottleProbe, runProcessThrottleProbe } from './preflight.mjs';
+import { derivePipelineSample, emitPipelineRecords } from './pipeline-attribution.mjs';
+import {
+  deriveStormSample,
+  emitStormRecords,
+  stormContractPass,
+  stormContractReceipt,
+} from './storm-contract.mjs';
 
 const SETTLE_MS = 30;
+const PROCESS_CGROUP_TRANSPORT_IDLE_MS = 500;
+const PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS = 30000;
+const PROCESS_CGROUP_READINESS_BARRIER = Object.freeze({
+  method: 'wire-idle-v1',
+  idleMs: PROCESS_CGROUP_TRANSPORT_IDLE_MS,
+  timeoutMs: PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS,
+});
 
 async function evalX(page, expr) {
   return page.evaluate(`(() => { const x = globalThis.__x; return (${expr}); })()`);
@@ -54,6 +69,45 @@ async function settle(page, extraMs = SETTLE_MS) {
 
 async function wireSnapshot(page) {
   return page.evaluate(() => globalThis.__LYNX_WIRE_SNAPSHOT__());
+}
+
+const wireSignature = (wire) => [
+  wire.toBts.messages,
+  wire.toBts.bytes,
+  wire.toMts.messages,
+  wire.toMts.bytes,
+].join(':');
+
+/**
+ * Wait until the two-thread transport has stopped changing for a complete
+ * quiet window. A visible "ready" title can precede listener/commit readiness
+ * when a whole Chromium process tree shares a CFS quota; clicking in that
+ * window loses the first untimed setup action for block-program entries.
+ */
+export async function waitForTransportIdle(snapshot, {
+  idleMs = PROCESS_CGROUP_TRANSPORT_IDLE_MS,
+  timeoutMs = PROCESS_CGROUP_TRANSPORT_IDLE_TIMEOUT_MS,
+  pollMs = 50,
+  now = Date.now,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+} = {}) {
+  const startedAt = now();
+  let quietSince = startedAt;
+  let previous = wireSignature(await snapshot());
+  while (now() - startedAt <= timeoutMs) {
+    await sleep(pollMs);
+    const observedAt = now();
+    const current = wireSignature(await snapshot());
+    if (current !== previous) {
+      previous = current;
+      quietSince = observedAt;
+    } else if (observedAt - quietSince >= idleMs) {
+      return { idleMs: observedAt - quietSince, signature: current };
+    }
+  }
+  throw new Error(
+    `transport did not become idle for ${idleMs}ms within ${timeoutMs}ms`,
+  );
 }
 
 function wireDelta(before, after) {
@@ -115,11 +169,18 @@ async function profilerFor(page, attach) {
 }
 
 async function openBenchPage({
-  browser, origin, bundleUrl, cdp, cpuThrottle = 1, viewW = 800, viewH = 640,
+  browser,
+  origin,
+  bundleUrl,
+  cdp,
+  cpuThrottle = 1,
+  viewW = 800,
+  viewH = 640,
+  harnessPath = '/',
 }) {
   const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
   page.on('pageerror', (err) => console.error('  [pageerror]', String(err).slice(0, 200)));
-  await page.goto(`${origin}/`, { waitUntil: 'load' });
+  await page.goto(`${origin}${harnessPath}`, { waitUntil: 'load' });
   const attach = await attachToPageAndWorkers(cdp, origin, { cpuThrottle });
   attach.client = cdp;
   await page.evaluate(
@@ -129,13 +190,17 @@ async function openBenchPage({
   return { page, attach };
 }
 
-async function waitReady(page, timeoutMs = 120000) {
+async function waitReady(page, timeoutMs = 120000, { requireTransportIdle = false } = {}) {
   await page.waitForFunction(
     (needle) => globalThis.__x.findText(needle),
     READY_TEXT,
     { timeout: timeoutMs, polling: 16 },
   );
   await settle(page);
+  if (requireTransportIdle) {
+    await waitForTransportIdle(() => wireSnapshot(page));
+    await settle(page);
+  }
 }
 
 /** Establish a case's pre-state (untimed). */
@@ -190,6 +255,85 @@ const RESET_EACH_SAMPLE = new Set([
   'clear',
 ]);
 
+async function measurePipelineOnce({ page, kase, spec, scale, timeoutMs }) {
+  const armed = page.evaluate(
+    ({ spec: predicate, timeout }) => globalThis.__x.armPipeline(predicate, timeout),
+    { spec, timeout: timeoutMs },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  if (kase.trigger.button) {
+    await clickButton(page, kase.trigger.button(scale));
+  } else {
+    await clickCell(page, kase.trigger.cell.rowIndex, kase.trigger.cell.cls);
+  }
+  const { ms, pipeline } = await armed;
+  const committedRows = await evalX(page, 'x.rowCount()');
+  return derivePipelineSample({
+    operationMs: ms,
+    capture: pipeline,
+    requestedRows: scale,
+    committedRows,
+  });
+}
+
+const waitMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function stormClickTargets(page, kase) {
+  if (kase.action.kind === 'button') {
+    const rect = await evalX(page, `x.buttonRect(${JSON.stringify(kase.action.label)})`);
+    if (!rect) throw new Error(`no storm button geometry for ${kase.action.label}`);
+    return [rect];
+  }
+  if (kase.action.kind === 'alternating-cells') {
+    const targets = [];
+    for (const rowIndex of kase.action.rowIndices) {
+      const rect = await evalX(page, `x.cellRect(${rowIndex}, ${JSON.stringify(kase.action.cls)})`);
+      if (!rect) throw new Error(`no storm cell geometry for row ${rowIndex}`);
+      targets.push(rect);
+    }
+    return targets;
+  }
+  throw new Error(`unknown storm action ${kase.action.kind}`);
+}
+
+async function measureStormOnce({ page, profiler, kase }) {
+  const targets = await stormClickTargets(page, kase);
+  const baseline = kase.observation.kind === 'label-suffix'
+    ? await evalX(page, `x.labelAt(${kase.observation.rowIndex})`)
+    : null;
+  const config = { ...stormContractReceipt(kase), baseline };
+  const wireBefore = await wireSnapshot(page);
+  await profiler.start();
+  const armed = page.evaluate(
+    ({ stormConfig, timeoutMs }) => globalThis.__x.armStorm(stormConfig, timeoutMs),
+    { stormConfig: config, timeoutMs: kase.timeoutMs },
+  );
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const scheduleStart = performance.now();
+  let capture;
+  let cpu;
+  try {
+    try {
+      for (let tick = 0; tick < kase.ticks; tick++) {
+        if (tick > 0) {
+          const remaining = tick * kase.tickIntervalMs - (performance.now() - scheduleStart);
+          if (remaining > 0) await waitMs(remaining);
+        }
+        await clickAt(page, targets[tick % targets.length], `storm tick ${tick + 1}`);
+      }
+      capture = await armed;
+    } catch (error) {
+      await page.evaluate(() => globalThis.__x.abortStorm());
+      capture = await armed;
+      capture.driverError = String(error);
+    }
+  } finally {
+    cpu = await profiler.stop();
+  }
+  const wire = wireDelta(wireBefore, await wireSnapshot(page));
+  return { capture, cpu, wire };
+}
+
 async function measureOnce({ page, profiler, kase, spec, timeoutMs }) {
   const wireBefore = await wireSnapshot(page);
   await profiler.start();
@@ -223,6 +367,9 @@ export async function runTableSuite({
   includeMemory = true,
   jsRegime = 'jit',
   cpuThrottle = 1,
+  throttleScope = 'none',
+  verifiedSlowdown = null,
+  cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
   const bundle = bundleFor(entry, { rows: 0 });
@@ -234,9 +381,11 @@ export async function runTableSuite({
 
   // Warm page shared by non-storm cases.
   const { page, attach } = await openBenchPage({
-    browser, origin, bundleUrl, cdp, cpuThrottle,
+    browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
   });
-  await waitReady(page);
+  await waitReady(page, 120000, {
+    requireTransportIdle: throttleScope === 'process-cgroup',
+  });
   const profiler = await profilerFor(page, attach);
 
   // Warmup: two create/clear cycles.
@@ -294,7 +443,7 @@ export async function runTableSuite({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, attemptedCount: reps,
-        jsRegime, cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -308,11 +457,15 @@ export async function runTableSuite({
   try {
     if (!includeMemory) return await runStormCases({
       entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-      jsRegime, cpuThrottle,
+      jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
     });
-    const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp, cpuThrottle });
+    const fresh = await openBenchPage({
+      browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+    });
     memoryPage = fresh.page;
-    await waitReady(memoryPage);
+    await waitReady(memoryPage, 120000, {
+      requireTransportIdle: throttleScope === 'process-cgroup',
+    });
     await clickButton(memoryPage, CREATE_BUTTON[10000]);
     await untilPredicate(memoryPage, { type: 'rowCount', value: 10000 }, 240000);
     await settle(memoryPage, 200);
@@ -334,8 +487,7 @@ export async function runTableSuite({
         boundary: 'gc-heap-with-10k-rows',
         unit: 'bytes',
         value: usedSize,
-        jsRegime,
-        cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
     }
     await clickButton(memoryPage, 'Clear');
@@ -353,8 +505,7 @@ export async function runTableSuite({
         boundary: 'gc-heap-after-clearing-10k-rows',
         unit: 'bytes',
         value: usedSize,
-        jsRegime,
-        cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
     }
     log(
@@ -368,13 +519,209 @@ export async function runTableSuite({
 
   return runStormCases({
     entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-    jsRegime, cpuThrottle,
+    jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
   });
+}
+
+export async function runPipelineSuite({
+  entry,
+  cases,
+  scales,
+  reps,
+  browser,
+  origin,
+  cdp,
+  log,
+}) {
+  const records = [];
+  const bundle = bundleFor(entry, { rows: 0 });
+  if (!bundle) {
+    log(`  [unsupported] ${entry.id} pipeline: no rows-0 web bundle`);
+    return records;
+  }
+  const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
+  const { page } = await openBenchPage({
+    browser,
+    origin,
+    bundleUrl,
+    cdp,
+    harnessPath: '/pipeline',
+  });
+  try {
+    await waitReady(page);
+
+    // Match the table suite's steady-state warmup, but keep every warmup call
+    // outside an active PAPI capture.
+    for (let i = 0; i < 2; i++) {
+      await clickButton(page, CREATE_BUTTON[1000]);
+      await untilPredicate(page, { type: 'rowCount', value: 1000 });
+      await clickButton(page, 'Clear');
+      await untilPredicate(page, { type: 'rowCount', value: 0 });
+    }
+    await settle(page);
+
+    for (const kase of cases) {
+      if (kase.freshPage) continue;
+      for (const scale of kase.scales.filter((candidate) => scales.includes(candidate))) {
+        const samples = [];
+        const failures = [];
+        let dnfCount = 0;
+        for (let rep = 0; rep < reps; rep++) {
+          if (rep === 0 || RESET_EACH_SAMPLE.has(kase.name)) {
+            if (RESET_EACH_SAMPLE.has(kase.name) && kase.pre !== 'empty') {
+              await clickButton(page, 'Clear');
+              await untilPredicate(page, { type: 'rowCount', value: 0 });
+            }
+            await ensurePre(page, kase, scale);
+          } else if (kase.name === 'select') {
+            await clickCell(page, 5, 'col-label');
+            await untilPredicate(page, { type: 'dangerAt', index: 5 });
+            await settle(page);
+          }
+          await gc(page);
+          const spec = await resolvePredicate(page, kase, scale);
+          try {
+            samples.push(await measurePipelineOnce({
+              page,
+              kase,
+              spec,
+              scale,
+              timeoutMs: kase.timeoutMs ?? 120000,
+            }));
+          } catch (error) {
+            if (!String(error).includes('timeout')) throw error;
+            dnfCount += 1;
+            failures.push({
+              rep,
+              category: 'pipeline-predicate-timeout',
+              phase: 'pipeline',
+              message: String(error),
+            });
+            log(`  [dnf] ${entry.id} pipeline ${kase.name}@${scale} rep${rep}`);
+          }
+          await settle(page);
+        }
+        records.push(...emitPipelineRecords({
+          entry,
+          kase,
+          scale,
+          samples,
+          dnfCount,
+          failures,
+          attemptedCount: reps,
+        }));
+        const operation = summarize(samples.map((sample) => sample.operationMs));
+        log(
+          `  ${entry.id} pipeline ${kase.name}@${scale}: `
+          + `${operation ? `${operation.median.toFixed(1)}ms` : 'DNF'} `
+          + `(n=${operation?.n ?? 0}${dnfCount ? `, dnf=${dnfCount}` : ''})`,
+        );
+      }
+    }
+  } finally {
+    await page.close();
+  }
+  return records;
+}
+
+export async function runStormSuite({
+  entry,
+  cases,
+  scales,
+  reps,
+  browser,
+  origin,
+  cdp,
+  log,
+}) {
+  const records = [];
+  const bundle = bundleFor(entry, { rows: 0 });
+  if (!bundle) {
+    log(`  [unsupported] ${entry.id} storm: no rows-0 web bundle`);
+    return records;
+  }
+  const bundleUrl = `/bundles/${entry.id}/${bundle.rel}`;
+  for (const kase of cases) {
+    for (const scale of kase.scales.filter((candidate) => scales.includes(candidate))) {
+      const samples = [];
+      const failures = [];
+      let dnfCount = 0;
+      for (let rep = 0; rep < reps; rep++) {
+        const fresh = await openBenchPage({
+          browser,
+          origin,
+          bundleUrl,
+          cdp,
+          harnessPath: '/storm',
+        });
+        let measured = null;
+        try {
+          await waitReady(fresh.page);
+          await ensurePre(fresh.page, kase, scale);
+          await gc(fresh.page);
+          const profiler = await profilerFor(fresh.page, fresh.attach);
+          measured = await measureStormOnce({ page: fresh.page, profiler, kase });
+          if (measured.capture?.driverError) {
+            dnfCount += 1;
+            failures.push({
+              rep,
+              category: 'storm-input-driver-failure',
+              phase: 'storm',
+              evidence: measured,
+              message: measured.capture.driverError,
+            });
+            continue;
+          }
+          if (measured.capture?.timedOut) {
+            dnfCount += 1;
+            failures.push({
+              rep,
+              category: 'storm-terminal-timeout',
+              phase: 'storm',
+              timeoutMs: kase.timeoutMs,
+              evidence: measured,
+              message: `storm terminal state timed out after ${kase.timeoutMs}ms`,
+            });
+            continue;
+          }
+          samples.push(deriveStormSample({ kase, ...measured }));
+        } catch (error) {
+          dnfCount += 1;
+          failures.push({
+            rep,
+            category: 'storm-driver-or-capture-failure',
+            phase: 'storm',
+            message: String(error),
+            ...(measured ? { evidence: measured } : {}),
+          });
+        } finally {
+          await fresh.page.close();
+        }
+      }
+      records.push(...emitStormRecords({
+        entry,
+        kase,
+        scale,
+        samples,
+        dnfCount,
+        failures,
+        attemptedCount: reps,
+      }));
+      const passed = samples.filter((sample) => stormContractPass(sample.control)).length;
+      const summary = summarize(samples.map((sample) => sample.operationMs));
+      log(
+        `  ${entry.id} storm ${kase.name}/${kase.commitPolicy}@${scale}: `
+        + `${summary ? `${summary.median.toFixed(1)}ms` : 'DNF'} `
+        + `(pass=${passed}/${samples.length}${dnfCount ? `, dnf=${dnfCount}` : ''})`,
+      );
+    }
+  }
+  return records;
 }
 
 async function runStormCases({
   entry, cases, scales, stormReps, browser, origin, cdp, log, records, bundleUrl,
-  jsRegime, cpuThrottle,
+  jsRegime, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle = cpuThrottle,
 }) {
   // Storm cases: fresh page per rep.
   for (const kase of cases) {
@@ -385,9 +732,13 @@ async function runStormCases({
       let dnfCount = 0;
       const failures = [];
       for (let rep = 0; rep < stormReps; rep++) {
-        const fresh = await openBenchPage({ browser, origin, bundleUrl, cdp, cpuThrottle });
+        const fresh = await openBenchPage({
+          browser, origin, bundleUrl, cdp, cpuThrottle: cdpCpuThrottle,
+        });
         try {
-          await waitReady(fresh.page);
+          await waitReady(fresh.page, 120000, {
+            requireTransportIdle: throttleScope === 'process-cgroup',
+          });
           const freshProfiler = await profilerFor(fresh.page, fresh.attach);
           await ensurePre(fresh.page, kase, scale);
           await gc(fresh.page);
@@ -433,7 +784,7 @@ async function runStormCases({
       }
       records.push(...emitOpRecords({
         entry, kase, scale, samples, dnfCount, failures, attemptedCount: stormReps,
-        jsRegime, cpuThrottle,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
       }));
       log(`  ${entry.id} ${kase.name}@${scale}: ${fmtSummary(samples)}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
     }
@@ -449,11 +800,12 @@ function fmtSummary(samples) {
 
 function emitOpRecords({
   entry, kase, scale, samples, dnfCount, failures = [], attemptedCount,
-  jsRegime = 'jit', cpuThrottle = 1,
+  jsRegime = 'jit', cpuThrottle = 1, throttleScope = 'none', verifiedSlowdown = null,
 }) {
   const records = [];
   const base = {
-    suite: 'table', entry: entry.id, workload: kase.name, scale, jsRegime, cpuThrottle,
+    suite: 'table', entry: entry.id, workload: kase.name, scale,
+    jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
   };
   records.push(makeRecord({
     ...base,
@@ -514,6 +866,8 @@ function emitOpRecords({
 
 export async function runStartupSuite({
   entry, scales, reps, browser, origin, cdp, log, jsRegime = 'jit', cpuThrottle = 1,
+  throttleScope = 'none', verifiedSlowdown = null,
+  cdpCpuThrottle = cpuThrottle,
 }) {
   const records = [];
   const kase = STARTUP_CASES[0];
@@ -530,7 +884,9 @@ export async function runStartupSuite({
       const page = await browser.newPage({ viewport: { width: 900, height: 700 } });
       try {
         await page.goto(`${origin}/`, { waitUntil: 'load' });
-        const attach = await attachToPageAndWorkers(cdp, origin, { cpuThrottle });
+        const attach = await attachToPageAndWorkers(cdp, origin, {
+          cpuThrottle: cdpCpuThrottle,
+        });
         attach.client = cdp;
         // Profile from before view attach; the bg worker session joins on boot.
         const pageProfiler = new RealmProfiler(cdp, [{ key: 'mts', sessionId: attach.pageSession }]);
@@ -566,7 +922,8 @@ export async function runStartupSuite({
       }
     }
     const base = {
-      suite: 'startup', entry: entry.id, workload: 'startup', scale, jsRegime, cpuThrottle,
+      suite: 'startup', entry: entry.id, workload: 'startup', scale,
+      jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
     };
     records.push(makeRecord({
       ...base,
@@ -624,6 +981,7 @@ export async function runStartupSuite({
 export async function runWebHarness({
   entries,
   cases,
+  stormCases = [],
   suites,
   scales,
   startupScales = null,
@@ -634,21 +992,73 @@ export async function runWebHarness({
   includeMemory = true,
   jit = 'jit',
   cpuThrottle = 1,
+  throttleScope = 'none',
+  processThrottleControl = null,
+  processQuotaPercent = null,
 }) {
   const bundleRoots = {};
   for (const e of entries) bundleRoots[e.id] = e.distDir;
   const server = await startServer({ bundleRoots });
-  const { browser, cdpPort, executablePath, browserVersion } = await launchBrowser({ jit });
+  const {
+    browser, cdpPort, executablePath, browserVersion, processThrottle, closeBrowser,
+  } = await launchBrowser({ jit, cpuThrottle, throttleScope, processQuotaPercent });
+  const processThrottleReceipt = processThrottle == null
+    ? null
+    : { ...processThrottle, readinessBarrier: PROCESS_CGROUP_READINESS_BARRIER };
   const cdp = await CdpClient.connect(cdpPort);
   const records = [];
+  const processThrottleEntryVerifications = [];
+  const cdpCpuThrottle = throttleScope === 'page-cdp' ? cpuThrottle : 1;
   try {
     for (const entry of entries) {
       log(`[entry] ${entry.id} (${entry.label})`);
+      const processThrottleVerification = throttleScope === 'process-cgroup'
+        ? assertProcessThrottleProbe({
+          control: processThrottleControl,
+          throttled: await runProcessThrottleProbe(browser, {
+            requireWebHarness: true, jsRegime: jit,
+          }),
+          cpuThrottle,
+          mechanism: processThrottleReceipt,
+        })
+        : null;
+      const verifiedSlowdown = processThrottleVerification?.verifiedSlowdown ?? null;
+      if (processThrottleVerification != null) {
+        processThrottleEntryVerifications.push({ entry: entry.id, ...processThrottleVerification });
+        log(
+          `  [verify:process-cgroup] ${entry.id}: ${verifiedSlowdown.toFixed(2)}x `
+          + `(accepted ${processThrottleVerification.acceptedRange.join('–')}x)`,
+        );
+      }
       if (suites.includes('table')) {
         records.push(...await runTableSuite({
           entry, cases, scales, reps, stormReps,
           browser, origin: server.origin, cdp, log, includeMemory,
-          jsRegime: jit, cpuThrottle,
+          jsRegime: jit, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
+        }));
+      }
+      if (suites.includes('pipeline')) {
+        records.push(...await runPipelineSuite({
+          entry,
+          cases,
+          scales,
+          reps,
+          browser,
+          origin: server.origin,
+          cdp,
+          log,
+        }));
+      }
+      if (suites.includes('storm')) {
+        records.push(...await runStormSuite({
+          entry,
+          cases: stormCases,
+          scales,
+          reps: stormReps,
+          browser,
+          origin: server.origin,
+          cdp,
+          log,
         }));
       }
       if (suites.includes('startup')) {
@@ -658,14 +1068,26 @@ export async function runWebHarness({
             ?? [0, ...scales, 30000].filter((v, i, a) => a.indexOf(v) === i),
           reps: startupReps,
           browser, origin: server.origin, cdp, log,
-          jsRegime: jit, cpuThrottle,
+          jsRegime: jit, cpuThrottle, throttleScope, verifiedSlowdown, cdpCpuThrottle,
         }));
       }
     }
   } finally {
     cdp.close();
-    await browser.close();
+    await closeBrowser();
     await server.close();
   }
-  return { records, executablePath, browserVersion };
+  return {
+    records: records.map((record) => ({
+      ...record,
+      environment: { ...record.environment, throttleScope },
+    })),
+    executablePath,
+    browserVersion,
+    processThrottle: processThrottleReceipt,
+    processThrottleEntryVerifications,
+    verifiedSlowdownByEntry: Object.fromEntries(
+      processThrottleEntryVerifications.map(({ entry, verifiedSlowdown }) => [entry, verifiedSlowdown]),
+    ),
+  };
 }

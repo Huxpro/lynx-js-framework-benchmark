@@ -90,7 +90,7 @@ ui-react/octane apps):
 Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.mjs`; a case is
 *data*, not code: `{ name, pre, trigger, predicate, scales }`.
 
-### Metrics: three layers per case
+### Metrics: five layers per case
 
 | layer | metrics | boundary | instrument |
 | --- | --- | --- | --- |
@@ -98,7 +98,10 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | | `fcp`, `settled` (ms) | `view-attach → content` / `→ quiesce` | shared page driver |
 | | `btsCpu`, `mtsCpu` (ms) | per-realm CPU during the op | CDP `Profiler` on the page and on the `lynx-bg` worker |
 | **wire** | `wireUpMsgs/wireUpBytes` (MTS→BTS), `wireDownMsgs/wireDownBytes` (BTS→MTS), per-endpoint histogram | the real `MessageChannel` between web-core's UI realm and the background worker | `MessagePort.prototype` patch installed before web-core boots |
-| **static** | `bundleWebRaw/Gzip`, `bundleLynxRaw/Gzip`, `mtsSectionGzip`, `btsSectionGzip` | — | bundle inspection (JSON-format bundles expose `lepusCode.root` = MTS and `manifest['/app-service.js']` = BTS; binary bundles report whole-bundle only) |
+| **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
+| **storm semantics** | source: operation time, pointer ticks, rAF-observable committed frames, CPU/wire totals; derived: contract outcome, coalescing ratio, bytes/messages per tick | first real pointerdown → terminal observed frame | dedicated `/storm` driver repeatedly issues standard actions; Web-only |
+| **list virtualization** | source: first visible content, recycle elapsed/cell/wire totals, fling elapsed/materialized cells/blank frames/materialization samples; derived: per-cell time/wire, materialized/s, p50/p99 | versioned visible-cell boundary for each harness | separate declarative `list` + keyed `list-item` fixture; Web composed-tree and Native visible-cell-tree observers never cross-rank |
+| **static** | legacy scale-0 bundle metrics plus per-harness/per-scale `totalArtifactRaw/Gzip` and readable `mtsSectionRaw/Gzip` | — | exact `rows-N` artifact inspection with path/SHA receipt (JSON-format bundles expose `lepusCode.root`; binary bundles never masquerade as an MTS section) |
 
 Why this is neutral: ReactLynx, Vue-Lynx (vdom/vapor), and Octane-on-Lynx all ride the same
 `@lynx-js/web-worker-rpc` channel on Lynx for Web — every cross-thread message is an rpc
@@ -118,17 +121,18 @@ dimensions. One record per (entry × workload × scale × metric):
 
 ```jsonc
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "meta": { "generatedAt": "…", "machine": { "id": "…", "platform": "…", "cpuModel": "…",
              "cores": 0, "node": "…", "chromium": "…" },
            "calibration": { "score": 0, "probeVersion": 1 } },
   "records": [{
-    "suite": "table" | "startup",
+    "suite": "table" | "startup" | "pipeline" | "storm" | "list",
     "harness": "web" | "native",
     "environment": {                     // Web only
       "jsRegime": "jit",                // jit | interp
       "jsFlags": "--expose-gc",         // exact V8 payload
-      "cpuThrottle": 1                   // CDP CPU multiplier
+      "cpuThrottle": 1,                  // CPU slowdown multiplier
+      "throttleScope": "none"            // none | page-cdp | process-cgroup
     },
     "entry": "vue-vdom",
     "workload": "update10th",
@@ -148,8 +152,42 @@ dimensions. One record per (entry × workload × scale × metric):
 `harness`, normalized `environment` regime, `workload`, `scale`, `metric`, `boundary`, and `unit`
 all agree. Native retains its existing device-environment string and has no Web regime fields.
 Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
+`Emulation.setCPUThrottlingRate` is target-scoped; the recorded multiplier applies to the page
+target and is not inherited by `lynx-bg`. Consequently `btsCpu` records with `cpuThrottle > 1`
+and `throttleScope: "page-cdp"` are retained only as invalid source evidence and never enter a
+chart or ranking. The page-CDP lane is retired from the public site and runner; its latency remains
+historical calibration evidence only. Public `Interp 4×` means a `process-cgroup` run applying one
+OS quota to the Chromium tree.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
+
+`bundle-scale` is a derived static suite, not a benchmark suite. Its records are excluded before
+cohort/matrix selection, marked non-ranking, and attached descriptively only to the current exact
+manifest identity. The staging view joins one record to startup FCP on entry + harness + scale +
+one normalized execution regime (Web JIT 1× by default), computes the lower-left non-dominated
+frontier in the site, and draws the already-derived FCP `ci95`; it never reduces the two axes to one
+score. The frontier helper rejects mixed regimes, and exact coordinate ties remain co-frontier.
+
+The list contract is additionally capability-gated. The source is the optional `listFixture`
+declaration plus its exact bundle artifact; `collect` derives a complete entry × harness × case
+ledger. Missing declarations, protocol/hash mismatches, and absent artifacts are `unsupported`,
+not DNF. A valid fixture with no run is `unscheduled`. Blank-frame counts are ordinary source
+observations—even a non-zero count—while only driver/capture failure increments DNF.
+
+An entry opts in without changing the driver:
+
+```jsonc
+"listFixture": {
+  "protocol": "lynx-list-fixture-v1",
+  "contractSha256": "<reported by pnpm bench list-coverage>",
+  "bundles": { "web": "dist/list/main.web.bundle", "native": "dist/list/main.lynx.bundle" },
+  "sha256": { "web": "<64 hex>", "native": "<64 hex>" }
+}
+```
+
+Each declared artifact must stay inside its entry directory and match its manifest checksum. The
+same case data, viewport receipt, item-key semantics, and stimulus schedule drive every framework;
+the only harness-specific fields are the declared input and observation mechanisms.
 
 ## Harnesses
 
@@ -168,7 +206,13 @@ Headless Chromium via `playwright-core` (Chromium resolved from the Playwright c
    `t0` = in-page capture-phase `pointerdown`, `t1` = first rAF where the DOM predicate holds.
 4. Around each op the runner snapshots the wire meter and (optionally, `--profile`) runs CDP
    `Profiler.start/stop` on both the page and the `lynx-bg` worker for `btsCpu`/`mtsCpu`.
-5. Fresh page per rep; warmup reps discarded per methodology.
+5. The separate `/pipeline` page alone installs ElementPAPI wrappers. Its capture begins at the
+   real pointerdown and freezes at the same shared DOM predicate; ordinary table/startup pages
+   never execute the wrappers.
+6. The separate `/storm` page alone installs the storm observer. The shared harness emits real
+   pointer ticks against the standard update/select controls; no app-authored storm button or
+   framework-specific hook participates.
+7. Fresh page per rep; warmup reps discarded per methodology.
 
 ### `native` (Android Sandbox, explicitly separated)
 
@@ -239,11 +283,13 @@ calibration output, `latest.json`, and every site score/visual are derived.
   same headless Chromium (seeded JSON churn + array/alloc mix, ~1 s) → `calibration.score`.
   Probe version bumps invalidate comparisons.
 - `bench collect` merges `results/runs/*.json` → `results/latest.json`: newest record wins per
-  (harness, environment, jsRegime, jsFlags, cpuThrottle, entry, workload, scale, metric, machineId);
+  (harness, environment, jsRegime, jsFlags, cpuThrottle, throttleScope, entry, workload, scale,
+  metric, machineId);
   cross-machine records
   coexist, each carrying its own source run and calibration. Separately, the collector chooses
-  one coherent physical run for Web `comparisonRecords` (featured-entry coverage, then featured
-  matrix coverage, then newest). Native comparison records require one complete current-commit
+  one coherent physical run for the weighted Web comparison (featured-entry coverage, then featured
+  matrix coverage, then newest). Dedicated pipeline/storm views may attach the best coherent
+  current campaign for each exact contract, while remaining outside the weighted matrix. Native comparison records require one complete current-commit
   campaign with identical stable-device/method/matrix/input/connector identity and an explicit
   valid same-serial lease chain. Partial reruns and
   historical Lab variants therefore cannot replace the public ranking. A current featured Native
