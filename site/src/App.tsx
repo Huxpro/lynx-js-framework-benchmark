@@ -300,30 +300,34 @@ function AppContent({
 
       {page === 'lab' ? (
         <>
-          <h1>{text('Benchmark Lab', '基准实验室')}</h1>
-          <ResponsiveCopy className="subtitle">
-            {text(
-              'Research suites for framework authors. Start with the published finding, then inspect the stress behavior, capability contracts, controls, and raw measurement boundaries below.',
-              '面向 framework author 的研究性 suite：先看已发布结论，再向下检查压力行为、能力合约、控制条件与原始测量边界。',
-            )}
-          </ResponsiveCopy>
+          <header className="lab-header">
+            <div>
+              <p className="section-kicker">{text('For framework authors', '面向 framework author')}</p>
+              <h1>{text('Benchmark Lab', '基准实验室')}</h1>
+              <p>{text('Research instruments outside the featured ranking.', '主排名之外的研究仪器。')}</p>
+            </div>
+            <nav className="lab-suite-index" aria-label={text('Lab suites', 'Lab suite')}>
+              <a href="#lab-attribution">
+                <span>01</span><b>{text('Attribution', '架构归因')}</b><small>6-axis ledger</small>
+                <i className="is-axis" aria-hidden="true"><em /><em /><em /><em /><em /><em /></i>
+              </a>
+              {harness === 'web' ? <a href="#lab-storm">
+                <span>02</span><b>{text('Storm', '连续交互')}</b><small>ticks → frames</small>
+                <i className="is-storm" aria-hidden="true"><em /><em /><em /><em /><em /></i>
+              </a> : null}
+              <a href="#lab-list">
+                <span>{harness === 'web' ? '03' : '02'}</span><b>{text('List', '列表能力')}</b><small>contract matrix</small>
+                <i className="is-list" aria-hidden="true"><em /><em /><em /><em /><em /><em /></i>
+              </a>
+            </nav>
+          </header>
           {harness === 'web' && snapshot.id === 'current-main' ? <AxisEffects /> : harness === 'web' ? (
             <div className="empty-state">
               <p><b>{text('Lab evidence is published at the current checkpoint.', 'Lab 证据发布在当前节点。')}</b></p>
               <p>{text('Move the timeline to the latest checkpoint to inspect the architecture comparisons.', '请把时间线移到最新节点，再查看架构对照。')}</p>
             </div>
           ) : null}
-          <section className="lab-research" aria-labelledby="lab-research-title">
-            <div className="section-heading">
-              <div className="section-kicker">{text('Research suites', '研究性 suite')}</div>
-              <h2 id="lab-research-title">{text('Behavior beyond the headline ranking', '主排名之外的行为')}</h2>
-              <ResponsiveCopy className="section-copy">
-                {text(
-                  'These instruments answer narrower research questions. They stay out of the default benchmark story, but their contracts and records remain fully auditable here.',
-                  '这些仪器回答更窄的研究问题，不进入默认 benchmark 叙事；它们的合约与 records 仍在此完整可审计。',
-                )}
-              </ResponsiveCopy>
-            </div>
+          <section className="lab-research" aria-label={text('Behavior and capability suites', '行为与能力 suite')}>
             {harness === 'web' && <StormCoalescing theme={theme} selected={activeSelected} />}
             <ListCoverage harness={harness} />
           </section>

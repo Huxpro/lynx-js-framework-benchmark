@@ -91,6 +91,15 @@ test('Lab owns axis evidence instead of appending it to Overview', () => {
   assert.equal(source.indexOf('<AxisEffects />', axisEvidence + 1), -1);
 });
 
+test('Lab presents a compact suite index before expandable research detail', () => {
+  assert.match(source, /className="lab-suite-index"/);
+  assert.match(source, /href="#lab-attribution"/);
+  assert.match(source, /href="#lab-storm"/);
+  assert.match(source, /href="#lab-list"/);
+  assert.match(source, /Research instruments outside the featured ranking/);
+  assert.doesNotMatch(source, /Behavior beyond the headline ranking/);
+});
+
 test('endpoint rows are a collapsed data appendix owned by the wire visualization', () => {
   const wireGroup = threadsSource.indexOf('className="wire-analysis"');
   const appendix = threadsSource.indexOf('<EndpointTable', wireGroup);
