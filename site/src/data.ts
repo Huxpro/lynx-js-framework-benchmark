@@ -502,9 +502,14 @@ export const DEFAULT_WEB_REGIME: WebRegime = {
 export const WEB_REGIMES: (WebRegime & { id: string; label: string })[] = [
   { id: 'web', label: 'JIT', jsRegime: 'jit', jsFlags: JIT_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
   { id: 'web-interp', label: 'Interp', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 1, throttleScope: 'none' },
-  { id: 'web-interp-4x', label: 'Interp · mixed 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'page-cdp' },
-  { id: 'web-interp-4x-cg', label: 'Interp · process 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'process-cgroup' },
+  { id: 'web-interp-4x', label: 'Interp 4×', jsRegime: 'interp', jsFlags: INTERP_FLAGS, cpuThrottle: 4, throttleScope: 'process-cgroup' },
 ];
+export function isPublicWebRegime(regime: WebRegime): boolean {
+  return WEB_REGIMES.some((candidate) => candidate.jsRegime === regime.jsRegime
+    && candidate.jsFlags === regime.jsFlags
+    && candidate.cpuThrottle === regime.cpuThrottle
+    && candidate.throttleScope === regime.throttleScope);
+}
 export function webRegimeId(regime: WebRegime): string {
   return WEB_REGIMES.find((candidate) => candidate.jsRegime === regime.jsRegime
     && candidate.jsFlags === regime.jsFlags

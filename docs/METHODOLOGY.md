@@ -293,21 +293,13 @@ metric rather than silently changing the upstream interaction formula.
 
 ## Web JavaScript execution regimes
 
-The Web harness has four separately ranked execution lanes. `web` is Chromium's normal V8 JIT
+The Web harness publicly exposes three separately ranked execution lanes. `web` is Chromium's
+normal V8 JIT
 with CPU throttling disabled (`environment: { jsRegime: "jit", jsFlags: "--expose-gc",
 cpuThrottle: 1, throttleScope: "none" }`). `web-interp` uses
 `--js-flags=--expose-gc,--no-opt,--no-sparkplug,--no-maglev`, leaving JavaScript on Ignition while
-Wasm keeps its normal compiled pipeline, and leaves CPU throttling disabled. `web-interp-4x`
-uses the same interpreter-only JavaScript process and applies `Emulation.setCPUThrottlingRate` at
-4× to the page target before any measured phase. CDP throttling is target-scoped: the separately
-attached `lynx-bg` worker does not inherit the page setting. The lane is therefore an MTS-throttled
-directional probe, not a symmetric whole-process slowdown. In other words, the existing
-`web-interp-4x` is a mixed regime — MTS throttled, BTS full-speed. That mixed regime is defensible
-only for end-to-end metrics, never per-side metrics; its already-published latency is labelled
-mixed-regime and is not rerun. Its raw `btsCpu` samples remain source evidence but are classified
-`invalid-measurement` and excluded from charts and rankings.
-
-`web-interp-4x-cg` keeps the same interpreter flags but applies one calibrated OS quota to the whole
+Wasm keeps its normal compiled pipeline, and leaves CPU throttling disabled. Public
+`web-interp-4x` keeps the same interpreter flags but applies one calibrated OS quota to the whole
 Chromium process tree. Chromium is launched *inside* the quota so every renderer inherits it from
 birth: the runner uses cgroup-v2 `cpu.max` when delegated, or creates a cgroup-v1 CPU controller
 and enters it through `cgexec` on the lab host. Calibration begins at 25% of one CPU and records
@@ -318,11 +310,20 @@ the median score; the window fails
 closed unless `control.score / throttled.score` is within [3.5, 4.5]. Every accepted record stores
 that value as `environment.verifiedSlowdown`, while the backend and every per-entry verification
 remain in the run receipt. Its environment uses `cpuThrottle: 4, throttleScope:
-"process-cgroup"`; the historical CDP lane normalizes to `throttleScope: "page-cdp"`.
+"process-cgroup"`. `Interp 4×` therefore always means process-wide throttling in the runner, site,
+and shareable URL.
 Because the whole Chromium tree shares one CFS quota, exhausting that quota can freeze both MTS
 and BTS until the next scheduler period; the resulting cross-thread round-trip amplification can
 exceed the nominal 4× compute slowdown and is published as an end-to-end latency effect rather than
 normalized away.
+
+The former page-target CDP campaign is frozen historical evidence. It used the same interpreter
+flags but applied `Emulation.setCPUThrottlingRate` only to the page/MTS target; the separately
+attached `lynx-bg` BTS worker remained full-speed. Those records normalize to `throttleScope:
+"page-cdp"` and can still be audited, but they are absent from the public regime facet and new runs
+are rejected. The mixed regime was defensible only for end-to-end latency, never per-side metrics;
+all 84 raw `btsCpu` samples remain source evidence classified `invalid-measurement` and excluded
+from charts and rankings.
 
 The 30 August `cpulimit` campaign is retained only as an invalid-measurement cautionary example.
 Its one global 4.12× preflight did not prove the later entry windows: most renderer windows matched
@@ -333,8 +334,8 @@ claims remain published.
 The
 historical default is exactly `web`; a
 schema-v2 record without regime fields normalizes to JIT / `--expose-gc` / 1×. The machine fingerprint does not
-change, but collection keys and comparison cohorts include all four regime fields, so lanes never
-overwrite, average, or rank together.
+change, but collection keys and comparison cohorts include all four environment dimensions, so
+lanes never overwrite, average, or rank together.
 
 All interpreter lanes are **directional probes — interpreter regime under V8; not Native, not
 PrimJS**. V8 Ignition is not LepusNG/PrimJS: JavaScript keeps Ignition's ICs, hidden classes, and
@@ -350,14 +351,15 @@ scale-shape, regression, and "what was JIT hiding?" leads, never absolute device
 ### Rank-stability calibration against device rounds 1–3
 
 The current calibration uses the same-machine 29 August featured Web campaign, with upstream
-Octane at `9779569e`, Huxpro/new-lynx at `8938c126`, and the `web-interp-4x` lane as the directional
-probe. Its pre-fix device anchors are the real-device round-1 and round-2 windows in
+Octane at `9779569e`, Huxpro/new-lynx at `8938c126`, and the now-retired page-CDP campaign
+(`throttleScope: "page-cdp"`) as the directional probe. Its pre-fix device anchors are the
+real-device round-1 and round-2 windows in
 [Huxpro/octane#194](https://github.com/Huxpro/octane/issues/194). Those device windows used older
 Octane tips and different instrumentation boundaries, so the table below tests only ordering,
 completion cliffs, and scaling direction. It does not compare absolute times or claim a controlled
 revision A/B.
 
-| Device anchor | Matching `web-interp-4x` observation | Rank/shape verdict |
+| Device anchor | Matching historical page-CDP observation | Rank/shape verdict |
 | --- | --- | --- |
 | Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is the one cross-framework rank anchor shared by both instruments. |
 | Round 1 program versus template at 1k: program 12,717 ms versus template 14,354 ms; after the round-2 ledger fix, program 657 ms versus template 2,149 ms. | Hux Octane startup@1k is 1,588.1 ms versus upstream Octane 1,485.2 ms. | **Ordering disagrees.** The Web probe does not reproduce the Native compiled-program advantage. |
@@ -375,19 +377,29 @@ an absolute-time revision A/B.
 
 Within Web itself, turning off compiled JavaScript changes the winning entry in 5 of the 16 shared
 latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Comparing normal JIT with
-`web-interp-4x` changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does hide material
-ordering differences, but the mixed device calibration above is too weak for the interpreter lane
-to substitute for device rounds: use it to choose confirmation cells, not to publish Native ranks.
+the historical page-CDP campaign changes 8 winners and 71 pairwise orderings (21.1%). Thus JIT does
+hide material ordering differences, but the device calibration above is too weak for an
+interpreter lane to substitute for device rounds: use it to choose confirmation cells, not to
+publish Native ranks.
 The inherited-launch process-scope campaign passed all seven per-entry gates at 3.86–4.07× with no
 DNF. Against the page-CDP lane, it changes the winner in 8 of the same 16 latency/FCP cells and
 reverses 78 of 336 pairwise entry orderings (23.2%); every one of the 12 latency cells has a changed
-full order. The two throttle scopes therefore remain separately published: the difference is the
-measurement of each framework's sensitivity to whole-process quota and cross-thread freeze windows,
-not evidence that either lane can substitute for a Native cohort.
+full order.
+
+The frozen mixed lane's useful learning is its *shape*, not another public leaderboard. Relative to
+unthrottled Interp, its median slowdown clusters at 3.65–3.90× for create/replace/append/clear, but
+only 1.16–1.61× for select/swap/update@1k; large selection and update cells sit between those groups.
+That separation diagnoses how much an end-to-end cell is page/MTS-bound. Moving from mixed to the
+whole-process quota then costs a 1.27–2.70× entry-level latency geomean across the seven featured
+entries, while wire bytes and message counts stay approximately 1×. The wide spread is evidence of
+different BTS and cross-thread quota sensitivity, not a transport-protocol change. It is also why
+the mixed lane is not retained publicly: process-scope is the sole canonical `Interp 4×` lane;
+page-CDP raw records remain an immutable historical calibration, receive no new runs, and do not
+appear in the site regime facet or public rankings.
 
 ### Issue #42 measurement-boundary audits
 
-- `btsCpu` under `web-interp-4x` is invalid. The runner sent
+- `btsCpu` under the historical page-CDP campaign is invalid. The runner sent
   `Emulation.setCPUThrottlingRate` only to the page session; the `lynx-bg` worker is a separate CDP
   target. This explains why create@10k BTS samples stayed near the unthrottled interpreter lane and
   why the Hux/upstream order could invert. The collector preserves those raw samples for audit but

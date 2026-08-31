@@ -155,7 +155,9 @@ Historical schema-v2 Web records normalize to `jit` / `1` before comparison.
 `Emulation.setCPUThrottlingRate` is target-scoped; the recorded multiplier applies to the page
 target and is not inherited by `lynx-bg`. Consequently `btsCpu` records with `cpuThrottle > 1`
 and `throttleScope: "page-cdp"` are retained only as invalid source evidence and never enter a
-chart or ranking. A `process-cgroup` run applies one OS quota to the Chromium tree instead.
+chart or ranking. The page-CDP lane is retired from the public site and runner; its latency remains
+historical calibration evidence only. Public `Interp 4×` means a `process-cgroup` run applying one
+OS quota to the Chromium tree.
 The site enforces this structurally — the harness dimension is a top-level selector, never a
 series in the same chart.
 

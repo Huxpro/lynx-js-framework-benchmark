@@ -6,7 +6,7 @@
 //                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
 //                  [--jit jit|interp] [--cpu-throttle N]
-//                  [--throttle-scope none|page-cdp|process-cgroup]
+//                  [--throttle-scope none|process-cgroup]
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
@@ -40,6 +40,7 @@ import { runReceipt } from './provenance.mjs';
 import { stringifyResult } from './result-json.mjs';
 import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
+import { resolveThrottleScope } from './web-regime-policy.mjs';
 import {
   assertConnectorPackageTrees,
   resolveConnectorPackageTrees,
@@ -90,16 +91,6 @@ function parseArgs(argv) {
 
 const list = (v) => (typeof v === 'string' ? v.split(',').map((s) => s.trim()) : null);
 const numList = (v) => list(v)?.map(Number);
-const resolveThrottleScope = (args, cpuThrottle) => {
-  const scope = args['throttle-scope'] ?? (cpuThrottle > 1 ? 'page-cdp' : 'none');
-  if (!['none', 'page-cdp', 'process-cgroup'].includes(scope)) {
-    throw new Error(`unknown throttle scope: ${scope}`);
-  }
-  if ((cpuThrottle === 1) !== (scope === 'none')) {
-    throw new Error(`--throttle-scope=${scope} is incompatible with --cpu-throttle=${cpuThrottle}`);
-  }
-  return scope;
-};
 const sha256Json = (value) => crypto.createHash('sha256')
   .update(JSON.stringify(value))
   .digest('hex');

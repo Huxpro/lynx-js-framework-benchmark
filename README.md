@@ -26,16 +26,17 @@ probes are explicit and remain Web-only:
 
 ```bash
 pnpm bench run --harness web --jit=interp --cpu-throttle=1 --label web-interp
-pnpm bench run --harness web --jit=interp --cpu-throttle=4 --label web-interp-4x
 pnpm bench run --harness web --jit=interp --cpu-throttle=4 \
-  --throttle-scope=process-cgroup --label web-interp-4x-cg
+  --throttle-scope=process-cgroup --label web-interp-4x
 ```
 
-The whole-process calibration lane starts Chromium inside an inherited CPU cgroup: writable
+`Interp 4×` always means the whole-process calibration lane. It starts Chromium inside an
+inherited CPU cgroup: writable
 cgroup-v2 `cpu.max` when delegated, or cgroup-v1 `cgexec` with non-interactive `sudo` on the lab
 runner. It never chases renderer PIDs with `cpulimit`. Before every entry, three in-page probes use
 their median score to verify a 3.5–4.5× slowdown; the observed `verifiedSlowdown` is written into
-every record.
+every record. The former page-target CDP lane is frozen as historical source evidence; the CLI
+rejects new `--throttle-scope=page-cdp` runs.
 
 `--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;
 the default remains `0,1000,10000,30000`.

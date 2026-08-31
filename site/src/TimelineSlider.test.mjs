@@ -126,6 +126,9 @@ test('Web regime facet is explicit, URL-addressable, and cannot mix ranking reco
   assert.doesNotMatch(appSource, /regime-disclaimer|Directional probe — interpreter-only/);
   assert.match(dataSource, /label: 'JIT'/);
   assert.match(dataSource, /label: 'Interp'/);
+  assert.match(dataSource, /id: 'web-interp-4x', label: 'Interp 4×'[\s\S]*throttleScope: 'process-cgroup'/);
+  assert.doesNotMatch(dataSource, /label: 'Interp · mixed 4×'/);
+  assert.doesNotMatch(dataSource, /id: 'web-interp-4x-cg'/);
   assert.doesNotMatch(`${source}\n${receiptSource}\n${appSource}\n${dataSource}`, /Ignition/);
   assert.match(contextSource, /recordMatchesWebRegime\(record, regime\)/);
   assert.match(rankingSource, /record\.jsRegime === regime\.jsRegime/);
@@ -154,9 +157,10 @@ test('regime measurement details are available from the compact information disc
   assert.match(source, /How these lanes are measured/);
   assert.match(source, /Chromium runs the default V8 compilation tiers/);
   assert.match(source, /V8 JavaScript compiler tiers are disabled; Wasm stays compiled/);
-  assert.match(source, /CDP 4× throttling on the page\/MTS target/);
   assert.match(source, /inherited, calibrated OS quota for the Chromium process tree/);
   assert.match(source, /Every entry must verify 3\.5–4\.5× slowdown/);
+  assert.match(source, /Interp 4× always means whole-process throttling/);
+  assert.doesNotMatch(source, /page\/MTS target|mixed 4×/i);
   assert.match(source, /Rankings stay separate across every lane/);
 });
 

@@ -81,7 +81,8 @@ function initialSnapshotIndex(): number {
 }
 
 function initialWebRegime(): WebRegime {
-  const id = new URLSearchParams(location.search).get('regime') ?? 'web';
+  const requested = new URLSearchParams(location.search).get('regime') ?? 'web';
+  const id = requested === 'web-interp-4x-cg' ? 'web-interp-4x' : requested;
   const match = WEB_REGIMES.find((candidate) => candidate.id === id);
   return match == null
     ? DEFAULT_WEB_REGIME

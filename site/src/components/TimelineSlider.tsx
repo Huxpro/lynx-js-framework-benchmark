@@ -4,6 +4,7 @@ import {
   TimelineSnapshot,
   WEB_REGIMES,
   WebRegime,
+  isPublicWebRegime,
 } from '../data';
 import { useMediaQuery } from '../hooks';
 import { localizedCheckpoint, useI18n } from '../i18n';
@@ -50,12 +51,18 @@ export function TimelineSlider({
     && candidate.throttleScope === regime.throttleScope);
   const showAdvanced = harness === 'web' && (!compact || advancedOpen);
   const advancedId = 'workspace-advanced-configuration';
-  const cohorts = checkpoint.harnesses.map((cohort) => {
+  const cohorts = checkpoint.harnesses.filter((cohort) => cohort.harness !== 'web'
+    || isPublicWebRegime({
+      jsRegime: cohort.jsRegime!,
+      jsFlags: cohort.jsFlags!,
+      cpuThrottle: cohort.cpuThrottle!,
+      throttleScope: cohort.throttleScope!,
+    })).map((cohort) => {
     const environment = cohort.harness === 'web'
       ? `Web ${cohort.jsRegime === 'interp' ? 'Interp' : 'JIT'} ${
         cohort.cpuThrottle === 1
           ? '1×'
-          : `${cohort.throttleScope === 'page-cdp' ? 'mixed' : 'process'} ${cohort.cpuThrottle ?? 1}×`
+          : `${cohort.cpuThrottle ?? 1}×`
       }`
       : 'Native';
     return `${environment} ${cohort.entryIds.length}${cohort.rankEligible ? '' : text(' observation', '（观察值）')}`;
@@ -126,15 +133,11 @@ export function TimelineSlider({
                         <dd>{text('V8 JavaScript compiler tiers are disabled; Wasm stays compiled. CPU runs at 1×.', '关闭 V8 的 JavaScript 编译层级；Wasm 保持编译执行。CPU 为 1×。')}</dd>
                       </div>
                       <div>
-                        <dt>{text('Mixed 4×', 'Mixed 4×')}</dt>
-                        <dd>{text('Interp plus CDP 4× throttling on the page/MTS target. The BTS worker stays full-speed.', 'Interp 加 CDP 对 page/MTS target 的 4× 限速；BTS worker 保持全速。')}</dd>
-                      </div>
-                      <div>
-                        <dt>{text('Process 4×', 'Process 4×')}</dt>
+                        <dt>Interp 4×</dt>
                         <dd>{text('Interp plus an inherited, calibrated OS quota for the Chromium process tree. Every entry must verify 3.5–4.5× slowdown.', 'Interp 加 Chromium 进程树继承式、经校准的 OS 配额；每个 entry 都必须验证 3.5–4.5× slowdown。')}</dd>
                       </div>
                     </dl>
-                    <p>{text('Rankings stay separate across every lane.', '每条 lane 始终独立排名。')}</p>
+                    <p>{text('Interp 4× always means whole-process throttling. Rankings stay separate across every lane.', 'Interp 4× 始终表示整进程限速；每条 lane 始终独立排名。')}</p>
                   </aside>
                 </details>
               </div>

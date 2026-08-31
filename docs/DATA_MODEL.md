@@ -48,6 +48,9 @@ keep their schema-v2 environment string byte-for-byte and never gain Web regime 
 Web records default to `{ jsRegime: "jit", jsFlags: "--expose-gc", cpuThrottle: 1,
 throttleScope: "none" }`, except the historical `lynx-for-web-interp` label, which remains in the
 interpreter lane; throttled schema-v3 records normalize to `"page-cdp"`.
+That normalization is archival compatibility, not a runnable or public lane: new 4× runs must use
+`"process-cgroup"`, while the old page-CDP records remain available only as historical calibration
+evidence.
 The physical machine fingerprint is unchanged, while derived archives and comparison cohorts are
 keyed by machine × regime so the Web lanes cannot overwrite, average, or rank together.
 

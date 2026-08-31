@@ -12,6 +12,7 @@ import {
   summarizeProcessThrottleProbes,
 } from './preflight.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
+import { resolveThrottleScope } from './web-regime-policy.mjs';
 
 test('default Chromium arguments remain byte-for-byte identical', () => {
   assert.deepEqual(chromiumArgs(), [
@@ -128,6 +129,19 @@ test('whole-process throttle verification uses a fixed three-probe median', () =
 test('no-collect policy applies equally to Web and Native run completion', () => {
   assert.equal(shouldCollectAfterRun({}), true);
   assert.equal(shouldCollectAfterRun({ 'no-collect': true }), false);
+});
+
+test('new 4× runs use whole-process throttling and reject the retired mixed scope', () => {
+  assert.equal(resolveThrottleScope({}, 1), 'none');
+  assert.equal(resolveThrottleScope({}, 4), 'process-cgroup');
+  assert.equal(
+    resolveThrottleScope({ 'throttle-scope': 'process-cgroup' }, 4),
+    'process-cgroup',
+  );
+  assert.throws(
+    () => resolveThrottleScope({ 'throttle-scope': 'page-cdp' }, 4),
+    /page-cdp is retired/,
+  );
 });
 
 test('schema records Web regimes and rejects applying them to Native', () => {
