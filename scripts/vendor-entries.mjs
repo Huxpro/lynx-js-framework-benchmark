@@ -8,7 +8,8 @@
 //   OCTANE_HUX2_BUILD an optional Octane S3 checkout with the same autoRows builds
 //   OCTANE_DOM_BUILD an optional octanejs/octane PR #693 checkout with the same builds
 //   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
-//   OCTANE_NEW_BUILD an optional clean new-lynx checkout built with BENCH_CORE=block
+//   OCTANE_HUX_BUILD an optional #269 + #272 composite checkout with the
+//                    checked-in Native benchmark instrumentation applied
 //   OCTANE_PR_791_BUILD an optional clean octanejs/octane PR #791 checkout
 //
 // Usage: node scripts/vendor-entries.mjs
@@ -30,10 +31,20 @@ const OCTANE_HUX1_BUILD = process.env.OCTANE_HUX1_BUILD ?? null;
 const OCTANE_HUX2_BUILD = process.env.OCTANE_HUX2_BUILD ?? null;
 const OCTANE_DOM_BUILD = process.env.OCTANE_DOM_BUILD ?? null;
 const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
-const OCTANE_NEW_BUILD = process.env.OCTANE_NEW_BUILD ?? null;
+const OCTANE_HUX_BUILD = process.env.OCTANE_HUX_BUILD
+  ?? process.env.OCTANE_NEW_BUILD
+  ?? null;
+const OCTANE_HUX_WEB_BUILD = process.env.OCTANE_HUX_WEB_BUILD ?? null;
 const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
 
 const AUTOROWS = [0, 1000, 10000, 30000];
+const OCTANE_HUX_INPUT_COMMITS = {
+  'pull/269/head': process.env.OCTANE_HUX_PR_269_SHA
+    ?? 'b166e43f9a59864c1c887f24e8448d6014542631',
+  'pull/272/head': process.env.OCTANE_HUX_PR_272_SHA
+    ?? '66ff34a3f50d6b53fdb7b55e594c4fa11e4bfe6f',
+};
+const OCTANE_HUX_INSTRUMENTATION = 'entries/_patches/octane-hux-native-bench.patch';
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
 const wants = (id) => ONLY.size === 0 || ONLY.has(id);
 
@@ -71,6 +82,9 @@ const gitInfo = (dir) => ({
     .toString().trim().length > 0,
 });
 
+const gitOutput = (dir, args) => execFileSync('git', args, { cwd: dir }).toString().trim();
+const gitRawOutput = (dir, args) => execFileSync('git', args, { cwd: dir }).toString();
+
 function requireCleanOctaneCheckout(id, dir) {
   const sourceGit = gitInfo(dir);
   if (sourceGit.dirty) {
@@ -91,11 +105,12 @@ function vendor({
   fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
   const checks = {};
-  for (const { rows, from } of cells) {
+  for (const { rows, from, webFrom, lynxFrom } of cells) {
     const destDir = path.join(dist, `rows-${rows}`);
     fs.mkdirSync(destDir, { recursive: true });
     for (const f of ['main.web.bundle', 'main.lynx.bundle']) {
-      const src = path.join(from, f);
+      const sourceDir = f === 'main.web.bundle' ? (webFrom ?? from) : (lynxFrom ?? from);
+      const src = path.join(sourceDir, f);
       if (!fs.existsSync(src)) continue;
       const dest = path.join(destDir, f);
       fs.copyFileSync(src, dest);
@@ -124,6 +139,7 @@ function vendor({
       source: source.url,
       ref,
       commit: source.commit,
+      ...(source.inputCommits == null ? {} : { inputCommits: source.inputCommits }),
       ...(source.mergedInto == null ? {} : { mergedInto: source.mergedInto }),
       patched: source.dirty,
       patchFile: source.dirty ? `entries/_patches/${source.patchName}` : null,
@@ -178,40 +194,85 @@ function vendorOctanePr791(buildDir) {
   });
 }
 
-function vendorNewLynxBlockSnapshot(id, label, buildDir) {
+function vendorHuxCompositeSnapshot(id, label, buildDir) {
   if (!wants(id)) return;
   const appDir = path.join(buildDir ?? '', 'benchmarks/lynx-table/app');
-  if (!buildDir || !fs.existsSync(path.join(appDir, 'dist-block'))) {
-    console.log(`[vendor] ${id} skipped (set OCTANE_NEW_BUILD to a block-core build)`);
+  if (!buildDir || !fs.existsSync(path.join(appDir, 'dist'))) {
+    console.log(`[vendor] ${id} skipped (set OCTANE_HUX_BUILD to the composite build)`);
     return;
   }
-  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  const sourceGit = gitInfo(buildDir);
+  const webBuildDir = OCTANE_HUX_WEB_BUILD;
+  const webAppDir = path.join(webBuildDir ?? '', 'benchmarks/lynx-table/app');
+  if (!webBuildDir || !fs.existsSync(path.join(webAppDir, 'dist'))) {
+    throw new Error(`${id}: set OCTANE_HUX_WEB_BUILD to the clean composite Web build`);
+  }
+  const webSourceGit = requireCleanOctaneCheckout(`${id} Web`, webBuildDir);
+  if (webSourceGit.commit !== sourceGit.commit) {
+    throw new Error(`${id}: clean Web build and instrumented Native build use different commits`);
+  }
+  const parents = new Set(gitOutput(buildDir, ['show', '-s', '--format=%P', 'HEAD']).split(/\s+/));
+  for (const [ref, commit] of Object.entries(OCTANE_HUX_INPUT_COMMITS)) {
+    if (!parents.has(commit)) {
+      throw new Error(`${id}: composite HEAD is missing ${ref} ${commit} as a direct parent`);
+    }
+  }
+  const instrumentedFiles = [
+    'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+    'benchmarks/lynx-table/app/src/index.ts',
+  ];
+  const changedFiles = gitOutput(buildDir, ['diff', '--name-only', '--', ...instrumentedFiles])
+    .split('\n').filter(Boolean);
+  const allChangedFiles = gitRawOutput(buildDir, [
+    '-c', 'color.status=false', 'status', '--porcelain', '--',
+    'packages', 'benchmarks', 'pnpm-lock.yaml', 'pnpm-workspace.yaml',
+  ]).split('\n').filter(Boolean).map((line) => line.slice(3));
+  if (JSON.stringify(changedFiles) !== JSON.stringify(instrumentedFiles)
+    || JSON.stringify(allChangedFiles) !== JSON.stringify(instrumentedFiles)) {
+    throw new Error(`${id}: checkout differs outside the two reviewed instrumentation files`);
+  }
+  const expectedPatch = fs.readFileSync(path.join(root, OCTANE_HUX_INSTRUMENTATION), 'utf8').trim();
+  const actualPatch = gitOutput(buildDir, [
+    '-c', 'color.ui=false', 'diff', '--binary', '--', ...instrumentedFiles,
+  ]);
+  if (actualPatch !== expectedPatch) {
+    throw new Error(`${id}: Native benchmark instrumentation does not match ${OCTANE_HUX_INSTRUMENTATION}`);
+  }
   const version = JSON.parse(
     fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
   ).version;
   vendor({
     id,
     tier: 'featured',
-    harnesses: ['web'],
+    harnesses: ['web', 'native'],
     label,
     framework: 'octane',
     frameworkVersion: version,
-    config: `.tsrx, keyed @for; block core (scoped writes); Huxpro/octane new-lynx ${sourceGit.commit.slice(0, 12)}`,
-    historyChannel: 'Huxpro branch-head attempt',
-    tags: ['optimized', 'snapshot', 'block-core'],
+    config: `.tsrx, keyed @for; compiled create + FCP; Huxpro/octane #269 ${OCTANE_HUX_INPUT_COMMITS['pull/269/head'].slice(0, 12)} + #272 ${OCTANE_HUX_INPUT_COMMITS['pull/272/head'].slice(0, 12)}`,
+    historyChannel: 'Huxpro composite PR-head attempt',
+    tags: ['optimized', 'snapshot', 'compiled-create', 'fcp', 'native'],
     color: '#7c3aed',
     source: {
       url: 'https://github.com/Huxpro/octane',
       commit: sourceGit.commit,
-      dirty: false,
+      inputCommits: OCTANE_HUX_INPUT_COMMITS,
+      dirty: true,
+      patchName: path.basename(OCTANE_HUX_INSTRUMENTATION),
       builtAt: sourceDate(buildDir),
-      buildEnv: { BENCH_CORE: 'block', BENCH_BLOCK_MODE: 'scoped' },
+      buildEnv: {
+        BENCH_CORE: 'universal',
+        WEB_SOURCE: 'clean-composite',
+        NATIVE_SOURCE: 'reviewed-instrumentation-patch',
+        NATIVE_TABLE_PROTOCOL: 'lynx-native-bench-v2',
+        NATIVE_STARTUP_PROTOCOL: 'lynx-native-startup-v1',
+      },
     },
-    ref: 'new-lynx',
-    buildCommand: 'BENCH_CORE=block node scripts/build-octane-upstream.mjs <clean-new-lynx-checkout>',
+    ref: 'composite:pull/269/head+pull/272/head',
+    buildCommand: 'node scripts/build-octane-upstream.mjs <clean-#269+#272-composite> && node scripts/build-octane-upstream.mjs <same-composite-with-reviewed-native-instrumentation>',
     cells: AUTOROWS.map((rows) => ({
       rows,
-      from: path.join(appDir, rows === 0 ? 'dist-block' : `dist-block-rows${rows}`),
+      from: path.join(appDir, rows === 0 ? 'dist' : `dist-rows${rows}`),
+      webFrom: path.join(webAppDir, rows === 0 ? 'dist' : `dist-rows${rows}`),
     })),
   });
 }
@@ -553,10 +614,10 @@ if (
   console.log('[vendor] octane-prior skipped (set OCTANE_PRIOR_BUILD to a built checkout)');
 }
 
-vendorNewLynxBlockSnapshot(
+vendorHuxCompositeSnapshot(
   'octane-hux',
   'Octane (Hux)',
-  OCTANE_NEW_BUILD,
+  OCTANE_HUX_BUILD,
 );
 
 vendorOctanePr791(OCTANE_PR_791_BUILD);

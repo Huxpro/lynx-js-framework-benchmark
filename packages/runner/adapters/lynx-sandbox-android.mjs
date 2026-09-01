@@ -216,6 +216,8 @@ function expectedStormTicks(name) {
   return null;
 }
 
+const isOctaneEntryId = (entryId) => entryId === 'octane' || entryId.startsWith('octane-');
+
 function validateNativeTablePayloadUnchecked(payload, {
   entryId,
   expectedName,
@@ -269,7 +271,7 @@ function validateNativeTablePayloadUnchecked(payload, {
       throw new Error(`Native ${expectedName} payload lacks one render barrier per tick.`);
     }
   }
-  if (entryId === 'octane') {
+  if (isOctaneEntryId(entryId)) {
     const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
     if (transport.kind !== 'octane-root.flushTransport' || transport.acknowledged !== true) {
       throw new Error('Octane Native table payload lacks a flushTransport acknowledgement.');
@@ -324,7 +326,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
       `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
     );
   }
-  if (entryId === 'octane') {
+  if (isOctaneEntryId(entryId)) {
     assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
     if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
       throw new Error('Octane startup transport acknowledgement is outside the render interval.');
@@ -357,7 +359,7 @@ export function isNativeProducerProtocolError(error) {
   return error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR;
 }
 
-const startupMetricContracts = (entryId) => entryId === 'octane'
+const startupMetricContracts = (entryId) => isOctaneEntryId(entryId)
   ? [
       {
         name: 'octaneCommitAck',
@@ -430,7 +432,7 @@ export function nativeTransportFailureDnf(
     scale: suite === 'startup' ? rows : scale,
     phase: suite,
     stage,
-    triggerMode: entryId === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
+    triggerMode: isOctaneEntryId(entryId) ? OCTANE_TRIGGER_MODE : 'tap',
     message: String(error),
     capabilityScope: 'cell',
     evidence: {

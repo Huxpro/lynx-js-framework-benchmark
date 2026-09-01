@@ -1580,21 +1580,20 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(bundleScale.length, 144);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
   // The invalidated pre-verifier process-cgroup source remains archive-only.
-  // The replacement run contributes one verified 108-record matrix for every
-  // current comparison entry. The older Hux source commit is admissible here
-  // because its complete Web bundle receipt is byte-identical to the manifest.
+  // The replacement run contributes one verified 108-record matrix for each
+  // still-byte-identical entry. The refreshed Hux composite has new artifacts,
+  // so its older process-cgroup source remains archive-only.
   const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
     '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
-  assert.equal(verifiedProcessRun.length, 756);
+  assert.equal(verifiedProcessRun.length, 648);
   assert.deepEqual(
     [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
-    ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom',
-      'vue-vdom-ifr-et'],
+    ['octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
   );
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  assert.equal(retainedRecords.length, 5175);
+  assert.equal(retainedRecords.length, 4826);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1609,14 +1608,17 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  // Source commits may differ only when the complete Web artifact receipt is
-  // byte-identical, so both Octane identities remain in every Web regime.
+  // The current clean-composite run supplies all seven JIT entries. Older
+  // regimes retain only entries whose artifact receipt is still byte-identical.
   assert.equal(currentWeb.entryIds.length, 7);
   assert.equal(currentWeb.entryIds.includes('octane'), true);
   assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
+  ), false);
+  assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-09-01T13-18-29-65160668d8d9-octane-hux-compiled-create-fcp-web-isolated-pages.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
@@ -1652,10 +1654,10 @@ test('history audits every run but publishes only complete source-defined featur
     && record.comparabilityStatus === 'contract-failed'
     && record.dnfCount === 0).length, 14);
   assert.equal(stormOperations.every((record) =>
-    record.samples.length === 1 && record.detailSamples.length === 1), true);
+    record.samples.length === 3 && record.detailSamples.length === 3), true);
   assert.equal(currentRecords.filter((record) =>
     record.suite === 'storm' && record.metric !== 'operationTime')
-    .every((record) => record.samples.length === 1 && record.detailSamples == null), true);
+    .every((record) => record.samples.length === 3 && record.detailSamples == null), true);
   const materializedStormOperations = out.comparisonRecords.filter((record) =>
     record.suite === 'storm' && record.metric === 'operationTime');
   assert.equal(materializedStormOperations.length, 56);
@@ -1692,7 +1694,7 @@ test('history audits every run but publishes only complete source-defined featur
       'Aug 11 · Octane step change',
       'Aug 15 · Octane converges',
       'Aug 22 · Octane (Hux) joins',
-      'Current · merged upstream',
+      'Current · compiled-create + FCP',
     ],
   );
   assert.equal(out.history.checkpoints.every((checkpoint) =>
@@ -1854,7 +1856,7 @@ test('history audits every run but publishes only complete source-defined featur
 
   const native = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
+      '2026-09-01T13-21-37-lynx-native-android-aries_10-10-devtool-direct-recycle5-8144b5f980a7-6d00918a8d18-native-octane-hux-compiled-create-fcp-native-bounded.json',
     )));
   assert.ok(native);
   const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');
