@@ -23,7 +23,7 @@ import {
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
-import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
+import { discoverEntries, entryIsFeaturedForHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
 import { runNativeHarness } from './harness-native.mjs';
 import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
@@ -114,8 +114,7 @@ async function cmdRun(args) {
 
   let entries = discoverEntries({ only: list(args.entry) });
   if (harness === 'native' && args.entry == null) {
-    entries = entries.filter((entry) => (entry.tier ?? 'featured') !== 'lab'
-      && entrySupportsHarness(entry, 'native'));
+    entries = entries.filter((entry) => entryIsFeaturedForHarness(entry, 'native'));
   }
   if (entries.length === 0) throw new Error('no entries matched');
   const caseNames = list(args.case);
@@ -161,8 +160,7 @@ async function cmdRun(args) {
     } = resolveNativeRunMatrix(args);
     const root = repoRoot();
     const featuredIds = discoverEntries()
-      .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
-        && entrySupportsHarness(entry, 'native'))
+      .filter((entry) => entryIsFeaturedForHarness(entry, 'native'))
       .map((entry) => entry.id)
       .sort();
     const selectedIds = entries.map((entry) => entry.id).sort();

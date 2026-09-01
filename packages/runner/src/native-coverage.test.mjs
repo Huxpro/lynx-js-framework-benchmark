@@ -29,6 +29,7 @@ const ENTRIES = [
   { id: 'octane', framework: 'octane', harnesses: ['web'] },
   { id: 'octane-pr-791', framework: 'octane', harnesses: ['web'] },
   { id: 'octane-hux', framework: 'octane', harnesses: ['web'] },
+  { id: 'octane-hux1', framework: 'octane', tier: 'archive' },
   { id: 'react', framework: 'reactlynx' },
   { id: 'vue-vapor', framework: 'vue-lynx' },
   { id: 'vue-vapor-ifr', framework: 'vue-lynx' },
@@ -63,8 +64,10 @@ test('featured Native contract is exactly five black-box eligible entries by 23 
   assert.equal(contract.cells.length, 115);
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 5);
   assert.equal(contract.entryIds.includes('octane-hux'), false);
-  for (const entry of ENTRIES.filter((candidate) => candidate.harnesses?.includes('web') !== true
-    || candidate.harnesses.includes('native'))) {
+  assert.equal(contract.entryIds.includes('octane-hux1'), false);
+  for (const entry of ENTRIES.filter((candidate) =>
+    (candidate.tier ?? 'featured') === 'featured'
+    && (candidate.harnesses == null || candidate.harnesses.includes('native')))) {
     const cells = contract.cells.filter((cell) => cell.entry === entry.id);
     assert.equal(cells.length, NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
     assert.equal(cells.filter((cell) => cell.suite === 'table').length, 15);

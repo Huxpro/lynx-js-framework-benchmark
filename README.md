@@ -60,8 +60,8 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all seven Native-eligible
-featured entries, 27 table cells per entry, and two startup metrics at 0/1k/10k/30k (245 contract cells total; five
+Native has no partial publish mode: omitting entry/case/scale flags runs all five Native-eligible
+featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (115 contract cells total; five
 table and three startup repetitions). Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
@@ -73,7 +73,7 @@ client and surfaces as `No response found`. The adapter starts a clean Explorer,
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
 the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
-Every featured entry, including upstream Octane, uses real Native touch input. Octane samples
+Every Native-eligible featured entry uses real Native touch input. Octane samples
 begin in the background handler, wait for the renderer's correlated transport acknowledgement,
 then wait two Native frames; the recorded post-ACK state is checked against the semantic workload
 predicate. A DevTool driver exists only as an explicitly labelled diagnostic mode and is never the

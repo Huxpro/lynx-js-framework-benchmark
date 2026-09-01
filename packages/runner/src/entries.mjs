@@ -36,6 +36,11 @@ export function entrySupportsHarness(entry, harness) {
   return entry?.harnesses == null || entry.harnesses.includes(harness);
 }
 
+export function entryIsFeaturedForHarness(entry, harness) {
+  return (entry?.tier ?? 'featured') === 'featured'
+    && entrySupportsHarness(entry, harness);
+}
+
 /** Bundle path for a given autoRows scale; null when that variant is absent. */
 export function bundleFor(entry, { rows = 0, flavor = 'web' } = {}) {
   const rel = path.join(`rows-${rows}`, `main.${flavor}.bundle`);

@@ -1594,7 +1594,9 @@ test('history audits every run but publishes only complete source-defined featur
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  assert.equal(retainedRecords.length, 5175);
+  // The current JIT cohort also includes 196 retained records from the complete
+  // seven-entry create matrix at 3k/5k/20k/30k across table and pipeline.
+  assert.equal(retainedRecords.length, 5371);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1616,7 +1618,10 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
-    '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
+    '2026-09-01T16-38-06-65160668d8d9-full-web-2026-09-01.json',
+  ), true);
+  assert.equal(currentWeb.sourceRunFiles.includes(
+    '2026-09-01T17-15-14-65160668d8d9-extended-create-scales-web-2026-09-01.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
@@ -1651,11 +1656,13 @@ test('history audits every run but publishes only complete source-defined featur
     && record.descriptiveEligible
     && record.comparabilityStatus === 'contract-failed'
     && record.dnfCount === 0).length, 14);
+  // The refreshed current cohort uses the default three storm repetitions and
+  // retains each raw operation observation plus its matching detail receipt.
   assert.equal(stormOperations.every((record) =>
-    record.samples.length === 1 && record.detailSamples.length === 1), true);
+    record.samples.length === 3 && record.detailSamples.length === 3), true);
   assert.equal(currentRecords.filter((record) =>
     record.suite === 'storm' && record.metric !== 'operationTime')
-    .every((record) => record.samples.length === 1 && record.detailSamples == null), true);
+    .every((record) => record.samples.length === 3 && record.detailSamples == null), true);
   const materializedStormOperations = out.comparisonRecords.filter((record) =>
     record.suite === 'storm' && record.metric === 'operationTime');
   assert.equal(materializedStormOperations.length, 56);
