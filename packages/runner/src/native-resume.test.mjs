@@ -9,8 +9,12 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 
 import {
   NATIVE_PRODUCER_PROTOCOL_ERROR,
+  NATIVE_PRODUCER_RUNTIME_ERROR,
+  isNativeStartupPayloadPending,
+  nativeProducerRuntimeDnf,
   nativeTransportFailureDnf,
   nativeProducerProtocolDnf,
+  requiresOctaneDriverReadiness,
   validateNativeStartupPayload,
   validateNativeTablePayload,
 } from '../adapters/lynx-sandbox-android.mjs';
@@ -32,6 +36,68 @@ import {
   mergeNativeRecords,
   validateNativeResumeCheckpoint,
 } from './native-resume.mjs';
+
+test('Octane tap mode does not require the legacy DevTool driver readiness contract', () => {
+  assert.equal(requiresOctaneDriverReadiness({
+    framework: 'octane', suite: 'table', triggerMode: 'tap',
+  }), false);
+  assert.equal(requiresOctaneDriverReadiness({
+    framework: 'octane', suite: 'table', triggerMode: 'driver',
+  }), true);
+  assert.equal(requiresOctaneDriverReadiness({
+    framework: 'octane', suite: 'startup', triggerMode: 'driver',
+  }), false);
+  assert.equal(requiresOctaneDriverReadiness({
+    framework: 'reactlynx', suite: 'table', triggerMode: 'driver',
+  }), false);
+});
+
+test('startup polling waits for asynchronously completed producer payloads', () => {
+  const partial = {
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: 1,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+  };
+  assert.equal(isNativeStartupPayloadPending(partial, { entryId: 'react' }), true);
+  assert.equal(isNativeStartupPayloadPending(partial, { entryId: 'octane-hux' }), true);
+  assert.equal(isNativeStartupPayloadPending({
+    ...partial,
+    firstFrameMs: 2,
+    secondFrameMs: 3,
+    postState: { rowCount: 0 },
+  }, { entryId: 'react' }), false);
+  assert.equal(isNativeStartupPayloadPending({
+    ...partial,
+    commitAckMs: 2,
+    firstFrameMs: 3,
+    secondFrameMs: 4,
+    transportEvidence: { kind: 'octane-root.render', acknowledged: true, ackMs: 2 },
+    postState: { rowCount: 0 },
+  }, { entryId: 'octane-hux' }), false);
+  assert.equal(isNativeStartupPayloadPending({ protocol: 'bad' }, { entryId: 'react' }), false);
+});
+
+test('Native producer runtime errors become cell-local evidenced DNF', () => {
+  const error = new Error('append failed');
+  error.code = NATIVE_PRODUCER_RUNTIME_ERROR;
+  error.evidence = { message: 'append failed at native producer' };
+  assert.deepEqual(nativeProducerRuntimeDnf(error, {
+    suite: 'table', entry: 'octane-hux', kase: 'append1k', scale: 1000,
+  }), {
+    dnf: true,
+    failure: {
+      category: 'producer-runtime-error',
+      entry: 'octane-hux',
+      workload: 'append1k',
+      scale: 1000,
+      phase: 'table',
+      message: 'append failed',
+      capabilityScope: 'cell',
+      evidence: { producerError: { message: 'append failed at native producer' } },
+    },
+    metricContracts: undefined,
+  });
+});
 
 const serial = 'sandbox.example:41315';
 const lease = (issueId, expiredAt, serialValue = serial) => parseNativeLeaseReceipt({
