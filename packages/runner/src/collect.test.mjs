@@ -1595,8 +1595,15 @@ test('history audits every run but publishes only complete source-defined featur
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
   // The current JIT cohort also includes 196 retained records from the complete
-  // seven-entry create matrix at 3k/5k/20k/30k across table and pipeline.
-  assert.equal(retainedRecords.length, 5371);
+  // seven-entry create matrix at 3k/5k/20k/30k across table and pipeline. Native
+  // contributes the exact six-entry × 23-cell instrumented-v3 matrix; the prior
+  // five-entry/115-cell cohort is archive-only after the contract transition.
+  const retainedNative = retainedRecords.filter((record) => record.harness === 'native');
+  assert.equal(retainedNative.length, 138);
+  assert.equal(out.nativeCoverage.version, 'native-featured-instrumented-matrix-v3');
+  assert.ok(retainedNative.every((record) => record.runFile ===
+    '2026-09-02T07-28-32-lynx-native-android-aries_10-10-devtool-direct-recycle5-738c5271a1bf-2056a19666bd-native-octane-native-app-contract-v3-2026-09-02.json'));
+  assert.equal(retainedRecords.length, 5334);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1691,8 +1698,9 @@ test('history audits every run but publishes only complete source-defined featur
     ...DATASET_CHECKPOINT_SPECS.map((checkpoint) => checkpoint.id),
     'current-main',
   ]);
+  const checkpointLabels = out.history.checkpoints.map((checkpoint) => checkpoint.label);
   assert.deepEqual(
-    out.history.checkpoints.map((checkpoint) => checkpoint.label),
+    checkpointLabels.filter((label) => !label.startsWith('Native · ')),
     [
       'Aug 8 · React/Vue reference',
       'Aug 10 · slow Octane joins',
@@ -1700,6 +1708,13 @@ test('history audits every run but publishes only complete source-defined featur
       'Aug 15 · Octane converges',
       'Aug 22 · Octane (Hux) joins',
       'Current · merged upstream',
+    ],
+  );
+  assert.deepEqual(
+    checkpointLabels.filter((label) => label.startsWith('Native · ')),
+    [
+      'Native · 2026-08-18T11:21:23.892Z',
+      'Native · 2026-09-02T08:31:20.507Z',
     ],
   );
   assert.equal(out.history.checkpoints.every((checkpoint) =>
@@ -1759,13 +1774,24 @@ test('history audits every run but publishes only complete source-defined featur
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
         && record.environment === cohort.environment
         && record.rankEligible);
-      const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
+      const crossEntryRecords = cohort.harness === 'native'
+        ? cohortRecords.filter((record) => record.suite !== 'startup')
+        : cohortRecords;
+      const cellKeys = cohort.entryIds.map((entryId) => new Set(crossEntryRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [
           record.suite, record.environment, record.workload, record.scale,
           record.metric, record.boundary, record.unit,
         ].join('|'))));
       for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
+      if (cohort.harness === 'native') {
+        const startupRecords = cohortRecords.filter((record) => record.suite === 'startup');
+        if (startupRecords.length > 0) {
+          for (const entryId of cohort.entryIds) {
+            assert.equal(startupRecords.filter((record) => record.entry === entryId).length, 8);
+          }
+        }
+      }
     }
   }
 

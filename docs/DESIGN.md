@@ -233,21 +233,21 @@ now runs real Native Engine bundles:
   full transport, reconnect, lifecycle, render, timeout, thermal, and retry policy is versioned
   and included in campaign and machine identity. Explorer client discovery is repeated
   after every restart because DebugRouter may reassign the client port/ID.
-  Featured Octane entries are Web-only because their current Native path lacks the same black-box
-  producer boundary. The benchmark does not inject `flushTransport()` acknowledgements or a
-  DevTool-only handler driver into an entry to manufacture Native eligibility;
+  Current upstream Octane carries an auditable benchmark-only Native producer patch. It exposes
+  `flushTransport()` acknowledgements, post-state snapshots, and the same two-frame observation
+  boundary without modifying Octane's core transport implementation;
 - `packages/runner/src/harness-native.mjs` owns the framework-neutral adapter contract,
   workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
-mode switch. A publishable Native campaign schedules five eligible entries in a 115-cell contract. Since
+mode switch. A publishable Native campaign schedules six eligible entries in a 138-cell contract. Since
 the honest per-cell timeout can exceed one Sandbox lease's capacity, a campaign may continue over
 multiple official leases of the same physical device. Each acquisition supplies `serial`,
 `issueId`, and `expiredAt`; the raw serial is equality-checked and replaced in metadata by its
 SHA-256. A stable device cohort hashes that serial digest together with hardware/environment,
 campaign, matrix, input, connector toolchain, and harness method, while the ordered lease chain
 preserves every per-lease receipt. The reusable ADB serial or a lease ID alone is never sufficient
-identity. Featured Octane and Lab variants are not scheduled on Native.
+identity. Lab variants are not scheduled on Native.
 
 The CLI atomically checkpoints after every cell and stops before lease expiry with
 `checkpointComplete: false`. `--resume` accepts only an incomplete v2 checkpoint, validates the
@@ -262,8 +262,9 @@ the published cohort identity and evidence use the longer chain's digest. Incomp
 from older, non-resumable campaign protocols remain raw diagnostic files and are omitted from the
 derived dataset entirely.
 Octane's custom renderer does not expose the common Performance pipeline boundary in the tested
-Explorer build. It therefore publishes no current Native metric; older private-protocol
-observations remain historical appendix evidence only.
+Explorer build. Its startup cells therefore publish `octaneCommitAck` and `octaneSecondFrame`
+instead of relabeling those observations as `fcp` or `settled`; the entry-specific boundaries stay
+explicit and are not cross-ranked against the React/Vue startup metrics.
 
 ## Runs, incremental collection, calibration
 
@@ -275,7 +276,7 @@ calibration output, `latest.json`, and every site score/visual are derived.
   subsets; publishable Native runs require the full matrix. Machine fingerprint + calibration
   score are embedded. Native files are atomically rewritten after every completed cell; the
   `meta.checkpoint` marker, `checkpointComplete`, stable device cohort, ordered lease chain,
-  per-cell lease attribution, and 115-cell coverage ledger identify this resumable format.
+  per-cell lease attribution, and 138-cell coverage ledger identify this resumable format.
 - Each Web run contains exactly one JS regime. Collection groups by physical machine × regime and
   selects a coherent comparison run independently for each lane; no ranking table contains records
   from more than one regime.

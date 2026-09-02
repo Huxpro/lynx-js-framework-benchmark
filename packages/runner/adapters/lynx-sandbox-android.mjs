@@ -357,6 +357,12 @@ export function isNativeProducerProtocolError(error) {
   return error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR;
 }
 
+export function nativeStartupPayloadIsComplete(payload) {
+  return payload !== null
+    && typeof payload === 'object'
+    && Number.isFinite(payload.secondFrameMs);
+}
+
 const startupMetricContracts = (entryId) => entryId === 'octane'
   ? [
       {
@@ -1179,9 +1185,14 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           expression: `JSON.stringify(globalThis.__LYNX_BENCH_STARTUP__ ?? null)`,
           returnByValue: true,
         }, Math.max(1, deadline - Date.now()));
-        startup = typeof startupResult.result?.value === 'string'
+        const polledStartup = typeof startupResult.result?.value === 'string'
           ? JSON.parse(startupResult.result.value)
           : null;
+        // Producers publish a mutable startup receipt before render begins so the
+        // host can observe progress. Do not validate that in-flight object as if
+        // it were the final two-frame receipt; console events are emitted only
+        // after completion, while this polling fallback can see every phase.
+        startup = nativeStartupPayloadIsComplete(polledStartup) ? polledStartup : null;
       }
       const openTime = isCurrentOctane()
         ? currentOpenTime

@@ -60,8 +60,8 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all five Native-eligible
-featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (115 contract cells total; five
+Native has no partial publish mode: omitting entry/case/scale flags runs all six Native-eligible
+featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (138 contract cells total; five
 table and three startup repetitions). Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
@@ -115,7 +115,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 115-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign, 138-cell matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -164,7 +164,7 @@ reproducible instead of being lost with the process. Each cell names the lease t
 and every receipt remains in the ordered chain. Split checkpoints combine only when one receipt
 chain is an exact prefix of the other; same-serial forks remain archive-only. Known transport exhaustion and producer-protocol
 failures are retained as structured DNF evidence; unknown adapter/programming errors still abort.
-Each checkpoint carries a `native-featured-black-box-matrix-v2` coverage ledger. It distinguishes measured,
+Each checkpoint carries a `native-featured-instrumented-matrix-v3` coverage ledger. It distinguishes measured,
 measured-with-DNF, DNF, capability-proven unsupported, unscheduled, incompatible cohort, and
 display/derivation defects. A completed campaign may contain measured, DNF, or proven unsupported
 cells, but never an unscheduled or invalid cell. Bundles are served from immutable byte snapshots;

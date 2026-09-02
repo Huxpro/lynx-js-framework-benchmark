@@ -40,3 +40,15 @@ test('result serialization redacts sandbox serials from failure messages', () =>
     failures: [{ message: 'Lynx Explorer did not reconnect on sandbox [redacted].' }],
   });
 });
+
+test('result serialization redacts sandbox serials embedded in lease receipt argv', () => {
+  const receipt = '{"issueId":"benchmark-1","expiredAt":123,"acquired":"device.example.net:30602"}';
+  const serialized = stringifyResult({ argv: ['--lease-receipt', receipt] });
+  assert.equal(serialized.includes('device.example.net'), false);
+  assert.deepEqual(JSON.parse(serialized), {
+    argv: [
+      '--lease-receipt',
+      '{"issueId":"benchmark-1","expiredAt":123,"acquired":"[redacted]"}',
+    ],
+  });
+});

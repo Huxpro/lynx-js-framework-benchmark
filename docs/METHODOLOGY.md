@@ -15,8 +15,11 @@ had a documented weakness, the fix is noted.
   `lynx.requestAnimationFrame`. The entry emits a `__NATIVE_BENCH_RESULT__` payload through the
   Runtime console, so both endpoints and the duration use the device clock; host ADB/CDP latency
   is outside the sample. The Sandbox adapter subscribes before dispatching real Native touch input
-  for every Native-eligible featured entry. Featured Octane entries are Web-only: the benchmark
-  does not patch Octane's runtime or app to expose a private completion protocol.
+  for every Native-eligible featured entry. This is an instrumented/gray-box timing boundary, not
+  a framework-unmodified black-box claim: React, Vue, and Octane benchmark apps all implement the
+  same result-producer contract. Octane's benchmark-only patch is confined to the table app and
+  uses the public `root.flushTransport()` acknowledgement; it does not modify Octane core or add
+  JSON serialization to the render transport. JSON is used once only to emit each final result.
 - **Web startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
@@ -41,8 +44,9 @@ had a documented weakness, the fix is noted.
   state after two Native frames; a producer frame timestamp alone is never called FCP.
   `pipelineEnd - openTime` is retained as settled only when both sources validate.
   Octane's custom renderer does not expose the same pipeline boundary in this Explorer build, so
-  **no featured Native Octane metric is reported**. Archived private-protocol observations remain
-  evidence, but cannot fill the current black-box matrix.
+  its startup cells use two explicitly separate, non-cross-ranked boundaries: open request →
+  `root.flushTransport()` acknowledgement (`octaneCommitAck`) and open request → the second Native
+  frame after that acknowledgement (`octaneSecondFrame`). These are not labelled FCP or settled.
 - Old app-authored update/select storms remain archived experiments. Featured Web storms use a
   separate shared `/storm` driver: 50 standard update-every-tenth pointer ticks (10%-column width)
   or 30 alternating standard selection ticks (one-row width), at a declared 8ms interval. Both
@@ -262,7 +266,7 @@ metric rather than silently changing the upstream interaction formula.
   approximating render work) run in the same headless browser. Higher = faster machine.
 - Web default comparisons use records from one physical run. Native checkpoints combine only when
   they share the exact stable physical-device cohort, environment, harness configuration, campaign,
-  115-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
+  138-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
   checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
   its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
   prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made

@@ -232,9 +232,27 @@ if (vueGit?.dirty) {
 }
 const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
 if (octaneGit?.dirty) {
-  throw new Error(
-    'octane: Octane entries must be built from a clean checkout; benchmark and runtime patches are not allowed',
-  );
+  const allowed = new Set([
+    'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+    'benchmarks/lynx-table/app/src/index.ts',
+  ]);
+  const changed = execFileSync(
+    'git',
+    ['diff', '--name-only', '--diff-filter=ACMRTUXB', 'HEAD', '--', 'packages', 'benchmarks'],
+    { cwd: OCTANE_BUILD },
+  ).toString().trim().split('\n').filter(Boolean);
+  const disallowed = changed.filter((file) => !allowed.has(file));
+  if (changed.length === 0 || disallowed.length > 0) {
+    throw new Error(
+      `octane: only the benchmark Native producer may be patched; disallowed paths: ${disallowed.join(', ') || '(none)'}`,
+    );
+  }
+  const patch = execFileSync(
+    'git',
+    ['diff', '--no-color', '--unified=0', '--', ...allowed],
+    { cwd: OCTANE_BUILD },
+  ).toString();
+  fs.writeFileSync(path.join(patchesDir, 'octane-bench.patch'), patch);
 }
 
 const vueSource = vueGit === null ? null : {
@@ -248,6 +266,7 @@ const octaneSource = octaneGit === null ? null : {
   url: 'https://github.com/octanejs/octane',
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
+  patchName: 'octane-bench.patch',
   builtAt: sourceDate(OCTANE_BUILD),
 };
 
@@ -343,11 +362,11 @@ const octaneVersion = wants('octane')
 vendor({
   id: 'octane',
   tier: 'featured',
-  harnesses: ['web'],
+  harnesses: ['web', 'native'],
   label: 'Octane',
   framework: 'octane',
   frameworkVersion: octaneVersion,
-  config: '.tsrx, keyed @for; latest upstream main',
+  config: '.tsrx, keyed @for; latest upstream main + benchmark-only Native producer',
   historyChannel: 'upstream HEAD at measurement time',
   tags: ['optimized'],
   color: '#ff415a',

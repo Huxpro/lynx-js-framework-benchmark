@@ -11,6 +11,7 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
+  nativeStartupPayloadIsComplete,
   nativeTransportFailureDnf,
 } from '../adapters/lynx-sandbox-android.mjs';
 
@@ -383,6 +384,20 @@ test('transport classification is narrow and preserves producer and integrity fa
   }), null);
 });
 
+test('startup polling ignores an in-flight producer receipt until its second frame', () => {
+  assert.equal(nativeStartupPayloadIsComplete(null), false);
+  assert.equal(nativeStartupPayloadIsComplete({
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: 1,
+  }), false);
+  assert.equal(nativeStartupPayloadIsComplete({
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: 1,
+    firstFrameMs: 2,
+    secondFrameMs: 3,
+  }), true);
+});
+
 test('startup failures remain per-cell and still emit every expected metric and scale', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-capability-'));
   const { entry, snapshots } = fakeEntry(dir);
@@ -455,13 +470,26 @@ test('a startup timeout at scale 0 does not suppress later startup scales', asyn
   );
 });
 
-test('startup producers use one framework-neutral metric contract', async () => {
+test('startup producers use the entry-specific published metric contract', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-contract-'));
   const { entry, snapshots } = fakeEntry(dir, { id: 'octane', framework: 'octane' });
   const adapter = mockAdapter({
     calls: [],
     collect: [],
-    startup: [{ fcpMs: 1, settledMs: 2 }],
+    startup: [{
+      metrics: {
+        octaneCommitAck: {
+          value: 1,
+          unit: 'ms',
+          boundary: 'native-open-request-to-octane-transport-ack',
+        },
+        octaneSecondFrame: {
+          value: 2,
+          unit: 'ms',
+          boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
+        },
+      },
+    }],
   });
   const records = await runNativeMatrix({
     adapter,
@@ -472,7 +500,7 @@ test('startup producers use one framework-neutral metric contract', async () => 
     startupReps: 1,
     bundleSnapshots: snapshots,
   });
-  assert.deepEqual(records.map(({ metric }) => metric), ['fcp', 'settled']);
+  assert.deepEqual(records.map(({ metric }) => metric), ['octaneCommitAck', 'octaneSecondFrame']);
 });
 
 test('adapter modules are validated against the documented contract', async () => {
