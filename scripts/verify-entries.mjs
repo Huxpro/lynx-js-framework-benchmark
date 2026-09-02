@@ -16,7 +16,10 @@ const entriesDir = path.join(root, 'entries');
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
-const NATIVE_DIAGNOSTIC_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v1';
+const NATIVE_DIAGNOSTIC_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const NATIVE_CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
+const NATIVE_CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+const NATIVE_CAPACITY_TOPOLOGY = { elementsPerRow: 7, chromeElements: 42 };
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const LIST_WORKLOAD_CONTRACT_SHA256 = sha256(JSON.stringify(LIST_WORKLOAD_CONTRACT));
 const fileHashes = new Map();
@@ -135,7 +138,7 @@ for (const id of ids) {
       fail(`${id}: must retain its diagnostic capacity-probe role`);
     }
     if (manifest.bundles?.lynx !== 'dist/table/main.lynx.bundle') {
-      fail(`${id}: eager table Native bundle path must be dist/table/main.lynx.bundle`);
+      fail(`${id}: empty table Native bundle path must be dist/table/main.lynx.bundle`);
     }
     if (manifest.bundles?.web != null) {
       fail(`${id}: diagnostic entry must not declare a Web bundle`);
@@ -154,9 +157,51 @@ for (const id of ids) {
       fail(`${id}: Native artifacts must come from a clean Octane checkout`);
     }
     const diagnosticChecks = manifest.provenance?.sha256 ?? {};
-    const expectedKeys = ['list/main.lynx.bundle', 'table/main.lynx.bundle'];
+    const expectedCapacityKeys = NATIVE_CAPACITY_SCALES.map(
+      (rows) => `capacity/rows-${rows}/main.lynx.bundle`,
+    );
+    const expectedKeys = [
+      ...expectedCapacityKeys,
+      'list/main.lynx.bundle',
+      'table/main.lynx.bundle',
+    ].sort();
     if (JSON.stringify(Object.keys(diagnosticChecks).sort()) !== JSON.stringify(expectedKeys)) {
-      fail(`${id}: provenance must checksum exactly the table and list Native bundles`);
+      fail(`${id}: provenance must checksum exactly the empty table, six capacity, and list Native bundles`);
+    }
+    const capacityFixture = manifest.capacityFixture;
+    if (capacityFixture?.protocol !== NATIVE_CAPACITY_FIXTURE_PROTOCOL) {
+      fail(`${id}: capacityFixture protocol must be ${NATIVE_CAPACITY_FIXTURE_PROTOCOL}`);
+    }
+    if (capacityFixture?.fixtureRole !== 'eager-capacity-probe') {
+      fail(`${id}: capacityFixture role must be eager-capacity-probe`);
+    }
+    if (capacityFixture?.topology?.elementsPerRow !== NATIVE_CAPACITY_TOPOLOGY.elementsPerRow
+      || capacityFixture?.topology?.chromeElements !== NATIVE_CAPACITY_TOPOLOGY.chromeElements
+      || Object.keys(capacityFixture?.topology ?? {}).length
+        !== Object.keys(NATIVE_CAPACITY_TOPOLOGY).length) {
+      fail(`${id}: capacityFixture topology must be 7 elements per row plus 42 chrome elements`);
+    }
+    if (JSON.stringify(Object.keys(capacityFixture?.scales ?? {}))
+      !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
+      fail(`${id}: capacityFixture must declare exactly scales ${NATIVE_CAPACITY_SCALES.join(', ')}`);
+    }
+    for (const rows of NATIVE_CAPACITY_SCALES) {
+      const artifact = capacityFixture?.scales?.[String(rows)];
+      const expectedBundle = `dist/capacity/rows-${rows}/main.lynx.bundle`;
+      const expectedChecksum = diagnosticChecks[`capacity/rows-${rows}/main.lynx.bundle`];
+      if (artifact?.bundle !== expectedBundle) {
+        fail(`${id}: capacityFixture ${rows} bundle path must be ${expectedBundle}`);
+      }
+      if (artifact?.sha256 !== expectedChecksum) {
+        fail(`${id}: capacityFixture ${rows} checksum must match vendored provenance`);
+      }
+      const file = resolveEntryPath(dir, artifact?.bundle, `${id}: capacityFixture ${rows} bundle path`);
+      if (file == null) continue;
+      if (!fs.existsSync(file)) {
+        fail(`${id}: capacityFixture ${rows} bundle missing (${artifact.bundle})`);
+      } else if (sha256File(file) !== artifact.sha256) {
+        fail(`${id}: sha256 mismatch for capacityFixture ${rows} bundle`);
+      }
     }
     if (manifest.listFixture?.sha256?.native !== diagnosticChecks['list/main.lynx.bundle']) {
       fail(`${id}: listFixture Native checksum must match vendored provenance`);
@@ -181,6 +226,10 @@ for (const id of ids) {
           path: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
           sha256: diagnosticChecks['table/main.lynx.bundle'],
         },
+        capacity: Object.fromEntries(NATIVE_CAPACITY_SCALES.map((rows) => [String(rows), {
+          path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
+          sha256: diagnosticChecks[`capacity/rows-${rows}/main.lynx.bundle`],
+        }])),
         list: {
           path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
           sha256: diagnosticChecks['list/main.lynx.bundle'],

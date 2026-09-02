@@ -7,6 +7,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 const script = new URL('./build-octane-upstream.mjs', import.meta.url).pathname;
+const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
 
 function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
@@ -51,7 +52,7 @@ test('block build preserves the upstream block-core output namespace', () => {
   }
 });
 
-test('upstream build emits distinct eager-table and bounded-list Native bundles', () => {
+test('upstream build emits the empty table, every eager capacity scale, and bounded list', () => {
   const checkout = fs.mkdtempSync(path.join(os.tmpdir(), 'build-octane-native-fixtures-'));
   try {
     const tableBuildScript = path.join(
@@ -83,6 +84,10 @@ test('upstream build emits distinct eager-table and bounded-list Native bundles'
       fs.mkdirSync(out, { recursive: true });
       fs.writeFileSync(path.join(out, 'main.lynx.bundle'), 'bounded-list-native');
     `);
+    fs.writeFileSync(
+      path.join(checkout, '.gitignore'),
+      'benchmarks/lynx-table/app/dist*/\nbenchmarks/lynx-list/app/dist/\n',
+    );
     git(checkout, 'init', '-b', 'main');
     git(checkout, 'config', 'user.name', 'Build Test');
     git(checkout, 'config', 'user.email', 'build@example.test');
@@ -110,20 +115,43 @@ test('upstream build emits distinct eager-table and bounded-list Native bundles'
       checkout,
       'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
     ), 'utf8'));
-    assert.equal(receipt.protocol, 'octane-native-diagnostic-build-v1');
+    assert.equal(receipt.protocol, 'octane-native-diagnostic-build-v2');
     assert.equal(receipt.sourceCommit, commit);
     assert.deepEqual(receipt.artifacts, {
       table: {
         path: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
         sha256: sha256(tableBundle),
       },
+      capacity: Object.fromEntries(CAPACITY_SCALES.map((rows) => [String(rows), {
+        path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
+        sha256: sha256(`table-native-${rows}`),
+      }])),
       list: {
         path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
         sha256: sha256(listBundle),
       },
     });
+    for (const rows of [0, ...CAPACITY_SCALES, 30000]) {
+      const suffix = rows === 0 ? '' : `-rows${rows}`;
+      assert.equal(
+        fs.readFileSync(path.join(
+          checkout,
+          `benchmarks/lynx-table/app/dist${suffix}/main.lynx.bundle`,
+        ), 'utf8'),
+        `table-native-${rows}`,
+      );
+    }
     const { sha256: receiptSha256, ...payload } = receipt;
     assert.equal(receiptSha256, sha256(JSON.stringify(payload)));
+
+    const repeated = spawnSync(process.execPath, [script, checkout], {
+      encoding: 'utf8',
+    });
+    assert.equal(repeated.status, 0, repeated.stderr);
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(
+      checkout,
+      'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
+    ), 'utf8')), receipt);
 
     const blockResult = spawnSync(process.execPath, [script, checkout], {
       env: { ...process.env, BENCH_CORE: 'block' },

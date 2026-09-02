@@ -13,6 +13,7 @@ const listWorkloadsSource = new URL(
 ).pathname;
 const LIST_CONTRACT_SHA256 =
   '8cc9d901f97e6e17ac6207b13d9bb9afb5163ce0d1142cffd1b1921726a2f87b';
+const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -29,19 +30,31 @@ function stageDiagnosticEntry() {
   const listBundle = path.join(entryDir, 'dist/list/main.lynx.bundle');
   fs.mkdirSync(path.dirname(tableBundle), { recursive: true });
   fs.mkdirSync(path.dirname(listBundle), { recursive: true });
-  fs.writeFileSync(tableBundle, 'eager-table-native');
+  fs.writeFileSync(tableBundle, 'empty-table-native');
   fs.writeFileSync(listBundle, 'bounded-list-native');
-  const tableSha256 = sha256('eager-table-native');
+  const tableSha256 = sha256('empty-table-native');
   const listSha256 = sha256('bounded-list-native');
+  const capacity = Object.fromEntries(CAPACITY_SCALES.map((rows) => {
+    const bundle = `dist/capacity/rows-${rows}/main.lynx.bundle`;
+    const file = path.join(entryDir, bundle);
+    const contents = `lynx-native-startup-v1 eager-capacity-${rows}`;
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, contents);
+    return [String(rows), { bundle, sha256: sha256(contents) }];
+  }));
   const commit = 'a'.repeat(40);
   const receiptPayload = {
-    protocol: 'octane-native-diagnostic-build-v1',
+    protocol: 'octane-native-diagnostic-build-v2',
     sourceCommit: commit,
     artifacts: {
       table: {
         path: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
         sha256: tableSha256,
       },
+      capacity: Object.fromEntries(CAPACITY_SCALES.map((rows) => [String(rows), {
+        path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
+        sha256: capacity[String(rows)].sha256,
+      }])),
       list: {
         path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
         sha256: listSha256,
@@ -75,10 +88,20 @@ function stageDiagnosticEntry() {
       buildReceipt,
       sha256: {
         'table/main.lynx.bundle': tableSha256,
+        ...Object.fromEntries(CAPACITY_SCALES.map((rows) => [
+          `capacity/rows-${rows}/main.lynx.bundle`,
+          capacity[String(rows)].sha256,
+        ])),
         'list/main.lynx.bundle': listSha256,
       },
     },
     bundles: { lynx: 'dist/table/main.lynx.bundle' },
+    capacityFixture: {
+      protocol: 'lynx-native-capacity-fixture-v1',
+      fixtureRole: 'eager-capacity-probe',
+      topology: { elementsPerRow: 7, chromeElements: 42 },
+      scales: capacity,
+    },
     listFixture: {
       protocol: 'lynx-list-fixture-v1',
       contractSha256: LIST_CONTRACT_SHA256,
@@ -88,7 +111,7 @@ function stageDiagnosticEntry() {
   };
   const manifestPath = path.join(entryDir, 'entry.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-  return { root, entryDir, manifestPath, manifest };
+  return { root, entryDir, manifestPath, manifest, capacity };
 }
 
 function verify(root) {
@@ -109,6 +132,42 @@ test('entry verification accepts the generated native-only diagnostic contract',
 });
 
 for (const [name, mutate, error] of [
+  [
+    'missing capacity bundle',
+    ({ entryDir }) => fs.rmSync(
+      path.join(entryDir, 'dist/capacity/rows-7000/main.lynx.bundle'),
+    ),
+    /checksummed bundle missing|capacityFixture 7000 bundle missing/,
+  ],
+  [
+    'stale capacity bundle',
+    ({ entryDir }) => fs.writeFileSync(
+      path.join(entryDir, 'dist/capacity/rows-7000/main.lynx.bundle'),
+      'stale-capacity-native',
+    ),
+    /sha256 mismatch/,
+  ],
+  [
+    'rows-0-only capacity mapping',
+    ({ manifest }) => {
+      manifest.capacityFixture.scales['1000'].bundle = 'dist/table/main.lynx.bundle';
+    },
+    /capacityFixture 1000 bundle path/,
+  ],
+  [
+    'mismatched capacity protocol',
+    ({ manifest }) => {
+      manifest.capacityFixture.protocol = 'lynx-native-capacity-fixture-v0';
+    },
+    /capacityFixture protocol/,
+  ],
+  [
+    'mismatched capacity topology',
+    ({ manifest }) => {
+      manifest.capacityFixture.topology.elementsPerRow = 6;
+    },
+    /capacityFixture topology/,
+  ],
   [
     'missing list bundle',
     ({ entryDir }) => fs.rmSync(path.join(entryDir, 'dist/list/main.lynx.bundle')),
@@ -143,7 +202,7 @@ for (const [name, mutate, error] of [
   [
     'tampered build-receipt artifact binding',
     ({ manifest }) => {
-      manifest.provenance.buildReceipt.artifacts.list.sha256 = 'c'.repeat(64);
+      manifest.provenance.buildReceipt.artifacts.capacity['7000'].sha256 = 'c'.repeat(64);
       const { sha256: _prior, ...payload } = manifest.provenance.buildReceipt;
       manifest.provenance.buildReceipt.sha256 = sha256(JSON.stringify(payload));
     },

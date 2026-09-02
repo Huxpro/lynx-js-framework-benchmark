@@ -22,6 +22,16 @@ import {
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
+const CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const ALL_CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+
+function capacityArtifacts(make = (rows) => ({
+  bundle: `dist/capacity/rows-${rows}/main.lynx.bundle`,
+  sha256: '1'.repeat(64),
+})) {
+  return Object.fromEntries(ALL_CAPACITY_SCALES.map((rows) => [String(rows), make(rows)]));
+}
 
 function diagnosticEntry(overrides = {}) {
   return {
@@ -34,19 +44,62 @@ function diagnosticEntry(overrides = {}) {
       ref: 'a'.repeat(40),
       commit: 'a'.repeat(40),
       buildReceipt: {
-        protocol: 'octane-native-diagnostic-build-v1',
+        protocol: CAPACITY_BUILD_PROTOCOL,
         sourceCommit: 'a'.repeat(40),
         artifacts: {
           table: {
             path: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
-            sha256: null,
+            sha256: '1'.repeat(64),
+          },
+          capacity: capacityArtifacts((rows) => ({
+            path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
+            sha256: '1'.repeat(64),
+          })),
+          list: {
+            path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
+            sha256: '1'.repeat(64),
           },
         },
       },
-      sha256: { 'table/main.lynx.bundle': null },
+      sha256: {
+        'table/main.lynx.bundle': '1'.repeat(64),
+        ...Object.fromEntries(ALL_CAPACITY_SCALES.map((rows) => [
+          `capacity/rows-${rows}/main.lynx.bundle`,
+          '1'.repeat(64),
+        ])),
+        'list/main.lynx.bundle': '1'.repeat(64),
+      },
+    },
+    capacityFixture: {
+      protocol: CAPACITY_FIXTURE_PROTOCOL,
+      fixtureRole: 'eager-capacity-probe',
+      topology: { elementsPerRow: 7, chromeElements: 42 },
+      scales: capacityArtifacts(),
     },
     ...overrides,
   };
+}
+
+function executionFixture(scales) {
+  const entry = diagnosticEntry({ dir: '/fixture' });
+  const bundles = {};
+  for (const scale of ALL_CAPACITY_SCALES) {
+    const bundleBytes = Buffer.from(`fixture-${scale}`);
+    const bundleSha256 = sha256(bundleBytes);
+    entry.capacityFixture.scales[String(scale)].sha256 = bundleSha256;
+    entry.provenance.sha256[`capacity/rows-${scale}/main.lynx.bundle`] = bundleSha256;
+    entry.provenance.buildReceipt.artifacts.capacity[String(scale)].sha256 = bundleSha256;
+    if (scales.includes(scale)) {
+      const relativePath = entry.capacityFixture.scales[String(scale)].bundle;
+      bundles[String(scale)] = {
+        bundlePath: path.join(entry.dir, relativePath),
+        bundleBytes,
+        relativePath,
+        sha256: bundleSha256,
+      };
+    }
+  }
+  return { entry, bundles };
 }
 
 function fixture() {
@@ -67,18 +120,29 @@ function fixture() {
   const entryDir = path.join(root, `entries/${NATIVE_CAPACITY_ENTRY_ID}`);
   const distDir = path.join(entryDir, 'dist');
   fs.mkdirSync(path.join(distDir, 'table'), { recursive: true });
-  const bundle = Buffer.from('lynx-native-startup-v1 capacity-fixture');
-  const bundlePath = path.join(distDir, 'table/main.lynx.bundle');
-  fs.writeFileSync(bundlePath, bundle);
-  const bundleSha = sha256(bundle);
+  fs.writeFileSync(path.join(distDir, 'table/main.lynx.bundle'), 'empty-table-fixture');
   const entry = diagnosticEntry();
   entry.dir = entryDir;
   entry.distDir = distDir;
-  entry.provenance.sha256['table/main.lynx.bundle'] = bundleSha;
-  entry.provenance.buildReceipt.artifacts.table.sha256 = bundleSha;
-  entry.provenance.buildReceipt.sha256 = sha256(JSON.stringify(entry.provenance.buildReceipt));
+  const tableSha = sha256('empty-table-fixture');
+  entry.provenance.sha256['table/main.lynx.bundle'] = tableSha;
+  entry.provenance.buildReceipt.artifacts.table.sha256 = tableSha;
+  const bundlePaths = {};
+  for (const rows of ALL_CAPACITY_SCALES) {
+    const bundle = Buffer.from(`lynx-native-startup-v1 eager-capacity-${rows}`);
+    const bundlePath = path.join(distDir, `capacity/rows-${rows}/main.lynx.bundle`);
+    fs.mkdirSync(path.dirname(bundlePath), { recursive: true });
+    fs.writeFileSync(bundlePath, bundle);
+    const bundleSha = sha256(bundle);
+    entry.capacityFixture.scales[String(rows)].sha256 = bundleSha;
+    entry.provenance.sha256[`capacity/rows-${rows}/main.lynx.bundle`] = bundleSha;
+    entry.provenance.buildReceipt.artifacts.capacity[String(rows)].sha256 = bundleSha;
+    bundlePaths[rows] = bundlePath;
+  }
+  const { sha256: _priorReceipt, ...receiptPayload } = entry.provenance.buildReceipt;
+  entry.provenance.buildReceipt.sha256 = sha256(JSON.stringify(receiptPayload));
   fs.writeFileSync(path.join(entryDir, 'entry.json'), JSON.stringify(entry));
-  return { root, runner, shared, adapterPath, bundlePath, entry };
+  return { root, runner, shared, adapterPath, bundlePaths, entry };
 }
 
 test('capacity suite is opt-in and defaults to the exact diagnostic entry and 1k/10k', () => {
@@ -88,6 +152,13 @@ test('capacity suite is opt-in and defaults to the exact diagnostic entry and 1k
   assert.equal(suite.entry.id, NATIVE_CAPACITY_ENTRY_ID);
   assert.deepEqual(suite.scales, NATIVE_CAPACITY_DEFAULT_SCALES);
   assert.equal(suite.cells.every((cell) => cell.diagnostic && !cell.rankingEligible), true);
+  assert.deepEqual(
+    suite.cells.map((cell) => [cell.scale, cell.artifact]),
+    NATIVE_CAPACITY_DEFAULT_SCALES.map((scale) => [
+      scale,
+      entry.capacityFixture.scales[String(scale)],
+    ]),
+  );
   assert.throws(
     () => resolveNativeCapacitySuite({ includeThresholds: true, entries: [entry] }),
     /requires --native-capacity/,
@@ -147,6 +218,27 @@ test('capacity suite rejects any entry, tier, harness, bundle, or build protocol
     { ...entry, tier: 'featured' },
     { ...entry, harnesses: ['web'] },
     { ...entry, bundles: { lynx: 'dist/rows-0/main.lynx.bundle' } },
+    { ...entry, capacityFixture: undefined },
+    {
+      ...entry,
+      capacityFixture: {
+        ...entry.capacityFixture,
+        scales: capacityArtifacts(() => ({
+          bundle: 'dist/table/main.lynx.bundle',
+          sha256: '1'.repeat(64),
+        })),
+      },
+    },
+    {
+      ...entry,
+      capacityFixture: {
+        ...entry.capacityFixture,
+        scales: {
+          ...entry.capacityFixture.scales,
+          0: { bundle: 'dist/table/main.lynx.bundle', sha256: '1'.repeat(64) },
+        },
+      },
+    },
     {
       ...entry,
       provenance: {
@@ -172,7 +264,7 @@ test('diagnostic entry never expands featured Native eligibility or its ranked m
   assert.deepEqual(after, before);
 });
 
-test('capacity receipt binds contract, policy, source revision, bundle, and runner sources', () => {
+test('capacity receipt binds contract, policy, topology, selected bundles, and runner sources', () => {
   const current = fixture();
   try {
     const suite = resolveNativeCapacitySuite({ requested: true, entries: [current.entry] });
@@ -184,9 +276,43 @@ test('capacity receipt binds contract, policy, source revision, bundle, and runn
       root: current.root,
     });
     const initial = snapshot();
-    assert.equal(initial.bundle.sha256, current.entry.provenance.sha256['table/main.lynx.bundle']);
+    assert.deepEqual(Object.keys(initial.bundles), ['1000', '10000']);
+    assert.equal(
+      initial.bundles['1000'].sha256,
+      current.entry.capacityFixture.scales['1000'].sha256,
+    );
     assert.equal(initial.receipt.sourceCommit, current.entry.provenance.commit);
+    assert.deepEqual(initial.receipt.capacityFixture, {
+      protocol: CAPACITY_FIXTURE_PROTOCOL,
+      fixtureRole: 'eager-capacity-probe',
+      topology: { elementsPerRow: 7, chromeElements: 42 },
+      scales: {
+        1000: {
+          ...current.entry.capacityFixture.scales['1000'],
+          bytes: fs.statSync(current.bundlePaths[1000]).size,
+          startupProtocol: 'lynx-native-startup-v1',
+        },
+        10000: {
+          ...current.entry.capacityFixture.scales['10000'],
+          bytes: fs.statSync(current.bundlePaths[10000]).size,
+          startupProtocol: 'lynx-native-startup-v1',
+        },
+      },
+    });
     assert.doesNotThrow(() => assertNativeCapacityInputsUnchanged(initial));
+
+    const topologyBound = snapshot();
+    topologyBound.receipt.capacityFixture.topology.elementsPerRow = 6;
+    assert.throws(
+      () => assertNativeCapacityInputsUnchanged(topologyBound),
+      /input receipt mutated/,
+    );
+    const pathBound = snapshot();
+    pathBound.bundles['1000'].bundlePath = current.bundlePaths[10000];
+    assert.throws(
+      () => assertNativeCapacityInputsUnchanged(pathBound),
+      /1000-row Native capacity bundle mutated/,
+    );
 
     const policyChanged = snapshot({ timeoutMs: 180_001 });
     assert.notEqual(policyChanged.receipt.sha256, initial.receipt.sha256);
@@ -203,6 +329,10 @@ test('capacity receipt binds contract, policy, source revision, bundle, and runn
       root: current.root,
     });
     assert.notEqual(scalesChanged.receipt.sha256, initial.receipt.sha256);
+    assert.deepEqual(
+      Object.keys(scalesChanged.receipt.capacityFixture.scales),
+      ALL_CAPACITY_SCALES.map(String),
+    );
 
     fs.appendFileSync(path.join(current.runner, 'native-capacity-suite.mjs'), '\nchanged');
     const sourceChanged = snapshot();
@@ -243,7 +373,7 @@ test('capacity receipt fails closed on source revision and bundle checksum drift
       /source revision/,
     );
     current.entry.provenance.ref = current.entry.provenance.commit;
-    current.entry.provenance.sha256['table/main.lynx.bundle'] = '0'.repeat(64);
+    current.entry.provenance.sha256['capacity/rows-1000/main.lynx.bundle'] = '0'.repeat(64);
     assert.throws(
       () => snapshotNativeCapacityInputs({
         entry: current.entry,
@@ -265,9 +395,10 @@ test('capacity receipt rejects a checksum-valid bundle with the wrong fixture pr
     const suite = resolveNativeCapacitySuite({ requested: true, entries: [current.entry] });
     const wrongBundle = Buffer.from('future-native-receipt-v2');
     const wrongSha = sha256(wrongBundle);
-    fs.writeFileSync(current.bundlePath, wrongBundle);
-    current.entry.provenance.sha256['table/main.lynx.bundle'] = wrongSha;
-    current.entry.provenance.buildReceipt.artifacts.table.sha256 = wrongSha;
+    fs.writeFileSync(current.bundlePaths[1000], wrongBundle);
+    current.entry.capacityFixture.scales['1000'].sha256 = wrongSha;
+    current.entry.provenance.sha256['capacity/rows-1000/main.lynx.bundle'] = wrongSha;
+    current.entry.provenance.buildReceipt.artifacts.capacity['1000'].sha256 = wrongSha;
     const { sha256: _receiptSha256, ...receiptPayload } = current.entry.provenance.buildReceipt;
     current.entry.provenance.buildReceipt.sha256 = sha256(JSON.stringify(receiptPayload));
     fs.writeFileSync(path.join(current.entry.dir, 'entry.json'), JSON.stringify(current.entry));
@@ -286,7 +417,7 @@ test('capacity receipt rejects a checksum-valid bundle with the wrong fixture pr
   }
 });
 
-test('capacity receipt changes for a coherently updated table bundle', () => {
+test('capacity receipt changes for any coherently updated selected capacity bundle', () => {
   const current = fixture();
   try {
     const suite = resolveNativeCapacitySuite({ requested: true, entries: [current.entry] });
@@ -300,15 +431,16 @@ test('capacity receipt changes for a coherently updated table bundle', () => {
     const initial = snapshot();
     const changedBundle = Buffer.from('lynx-native-startup-v1 capacity-fixture-changed');
     const changedSha = sha256(changedBundle);
-    fs.writeFileSync(current.bundlePath, changedBundle);
-    current.entry.provenance.sha256['table/main.lynx.bundle'] = changedSha;
-    current.entry.provenance.buildReceipt.artifacts.table.sha256 = changedSha;
+    fs.writeFileSync(current.bundlePaths[1000], changedBundle);
+    current.entry.capacityFixture.scales['1000'].sha256 = changedSha;
+    current.entry.provenance.sha256['capacity/rows-1000/main.lynx.bundle'] = changedSha;
+    current.entry.provenance.buildReceipt.artifacts.capacity['1000'].sha256 = changedSha;
     const { sha256: _receiptSha256, ...receiptPayload } = current.entry.provenance.buildReceipt;
     current.entry.provenance.buildReceipt.sha256 = sha256(JSON.stringify(receiptPayload));
     fs.writeFileSync(path.join(current.entry.dir, 'entry.json'), JSON.stringify(current.entry));
     const changed = snapshot();
     assert.notEqual(changed.receipt.sha256, initial.receipt.sha256);
-    assert.equal(changed.receipt.bundle.sha256, changedSha);
+    assert.equal(changed.receipt.capacityFixture.scales['1000'].sha256, changedSha);
   } finally {
     fs.rmSync(current.root, { recursive: true, force: true });
   }
@@ -319,28 +451,39 @@ test('capacity execution requires the dedicated adapter hook and retains zero-sa
   const suite = resolveNativeCapacitySuite({ requested: true, entries: [entry], reps: 1 });
   await assert.rejects(
     () => runNativeCapacitySuite({
-      adapter: { environment: 'android' }, entry, contract: suite.contract, bundle: {},
+      adapter: { environment: 'android' }, entry, contract: suite.contract, bundles: {},
     }),
     /runCapacityProbe/,
   );
+  const observedBundles = [];
+  const execution = executionFixture(suite.contract.scales);
   const records = await runNativeCapacitySuite({
     adapter: {
       environment: 'android',
-      async runCapacityProbe(_entry, { scale }) {
+      async runCapacityProbe(_entry, probe) {
+        observedBundles.push(probe);
         return {
           dnf: true,
-          failure: { category: scale === 10_000 ? 'capacity/test' : 'timeout' },
+          failure: { category: probe.scale === 10_000 ? 'capacity/test' : 'timeout' },
         };
       },
     },
-    entry,
+    entry: execution.entry,
     contract: suite.contract,
-    bundle: {
-      bundlePath: '/fixture/main.lynx.bundle',
-      bundleBytes: Buffer.from('fixture'),
-      sha256: '1'.repeat(64),
-    },
+    bundles: execution.bundles,
   });
+  assert.deepEqual(
+    observedBundles.map(({ scale, bundlePath, bundleSha256 }) => ({
+      scale,
+      bundlePath,
+      bundleSha256,
+    })),
+    suite.contract.scales.map((scale) => ({
+      scale,
+      bundlePath: execution.bundles[String(scale)].bundlePath,
+      bundleSha256: execution.bundles[String(scale)].sha256,
+    })),
+  );
   assert.equal(records.length, 2);
   for (const record of records) {
     assert.deepEqual(record.samples, []);
@@ -362,6 +505,7 @@ test('successful threshold outcomes retain evidence without creating timing samp
     entries: [entry],
     reps: 1,
   });
+  const execution = executionFixture(suite.contract.scales);
   const records = await runNativeCapacitySuite({
     adapter: {
       environment: 'android',
@@ -369,13 +513,9 @@ test('successful threshold outcomes retain evidence without creating timing samp
         return { latencyMs: 12, detail: { receipt: 'valid' } };
       },
     },
-    entry,
+    entry: execution.entry,
     contract: suite.contract,
-    bundle: {
-      bundlePath: '/fixture/main.lynx.bundle',
-      bundleBytes: Buffer.from('fixture'),
-      sha256: '1'.repeat(64),
-    },
+    bundles: execution.bundles,
   });
   const defaults = records.filter((record) => !record.thresholdProbe);
   const thresholds = records.filter((record) => record.thresholdProbe);

@@ -176,7 +176,7 @@ async function runNativeCapacityCommand(args, entries) {
       adapter,
       entry: resolved.entry,
       contract: resolved.contract,
-      bundle: inputs.bundle,
+      bundles: inputs.bundles,
       log: (line) => console.log(line),
     });
   } finally {

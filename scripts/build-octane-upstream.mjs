@@ -14,6 +14,9 @@ if (!checkout || !fs.existsSync(tableBuildScript)) {
 const core = process.env.BENCH_CORE === 'block' ? 'block' : 'universal';
 const blockMode = process.env.BENCH_BLOCK_MODE === 'reconcile' ? 'reconcile' : 'scoped';
 const buildNativeDiagnostic = fs.existsSync(listBuildScript);
+const legacyTableScales = [0, 1000, 10000, 30000];
+const nativeCapacityScales = [1000, 6000, 7000, 7500, 8000, 10000];
+const nativeDiagnosticTableScales = [0, ...nativeCapacityScales, 30000];
 if (buildNativeDiagnostic && (core !== 'universal' || blockMode !== 'scoped')) {
   throw new Error(
     'Octane Native diagnostic artifacts require BENCH_CORE=universal and BENCH_BLOCK_MODE=scoped',
@@ -42,7 +45,10 @@ const coreSuffix = core === 'block'
   ? (blockMode === 'reconcile' ? '-block-reconcile' : '-block')
   : '';
 
-for (const rows of [0, 1000, 10000, 30000]) {
+const tableScales = buildNativeDiagnostic
+  ? nativeDiagnosticTableScales
+  : legacyTableScales;
+for (const rows of tableScales) {
   execFileSync(process.execPath, [tableBuildScript], {
     cwd: checkout,
     stdio: 'inherit',
@@ -81,10 +87,17 @@ if (buildNativeDiagnostic) {
     sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
   });
   const payload = {
-    protocol: 'octane-native-diagnostic-build-v1',
+    protocol: 'octane-native-diagnostic-build-v2',
     sourceCommit,
     artifacts: {
       table: artifact(tableBundle),
+      capacity: Object.fromEntries(nativeCapacityScales.map((rows) => [
+        String(rows),
+        artifact(path.join(
+          checkout,
+          `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
+        )),
+      ])),
       list: artifact(listBundle),
     },
   };
@@ -96,7 +109,7 @@ if (buildNativeDiagnostic) {
 }
 
 console.log(
-  `[build-octane-upstream] ${core}/${blockMode} table rows 0/1k/10k/30k`
+  `[build-octane-upstream] ${core}/${blockMode} table rows ${tableScales.join('/')}`
   + (buildNativeDiagnostic ? ' + bounded Native list' : '')
   + ' complete',
 );

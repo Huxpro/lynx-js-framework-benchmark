@@ -8,18 +8,34 @@ import {
   refreshConnectorPackageTrees,
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
-import { assertNativeCapacityContract } from './native-capacity-suite.mjs';
+import {
+  assertNativeCapacityContract,
+  NATIVE_CAPACITY_DEFAULT_SCALES,
+  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+  NATIVE_CAPACITY_THRESHOLD_SCALES,
+} from './native-capacity-suite.mjs';
 
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
-export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v1';
+export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v2';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
 export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
 
 const NATIVE_CAPACITY_ENTRY_ID = 'octane-native-diagnostic';
-const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v1';
+const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
 const NATIVE_CAPACITY_BUILD_ARTIFACT = 'benchmarks/lynx-table/app/dist/main.lynx.bundle';
+const NATIVE_CAPACITY_BUILD_LIST_ARTIFACT = 'benchmarks/lynx-list/app/dist/main.lynx.bundle';
 const NATIVE_CAPACITY_BUNDLE_REL = 'dist/table/main.lynx.bundle';
-const NATIVE_CAPACITY_PROVENANCE_REL = 'table/main.lynx.bundle';
+const NATIVE_CAPACITY_SCALES = [
+  ...NATIVE_CAPACITY_DEFAULT_SCALES,
+  ...NATIVE_CAPACITY_THRESHOLD_SCALES,
+].sort((a, b) => a - b);
+const NATIVE_CAPACITY_TOPOLOGY = { elementsPerRow: 7, chromeElements: 42 };
+const nativeCapacityBundleRel = (scale) =>
+  `dist/capacity/rows-${scale}/main.lynx.bundle`;
+const nativeCapacityProvenanceRel = (scale) =>
+  `capacity/rows-${scale}/main.lynx.bundle`;
+const nativeCapacityBuildArtifact = (scale) =>
+  `benchmarks/lynx-table/app/dist-rows${scale}/main.lynx.bundle`;
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -222,8 +238,26 @@ function assertCapacitySourceRevision(provenance, label) {
   if (buildReceipt.protocol !== NATIVE_CAPACITY_BUILD_PROTOCOL) {
     throw new Error(`${label} has an invalid Native capacity build protocol.`);
   }
-  if (buildReceipt.artifacts?.table?.path !== NATIVE_CAPACITY_BUILD_ARTIFACT) {
-    throw new Error(`${label} has an invalid Native capacity table artifact path.`);
+  if (JSON.stringify(Object.keys(buildReceipt.artifacts ?? {}))
+    !== JSON.stringify(['table', 'capacity', 'list'])
+    || buildReceipt.artifacts?.table?.path !== NATIVE_CAPACITY_BUILD_ARTIFACT
+    || !/^[a-f0-9]{64}$/.test(buildReceipt.artifacts?.table?.sha256 ?? '')
+    || provenance.sha256?.['table/main.lynx.bundle'] !== buildReceipt.artifacts.table.sha256
+    || buildReceipt.artifacts?.list?.path !== NATIVE_CAPACITY_BUILD_LIST_ARTIFACT
+    || !/^[a-f0-9]{64}$/.test(buildReceipt.artifacts?.list?.sha256 ?? '')
+    || provenance.sha256?.['list/main.lynx.bundle'] !== buildReceipt.artifacts.list.sha256) {
+    throw new Error(`${label} has an invalid Native diagnostic build artifact map.`);
+  }
+  if (JSON.stringify(Object.keys(buildReceipt.artifacts?.capacity ?? {}))
+    !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
+    throw new Error(`${label} has an invalid Native capacity build artifact map.`);
+  }
+  for (const scale of NATIVE_CAPACITY_SCALES) {
+    const artifact = buildReceipt.artifacts.capacity[String(scale)];
+    if (artifact?.path !== nativeCapacityBuildArtifact(scale)
+      || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')) {
+      throw new Error(`${label} has an invalid ${scale}-row Native capacity build artifact.`);
+    }
   }
   const { sha256: receiptSha256, ...receiptPayload } = buildReceipt;
   if (receiptSha256 !== sha256(Buffer.from(JSON.stringify(receiptPayload)))) {
@@ -240,6 +274,23 @@ function assertCapacityManifestShape(manifest, label) {
     || manifest.harnesses[0] !== 'native'
     || manifest.bundles?.lynx !== NATIVE_CAPACITY_BUNDLE_REL) {
     throw new Error(`${label} is not the exact Native capacity diagnostic manifest.`);
+  }
+  const fixture = manifest.capacityFixture;
+  if (fixture?.protocol !== NATIVE_CAPACITY_FIXTURE_PROTOCOL
+    || fixture.fixtureRole !== 'eager-capacity-probe'
+    || fixture.topology?.elementsPerRow !== NATIVE_CAPACITY_TOPOLOGY.elementsPerRow
+    || fixture.topology?.chromeElements !== NATIVE_CAPACITY_TOPOLOGY.chromeElements
+    || Object.keys(fixture.topology ?? {}).length !== Object.keys(NATIVE_CAPACITY_TOPOLOGY).length
+    || JSON.stringify(Object.keys(fixture.scales ?? {}))
+      !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
+    throw new Error(`${label} has an invalid Native capacity fixture contract.`);
+  }
+  for (const scale of NATIVE_CAPACITY_SCALES) {
+    const artifact = fixture.scales[String(scale)];
+    if (artifact?.bundle !== nativeCapacityBundleRel(scale)
+      || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')) {
+      throw new Error(`${label} has an invalid ${scale}-row Native capacity fixture artifact.`);
+    }
   }
   return manifest;
 }
@@ -285,23 +336,41 @@ export function snapshotNativeCapacityInputs({
   if (assertCapacitySourceRevision(manifest.provenance, `${entry.id} manifest`) !== sourceCommit) {
     throw new Error(`${entry.id} manifest source revision differs from discovered entry.`);
   }
+  if (JSON.stringify(entry.capacityFixture) !== JSON.stringify(manifest.capacityFixture)) {
+    throw new Error(`${entry.id} discovered capacityFixture differs from its pinned manifest.`);
+  }
 
-  const bundlePath = path.join(entry.dir, NATIVE_CAPACITY_BUNDLE_REL);
-  const bundlePin = pinFile(bundlePath, `${entry.id}:capacity-table-bundle`);
-  const expectedChecksums = [
-    entry.provenance?.sha256?.[NATIVE_CAPACITY_PROVENANCE_REL],
-    entry.provenance?.buildReceipt?.artifacts?.table?.sha256,
-    manifest.provenance?.sha256?.[NATIVE_CAPACITY_PROVENANCE_REL],
-    manifest.provenance?.buildReceipt?.artifacts?.table?.sha256,
-  ];
-  if (expectedChecksums.some((expected) => expected !== bundlePin.sha256)) {
-    throw new Error(
-      `${entry.id} Native capacity bundle checksum does not match manifest provenance.`,
-    );
-  }
-  if (!bundlePin.snapshotBytes.includes(Buffer.from(NATIVE_STARTUP_PROTOCOL))) {
-    throw new Error(`${entry.id} Native capacity bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
-  }
+  const bundles = Object.fromEntries(contract.scales.map((scale) => {
+    const key = String(scale);
+    const artifact = manifest.capacityFixture.scales[key];
+    const bundlePath = path.join(entry.dir, artifact.bundle);
+    const bundlePin = pinFile(bundlePath, `${entry.id}:capacity-${scale}-bundle`);
+    const provenanceRelative = nativeCapacityProvenanceRel(scale);
+    const expectedChecksums = [
+      entry.capacityFixture.scales[key].sha256,
+      entry.provenance?.sha256?.[provenanceRelative],
+      entry.provenance?.buildReceipt?.artifacts?.capacity?.[key]?.sha256,
+      manifest.capacityFixture.scales[key].sha256,
+      manifest.provenance?.sha256?.[provenanceRelative],
+      manifest.provenance?.buildReceipt?.artifacts?.capacity?.[key]?.sha256,
+    ];
+    if (expectedChecksums.some((expected) => expected !== bundlePin.sha256)) {
+      throw new Error(
+        `${entry.id} ${scale}-row Native capacity bundle checksum does not match manifest provenance.`,
+      );
+    }
+    if (!bundlePin.snapshotBytes.includes(Buffer.from(NATIVE_STARTUP_PROTOCOL))) {
+      throw new Error(
+        `${entry.id} ${scale}-row Native capacity bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`,
+      );
+    }
+    return [key, {
+      bundlePath,
+      bundleBytes: bundlePin.snapshotBytes,
+      relativePath: artifact.bundle,
+      sha256: bundlePin.sha256,
+    }];
+  }));
 
   const resolvedAdapter = path.resolve(adapterPath);
   const sourceFiles = [
@@ -335,19 +404,23 @@ export function snapshotNativeCapacityInputs({
       bytes: manifestPin.bytes,
       sha256: manifestPin.sha256,
     },
-    bundle: {
-      path: NATIVE_CAPACITY_BUNDLE_REL,
-      bytes: bundlePin.bytes,
-      sha256: bundlePin.sha256,
-      protocol: NATIVE_STARTUP_PROTOCOL,
+    capacityFixture: {
+      protocol: manifest.capacityFixture.protocol,
+      fixtureRole: manifest.capacityFixture.fixtureRole,
+      topology: { ...manifest.capacityFixture.topology },
+      scales: Object.fromEntries(contract.scales.map((scale) => {
+        const artifact = bundles[String(scale)];
+        return [String(scale), {
+          bundle: artifact.relativePath,
+          bytes: artifact.bundleBytes.length,
+          sha256: artifact.sha256,
+          startupProtocol: NATIVE_STARTUP_PROTOCOL,
+        }];
+      })),
     },
   };
   return {
-    bundle: {
-      bundlePath,
-      bundleBytes: bundlePin.snapshotBytes,
-      sha256: bundlePin.sha256,
-    },
+    bundles,
     immutableFiles,
     connectorPackageTrees,
     receipt: {
@@ -368,9 +441,23 @@ export function assertNativeCapacityInputsUnchanged(inputs) {
       refreshConnectorPackageTrees(inputs.connectorPackageTrees),
     );
   }
-  if (!Buffer.isBuffer(inputs?.bundle?.bundleBytes)
-    || sha256(inputs.bundle.bundleBytes) !== inputs.bundle.sha256) {
-    throw new Error('immutable Native capacity bundle mutated in memory.');
+  const receiptScales = inputs?.receipt?.capacityFixture?.scales ?? {};
+  if (JSON.stringify(Object.keys(inputs?.bundles ?? {}))
+    !== JSON.stringify(Object.keys(receiptScales))) {
+    throw new Error('immutable Native capacity bundle selection mutated in memory.');
+  }
+  for (const [scale, bundle] of Object.entries(inputs.bundles)) {
+    const receiptArtifact = receiptScales[scale];
+    const pinnedBundle = inputs.immutableFiles?.get(path.resolve(bundle?.bundlePath ?? ''));
+    if (!Buffer.isBuffer(bundle?.bundleBytes)
+      || sha256(bundle.bundleBytes) !== bundle.sha256
+      || pinnedBundle?.sha256 !== bundle.sha256
+      || bundle.relativePath !== receiptArtifact?.bundle
+      || bundle.bundleBytes.length !== receiptArtifact?.bytes
+      || bundle.sha256 !== receiptArtifact?.sha256
+      || receiptArtifact?.startupProtocol !== NATIVE_STARTUP_PROTOCOL) {
+      throw new Error(`immutable ${scale}-row Native capacity bundle mutated in memory.`);
+    }
   }
   for (const pinned of inputs.immutableFiles?.values() ?? []) {
     const roles = [...pinned.roles].sort().join(', ');
