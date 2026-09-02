@@ -5,6 +5,7 @@
 //                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
 //                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
+//                  [--native-capacity] [--capacity-thresholds]
 //                  [--jit jit|interp] [--cpu-throttle N]
 //                  [--throttle-scope none|process-cgroup]
 //   lynx-bench preflight
@@ -25,7 +26,7 @@ import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
-import { runNativeHarness } from './harness-native.mjs';
+import { loadNativeAdapter, runNativeHarness } from './harness-native.mjs';
 import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
@@ -51,7 +52,12 @@ import {
   classifyNativeCoverage,
   nativeCellKey,
 } from './native-coverage.mjs';
-import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
+import {
+  assertNativeCapacityInputsUnchanged,
+  assertNativeInputsUnchanged,
+  snapshotNativeCapacityInputs,
+  snapshotNativeInputs,
+} from './native-inputs.mjs';
 import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
@@ -72,6 +78,12 @@ import {
   NATIVE_TABLE_SCALES,
   resolveNativeRunMatrix,
 } from './run-matrix.mjs';
+import {
+  NATIVE_CAPACITY_CAMPAIGN_VERSION,
+  NATIVE_CAPACITY_ENTRY_ID,
+  resolveNativeCapacitySuite,
+  runNativeCapacitySuite,
+} from './native-capacity-suite.mjs';
 
 function parseArgs(argv) {
   const args = { _: [] };
@@ -95,9 +107,143 @@ const sha256Json = (value) => crypto.createHash('sha256')
   .update(JSON.stringify(value))
   .digest('hex');
 
+async function runNativeCapacityCommand(args, entries) {
+  const resolved = resolveNativeCapacitySuite({
+    requested: true,
+    includeThresholds: args['capacity-thresholds'] === true,
+    entries,
+    reps: args.reps,
+    suite: args.suite,
+    cases: args.case,
+    scale: args.scale,
+    startupScale: args['startup-scale'],
+    startupReps: args['startup-reps'],
+    stormReps: args['storm-reps'],
+    commit: args.commit,
+    quick: args.quick,
+    resume: args.resume,
+  });
+  if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
+    throw new Error('Native capacity run requires --adapter <module.mjs>.');
+  }
+
+  const root = repoRoot();
+  const connectorPackageTrees = resolveConnectorPackageTrees({
+    fromPath: path.resolve(args.adapter),
+  });
+  assertConnectorPackageTrees(connectorPackageTrees);
+  const inputs = snapshotNativeCapacityInputs({
+    entry: resolved.entry,
+    contract: resolved.contract,
+    runtimePolicy: NATIVE_SANDBOX_POLICY,
+    adapterPath: args.adapter,
+    connectorPackageTrees,
+    root,
+  });
+  const leaseReceiptInput = args['lease-receipt']
+    ?? process.env.LYNX_SANDBOX_LEASE_RECEIPT;
+  if (leaseReceiptInput == null) {
+    throw new Error(
+      'Native capacity run requires --lease-receipt <json-or-file> with issueId, expiredAt, and serial.',
+    );
+  }
+  const leaseReceipt = parseNativeLeaseReceipt(leaseReceiptInput, {
+    serial: process.env.LYNX_SANDBOX_SERIAL,
+  });
+  const campaignPayload = {
+    version: NATIVE_CAPACITY_CAMPAIGN_VERSION,
+    label: typeof args['campaign-id'] === 'string' ? args['campaign-id'] : args.label ?? null,
+    capacityContractSha256: resolved.contract.sha256,
+    inputReceiptSha256: inputs.receipt.sha256,
+    connectorPackageTreesSha256: connectorPackageTrees.sha256,
+    runtimePolicy: NATIVE_SANDBOX_POLICY,
+  };
+  const campaign = { ...campaignPayload, id: sha256Json(campaignPayload).slice(0, 16) };
+  const adapter = await loadNativeAdapter(args.adapter, {
+    log: (line) => console.log(line),
+    campaignIdentity: {
+      campaignId: campaign.id,
+      matrixContractSha256: resolved.contract.sha256,
+      inputReceiptSha256: inputs.receipt.sha256,
+      connectorPackageTrees,
+      connectorPackageTreesSha256: connectorPackageTrees.sha256,
+      leaseReceipt,
+    },
+  });
+  let records;
+  try {
+    records = await runNativeCapacitySuite({
+      adapter,
+      entry: resolved.entry,
+      contract: resolved.contract,
+      bundle: inputs.bundle,
+      log: (line) => console.log(line),
+    });
+  } finally {
+    await adapter.dispose();
+  }
+  assertNativeCapacityInputsUnchanged(inputs);
+
+  const machine = adapter.machine ?? machineFingerprint();
+  const now = new Date();
+  const label = args.label ? `-${args.label}` : '';
+  const run = {
+    schemaVersion: SCHEMA_VERSION,
+    meta: {
+      generatedAt: now.toISOString(),
+      machine,
+      calibration: null,
+      harness: 'native',
+      adapter: path.resolve(args.adapter),
+      argv: process.argv.slice(2),
+      checkpoint: false,
+      checkpointComplete: true,
+      diagnostic: true,
+      rankingEligible: false,
+      campaign,
+      capacityContract: resolved.contract,
+      runtimePolicy: NATIVE_SANDBOX_POLICY,
+      leaseChain: appendNativeLeaseReceipt(null, leaseReceipt),
+      inputReceipt: inputs.receipt,
+      entryCommits: { [resolved.entry.id]: resolved.entry.provenance.commit },
+    },
+    records,
+  };
+  const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const outPath = path.join(
+    root,
+    'results/runs',
+    `${stamp}-${machine.id}-native-capacity${label}.json`,
+  );
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, stringifyResult(run));
+  console.log(`[run:native-capacity] ${records.length} records → ${path.relative(root, outPath)}`);
+}
+
 async function cmdRun(args) {
   const harness = args.harness ?? 'web';
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
+  if (args['native-capacity'] != null && args['native-capacity'] !== true) {
+    throw new Error('--native-capacity is a boolean flag and does not accept a value.');
+  }
+  if (args['capacity-thresholds'] != null && args['capacity-thresholds'] !== true) {
+    throw new Error('--capacity-thresholds is a boolean flag and does not accept a value.');
+  }
+  const nativeCapacity = args['native-capacity'] === true;
+  if (args['capacity-thresholds'] === true && !nativeCapacity) {
+    throw new Error('--capacity-thresholds requires --native-capacity.');
+  }
+  if (nativeCapacity && harness !== 'native') {
+    throw new Error('--native-capacity requires --harness native.');
+  }
+  if (nativeCapacity) {
+    const requestedEntries = list(args.entry);
+    if (requestedEntries?.length !== 1 || requestedEntries[0] !== NATIVE_CAPACITY_ENTRY_ID) {
+      throw new Error(
+        `--native-capacity requires --entry ${NATIVE_CAPACITY_ENTRY_ID}.`,
+      );
+    }
+  }
   const jit = args.jit ?? 'jit';
   const cpuThrottle = args['cpu-throttle'] == null ? 1 : Number(args['cpu-throttle']);
   if (jit !== 'jit' && jit !== 'interp') throw new Error(`unknown jit regime: ${jit}`);
@@ -143,6 +289,10 @@ async function cmdRun(args) {
   if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
   if (harness === 'native') {
+    if (nativeCapacity) {
+      await runNativeCapacityCommand(args, entries);
+      return;
+    }
     if (suites.includes('pipeline') || suites.includes('storm')) {
       throw new Error(
         'The pipeline and storm suites are Web-only; use the standard Native table/startup matrix.',

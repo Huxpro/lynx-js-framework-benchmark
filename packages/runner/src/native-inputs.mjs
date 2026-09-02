@@ -8,10 +8,18 @@ import {
   refreshConnectorPackageTrees,
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
+import { assertNativeCapacityContract } from './native-capacity-suite.mjs';
 
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
+export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v1';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
 export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
+
+const NATIVE_CAPACITY_ENTRY_ID = 'octane-native-diagnostic';
+const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v1';
+const NATIVE_CAPACITY_BUILD_ARTIFACT = 'benchmarks/lynx-table/app/dist/main.lynx.bundle';
+const NATIVE_CAPACITY_BUNDLE_REL = 'dist/table/main.lynx.bundle';
+const NATIVE_CAPACITY_PROVENANCE_REL = 'table/main.lynx.bundle';
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -198,6 +206,179 @@ export function assertNativeInputsUnchanged(inputs) {
     const diskSha256 = sha256(fs.readFileSync(pinned.file));
     if (diskSha256 !== pinned.sha256) {
       throw new Error(`Native source changed on disk after snapshot: ${pinned.file} (${roles}).`);
+    }
+  }
+  return inputs;
+}
+
+function assertCapacitySourceRevision(provenance, label) {
+  const { commit, ref, buildReceipt } = provenance ?? {};
+  if (buildReceipt === null || typeof buildReceipt !== 'object' || Array.isArray(buildReceipt)
+    || !/^[a-f0-9]{40}$/.test(commit ?? '')
+    || ref !== commit
+    || buildReceipt?.sourceCommit !== commit) {
+    throw new Error(`${label} has an inconsistent Native capacity source revision.`);
+  }
+  if (buildReceipt.protocol !== NATIVE_CAPACITY_BUILD_PROTOCOL) {
+    throw new Error(`${label} has an invalid Native capacity build protocol.`);
+  }
+  if (buildReceipt.artifacts?.table?.path !== NATIVE_CAPACITY_BUILD_ARTIFACT) {
+    throw new Error(`${label} has an invalid Native capacity table artifact path.`);
+  }
+  const { sha256: receiptSha256, ...receiptPayload } = buildReceipt;
+  if (receiptSha256 !== sha256(Buffer.from(JSON.stringify(receiptPayload)))) {
+    throw new Error(`${label} has an invalid Native capacity build receipt checksum.`);
+  }
+  return commit;
+}
+
+function assertCapacityManifestShape(manifest, label) {
+  if (manifest?.id !== NATIVE_CAPACITY_ENTRY_ID
+    || manifest.tier !== 'lab'
+    || !Array.isArray(manifest.harnesses)
+    || manifest.harnesses.length !== 1
+    || manifest.harnesses[0] !== 'native'
+    || manifest.bundles?.lynx !== NATIVE_CAPACITY_BUNDLE_REL) {
+    throw new Error(`${label} is not the exact Native capacity diagnostic manifest.`);
+  }
+  return manifest;
+}
+
+/** Snapshot the separate, unranked eager-capacity input contract. */
+export function snapshotNativeCapacityInputs({
+  entry,
+  contract,
+  runtimePolicy,
+  adapterPath,
+  connectorPackageTrees = null,
+  root = repoRoot(),
+}) {
+  assertCapacityManifestShape(entry, entry?.id ?? 'capacity entry');
+  assertNativeCapacityContract(contract);
+  if (runtimePolicy === null || typeof runtimePolicy !== 'object' || Array.isArray(runtimePolicy)) {
+    throw new Error('Native capacity runtime policy must be an object.');
+  }
+  if (connectorPackageTrees != null) assertConnectorPackageTrees(connectorPackageTrees);
+
+  const immutableFiles = new Map();
+  const pinFile = (file, role) => {
+    const resolved = path.resolve(file);
+    const snapshotBytes = fs.readFileSync(resolved);
+    const pinned = {
+      file: resolved,
+      snapshotBytes,
+      bytes: snapshotBytes.length,
+      sha256: sha256(snapshotBytes),
+      roles: new Set([role]),
+    };
+    immutableFiles.set(resolved, pinned);
+    return pinned;
+  };
+
+  const manifestPath = path.join(entry.dir, 'entry.json');
+  const manifestPin = pinFile(manifestPath, `${NATIVE_CAPACITY_ENTRY_ID}:manifest`);
+  const manifest = assertCapacityManifestShape(
+    JSON.parse(manifestPin.snapshotBytes.toString('utf8')),
+    `${NATIVE_CAPACITY_ENTRY_ID} manifest`,
+  );
+  const sourceCommit = assertCapacitySourceRevision(entry.provenance, entry.id);
+  if (assertCapacitySourceRevision(manifest.provenance, `${entry.id} manifest`) !== sourceCommit) {
+    throw new Error(`${entry.id} manifest source revision differs from discovered entry.`);
+  }
+
+  const bundlePath = path.join(entry.dir, NATIVE_CAPACITY_BUNDLE_REL);
+  const bundlePin = pinFile(bundlePath, `${entry.id}:capacity-table-bundle`);
+  const expectedChecksums = [
+    entry.provenance?.sha256?.[NATIVE_CAPACITY_PROVENANCE_REL],
+    entry.provenance?.buildReceipt?.artifacts?.table?.sha256,
+    manifest.provenance?.sha256?.[NATIVE_CAPACITY_PROVENANCE_REL],
+    manifest.provenance?.buildReceipt?.artifacts?.table?.sha256,
+  ];
+  if (expectedChecksums.some((expected) => expected !== bundlePin.sha256)) {
+    throw new Error(
+      `${entry.id} Native capacity bundle checksum does not match manifest provenance.`,
+    );
+  }
+  if (!bundlePin.snapshotBytes.includes(Buffer.from(NATIVE_STARTUP_PROTOCOL))) {
+    throw new Error(`${entry.id} Native capacity bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
+  }
+
+  const resolvedAdapter = path.resolve(adapterPath);
+  const sourceFiles = [
+    resolvedAdapter,
+    path.join(root, 'packages/runner/src/cli.mjs'),
+    path.join(root, 'packages/runner/src/connector-receipt.mjs'),
+    path.join(root, 'packages/runner/src/harness-native.mjs'),
+    path.join(root, 'packages/runner/src/native-capacity-suite.mjs'),
+    path.join(root, 'packages/runner/src/native-inputs.mjs'),
+    path.join(root, 'packages/runner/src/native-protocol.mjs'),
+    path.join(root, 'packages/runner/src/run-matrix.mjs'),
+    path.join(root, 'packages/shared/src/schema.mjs'),
+    path.join(root, 'packages/shared/src/stats.mjs'),
+  ];
+  const sources = Object.fromEntries(sourceFiles.map((file) => {
+    const pinned = pinFile(file, 'capacity-runner-source');
+    return [relativeOrAbsolute(root, file), { bytes: pinned.bytes, sha256: pinned.sha256 }];
+  }));
+  const receiptPayload = {
+    version: NATIVE_CAPACITY_INPUT_RECEIPT_VERSION,
+    suite: contract.suite,
+    fixtureRole: contract.fixtureRole,
+    contract: JSON.parse(JSON.stringify(contract)),
+    runtimePolicy: JSON.parse(JSON.stringify(runtimePolicy)),
+    sourceCommit,
+    adapter: relativeOrAbsolute(root, resolvedAdapter),
+    connectorPackageTrees,
+    sources,
+    manifest: {
+      path: relativeOrAbsolute(root, manifestPath),
+      bytes: manifestPin.bytes,
+      sha256: manifestPin.sha256,
+    },
+    bundle: {
+      path: NATIVE_CAPACITY_BUNDLE_REL,
+      bytes: bundlePin.bytes,
+      sha256: bundlePin.sha256,
+      protocol: NATIVE_STARTUP_PROTOCOL,
+    },
+  };
+  return {
+    bundle: {
+      bundlePath,
+      bundleBytes: bundlePin.snapshotBytes,
+      sha256: bundlePin.sha256,
+    },
+    immutableFiles,
+    connectorPackageTrees,
+    receipt: {
+      ...receiptPayload,
+      sha256: sha256(Buffer.from(JSON.stringify(receiptPayload))),
+    },
+  };
+}
+
+export function assertNativeCapacityInputsUnchanged(inputs) {
+  const { sha256: receiptSha256, ...receiptPayload } = inputs?.receipt ?? {};
+  if (sha256(Buffer.from(JSON.stringify(receiptPayload))) !== receiptSha256) {
+    throw new Error('immutable Native capacity input receipt mutated in memory.');
+  }
+  if (inputs?.connectorPackageTrees != null) {
+    assertConnectorPackageTreesMatch(
+      inputs.connectorPackageTrees,
+      refreshConnectorPackageTrees(inputs.connectorPackageTrees),
+    );
+  }
+  if (!Buffer.isBuffer(inputs?.bundle?.bundleBytes)
+    || sha256(inputs.bundle.bundleBytes) !== inputs.bundle.sha256) {
+    throw new Error('immutable Native capacity bundle mutated in memory.');
+  }
+  for (const pinned of inputs.immutableFiles?.values() ?? []) {
+    const roles = [...pinned.roles].sort().join(', ');
+    if (sha256(pinned.snapshotBytes) !== pinned.sha256) {
+      throw new Error(`immutable Native capacity input mutated in memory: ${pinned.file} (${roles}).`);
+    }
+    if (!fs.existsSync(pinned.file) || sha256(fs.readFileSync(pinned.file)) !== pinned.sha256) {
+      throw new Error(`Native capacity input changed on disk: ${pinned.file} (${roles}).`);
     }
   }
   return inputs;
