@@ -1625,10 +1625,10 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
-    '2026-09-01T16-38-06-65160668d8d9-full-web-2026-09-01.json',
+    '2026-09-02T09-46-16-65160668d8d9-full-web-patched-2026-09-02.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.includes(
-    '2026-09-01T17-15-14-65160668d8d9-extended-create-scales-web-2026-09-01.json',
+    '2026-09-02T10-23-07-65160668d8d9-extended-create-scales-web-patched-2026-09-02.json',
   ), true);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
