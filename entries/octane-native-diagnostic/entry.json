@@ -1,0 +1,63 @@
+{
+  "id": "octane-native-diagnostic",
+  "label": "Octane Native diagnostics",
+  "framework": "octane",
+  "frameworkVersion": "0.2.2",
+  "config": "unranked Native eager-table capacity probe and 10,000-row bounded list",
+  "tags": [
+    "diagnostic",
+    "capacity-probe"
+  ],
+  "tier": "lab",
+  "harnesses": [
+    "native"
+  ],
+  "color": "#ff415a",
+  "presentation": {
+    "order": 999,
+    "colorLight": "#ff415a",
+    "colorDark": "#ff415a"
+  },
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "7211c6127141ef0176e6d7522cff436c88387f44",
+    "commit": "7211c6127141ef0176e6d7522cff436c88387f44",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "node scripts/build-octane-upstream.mjs <clean-octane-checkout>",
+    "builtAt": "2026-09-02T18:46:15-04:00",
+    "buildReceipt": {
+      "protocol": "octane-native-diagnostic-build-v1",
+      "sourceCommit": "7211c6127141ef0176e6d7522cff436c88387f44",
+      "artifacts": {
+        "table": {
+          "path": "benchmarks/lynx-table/app/dist/main.lynx.bundle",
+          "sha256": "b4632c96da9d04af902d23631a27378159a7f9853a8ea1ed6c70c11f36bff6ea"
+        },
+        "list": {
+          "path": "benchmarks/lynx-list/app/dist/main.lynx.bundle",
+          "sha256": "efd76649ec4d0ccbf8baf1ca8b1b33de93d1fc6ec10bbe9e09e32688a541be78"
+        }
+      },
+      "sha256": "4f4fe7398ec9ce95ddfe3ae4e4092460ddf9a11e4d37350b7e686bc066ecf1da"
+    },
+    "sha256": {
+      "table/main.lynx.bundle": "b4632c96da9d04af902d23631a27378159a7f9853a8ea1ed6c70c11f36bff6ea",
+      "list/main.lynx.bundle": "efd76649ec4d0ccbf8baf1ca8b1b33de93d1fc6ec10bbe9e09e32688a541be78"
+    }
+  },
+  "bundles": {
+    "lynx": "dist/table/main.lynx.bundle"
+  },
+  "listFixture": {
+    "protocol": "lynx-list-fixture-v1",
+    "contractSha256": "8cc9d901f97e6e17ac6207b13d9bb9afb5163ce0d1142cffd1b1921726a2f87b",
+    "bundles": {
+      "native": "dist/list/main.lynx.bundle"
+    },
+    "sha256": {
+      "native": "efd76649ec4d0ccbf8baf1ca8b1b33de93d1fc6ec10bbe9e09e32688a541be78"
+    }
+  }
+}

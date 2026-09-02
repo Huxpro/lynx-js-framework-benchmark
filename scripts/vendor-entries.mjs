@@ -21,6 +21,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+} from '../packages/shared/src/list-workloads.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VUE_BUILD = process.env.VUE_LYNX_BUILD
   ?? path.join(os.homedir(), 'github/vue-lynx-bench-build');
@@ -54,8 +59,9 @@ const PRESENTATION = {
   'octane-dom': { order: 103, colorLight: '#4f1d05', colorDark: '#ffd6bf' },
 };
 
-const sha256 = (file) =>
-  crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const sha256Value = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const sha256 = (file) => sha256Value(fs.readFileSync(file));
+const LIST_WORKLOAD_CONTRACT_SHA256 = sha256Value(JSON.stringify(LIST_WORKLOAD_CONTRACT));
 
 const sourceDate = (dir) => execFileSync(
   'git', ['show', '-s', '--format=%cI', 'HEAD'], { cwd: dir },
@@ -176,6 +182,109 @@ function vendorOctanePr791(buildDir) {
       from: path.join(appDir, rows === 0 ? 'dist' : `dist-rows${rows}`),
     })),
   });
+}
+
+function vendorOctaneNativeDiagnostic(buildDir) {
+  const id = 'octane-native-diagnostic';
+  if (!wants(id)) return;
+  const artifactSpecs = {
+    table: {
+      sourcePath: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
+      destinationPath: 'table/main.lynx.bundle',
+    },
+    list: {
+      sourcePath: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
+      destinationPath: 'list/main.lynx.bundle',
+    },
+  };
+  const receiptPath = path.join(
+    buildDir,
+    'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
+  );
+  for (const [role, artifact] of Object.entries(artifactSpecs)) {
+    const file = path.join(buildDir, artifact.sourcePath);
+    if (!fs.existsSync(file)) {
+      throw new Error(`${id}: missing ${role} Native bundle (${file})`);
+    }
+  }
+
+  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  if (!fs.existsSync(receiptPath)) {
+    throw new Error(`${id}: missing versioned Native build receipt (${receiptPath})`);
+  }
+  const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+  const { sha256: receiptSha256, ...receiptPayload } = receipt;
+  if (
+    receipt.protocol !== 'octane-native-diagnostic-build-v1'
+    || receiptSha256 !== sha256Value(JSON.stringify(receiptPayload))
+  ) {
+    throw new Error(`${id}: Native build receipt protocol or checksum is invalid`);
+  }
+  if (receipt.sourceCommit !== sourceGit.commit) {
+    throw new Error(
+      `${id}: Native build receipt source ${receipt.sourceCommit} does not match checkout ${sourceGit.commit}`,
+    );
+  }
+  const sourceArtifacts = Object.fromEntries(
+    Object.entries(artifactSpecs).map(([role, artifact]) => {
+      const file = path.join(buildDir, artifact.sourcePath);
+      return [role, { ...artifact, file, sha256: sha256(file) }];
+    }),
+  );
+  for (const [role, artifact] of Object.entries(sourceArtifacts)) {
+    if (
+      receipt.artifacts?.[role]?.path !== artifact.sourcePath
+      || receipt.artifacts?.[role]?.sha256 !== artifact.sha256
+    ) {
+      throw new Error(`${id}: ${role} Native bundle does not match its build receipt`);
+    }
+  }
+  const version = JSON.parse(
+    fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  const dir = path.join(root, 'entries', id);
+  const dist = path.join(dir, 'dist');
+  fs.rmSync(dist, { recursive: true, force: true });
+  const checks = {};
+  for (const artifact of Object.values(sourceArtifacts)) {
+    const destination = path.join(dist, artifact.destinationPath);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.copyFileSync(artifact.file, destination);
+    checks[artifact.destinationPath] = artifact.sha256;
+  }
+  const manifest = {
+    id,
+    label: 'Octane Native diagnostics',
+    framework: 'octane',
+    frameworkVersion: version,
+    config: 'unranked Native eager-table capacity probe and 10,000-row bounded list',
+    tags: ['diagnostic', 'capacity-probe'],
+    tier: 'lab',
+    harnesses: ['native'],
+    color: '#ff415a',
+    presentation: { order: 999, colorLight: '#ff415a', colorDark: '#ff415a' },
+    kind: 'vendored',
+    provenance: {
+      source: 'https://github.com/octanejs/octane',
+      ref: sourceGit.commit,
+      commit: sourceGit.commit,
+      patched: false,
+      patchFile: null,
+      buildCommand: 'node scripts/build-octane-upstream.mjs <clean-octane-checkout>',
+      builtAt: sourceDate(buildDir),
+      buildReceipt: receipt,
+      sha256: checks,
+    },
+    bundles: { lynx: 'dist/table/main.lynx.bundle' },
+    listFixture: {
+      protocol: LIST_FIXTURE_PROTOCOL,
+      contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
+      bundles: { native: 'dist/list/main.lynx.bundle' },
+      sha256: { native: checks['list/main.lynx.bundle'] },
+    },
+  };
+  fs.writeFileSync(path.join(dir, 'entry.json'), JSON.stringify(manifest, null, 2));
+  console.log(`[vendor] ${id}: ${Object.keys(checks).length} Native bundles`);
 }
 
 function vendorNewLynxBlockSnapshot(id, label, buildDir) {
@@ -363,6 +472,8 @@ vendor({
     ),
   })),
 });
+
+vendorOctaneNativeDiagnostic(OCTANE_BUILD);
 
 if (
   wants('octane-hux1')
