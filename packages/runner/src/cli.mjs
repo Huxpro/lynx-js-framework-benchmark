@@ -23,7 +23,7 @@ import {
   TABLE_CASES,
 } from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
-import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
+import { LIST_CASES } from '@lynx-bench/shared/list-workloads';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';

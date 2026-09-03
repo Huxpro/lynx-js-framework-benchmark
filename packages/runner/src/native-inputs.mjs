@@ -40,6 +40,45 @@ export { NATIVE_STARTUP_PROTOCOL };
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
+function createImmutablePinRegistry(immutableFiles = new Map()) {
+  const files = immutableFiles ?? new Map();
+  return {
+    immutableFiles: files,
+    pin(file, role) {
+      const resolved = path.resolve(file);
+      const prior = files.get(resolved);
+      if (prior) {
+        prior.roles.add(role);
+        return prior;
+      }
+      const snapshotBytes = fs.readFileSync(resolved);
+      const pinned = {
+        file: resolved,
+        snapshotBytes,
+        bytes: snapshotBytes.length,
+        sha256: sha256(snapshotBytes),
+        roles: new Set([role]),
+      };
+      files.set(resolved, pinned);
+      return pinned;
+    },
+    assertUnchanged({ memoryLabel, missingLabel, diskLabel = missingLabel }) {
+      for (const pinned of files.values()) {
+        const roles = [...pinned.roles].sort().join(', ');
+        if (sha256(pinned.snapshotBytes) !== pinned.sha256) {
+          throw new Error(`${memoryLabel}: ${pinned.file} (${roles}).`);
+        }
+        if (!fs.existsSync(pinned.file)) {
+          throw new Error(`${missingLabel}: ${pinned.file} (${roles}).`);
+        }
+        if (sha256(fs.readFileSync(pinned.file)) !== pinned.sha256) {
+          throw new Error(`${diskLabel}: ${pinned.file} (${roles}).`);
+        }
+      }
+    },
+  };
+}
+
 function requiredRows({ suites, startupScales }) {
   return [...new Set([
     ...(suites.includes('table') ? [0] : []),
@@ -63,29 +102,12 @@ export function snapshotNativeInputs({
 }) {
   assertConnectorPackageTrees(connectorPackageTrees, { requireAvailable: false });
   const snapshots = new Map();
-  const immutableFiles = new Map();
-  const pinFile = (file, role) => {
-    const resolved = path.resolve(file);
-    const prior = immutableFiles.get(resolved);
-    if (prior) {
-      prior.roles.add(role);
-      return prior;
-    }
-    const snapshotBytes = fs.readFileSync(resolved);
-    const pinned = {
-      file: resolved,
-      snapshotBytes,
-      bytes: snapshotBytes.length,
-      sha256: sha256(snapshotBytes),
-      roles: new Set([role]),
-    };
-    immutableFiles.set(resolved, pinned);
-    return pinned;
-  };
+  const pins = createImmutablePinRegistry();
+  const { immutableFiles } = pins;
   const entryArtifacts = {};
   for (const entry of entries) {
     const manifestPath = path.join(entry.dir, 'entry.json');
-    const manifest = pinFile(manifestPath, `${entry.id}:manifest`);
+    const manifest = pins.pin(manifestPath, `${entry.id}:manifest`);
     const bundles = {};
     for (const rows of requiredRows({ suites, startupScales })) {
       const rel = `rows-${rows}/main.lynx.bundle`;
@@ -93,7 +115,7 @@ export function snapshotNativeInputs({
       if (!fs.existsSync(bundlePath)) {
         throw new Error(`${entry.id}: missing Native input ${rel}.`);
       }
-      const pinnedBundle = pinFile(bundlePath, `${entry.id}:rows-${rows}:lynx-bundle`);
+      const pinnedBundle = pins.pin(bundlePath, `${entry.id}:rows-${rows}:lynx-bundle`);
       const bytes = pinnedBundle.snapshotBytes;
       const actual = pinnedBundle.sha256;
       const expected = entry.provenance?.sha256?.[rel];
@@ -137,7 +159,7 @@ export function snapshotNativeInputs({
       ? path.resolve(root, entry.provenance.patchFile)
       : null;
     const patch = patchFile && fs.existsSync(patchFile)
-      ? pinFile(patchFile, `${entry.id}:provenance-patch`)
+      ? pins.pin(patchFile, `${entry.id}:provenance-patch`)
       : null;
     entryArtifacts[entry.id] = {
       manifest: {
@@ -173,7 +195,7 @@ export function snapshotNativeInputs({
     path.join(root, 'packages/shared/src/schema.mjs'),
   ];
   const sources = Object.fromEntries(sourceFiles.map((file) => {
-    const pinned = pinFile(file, 'runner-source');
+    const pinned = pins.pin(file, 'runner-source');
     return [relativeOrAbsolute(root, file), { bytes: pinned.bytes, sha256: pinned.sha256 }];
   }));
   const receiptPayload = {
@@ -214,19 +236,11 @@ export function assertNativeInputsUnchanged(inputs) {
       );
     }
   }
-  for (const pinned of inputs.immutableFiles?.values() ?? []) {
-    const roles = [...pinned.roles].sort().join(', ');
-    if (sha256(pinned.snapshotBytes) !== pinned.sha256) {
-      throw new Error(`immutable Native source mutated in memory: ${pinned.file} (${roles}).`);
-    }
-    if (!fs.existsSync(pinned.file)) {
-      throw new Error(`Native source disappeared after snapshot: ${pinned.file} (${roles}).`);
-    }
-    const diskSha256 = sha256(fs.readFileSync(pinned.file));
-    if (diskSha256 !== pinned.sha256) {
-      throw new Error(`Native source changed on disk after snapshot: ${pinned.file} (${roles}).`);
-    }
-  }
+  createImmutablePinRegistry(inputs.immutableFiles).assertUnchanged({
+    memoryLabel: 'immutable Native source mutated in memory',
+    missingLabel: 'Native source disappeared after snapshot',
+    diskLabel: 'Native source changed on disk after snapshot',
+  });
   return inputs;
 }
 
@@ -250,28 +264,11 @@ export function snapshotNativeListInputs({
   observer = null,
   root = repoRoot(),
 }) {
-  const immutableFiles = new Map();
-  const pinFile = (file, role) => {
-    const resolved = path.resolve(file);
-    const prior = immutableFiles.get(resolved);
-    if (prior) {
-      prior.roles.add(role);
-      return prior;
-    }
-    const snapshotBytes = fs.readFileSync(resolved);
-    const pinned = {
-      file: resolved,
-      snapshotBytes,
-      bytes: snapshotBytes.length,
-      sha256: sha256(snapshotBytes),
-      roles: new Set([role]),
-    };
-    immutableFiles.set(resolved, pinned);
-    return pinned;
-  };
+  const pins = createImmutablePinRegistry();
+  const { immutableFiles } = pins;
 
   const manifestPath = path.join(entry.dir, 'entry.json');
-  const manifestPin = pinFile(manifestPath, `${NATIVE_DIAGNOSTIC_ENTRY_ID}:manifest`);
+  const manifestPin = pins.pin(manifestPath, `${NATIVE_DIAGNOSTIC_ENTRY_ID}:manifest`);
   const manifest = JSON.parse(manifestPin.snapshotBytes.toString('utf8'));
   assertNativeListFixture(entry, manifest);
   const sourceCommit = assertCapacitySourceRevision(entry.provenance, entry.id);
@@ -286,7 +283,7 @@ export function snapshotNativeListInputs({
       throw new Error(`${entry.id} ${scale}-row Native list bundle path is not scale-exact.`);
     }
     const bundlePath = path.join(entry.dir, artifact.bundle);
-    const bundlePin = pinFile(bundlePath, `${entry.id}:list-${scale}-bundle`);
+    const bundlePin = pins.pin(bundlePath, `${entry.id}:list-${scale}-bundle`);
     const provenanceRelative = nativeListProvenancePath(scale);
     const expectedChecksums = [
       entry.listFixture.scales[key].sha256,
@@ -326,7 +323,7 @@ export function snapshotNativeListInputs({
     path.join(root, 'packages/shared/src/stats.mjs'),
   ];
   const sources = Object.fromEntries(sourceFiles.map((file) => {
-    const pinned = pinFile(file, 'native-list-runner-source');
+    const pinned = pins.pin(file, 'native-list-runner-source');
     return [relativeOrAbsolute(root, file), { bytes: pinned.bytes, sha256: pinned.sha256 }];
   }));
   const receiptPayload = {
@@ -411,15 +408,10 @@ export function assertNativeListInputsUnchanged(inputs) {
       throw new Error(`immutable ${scale}-row Native list bundle mutated in memory.`);
     }
   }
-  for (const pinned of inputs.immutableFiles?.values() ?? []) {
-    const roles = [...pinned.roles].sort().join(', ');
-    if (sha256(pinned.snapshotBytes) !== pinned.sha256) {
-      throw new Error(`immutable Native list input mutated in memory: ${pinned.file} (${roles}).`);
-    }
-    if (!fs.existsSync(pinned.file) || sha256(fs.readFileSync(pinned.file)) !== pinned.sha256) {
-      throw new Error(`Native list input changed on disk: ${pinned.file} (${roles}).`);
-    }
-  }
+  createImmutablePinRegistry(inputs.immutableFiles).assertUnchanged({
+    memoryLabel: 'immutable Native list input mutated in memory',
+    missingLabel: 'Native list input changed on disk',
+  });
   return inputs;
 }
 
@@ -463,23 +455,11 @@ export function snapshotNativeCapacityInputs({
     throw new Error('Native capacity inputs must not include a DevTool connector package tree.');
   }
 
-  const immutableFiles = new Map();
-  const pinFile = (file, role) => {
-    const resolved = path.resolve(file);
-    const snapshotBytes = fs.readFileSync(resolved);
-    const pinned = {
-      file: resolved,
-      snapshotBytes,
-      bytes: snapshotBytes.length,
-      sha256: sha256(snapshotBytes),
-      roles: new Set([role]),
-    };
-    immutableFiles.set(resolved, pinned);
-    return pinned;
-  };
+  const pins = createImmutablePinRegistry();
+  const { immutableFiles } = pins;
 
   const manifestPath = path.join(entry.dir, 'entry.json');
-  const manifestPin = pinFile(manifestPath, `${NATIVE_CAPACITY_ENTRY_ID}:manifest`);
+  const manifestPin = pins.pin(manifestPath, `${NATIVE_CAPACITY_ENTRY_ID}:manifest`);
   const manifest = assertNativeCapacityDiagnosticEntry(
     JSON.parse(manifestPin.snapshotBytes.toString('utf8')),
   );
@@ -497,7 +477,10 @@ export function snapshotNativeCapacityInputs({
     );
   }
   const preflightBundlePath = path.resolve(preflightPath);
-  const preflightPin = pinFile(preflightBundlePath, `${entry.id}:devtool-disabled-preflight`);
+  const preflightPin = pins.pin(
+    preflightBundlePath,
+    `${entry.id}:devtool-disabled-preflight`,
+  );
   if (!preflightPin.snapshotBytes.includes(Buffer.from('__OCTANE_DEVTOOL_DISABLED__=true'))) {
     throw new Error(
       'Native capacity DevTool-disable preflight bundle lacks __OCTANE_DEVTOOL_DISABLED__=true.',
@@ -508,7 +491,7 @@ export function snapshotNativeCapacityInputs({
     const key = String(scale);
     const artifact = manifest.capacityFixture.scales[key];
     const bundlePath = path.join(entry.dir, artifact.bundle);
-    const bundlePin = pinFile(bundlePath, `${entry.id}:capacity-${scale}-bundle`);
+    const bundlePin = pins.pin(bundlePath, `${entry.id}:capacity-${scale}-bundle`);
     const provenanceRelative = nativeCapacityProvenancePath(scale);
     const expectedChecksums = [
       entry.capacityFixture.scales[key].sha256,
@@ -552,7 +535,7 @@ export function snapshotNativeCapacityInputs({
     path.join(root, 'packages/shared/src/stats.mjs'),
   ];
   const sources = Object.fromEntries(sourceFiles.map((file) => {
-    const pinned = pinFile(file, 'capacity-runner-source');
+    const pinned = pins.pin(file, 'capacity-runner-source');
     return [relativeOrAbsolute(root, file), { bytes: pinned.bytes, sha256: pinned.sha256 }];
   }));
   const receiptPayload = {
@@ -654,14 +637,9 @@ export function assertNativeCapacityInputsUnchanged(inputs) {
       throw new Error(`immutable ${scale}-row Native capacity bundle mutated in memory.`);
     }
   }
-  for (const pinned of inputs.immutableFiles?.values() ?? []) {
-    const roles = [...pinned.roles].sort().join(', ');
-    if (sha256(pinned.snapshotBytes) !== pinned.sha256) {
-      throw new Error(`immutable Native capacity input mutated in memory: ${pinned.file} (${roles}).`);
-    }
-    if (!fs.existsSync(pinned.file) || sha256(fs.readFileSync(pinned.file)) !== pinned.sha256) {
-      throw new Error(`Native capacity input changed on disk: ${pinned.file} (${roles}).`);
-    }
-  }
+  createImmutablePinRegistry(inputs.immutableFiles).assertUnchanged({
+    memoryLabel: 'immutable Native capacity input mutated in memory',
+    missingLabel: 'Native capacity input changed on disk',
+  });
   return inputs;
 }

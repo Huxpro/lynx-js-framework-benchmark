@@ -116,84 +116,87 @@ async function classifyCellFailure(adapter, error, context) {
   return observed;
 }
 
-export async function loadNativeAdapter(adapterPath, context = {}) {
+async function createNativeAdapter(adapterPath, context, {
+  mode = null,
+  label = 'native adapter',
+  validateSurface = () => {},
+  webEnvironmentMessage = 'native adapter environment must not be "lynx-for-web".',
+} = {}) {
   const resolved = path.resolve(adapterPath);
   const module = await import(pathToFileURL(resolved).href);
   const factory = module.default;
   if (typeof factory !== 'function') {
     throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
   }
-  const adapter = await factory(context);
-  for (const method of ['loadBundle', 'driveCase', 'collect', 'collectStartup', 'dispose']) {
-    if (typeof adapter?.[method] !== 'function') {
-      throw new Error(`native adapter ${adapterPath} is missing ${method}().`);
-    }
-  }
-  if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
-    throw new Error(`native adapter ${adapterPath} must declare a device-class environment string.`);
+  const adapter = await factory(mode === null ? context : { ...context, mode });
+  validateSurface(adapter);
+  if (typeof adapter?.environment !== 'string' || adapter.environment.length === 0) {
+    throw new Error(
+      `${label} ${adapterPath} must declare a device-class environment string.`,
+    );
   }
   if (adapter.environment === 'lynx-for-web') {
-    throw new Error('native adapter environment must not be "lynx-for-web"; native and web records are never comparable.');
+    throw new Error(webEnvironmentMessage);
   }
+  return adapter;
+}
+
+export async function loadNativeAdapter(adapterPath, context = {}) {
+  const adapter = await createNativeAdapter(adapterPath, context, {
+    validateSurface(candidate) {
+      for (const method of ['loadBundle', 'driveCase', 'collect', 'collectStartup', 'dispose']) {
+        if (typeof candidate?.[method] !== 'function') {
+          throw new Error(`native adapter ${adapterPath} is missing ${method}().`);
+        }
+      }
+    },
+    webEnvironmentMessage: 'native adapter environment must not be "lynx-for-web"; native and web records are never comparable.',
+  });
   return adapter;
 }
 
 /** Load the diagnostic direct-ADB surface without requiring ranked/CDP methods. */
 export async function loadNativeCapacityAdapter(adapterPath, context = {}) {
-  const resolved = path.resolve(adapterPath);
-  const module = await import(pathToFileURL(resolved).href);
-  const factory = module.default;
-  if (typeof factory !== 'function') {
-    throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
-  }
-  const adapter = await factory({ ...context, mode: 'capacity' });
-  for (const method of ['runCapacityProbe', 'dispose']) {
-    if (typeof adapter?.[method] !== 'function') {
-      throw new Error(`native capacity adapter ${adapterPath} is missing ${method}().`);
-    }
-  }
-  if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
-    throw new Error(`native capacity adapter ${adapterPath} must declare a device-class environment string.`);
-  }
-  if (adapter.environment === 'lynx-for-web') {
-    throw new Error('native capacity adapter environment must not be "lynx-for-web".');
-  }
+  const adapter = await createNativeAdapter(adapterPath, context, {
+    mode: 'capacity',
+    label: 'native capacity adapter',
+    validateSurface(candidate) {
+      for (const method of ['runCapacityProbe', 'dispose']) {
+        if (typeof candidate?.[method] !== 'function') {
+          throw new Error(`native capacity adapter ${adapterPath} is missing ${method}().`);
+        }
+      }
+    },
+    webEnvironmentMessage: 'native capacity adapter environment must not be "lynx-for-web".',
+  });
   return adapter;
 }
 
 /** Load only the real-Native bounded-list adapter surface. */
 export async function loadNativeListAdapter(adapterPath, context = {}) {
-  const resolved = path.resolve(adapterPath);
-  const module = await import(pathToFileURL(resolved).href);
-  const factory = module.default;
-  if (typeof factory !== 'function') {
-    throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
-  }
-  const adapter = await factory({ ...context, mode: 'list' });
-  if (typeof adapter?.dispose !== 'function') {
-    throw new Error(`native list adapter ${adapterPath} is missing dispose().`);
-  }
-  if (adapter.runListCase != null && typeof adapter.runListCase !== 'function') {
-    throw new Error(`native list adapter ${adapterPath} has malformed runListCase.`);
-  }
-  const capability = adapter.listCapability;
-  if (capability != null
-    && (typeof capability !== 'object'
-      || Array.isArray(capability)
-      || (capability.protocol != null
-        && capability.protocol !== NATIVE_LIST_CAPABILITY_PROTOCOL))) {
-    throw new Error(
-      `native list adapter ${adapterPath} has an unknown or malformed listCapability contract.`,
-    );
-  }
-  if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
-    throw new Error(
-      `native list adapter ${adapterPath} must declare a device-class environment string.`,
-    );
-  }
-  if (adapter.environment === 'lynx-for-web') {
-    throw new Error('native list adapter environment must not be "lynx-for-web".');
-  }
+  const adapter = await createNativeAdapter(adapterPath, context, {
+    mode: 'list',
+    label: 'native list adapter',
+    validateSurface(candidate) {
+      if (typeof candidate?.dispose !== 'function') {
+        throw new Error(`native list adapter ${adapterPath} is missing dispose().`);
+      }
+      if (candidate.runListCase != null && typeof candidate.runListCase !== 'function') {
+        throw new Error(`native list adapter ${adapterPath} has malformed runListCase.`);
+      }
+      const capability = candidate.listCapability;
+      if (capability != null
+        && (typeof capability !== 'object'
+          || Array.isArray(capability)
+          || (capability.protocol != null
+            && capability.protocol !== NATIVE_LIST_CAPABILITY_PROTOCOL))) {
+        throw new Error(
+          `native list adapter ${adapterPath} has an unknown or malformed listCapability contract.`,
+        );
+      }
+    },
+    webEnvironmentMessage: 'native list adapter environment must not be "lynx-for-web".',
+  });
   return adapter;
 }
 

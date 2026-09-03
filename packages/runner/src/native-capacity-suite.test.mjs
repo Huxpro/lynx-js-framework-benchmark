@@ -326,6 +326,23 @@ test('capacity receipt binds contract, policy, topology, selected bundles, and r
     });
     assert.doesNotThrow(() => assertNativeCapacityInputsUnchanged(initial));
 
+    const sharedSource = snapshotNativeCapacityInputs({
+      entry: current.entry,
+      contract: suite.contract,
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
+      adapterPath: current.preflightPath,
+      preflightPath: current.preflightPath,
+      root: current.root,
+    });
+    assert.deepEqual(
+      [...sharedSource.immutableFiles.get(path.resolve(current.preflightPath)).roles].sort(),
+      [
+        'capacity-runner-source',
+        `${NATIVE_CAPACITY_ENTRY_ID}:devtool-disabled-preflight`,
+      ],
+    );
+    assert.doesNotThrow(() => assertNativeCapacityInputsUnchanged(sharedSource));
+
     const topologyBound = snapshot();
     topologyBound.receipt.capacityFixture.topology.elementsPerRow = 6;
     assert.throws(
