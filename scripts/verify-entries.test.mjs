@@ -14,6 +14,7 @@ const listWorkloadsSource = new URL(
 const LIST_CONTRACT_SHA256 =
   '8cc9d901f97e6e17ac6207b13d9bb9afb5163ce0d1142cffd1b1921726a2f87b';
 const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+const LIST_SCALES = [1000, 10000];
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -27,13 +28,17 @@ function stageDiagnosticEntry() {
 
   const entryDir = path.join(root, 'entries/octane-native-diagnostic');
   const tableBundle = path.join(entryDir, 'dist/table/main.lynx.bundle');
-  const listBundle = path.join(entryDir, 'dist/list/main.lynx.bundle');
   fs.mkdirSync(path.dirname(tableBundle), { recursive: true });
-  fs.mkdirSync(path.dirname(listBundle), { recursive: true });
   fs.writeFileSync(tableBundle, 'empty-table-native');
-  fs.writeFileSync(listBundle, 'bounded-list-native');
   const tableSha256 = sha256('empty-table-native');
-  const listSha256 = sha256('bounded-list-native');
+  const list = Object.fromEntries(LIST_SCALES.map((rows) => {
+    const bundle = `dist/list/rows-${rows}/main.lynx.bundle`;
+    const file = path.join(entryDir, bundle);
+    const contents = `bounded-list-native-${rows}`;
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, contents);
+    return [String(rows), { bundle, sha256: sha256(contents) }];
+  }));
   const capacity = Object.fromEntries(CAPACITY_SCALES.map((rows) => {
     const bundle = `dist/capacity/rows-${rows}/main.lynx.bundle`;
     const file = path.join(entryDir, bundle);
@@ -44,7 +49,7 @@ function stageDiagnosticEntry() {
   }));
   const commit = 'a'.repeat(40);
   const receiptPayload = {
-    protocol: 'octane-native-diagnostic-build-v2',
+    protocol: 'octane-native-diagnostic-build-v3',
     sourceCommit: commit,
     artifacts: {
       table: {
@@ -55,10 +60,10 @@ function stageDiagnosticEntry() {
         path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
         sha256: capacity[String(rows)].sha256,
       }])),
-      list: {
-        path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-        sha256: listSha256,
-      },
+      list: Object.fromEntries(LIST_SCALES.map((rows) => [String(rows), {
+        path: `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+        sha256: list[String(rows)].sha256,
+      }])),
     },
   };
   const buildReceipt = {
@@ -70,7 +75,7 @@ function stageDiagnosticEntry() {
     label: 'Octane Native diagnostics',
     framework: 'octane',
     frameworkVersion: '0.2.2',
-    config: 'unranked Native eager-table capacity probe and 10,000-row bounded list',
+    config: 'unranked Native eager-table capacity probe and scale-bound bounded list',
     tags: ['diagnostic', 'capacity-probe'],
     tier: 'lab',
     harnesses: ['native'],
@@ -92,7 +97,10 @@ function stageDiagnosticEntry() {
           `capacity/rows-${rows}/main.lynx.bundle`,
           capacity[String(rows)].sha256,
         ])),
-        'list/main.lynx.bundle': listSha256,
+        ...Object.fromEntries(LIST_SCALES.map((rows) => [
+          `list/rows-${rows}/main.lynx.bundle`,
+          list[String(rows)].sha256,
+        ])),
       },
     },
     bundles: { lynx: 'dist/table/main.lynx.bundle' },
@@ -103,15 +111,15 @@ function stageDiagnosticEntry() {
       scales: capacity,
     },
     listFixture: {
-      protocol: 'lynx-list-fixture-v1',
+      protocol: 'lynx-list-fixture-v2',
+      workloadProtocol: 'lynx-list-fixture-v1',
       contractSha256: LIST_CONTRACT_SHA256,
-      bundles: { native: 'dist/list/main.lynx.bundle' },
-      sha256: { native: listSha256 },
+      scales: list,
     },
   };
   const manifestPath = path.join(entryDir, 'entry.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-  return { root, entryDir, manifestPath, manifest, capacity };
+  return { root, entryDir, manifestPath, manifest, capacity, list };
 }
 
 function verify(root) {
@@ -170,21 +178,35 @@ for (const [name, mutate, error] of [
   ],
   [
     'missing list bundle',
-    ({ entryDir }) => fs.rmSync(path.join(entryDir, 'dist/list/main.lynx.bundle')),
-    /checksummed bundle missing|listFixture Native bundle missing/,
+    ({ entryDir }) => fs.rmSync(path.join(entryDir, 'dist/list/rows-1000/main.lynx.bundle')),
+    /checksummed bundle missing|listFixture 1000 bundle missing/,
   ],
   [
     'stale list bundle',
     ({ entryDir }) => fs.writeFileSync(
-      path.join(entryDir, 'dist/list/main.lynx.bundle'),
+      path.join(entryDir, 'dist/list/rows-10000/main.lynx.bundle'),
       'stale-list-native',
     ),
     /sha256 mismatch/,
   ],
   [
     'mismatched list bundle path',
-    ({ manifest }) => { manifest.listFixture.bundles.native = 'dist/table/main.lynx.bundle'; },
-    /listFixture Native bundle path/,
+    ({ manifest }) => {
+      manifest.listFixture.scales['1000'].bundle = 'dist/table/main.lynx.bundle';
+    },
+    /listFixture 1000 bundle path/,
+  ],
+  [
+    'missing list scale',
+    ({ manifest }) => { delete manifest.listFixture.scales['1000']; },
+    /listFixture must declare exactly scales/,
+  ],
+  [
+    'extra list scale',
+    ({ manifest }) => {
+      manifest.listFixture.scales['2000'] = manifest.listFixture.scales['1000'];
+    },
+    /listFixture must declare exactly scales/,
   ],
   [
     'mismatched list protocol',

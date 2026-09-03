@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 import {
   LIST_FIXTURE_PROTOCOL,
   LIST_WORKLOAD_CONTRACT,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
 } from '../packages/shared/src/list-workloads.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -40,8 +41,9 @@ const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
 
 const AUTOROWS = [0, 1000, 10000, 30000];
 const NATIVE_CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+const NATIVE_LIST_SCALES = [1000, 10000];
 const NATIVE_CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
-const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
 const NATIVE_CAPACITY_TOPOLOGY = Object.freeze({
   elementsPerRow: 7,
   chromeElements: 42,
@@ -199,16 +201,19 @@ function vendorOctaneNativeDiagnostic(buildDir) {
       sourcePath: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
       destinationPath: 'table/main.lynx.bundle',
     },
-    list: {
-      sourcePath: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-      destinationPath: 'list/main.lynx.bundle',
-    },
   };
   const capacityArtifactSpecs = Object.fromEntries(NATIVE_CAPACITY_SCALES.map((rows) => [
     String(rows),
     {
       sourcePath: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
       destinationPath: `capacity/rows-${rows}/main.lynx.bundle`,
+    },
+  ]));
+  const listArtifactSpecs = Object.fromEntries(NATIVE_LIST_SCALES.map((rows) => [
+    String(rows),
+    {
+      sourcePath: `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+      destinationPath: `list/rows-${rows}/main.lynx.bundle`,
     },
   ]));
   const receiptPath = path.join(
@@ -219,6 +224,10 @@ function vendorOctaneNativeDiagnostic(buildDir) {
     ...Object.entries(artifactSpecs),
     ...Object.entries(capacityArtifactSpecs).map(([rows, artifact]) => [
       `capacity ${rows}`,
+      artifact,
+    ]),
+    ...Object.entries(listArtifactSpecs).map(([rows, artifact]) => [
+      `list ${rows}`,
       artifact,
     ]),
   ]) {
@@ -259,6 +268,12 @@ function vendorOctaneNativeDiagnostic(buildDir) {
       return [rows, { ...artifact, file, sha256: sha256(file) }];
     }),
   );
+  const sourceListArtifacts = Object.fromEntries(
+    Object.entries(listArtifactSpecs).map(([rows, artifact]) => {
+      const file = path.join(buildDir, artifact.sourcePath);
+      return [rows, { ...artifact, file, sha256: sha256(file) }];
+    }),
+  );
   for (const [role, artifact] of Object.entries(sourceArtifacts)) {
     if (
       receipt.artifacts?.[role]?.path !== artifact.sourcePath
@@ -270,6 +285,18 @@ function vendorOctaneNativeDiagnostic(buildDir) {
   if (JSON.stringify(Object.keys(receipt.artifacts?.capacity ?? {}))
     !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
     throw new Error(`${id}: Native build receipt must bind exactly the supported capacity scales`);
+  }
+  if (JSON.stringify(Object.keys(receipt.artifacts?.list ?? {}))
+    !== JSON.stringify(NATIVE_LIST_SCALES.map(String))) {
+    throw new Error(`${id}: Native build receipt must bind exactly the supported list scales`);
+  }
+  for (const [rows, artifact] of Object.entries(sourceListArtifacts)) {
+    if (
+      receipt.artifacts?.list?.[rows]?.path !== artifact.sourcePath
+      || receipt.artifacts?.list?.[rows]?.sha256 !== artifact.sha256
+    ) {
+      throw new Error(`${id}: list ${rows} Native bundle does not match its build receipt`);
+    }
   }
   for (const [rows, artifact] of Object.entries(sourceCapacityArtifacts)) {
     if (
@@ -289,6 +316,7 @@ function vendorOctaneNativeDiagnostic(buildDir) {
   for (const artifact of [
     ...Object.values(sourceArtifacts),
     ...Object.values(sourceCapacityArtifacts),
+    ...Object.values(sourceListArtifacts),
   ]) {
     const destination = path.join(dist, artifact.destinationPath);
     fs.mkdirSync(path.dirname(destination), { recursive: true });
@@ -300,7 +328,7 @@ function vendorOctaneNativeDiagnostic(buildDir) {
     label: 'Octane Native diagnostics',
     framework: 'octane',
     frameworkVersion: version,
-    config: 'unranked Native eager-table capacity probe and 10,000-row bounded list',
+    config: 'unranked Native eager-table capacity probe and scale-bound bounded list',
     tags: ['diagnostic', 'capacity-probe'],
     tier: 'lab',
     harnesses: ['native'],
@@ -332,10 +360,16 @@ function vendorOctaneNativeDiagnostic(buildDir) {
       ])),
     },
     listFixture: {
-      protocol: LIST_FIXTURE_PROTOCOL,
+      protocol: NATIVE_LIST_FIXTURE_PROTOCOL,
+      workloadProtocol: LIST_FIXTURE_PROTOCOL,
       contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
-      bundles: { native: 'dist/list/main.lynx.bundle' },
-      sha256: { native: checks['list/main.lynx.bundle'] },
+      scales: Object.fromEntries(Object.entries(sourceListArtifacts).map(([rows, artifact]) => [
+        rows,
+        {
+          bundle: `dist/${artifact.destinationPath}`,
+          sha256: checks[artifact.destinationPath],
+        },
+      ])),
     },
   };
   fs.writeFileSync(path.join(dir, 'entry.json'), JSON.stringify(manifest, null, 2));

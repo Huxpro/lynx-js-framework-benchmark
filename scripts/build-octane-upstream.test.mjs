@@ -8,6 +8,7 @@ import test from 'node:test';
 
 const script = new URL('./build-octane-upstream.mjs', import.meta.url).pathname;
 const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+const LIST_SCALES = [1000, 10000];
 
 function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
@@ -80,9 +81,11 @@ test('upstream build emits the empty table, every eager capacity scale, and boun
       import fs from 'node:fs';
       import path from 'node:path';
       if (process.env.BENCH_CORE === 'block') throw new Error('block must not rebuild list');
-      const out = path.join(process.cwd(), 'benchmarks/lynx-list/app/dist');
+      const rows = Number(process.env.BENCH_LIST_ROWS);
+      if (![1000, 10000].includes(rows)) throw new Error('expected exact list scale');
+      const out = path.join(process.cwd(), 'benchmarks/lynx-list/app/dist/rows-' + rows);
       fs.mkdirSync(out, { recursive: true });
-      fs.writeFileSync(path.join(out, 'main.lynx.bundle'), 'bounded-list-native');
+      fs.writeFileSync(path.join(out, 'main.lynx.bundle'), 'bounded-list-native-' + rows);
     `);
     fs.writeFileSync(
       path.join(checkout, '.gitignore'),
@@ -104,18 +107,20 @@ test('upstream build emits the empty table, every eager capacity scale, and boun
       path.join(checkout, 'benchmarks/lynx-table/app/dist/main.lynx.bundle'),
       'utf8',
     );
-    const listBundle = fs.readFileSync(
-      path.join(checkout, 'benchmarks/lynx-list/app/dist/main.lynx.bundle'),
-      'utf8',
-    );
     assert.equal(tableBundle, 'table-native-0');
-    assert.equal(listBundle, 'bounded-list-native');
-    assert.notEqual(tableBundle, listBundle);
+    for (const rows of LIST_SCALES) {
+      const listBundle = fs.readFileSync(
+        path.join(checkout, `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`),
+        'utf8',
+      );
+      assert.equal(listBundle, `bounded-list-native-${rows}`);
+      assert.notEqual(tableBundle, listBundle);
+    }
     const receipt = JSON.parse(fs.readFileSync(path.join(
       checkout,
       'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
     ), 'utf8'));
-    assert.equal(receipt.protocol, 'octane-native-diagnostic-build-v2');
+    assert.equal(receipt.protocol, 'octane-native-diagnostic-build-v3');
     assert.equal(receipt.sourceCommit, commit);
     assert.deepEqual(receipt.artifacts, {
       table: {
@@ -126,10 +131,10 @@ test('upstream build emits the empty table, every eager capacity scale, and boun
         path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
         sha256: sha256(`table-native-${rows}`),
       }])),
-      list: {
-        path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-        sha256: sha256(listBundle),
-      },
+      list: Object.fromEntries(LIST_SCALES.map((rows) => [String(rows), {
+        path: `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+        sha256: sha256(`bounded-list-native-${rows}`),
+      }])),
     });
     for (const rows of [0, ...CAPACITY_SCALES, 30000]) {
       const suffix = rows === 0 ? '' : `-rows${rows}`;

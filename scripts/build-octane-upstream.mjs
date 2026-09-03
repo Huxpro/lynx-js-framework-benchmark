@@ -17,6 +17,7 @@ const buildNativeDiagnostic = fs.existsSync(listBuildScript);
 const legacyTableScales = [0, 1000, 10000, 30000];
 const nativeCapacityScales = [1000, 6000, 7000, 7500, 8000, 10000];
 const nativeDiagnosticTableScales = [0, ...nativeCapacityScales, 30000];
+const nativeListScales = [1000, 10000];
 if (buildNativeDiagnostic && (core !== 'universal' || blockMode !== 'scoped')) {
   throw new Error(
     'Octane Native diagnostic artifacts require BENCH_CORE=universal and BENCH_BLOCK_MODE=scoped',
@@ -68,16 +69,18 @@ for (const rows of tableScales) {
 }
 
 if (buildNativeDiagnostic) {
-  execFileSync(process.execPath, [listBuildScript], {
-    cwd: checkout,
-    stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'production' },
-  });
-  const listBundle = path.join(
-    checkout,
-    'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-  );
-  if (!fs.existsSync(listBundle)) throw new Error(`missing ${listBundle}`);
+  for (const rows of nativeListScales) {
+    execFileSync(process.execPath, [listBuildScript], {
+      cwd: checkout,
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production', BENCH_LIST_ROWS: String(rows) },
+    });
+    const listBundle = path.join(
+      checkout,
+      `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+    );
+    if (!fs.existsSync(listBundle)) throw new Error(`missing ${listBundle}`);
+  }
   const tableBundle = path.join(
     checkout,
     'benchmarks/lynx-table/app/dist/main.lynx.bundle',
@@ -87,7 +90,7 @@ if (buildNativeDiagnostic) {
     sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
   });
   const payload = {
-    protocol: 'octane-native-diagnostic-build-v2',
+    protocol: 'octane-native-diagnostic-build-v3',
     sourceCommit,
     artifacts: {
       table: artifact(tableBundle),
@@ -98,7 +101,13 @@ if (buildNativeDiagnostic) {
           `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
         )),
       ])),
-      list: artifact(listBundle),
+      list: Object.fromEntries(nativeListScales.map((rows) => [
+        String(rows),
+        artifact(path.join(
+          checkout,
+          `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+        )),
+      ])),
     },
   };
   const receipt = {
@@ -110,6 +119,6 @@ if (buildNativeDiagnostic) {
 
 console.log(
   `[build-octane-upstream] ${core}/${blockMode} table rows ${tableScales.join('/')}`
-  + (buildNativeDiagnostic ? ' + bounded Native list' : '')
+  + (buildNativeDiagnostic ? ` + bounded Native list rows ${nativeListScales.join('/')}` : '')
   + ' complete',
 );

@@ -12,6 +12,7 @@ const listWorkloadsSource = new URL(
   import.meta.url,
 ).pathname;
 const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+const LIST_SCALES = [1000, 10000];
 
 function stageVendorScript(repo) {
   fs.mkdirSync(path.join(repo, 'scripts'), { recursive: true });
@@ -27,7 +28,7 @@ function sha256(value) {
 
 function writeNativeBuildReceipt(build, sourceCommit) {
   const payload = {
-    protocol: 'octane-native-diagnostic-build-v2',
+    protocol: 'octane-native-diagnostic-build-v3',
     sourceCommit,
     artifacts: {
       table: {
@@ -44,13 +45,13 @@ function writeNativeBuildReceipt(build, sourceCommit) {
           `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
         ))),
       }])),
-      list: {
-        path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
+      list: Object.fromEntries(LIST_SCALES.map((rows) => [String(rows), {
+        path: `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
         sha256: sha256(fs.readFileSync(path.join(
           build,
-          'benchmarks/lynx-list/app/dist/main.lynx.bundle',
+          `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
         ))),
-      },
+      }])),
     },
   };
   const receipt = { ...payload, sha256: sha256(JSON.stringify(payload)) };
@@ -257,12 +258,11 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
       build,
       'benchmarks/lynx-table/app/dist/main.lynx.bundle',
     );
-    const listBundle = path.join(
-      build,
-      'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-    );
+    const listBundles = Object.fromEntries(LIST_SCALES.map((rows) => [
+      String(rows),
+      path.join(build, `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`),
+    ]));
     fs.mkdirSync(path.dirname(tableBundle), { recursive: true });
-    fs.mkdirSync(path.dirname(listBundle), { recursive: true });
     fs.writeFileSync(tableBundle, 'empty-table-native');
     for (const rows of CAPACITY_SCALES) {
       const capacityBundle = path.join(
@@ -272,7 +272,10 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
       fs.mkdirSync(path.dirname(capacityBundle), { recursive: true });
       fs.writeFileSync(capacityBundle, `lynx-native-startup-v1 eager-table-native-${rows}`);
     }
-    fs.writeFileSync(listBundle, 'bounded-list-native');
+    for (const rows of LIST_SCALES) {
+      fs.mkdirSync(path.dirname(listBundles[String(rows)]), { recursive: true });
+      fs.writeFileSync(listBundles[String(rows)], `bounded-list-native-${rows}`);
+    }
     fs.writeFileSync(
       path.join(build, '.gitignore'),
       'benchmarks/lynx-table/app/dist*/\nbenchmarks/lynx-list/app/dist/\n',
@@ -304,7 +307,13 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
     const entryDir = path.join(repo, 'entries/octane-native-diagnostic');
     const manifest = JSON.parse(fs.readFileSync(path.join(entryDir, 'entry.json'), 'utf8'));
     const tableSha256 = sha256('empty-table-native');
-    const listSha256 = sha256('bounded-list-native');
+    const list = Object.fromEntries(LIST_SCALES.map((rows) => {
+      const contents = `bounded-list-native-${rows}`;
+      return [String(rows), {
+        bundle: `dist/list/rows-${rows}/main.lynx.bundle`,
+        sha256: sha256(contents),
+      }];
+    }));
     const capacity = Object.fromEntries(CAPACITY_SCALES.map((rows) => {
       const contents = `lynx-native-startup-v1 eager-table-native-${rows}`;
       return [String(rows), {
@@ -326,10 +335,10 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
       scales: capacity,
     });
     assert.deepEqual(manifest.listFixture, {
-      protocol: 'lynx-list-fixture-v1',
+      protocol: 'lynx-list-fixture-v2',
+      workloadProtocol: 'lynx-list-fixture-v1',
       contractSha256: '8cc9d901f97e6e17ac6207b13d9bb9afb5163ce0d1142cffd1b1921726a2f87b',
-      bundles: { native: 'dist/list/main.lynx.bundle' },
-      sha256: { native: listSha256 },
+      scales: list,
     });
     assert.equal(manifest.provenance.commit, commit);
     assert.equal(manifest.provenance.ref, commit);
@@ -342,7 +351,10 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
         `capacity/rows-${rows}/main.lynx.bundle`,
         capacity[String(rows)].sha256,
       ])),
-      'list/main.lynx.bundle': listSha256,
+      ...Object.fromEntries(LIST_SCALES.map((rows) => [
+        `list/rows-${rows}/main.lynx.bundle`,
+        list[String(rows)].sha256,
+      ])),
     });
     assert.equal(
       fs.readFileSync(path.join(entryDir, manifest.bundles.lynx), 'utf8'),
@@ -357,10 +369,12 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
         `lynx-native-startup-v1 eager-table-native-${rows}`,
       );
     }
-    assert.equal(
-      fs.readFileSync(path.join(entryDir, manifest.listFixture.bundles.native), 'utf8'),
-      'bounded-list-native',
-    );
+    for (const rows of LIST_SCALES) {
+      assert.equal(
+        fs.readFileSync(path.join(entryDir, manifest.listFixture.scales[String(rows)].bundle), 'utf8'),
+        `bounded-list-native-${rows}`,
+      );
+    }
     assert.deepEqual(fs.readFileSync(featuredManifest), featuredBefore);
 
     const manifestBeforeRepeat = fs.readFileSync(path.join(entryDir, 'entry.json'));
@@ -381,7 +395,7 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
     assert.deepEqual(fs.readFileSync(path.join(entryDir, 'entry.json')), manifestBeforeRepeat);
     assert.deepEqual(fs.readFileSync(featuredManifest), featuredBefore);
 
-    fs.writeFileSync(listBundle, 'tampered-list-native');
+    fs.writeFileSync(listBundles['1000'], 'tampered-list-native');
     const tampered = spawnSync(
       process.execPath,
       [path.join(repo, 'scripts/vendor-entries.mjs')],
@@ -396,9 +410,56 @@ test('native diagnostic vendor generates all immutable Native fixture inputs', (
       },
     );
     assert.notEqual(tampered.status, 0);
-    assert.match(tampered.stderr, /list Native bundle does not match its build receipt/);
+    assert.match(tampered.stderr, /list 1000 Native bundle does not match its build receipt/);
 
-    fs.writeFileSync(listBundle, 'bounded-list-native');
+    fs.writeFileSync(listBundles['1000'], 'bounded-list-native-1000');
+    fs.rmSync(listBundles['10000']);
+    const missingListScale = spawnSync(
+      process.execPath,
+      [path.join(repo, 'scripts/vendor-entries.mjs')],
+      {
+        cwd: repo,
+        env: {
+          ...process.env,
+          VENDOR_ONLY: 'octane-native-diagnostic',
+          OCTANE_BUILD: build,
+        },
+        encoding: 'utf8',
+      },
+    );
+    assert.notEqual(missingListScale.status, 0);
+    assert.match(missingListScale.stderr, /missing list 10000 Native bundle/);
+
+    fs.writeFileSync(listBundles['10000'], 'bounded-list-native-10000');
+    const receiptPath = path.join(
+      build,
+      'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
+    );
+    const extraListScaleReceipt = structuredClone(buildReceipt);
+    extraListScaleReceipt.artifacts.list['2000'] = {
+      path: 'benchmarks/lynx-list/app/dist/rows-2000/main.lynx.bundle',
+      sha256: 'd'.repeat(64),
+    };
+    const { sha256: _receiptSha256, ...extraListScalePayload } = extraListScaleReceipt;
+    extraListScaleReceipt.sha256 = sha256(JSON.stringify(extraListScalePayload));
+    fs.writeFileSync(receiptPath, JSON.stringify(extraListScaleReceipt, null, 2));
+    const extraListScale = spawnSync(
+      process.execPath,
+      [path.join(repo, 'scripts/vendor-entries.mjs')],
+      {
+        cwd: repo,
+        env: {
+          ...process.env,
+          VENDOR_ONLY: 'octane-native-diagnostic',
+          OCTANE_BUILD: build,
+        },
+        encoding: 'utf8',
+      },
+    );
+    assert.notEqual(extraListScale.status, 0);
+    assert.match(extraListScale.stderr, /must bind exactly the supported list scales/);
+    fs.writeFileSync(receiptPath, JSON.stringify(buildReceipt, null, 2));
+
     const capacityBundle = path.join(
       build,
       'benchmarks/lynx-table/app/dist-rows7000/main.lynx.bundle',

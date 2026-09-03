@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import {
   LIST_FIXTURE_PROTOCOL,
   LIST_WORKLOAD_CONTRACT,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
 } from '../packages/shared/src/list-workloads.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -16,9 +17,10 @@ const entriesDir = path.join(root, 'entries');
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
-const NATIVE_DIAGNOSTIC_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const NATIVE_DIAGNOSTIC_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
 const NATIVE_CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
 const NATIVE_CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
+const NATIVE_LIST_SCALES = [1000, 10000];
 const NATIVE_CAPACITY_TOPOLOGY = { elementsPerRow: 7, chromeElements: 42 };
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const LIST_WORKLOAD_CONTRACT_SHA256 = sha256(JSON.stringify(LIST_WORKLOAD_CONTRACT));
@@ -143,12 +145,6 @@ for (const id of ids) {
     if (manifest.bundles?.web != null) {
       fail(`${id}: diagnostic entry must not declare a Web bundle`);
     }
-    if (manifest.listFixture?.bundles?.native !== 'dist/list/main.lynx.bundle') {
-      fail(`${id}: listFixture Native bundle path must be dist/list/main.lynx.bundle`);
-    }
-    if (manifest.listFixture?.bundles?.web != null) {
-      fail(`${id}: diagnostic listFixture must not declare a Web bundle`);
-    }
     if (!/^[0-9a-f]{40}$/.test(manifest.provenance?.commit ?? '')
       || manifest.provenance?.ref !== manifest.provenance?.commit) {
       fail(`${id}: provenance must name one immutable source revision`);
@@ -162,11 +158,11 @@ for (const id of ids) {
     );
     const expectedKeys = [
       ...expectedCapacityKeys,
-      'list/main.lynx.bundle',
+      ...NATIVE_LIST_SCALES.map((rows) => `list/rows-${rows}/main.lynx.bundle`),
       'table/main.lynx.bundle',
     ].sort();
     if (JSON.stringify(Object.keys(diagnosticChecks).sort()) !== JSON.stringify(expectedKeys)) {
-      fail(`${id}: provenance must checksum exactly the empty table, six capacity, and list Native bundles`);
+      fail(`${id}: provenance must checksum exactly the empty table, six capacity, and two list Native bundles`);
     }
     const capacityFixture = manifest.capacityFixture;
     if (capacityFixture?.protocol !== NATIVE_CAPACITY_FIXTURE_PROTOCOL) {
@@ -203,8 +199,34 @@ for (const id of ids) {
         fail(`${id}: sha256 mismatch for capacityFixture ${rows} bundle`);
       }
     }
-    if (manifest.listFixture?.sha256?.native !== diagnosticChecks['list/main.lynx.bundle']) {
-      fail(`${id}: listFixture Native checksum must match vendored provenance`);
+    const listFixture = manifest.listFixture;
+    if (listFixture?.protocol !== NATIVE_LIST_FIXTURE_PROTOCOL) {
+      fail(`${id}: listFixture protocol must be ${NATIVE_LIST_FIXTURE_PROTOCOL}`);
+    }
+    if (listFixture?.workloadProtocol !== LIST_FIXTURE_PROTOCOL) {
+      fail(`${id}: listFixture workload protocol must be ${LIST_FIXTURE_PROTOCOL}`);
+    }
+    if (JSON.stringify(Object.keys(listFixture?.scales ?? {}))
+      !== JSON.stringify(NATIVE_LIST_SCALES.map(String))) {
+      fail(`${id}: listFixture must declare exactly scales ${NATIVE_LIST_SCALES.join(', ')}`);
+    }
+    for (const rows of NATIVE_LIST_SCALES) {
+      const artifact = listFixture?.scales?.[String(rows)];
+      const expectedBundle = `dist/list/rows-${rows}/main.lynx.bundle`;
+      const expectedChecksum = diagnosticChecks[`list/rows-${rows}/main.lynx.bundle`];
+      if (artifact?.bundle !== expectedBundle) {
+        fail(`${id}: listFixture ${rows} bundle path must be ${expectedBundle}`);
+      }
+      if (artifact?.sha256 !== expectedChecksum) {
+        fail(`${id}: listFixture ${rows} checksum must match vendored provenance`);
+      }
+      const file = resolveEntryPath(dir, artifact?.bundle, `${id}: listFixture ${rows} bundle path`);
+      if (file == null) continue;
+      if (!fs.existsSync(file)) {
+        fail(`${id}: listFixture ${rows} bundle missing (${artifact.bundle})`);
+      } else if (sha256File(file) !== artifact.sha256) {
+        fail(`${id}: sha256 mismatch for listFixture ${rows} bundle`);
+      }
     }
     const receipt = manifest.provenance?.buildReceipt;
     if (receipt == null) {
@@ -230,10 +252,10 @@ for (const id of ids) {
           path: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
           sha256: diagnosticChecks[`capacity/rows-${rows}/main.lynx.bundle`],
         }])),
-        list: {
-          path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-          sha256: diagnosticChecks['list/main.lynx.bundle'],
-        },
+        list: Object.fromEntries(NATIVE_LIST_SCALES.map((rows) => [String(rows), {
+          path: `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+          sha256: diagnosticChecks[`list/rows-${rows}/main.lynx.bundle`],
+        }])),
       };
       if (JSON.stringify(receipt.artifacts) !== JSON.stringify(expectedArtifacts)) {
         fail(`${id}: Native build receipt artifacts do not match vendored bundles`);
@@ -269,13 +291,16 @@ for (const id of ids) {
     if (!fs.existsSync(bundle)) fail(`${id}: bundles.${key} missing (${relative})`);
   }
   if (manifest.listFixture != null) {
-    if (manifest.listFixture.protocol !== LIST_FIXTURE_PROTOCOL) {
-      fail(`${id}: listFixture protocol must be ${LIST_FIXTURE_PROTOCOL}`);
+    const expectedProtocol = id === 'octane-native-diagnostic'
+      ? NATIVE_LIST_FIXTURE_PROTOCOL
+      : LIST_FIXTURE_PROTOCOL;
+    if (manifest.listFixture.protocol !== expectedProtocol) {
+      fail(`${id}: listFixture protocol must be ${expectedProtocol}`);
     }
     if (manifest.listFixture.contractSha256 !== LIST_WORKLOAD_CONTRACT_SHA256) {
       fail(`${id}: listFixture contractSha256 does not match the current list workload`);
     }
-    for (const harness of ['web', 'native']) {
+    for (const harness of id === 'octane-native-diagnostic' ? [] : ['web', 'native']) {
       const relative = manifest.listFixture.bundles?.[harness];
       if (relative == null) continue;
       const bundle = resolveEntryPath(
