@@ -47,12 +47,10 @@ import { pathToFileURL } from 'node:url';
 import { summarize } from '@lynx-bench/shared/stats';
 import { makeRecord } from '@lynx-bench/shared/schema';
 import {
-  LIST_CONFIG,
   LIST_FIXTURE_PROTOCOL,
   LIST_WORKLOAD_CONTRACT_VERSION,
   NATIVE_LIST_CAPABILITY_PROTOCOL,
   NATIVE_LIST_FIXTURE_PROTOCOL,
-  NATIVE_LIST_OBSERVER_PROTOCOL,
 } from '@lynx-bench/shared/list-workloads';
 import {
   DEFAULT_MIN_ACCEPTED_SAMPLES,
@@ -172,21 +170,20 @@ export async function loadNativeListAdapter(adapterPath, context = {}) {
     throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
   }
   const adapter = await factory({ ...context, mode: 'list' });
-  for (const method of ['runListCase', 'dispose']) {
-    if (typeof adapter?.[method] !== 'function') {
-      throw new Error(`native list adapter ${adapterPath} is missing ${method}().`);
-    }
+  if (typeof adapter?.dispose !== 'function') {
+    throw new Error(`native list adapter ${adapterPath} is missing dispose().`);
+  }
+  if (adapter.runListCase != null && typeof adapter.runListCase !== 'function') {
+    throw new Error(`native list adapter ${adapterPath} has malformed runListCase.`);
   }
   const capability = adapter.listCapability;
-  if (capability?.protocol !== NATIVE_LIST_CAPABILITY_PROTOCOL
-    || capability.available !== true
-    || capability.fixtureProtocol !== NATIVE_LIST_FIXTURE_PROTOCOL
-    || capability.observation !== LIST_CONFIG.observation.native
-    || !Array.isArray(capability.observerProtocols)
-    || capability.observerProtocols.some((protocol) => protocol !== NATIVE_LIST_OBSERVER_PROTOCOL)
-    || new Set(capability.observerProtocols).size !== capability.observerProtocols.length) {
+  if (capability != null
+    && (typeof capability !== 'object'
+      || Array.isArray(capability)
+      || (capability.protocol != null
+        && capability.protocol !== NATIVE_LIST_CAPABILITY_PROTOCOL))) {
     throw new Error(
-      `native list adapter ${adapterPath} must declare the exact listCapability contract.`,
+      `native list adapter ${adapterPath} has an unknown or malformed listCapability contract.`,
     );
   }
   if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {

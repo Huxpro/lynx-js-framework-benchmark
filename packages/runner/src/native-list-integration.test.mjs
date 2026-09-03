@@ -229,9 +229,9 @@ test('Native list adapter modules use a dedicated mode and exact capability cont
       runListCase: async () => ({}),
       dispose: async () => {},
     });`);
-    await assert.rejects(
-      () => loadNativeListAdapter(missingCapability),
-      /exact listCapability/,
+    assert.equal(
+      (await loadNativeListAdapter(missingCapability)).listCapability,
+      undefined,
     );
 
     const missingRunner = path.join(dir, 'missing-runner.mjs');
@@ -246,9 +246,61 @@ test('Native list adapter modules use a dedicated mode and exact capability cont
       },
       dispose: async () => {},
     });`);
-    await assert.rejects(() => loadNativeListAdapter(missingRunner), /missing runListCase/);
+    assert.equal((await loadNativeListAdapter(missingRunner)).runListCase, undefined);
+
+    const unknownCapability = path.join(dir, 'unknown-capability.mjs');
+    fs.writeFileSync(unknownCapability, `export default async () => ({
+      environment: 'lynx-native-list-device',
+      listCapability: { protocol: 'future-native-list-capability-v2' },
+      dispose: async () => {},
+    });`);
+    await assert.rejects(
+      () => loadNativeListAdapter(unknownCapability),
+      /unknown or malformed listCapability/,
+    );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('missing Native list capability materializes every cell as not measured without launch', async () => {
+  const current = fixture();
+  try {
+    fs.writeFileSync(current.adapterPath, `export default async (context) => {
+      if (context.mode !== 'list') throw new Error('wrong mode');
+      return {
+        environment: 'lynx-native-list-device',
+        dispose: async () => {},
+      };
+    };`);
+    const inputs = snapshotNativeListInputs({
+      entry: current.entry,
+      adapterPath: current.adapterPath,
+      root: current.root,
+    });
+    const campaign = buildNativeListCampaign({ inputReceipt: inputs.receipt });
+    const native = await runNativeListHarness({
+      adapterPath: current.adapterPath,
+      entry: current.entry,
+      bundles: inputs.bundles,
+      observer: null,
+      reps: 5,
+      campaignId: campaign.id,
+      listInputs: { receipt: inputs.receipt },
+      campaignIdentity: { campaignId: campaign.id },
+    });
+    assert.equal(native.records.length, 26);
+    assert.equal(
+      native.records.every((record) =>
+        record.measurementStatus === 'not-measured'
+        && record.attemptedCount === 0
+        && record.acceptedCount === 0
+        && record.notMeasuredReason.category === 'native-list-capability-unavailable'),
+      true,
+    );
+    assert.doesNotThrow(() => stringifyResult({ records: native.records }));
+  } finally {
+    fs.rmSync(current.root, { recursive: true, force: true });
   }
 });
 
