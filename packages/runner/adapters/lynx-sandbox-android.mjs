@@ -593,15 +593,22 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   const cellGeometry = new Map();
   let disposed = false;
   const connectorModule = await loadConnectorModule();
-  const directTransport = DEVTOOL_TRANSPORT_MODE === 'direct'
-    ? new connectorModule.AndroidTransport({
-      host: process.env.ADB_SERVER_HOST ?? '127.0.0.1',
-      port: adbServerPort,
-    })
-    : null;
-  const connector = directTransport
-    ? connectorModule.createDefaultConnector([directTransport])
-    : connectorModule.createDefaultConnector();
+  const createConnectorStack = () => {
+    const transport = DEVTOOL_TRANSPORT_MODE === 'direct'
+      ? new connectorModule.AndroidTransport({
+        host: process.env.ADB_SERVER_HOST ?? '127.0.0.1',
+        port: adbServerPort,
+      })
+      : null;
+    return {
+      transport,
+      connector: transport
+        ? connectorModule.createDefaultConnector([transport])
+        : connectorModule.createDefaultConnector(),
+    };
+  };
+  let { transport: directTransport, connector } = createConnectorStack();
+  let connectorResetPending = false;
   const connectorCall = async (phase, action, { settle = true } = {}) => {
     try {
       return await action();
@@ -1067,11 +1074,18 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     if (hadChannel && ROUTER_SETTLE_MS > 0) await delay(ROUTER_SETTLE_MS);
   }
 
-  async function restartExplorer() {
+  async function restartExplorer({ resetConnector = false } = {}) {
     await stopConsoleStream();
-    const before = (await connectorCall('restart-client-before', () => connector.listClients()))
-      .find((candidate) => candidate.id === client.id);
+    const before = resetConnector || client == null
+      ? null
+      : (await connectorCall('restart-client-before', () => connector.listClients()))
+        .find((candidate) => candidate.id === client.id);
     const previousRouterId = before?.info?.debugRouterId;
+    if (resetConnector) {
+      await directTransport?.close().catch(() => {});
+      ({ transport: directTransport, connector } = createConnectorStack());
+      client = null;
+    }
     adb(serial, 'shell', 'am', 'force-stop', 'com.lynx.explorer');
     adb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
     const deadline = Date.now() + EXPLORER_RECONNECT_TIMEOUT_MS;
@@ -1091,6 +1105,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       'restart-enable-perf-metrics',
       () => connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true),
     );
+    connectorResetPending = false;
     session = null;
     if (EXPLORER_LAUNCH_SETTLE_MS > 0) await delay(EXPLORER_LAUNCH_SETTLE_MS);
   }
@@ -1340,6 +1355,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       });
       if (transportDnf == null) return null;
       await stopConsoleStream();
+      await directTransport?.close().catch(() => {});
+      connectorResetPending = true;
       session = null;
       const { failure } = transportDnf;
       if (context.suite === 'startup') {
@@ -1351,6 +1368,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     },
 
     async loadBundle(entry, { rows, bundleBytes, bundleSha256, suite }) {
+      if (connectorResetPending) await restartExplorer({ resetConnector: true });
       const thermal = await waitForThermalReady(serial);
       machine.thermalGates ??= [];
       machine.thermalGates.push({ entry: entry.id, rows, suite, ...thermal });

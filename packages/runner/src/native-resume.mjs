@@ -34,6 +34,23 @@ export const NATIVE_TRANSPORT_CONTAINMENT_REVISION = Object.freeze({
   ]),
 });
 
+export const OCTANE_FORMAL_CONNECTOR_RESET_REVISION = Object.freeze({
+  reason: 'connector-reset-after-transport-dnf-20260903',
+  baseCampaignId: 'e7d6a8926982e593',
+  baseInputReceiptSha256: '1b2f337f1fdfd1d9c6400daa45f43e2c59f1a10e22a9c509ab1a960a03245afb',
+  baseRecordCount: 69,
+  baseLeaseCount: 3,
+  baseLastLeaseIssueId: 'octane-formal-ranking-20260903-lease-05',
+  requiredCurrentSources: Object.freeze({
+    'packages/runner/adapters/lynx-sandbox-android.mjs':
+      '7f0c57afd5ba57641a16dadfe5c949c91441418bf5b108058247966cf91ec74d',
+  }),
+  allowedChangedSources: Object.freeze([
+    'packages/runner/adapters/lynx-sandbox-android.mjs',
+    'packages/runner/src/native-resume.mjs',
+  ]),
+});
+
 const campaignMethodInvariant = (campaign) => {
   const { id: _id, inputReceiptSha256: _inputReceiptSha256, ...invariant } = campaign;
   return invariant;
@@ -139,7 +156,7 @@ export function validateNativeResumeCheckpoint(run, {
   leaseReceipt,
   methodRevisionReason = null,
   methodRevisionInputReceiptSha256 = null,
-  methodRevisionApproval = NATIVE_TRANSPORT_CONTAINMENT_REVISION,
+  methodRevisionApproval = null,
 }) {
   if ((run?.schemaVersion !== SCHEMA_VERSION
     && !LEGACY_SCHEMA_VERSIONS.includes(run?.schemaVersion)) || run.meta?.checkpoint !== true) {
@@ -167,10 +184,17 @@ export function validateNativeResumeCheckpoint(run, {
     if (methodRevisionChain != null) {
       throw new Error('Native resume active method revision does not match current runner sources.');
     }
+    const approval = methodRevisionApproval
+      ?? [NATIVE_TRANSPORT_CONTAINMENT_REVISION, OCTANE_FORMAL_CONNECTOR_RESET_REVISION]
+        .find((candidate) => candidate.baseCampaignId === run.meta.campaign.id
+          && candidate.baseInputReceiptSha256 === run.meta.inputReceipt.sha256);
+    if (approval == null) {
+      throw new Error('Native resume method changed without an approved checkpoint transition.');
+    }
     assertApprovedMethodRevision(run, campaign, inputReceipt, {
       reason: methodRevisionReason,
       inputReceiptSha256: methodRevisionInputReceiptSha256,
-    }, methodRevisionApproval);
+    }, approval);
     methodRevisionChain = createNativeMethodRevisionChain(run.meta.inputReceipt);
     methodRevisionChain = appendNativeMethodRevision(
       methodRevisionChain,

@@ -1854,9 +1854,11 @@ test('history audits every run but publishes only complete source-defined featur
     'partial Web run; explicit suite, case, or scale selection',
   );
 
+  const currentNativeFile =
+    '2026-09-03T01-07-30-lynx-native-android-aries_10-10-devtool-direct-recycle5-29c31bcb2d85-c3300d1168b0-native-octane-hux-compiled-create-fcp-native-formal-v2-recovered.json';
   const native = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-09-01T13-21-37-lynx-native-android-aries_10-10-devtool-direct-recycle5-8144b5f980a7-6d00918a8d18-native-octane-hux-compiled-create-fcp-native-bounded.json',
+      currentNativeFile,
     )));
   assert.ok(native);
   const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');
