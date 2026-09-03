@@ -216,6 +216,20 @@ function expectedStormTicks(name) {
   return null;
 }
 
+const isOctaneEntryId = (entryId) => entryId === 'octane' || entryId.startsWith('octane-');
+
+export function requiresOctaneDriverReadiness({ framework, suite, triggerMode }) {
+  return framework === 'octane' && suite !== 'startup' && triggerMode === 'driver';
+}
+
+export function isNativeStartupPayloadPending(payload, { entryId } = {}) {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return false;
+  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) return false;
+  const deferredFields = ['firstFrameMs', 'secondFrameMs', 'postState'];
+  if (isOctaneEntryId(entryId)) deferredFields.push('commitAckMs', 'transportEvidence');
+  return deferredFields.some((key) => payload[key] === undefined);
+}
+
 function validateNativeTablePayloadUnchecked(payload, {
   entryId,
   expectedName,
@@ -269,7 +283,7 @@ function validateNativeTablePayloadUnchecked(payload, {
       throw new Error(`Native ${expectedName} payload lacks one render barrier per tick.`);
     }
   }
-  if (entryId === 'octane') {
+  if (isOctaneEntryId(entryId)) {
     const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
     if (transport.kind !== 'octane-root.flushTransport' || transport.acknowledged !== true) {
       throw new Error('Octane Native table payload lacks a flushTransport acknowledgement.');
@@ -324,7 +338,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
       `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
     );
   }
-  if (entryId === 'octane') {
+  if (isOctaneEntryId(entryId)) {
     assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
     if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
       throw new Error('Octane startup transport acknowledgement is outside the render interval.');
@@ -344,6 +358,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
 }
 
 export const NATIVE_PRODUCER_PROTOCOL_ERROR = 'ERR_NATIVE_PRODUCER_PROTOCOL_INVALID';
+export const NATIVE_PRODUCER_RUNTIME_ERROR = 'ERR_NATIVE_PRODUCER_RUNTIME';
 
 function asProducerProtocolError(error, evidence) {
   if (error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR) return error;
@@ -357,7 +372,36 @@ export function isNativeProducerProtocolError(error) {
   return error?.code === NATIVE_PRODUCER_PROTOCOL_ERROR;
 }
 
-const startupMetricContracts = (entryId) => entryId === 'octane'
+function asNativeProducerRuntimeError(reported) {
+  const message = typeof reported?.message === 'string' && reported.message.length > 0
+    ? reported.message
+    : 'Native benchmark producer reported an unknown runtime error.';
+  const error = new Error(message);
+  error.code = NATIVE_PRODUCER_RUNTIME_ERROR;
+  error.evidence = reported ?? null;
+  return error;
+}
+
+export function nativeProducerRuntimeDnf(error, { suite, entry, kase, scale, rows } = {}) {
+  if (error?.code !== NATIVE_PRODUCER_RUNTIME_ERROR) return null;
+  const entryId = entry?.id ?? entry;
+  return {
+    dnf: true,
+    failure: {
+      category: 'producer-runtime-error',
+      entry: entryId,
+      workload: suite === 'startup' ? 'startup' : kase?.name ?? kase,
+      scale: suite === 'startup' ? rows : scale,
+      phase: suite,
+      message: error.message,
+      capabilityScope: 'cell',
+      evidence: { producerError: error.evidence ?? null },
+    },
+    metricContracts: suite === 'startup' ? startupMetricContracts(entryId) : undefined,
+  };
+}
+
+const startupMetricContracts = (entryId) => isOctaneEntryId(entryId)
   ? [
       {
         name: 'octaneCommitAck',
@@ -430,7 +474,7 @@ export function nativeTransportFailureDnf(
     scale: suite === 'startup' ? rows : scale,
     phase: suite,
     stage,
-    triggerMode: entryId === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
+    triggerMode: isOctaneEntryId(entryId) ? OCTANE_TRIGGER_MODE : 'tap',
     message: String(error),
     capabilityScope: 'cell',
     evidence: {
@@ -539,6 +583,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   const pendingCDP = new Map();
   let timingEvents = [];
   let startupEvents = [];
+  let producerErrors = [];
   let lastStartupProbe = null;
   const timingWaiters = new Set();
   const unsupportedTableCells = new Map();
@@ -548,15 +593,22 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   const cellGeometry = new Map();
   let disposed = false;
   const connectorModule = await loadConnectorModule();
-  const directTransport = DEVTOOL_TRANSPORT_MODE === 'direct'
-    ? new connectorModule.AndroidTransport({
-      host: process.env.ADB_SERVER_HOST ?? '127.0.0.1',
-      port: adbServerPort,
-    })
-    : null;
-  const connector = directTransport
-    ? connectorModule.createDefaultConnector([directTransport])
-    : connectorModule.createDefaultConnector();
+  const createConnectorStack = () => {
+    const transport = DEVTOOL_TRANSPORT_MODE === 'direct'
+      ? new connectorModule.AndroidTransport({
+        host: process.env.ADB_SERVER_HOST ?? '127.0.0.1',
+        port: adbServerPort,
+      })
+      : null;
+    return {
+      transport,
+      connector: transport
+        ? connectorModule.createDefaultConnector([transport])
+        : connectorModule.createDefaultConnector(),
+    };
+  };
+  let { transport: directTransport, connector } = createConnectorStack();
+  let connectorResetPending = false;
   const connectorCall = async (phase, action, { settle = true } = {}) => {
     try {
       return await action();
@@ -899,6 +951,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     while (Date.now() < deadline) {
       const index = timingEvents.findIndex((value) => value?.name === expectedName);
       if (index !== -1) return timingEvents.splice(index, 1)[0];
+      if (producerErrors.length > 0) throw asNativeProducerRuntimeError(producerErrors.shift());
       await new Promise((resolve) => {
         timingWaiters.add(resolve);
         setTimeout(() => {
@@ -916,6 +969,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     const generation = consoleGeneration;
     timingEvents = [];
     startupEvents = [];
+    producerErrors = [];
     const input = new TransformStream();
     const stream = await connectorCall(
       'open-persistent-cdp-channel',
@@ -949,6 +1003,15 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           }
           const marker = args.findIndex((arg) => arg.value === '__NATIVE_BENCH_RESULT__');
           const startupMarker = args.findIndex((arg) => arg.value === '__NATIVE_BENCH_STARTUP__');
+          const errorMarker = args.findIndex((arg) => arg.value === '__NATIVE_BENCH_ERROR__');
+          if (errorMarker !== -1) {
+            producerErrors.push({
+              message: typeof args[errorMarker + 1]?.value === 'string'
+                ? args[errorMarker + 1].value
+                : 'Native benchmark producer emitted a malformed error marker.',
+            });
+            notifyTimingWaiters();
+          }
           if (startupMarker !== -1 && typeof args[startupMarker + 1]?.value === 'string') {
             try {
               startupEvents.push(JSON.parse(args[startupMarker + 1].value));
@@ -1011,11 +1074,18 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     if (hadChannel && ROUTER_SETTLE_MS > 0) await delay(ROUTER_SETTLE_MS);
   }
 
-  async function restartExplorer() {
+  async function restartExplorer({ resetConnector = false } = {}) {
     await stopConsoleStream();
-    const before = (await connectorCall('restart-client-before', () => connector.listClients()))
-      .find((candidate) => candidate.id === client.id);
+    const before = resetConnector || client == null
+      ? null
+      : (await connectorCall('restart-client-before', () => connector.listClients()))
+        .find((candidate) => candidate.id === client.id);
     const previousRouterId = before?.info?.debugRouterId;
+    if (resetConnector) {
+      await directTransport?.close().catch(() => {});
+      ({ transport: directTransport, connector } = createConnectorStack());
+      client = null;
+    }
     adb(serial, 'shell', 'am', 'force-stop', 'com.lynx.explorer');
     adb(serial, 'shell', 'monkey', '-p', 'com.lynx.explorer', '-c', 'android.intent.category.LAUNCHER', '1');
     const deadline = Date.now() + EXPLORER_RECONNECT_TIMEOUT_MS;
@@ -1035,6 +1105,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       'restart-enable-perf-metrics',
       () => connector.setGlobalSwitch(client.id, 'enable_perf_metrics', true),
     );
+    connectorResetPending = false;
     session = null;
     if (EXPLORER_LAUNCH_SETTLE_MS > 0) await delay(EXPLORER_LAUNCH_SETTLE_MS);
   }
@@ -1118,6 +1189,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     let nextStartupPollAt = 0;
     let pipelineEntry = null;
     while (Date.now() < deadline) {
+      if (producerErrors.length > 0) throw asNativeProducerRuntimeError(producerErrors.shift());
       const result = !isCurrentOctane()
         ? await cdp(
           'Performance.getAllPerformanceEntries',
@@ -1194,7 +1266,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         nextFrameDebugAt = Date.now() + 1000;
         log(`  [sandbox:startup-frame-state] ${JSON.stringify({ openTime, startupEvents })}`);
       }
-      if (startup != null) {
+      if (startup != null && !isNativeStartupPayloadPending(startup, { entryId: currentEntryId })) {
         validateNativeStartupPayload(startup, {
           entryId: currentEntryId,
           expectedRows: currentRows,
@@ -1266,7 +1338,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     },
 
     async classifyFailure(error, context) {
-      const producerDnf = nativeProducerProtocolDnf(error, context);
+      const producerDnf = nativeProducerProtocolDnf(error, context)
+        ?? nativeProducerRuntimeDnf(error, context);
       if (producerDnf != null) {
         if (context.suite === 'startup') {
           unsupportedStartupCells.set(`${context.entry.id}:${context.rows}`, producerDnf.failure);
@@ -1282,6 +1355,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       });
       if (transportDnf == null) return null;
       await stopConsoleStream();
+      await directTransport?.close().catch(() => {});
+      connectorResetPending = true;
       session = null;
       const { failure } = transportDnf;
       if (context.suite === 'startup') {
@@ -1293,6 +1368,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     },
 
     async loadBundle(entry, { rows, bundleBytes, bundleSha256, suite }) {
+      if (connectorResetPending) await restartExplorer({ resetConnector: true });
       const thermal = await waitForThermalReady(serial);
       machine.thermalGates ??= [];
       machine.thermalGates.push({ entry: entry.id, rows, suite, ...thermal });
@@ -1364,7 +1440,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       });
       pageCount++;
       await startConsoleStream();
-      if (entry.framework === 'octane' && suite !== 'startup') await waitForOctaneReady();
+      if (requiresOctaneDriverReadiness({
+        framework: entry.framework,
+        suite,
+        triggerMode: OCTANE_TRIGGER_MODE,
+      })) await waitForOctaneReady();
       log(`  [sandbox] ${entry.id} rows-${rows} session=${session.session_id}`);
     },
 
@@ -1403,6 +1483,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         assertPostState(kase, scale, lastObserved);
       } catch (error) {
         const producerDnf = nativeProducerProtocolDnf(error, {
+          suite: 'table', entry: currentEntryId, kase, scale,
+        }) ?? nativeProducerRuntimeDnf(error, {
           suite: 'table', entry: currentEntryId, kase, scale,
         });
         if (producerDnf != null) {
@@ -1490,6 +1572,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         };
       } catch (error) {
         const producerDnf = nativeProducerProtocolDnf(error, {
+          suite: 'startup', entry: currentEntryId, rows: currentRows,
+        }) ?? nativeProducerRuntimeDnf(error, {
           suite: 'startup', entry: currentEntryId, rows: currentRows,
         });
         if (producerDnf != null) {

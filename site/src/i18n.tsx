@@ -98,8 +98,8 @@ const CHECKPOINT_ZH: Record<string, { label: string; description: string }> = {
     description: 'cohort 从六项扩展为七项：Huxpro/new-lynx fb8426e9 与上游 Octane 0fc84da0 同时参与，共有 101 个共享非 storm 测试单元。在相同的 11 个交互单元上，Hux 是上游的 0.84×、React 的 0.92×；这是来源 cohort 的变化，而不是仅按日期保留的重跑。',
   },
   'current-main': {
-    label: '当前 · 已合并上游',
-    description: '当前清单是上游 Octane 9779569e 与 Huxpro/new-lynx e9f1fb14。每个 Web 执行分栏都同时发布两者；较早的 Hux 源码提交仅因其完整 Web bundle 回执与 e9f1fb14 逐字节一致而获得资格。各执行分栏及 Native 互不混合；完整 pipeline 与 storm campaign 仅作为描述性精确证据，不进入加权矩阵。',
+    label: '当前 · compiled-create + FCP',
+    description: '当前清单是上游 Octane 9779569e 与 Hux #269 b166e43f + #272 66ff34a3 组合。完整七项 Web campaign 使用干净组合树 bundle；六项 Native campaign 使用校验过的 benchmark-app 插桩，并保留全部 138 个实测或 DNF 单元。各 Web 执行分栏及 Native 互不混合；完整 pipeline 与 storm campaign 仅作为描述性精确证据，不进入加权矩阵。',
   },
 };
 

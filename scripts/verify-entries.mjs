@@ -45,7 +45,7 @@ for (const id of ids) {
     }
   }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
-  if (manifest.tier === 'featured' && manifest.framework === 'octane') {
+  if (manifest.tier === 'featured' && manifest.framework === 'octane' && id !== 'octane-hux') {
     if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
       fail(`${id}: featured Octane entries must use an unpatched source checkout`);
     }
@@ -55,20 +55,33 @@ for (const id of ids) {
   }
   if (id === 'octane-hux') {
     if (manifest.label !== 'Octane (Hux)') fail(`${id}: public label must be Octane (Hux)`);
-    if (manifest.tier !== 'featured') fail(`${id}: Hux new-lynx entry must be featured`);
-    if (manifest.provenance.ref !== 'new-lynx') fail(`${id}: provenance.ref must be new-lynx`);
-    if (
-      manifest.provenance.buildEnv?.BENCH_CORE !== 'block'
-      || manifest.provenance.buildEnv?.BENCH_BLOCK_MODE !== 'scoped'
-      || !String(manifest.provenance.buildCommand).includes('BENCH_CORE=block')
-    ) {
-      fail(`${id}: Hux new-lynx entry must prove the scoped block-core build`);
+    if (manifest.tier !== 'featured') fail(`${id}: Hux composite entry must be featured`);
+    if (manifest.provenance.ref !== 'composite:pull/269/head+pull/272/head') {
+      fail(`${id}: provenance.ref must identify the #269 + #272 composite`);
+    }
+    const expectedInputs = {
+      'pull/269/head': 'b166e43f9a59864c1c887f24e8448d6014542631',
+      'pull/272/head': '66ff34a3f50d6b53fdb7b55e594c4fa11e4bfe6f',
+    };
+    if (JSON.stringify(manifest.provenance.inputCommits) !== JSON.stringify(expectedInputs)) {
+      fail(`${id}: provenance.inputCommits must pin PR #269 and PR #272 heads`);
+    }
+    if (manifest.provenance.patched !== true
+      || manifest.provenance.patchFile !== 'entries/_patches/octane-hux-native-bench.patch') {
+      fail(`${id}: Hux Native instrumentation patch provenance is missing`);
+    }
+    if (manifest.provenance.buildEnv?.BENCH_CORE !== 'universal'
+      || manifest.provenance.buildEnv?.WEB_SOURCE !== 'clean-composite'
+      || manifest.provenance.buildEnv?.NATIVE_SOURCE !== 'reviewed-instrumentation-patch'
+      || manifest.provenance.buildEnv?.NATIVE_TABLE_PROTOCOL !== 'lynx-native-bench-v2'
+      || manifest.provenance.buildEnv?.NATIVE_STARTUP_PROTOCOL !== 'lynx-native-startup-v1') {
+      fail(`${id}: Hux composite build environment does not pin the Native producer contracts`);
     }
     if (manifest.webLab != null || manifest.nativeLab != null || manifest.ranking != null) {
       fail(`${id}: Hux new-lynx entry must not use Lab contracts`);
     }
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
-      fail(`${id}: Hux new-lynx entry must be explicitly Web-only`);
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
+      fail(`${id}: Hux composite entry must explicitly support Web and Native`);
     }
   }
   if (id === 'octane-hux1' || id === 'octane-hux2') {

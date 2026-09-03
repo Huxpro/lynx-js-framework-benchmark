@@ -60,9 +60,10 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all seven Native-eligible
-featured entries, 27 table cells per entry, and two startup metrics at 0/1k/10k/30k (245 contract cells total; five
-table and three startup repetitions). Partial probes cannot enter the published cohort.
+Native has no partial publish mode: omitting entry/case/scale flags runs all six Native-eligible
+featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (138 contract
+cells total; five table and three startup repetitions). Partial probes cannot enter the published
+cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
 LynxExplorer, drives the Native benchmark through Lynx DevTool, and records device-clock timings.
@@ -73,11 +74,13 @@ client and surfaces as `No response found`. The adapter starts a clean Explorer,
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
 the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
-Every featured entry, including upstream Octane, uses real Native touch input. Octane samples
-begin in the background handler, wait for the renderer's correlated transport acknowledgement,
-then wait two Native frames; the recorded post-ACK state is checked against the semantic workload
-predicate. A DevTool driver exists only as an explicitly labelled diagnostic mode and is never the
-default benchmark path. A strict producer payload failure is retained as an evidenced
+Every Native-eligible featured entry uses real Native touch input. Upstream Octane remains
+Web-only; the provenance-pinned Hux #269 + #272 composite is the sole featured Octane Native
+producer. Its samples begin in the background handler, wait for the renderer's correlated
+transport acknowledgement, then wait two Native frames; the recorded post-ACK state is checked
+against the semantic workload predicate. A DevTool driver exists only as an explicitly labelled
+diagnostic mode and is never the default benchmark path. A strict producer payload failure is
+retained as an evidenced
 `producer-protocol-invalid` DNF for that cell; its evidence explicitly records validation as
 `attempted: true, passed: false`, never invents a timing value, and never aborts unrelated cells.
 Release the Sandbox lease after the command completes.
@@ -115,7 +118,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 115-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign, 138-cell matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -210,9 +213,8 @@ so N-growing code staging becomes observable without inventing historical proven
   adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
   entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
   harness. Native and Web numbers are never mixed in one chart. The published featured cohort
-  uses ReactLynx, four Vue-Lynx configs, upstream Octane, and the PR #791 Octane snapshot.
-  The dated block-core `new-lynx` snapshot is explicitly Web-only; Octane Lab variants are not
-  run on Native.
+  uses ReactLynx, four Vue-Lynx configs, and the provenance-pinned Hux #269 + #272 composite.
+  Upstream/archived Octane and Octane Lab variants are not run on Native.
 
 ## Adding an entry
 
