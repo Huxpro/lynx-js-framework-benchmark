@@ -1,5 +1,10 @@
 export const LIST_WORKLOAD_CONTRACT_VERSION = 'lynx-list-workloads-v1';
+// The v1 fixture protocol remains the featured Web contract. Native diagnostic
+// fixtures use a separate v2 manifest with exact per-scale artifacts.
 export const LIST_FIXTURE_PROTOCOL = 'lynx-list-fixture-v1';
+export const NATIVE_LIST_FIXTURE_PROTOCOL = 'lynx-list-fixture-v2';
+export const NATIVE_LIST_CAPABILITY_PROTOCOL = 'lynx-native-list-capability-v1';
+export const NATIVE_LIST_OBSERVER_PROTOCOL = 'lynx-native-list-allocation-observer-v1';
 
 export const LIST_SOURCE_METRIC_CONTRACTS = Object.freeze({
   firstVisibleContentMs: Object.freeze({
@@ -55,6 +60,39 @@ export const LIST_CONFIG = Object.freeze({
     materializedCell: 'stable-item-key-first-visible-at-presented-frame-v1',
     blankFrame: 'presented-frame-with-zero-expected-visible-cells-v1',
   }),
+});
+
+export const NATIVE_LIST_VISIBLE_ROW_COUNT = Math.ceil(
+  LIST_CONFIG.viewport.heightPx / LIST_CONFIG.row.estimatedHeightPx,
+);
+export const NATIVE_LIST_MAX_LIVE_LIST_ITEM_BOUND = NATIVE_LIST_VISIBLE_ROW_COUNT
+  + LIST_CONFIG.buffer.leadingRows
+  + LIST_CONFIG.buffer.trailingRows;
+
+export const NATIVE_LIST_OBSERVER_METRIC_CONTRACTS = Object.freeze({
+  peakLiveNativeListItems: Object.freeze({
+    unit: 'list-items', boundary: 'native-list-attempt-peak-concurrently-live-list-items',
+  }),
+  cumulativeNativeListItemCreations: Object.freeze({
+    unit: 'list-items', boundary: 'native-list-attempt-cumulative-list-item-creations',
+  }),
+  reusedNativeListItems: Object.freeze({
+    unit: 'list-items', boundary: 'native-list-attempt-reused-list-items',
+  }),
+  remainingLiveNativeListItemsAfterTeardown: Object.freeze({
+    unit: 'list-items', boundary: 'native-list-post-teardown-live-list-items',
+  }),
+});
+
+// This contract is separate from LIST_WORKLOAD_CONTRACT so adding a real-device
+// allocation observer does not silently change the existing Web fixture hash.
+export const NATIVE_LIST_DEVICE_CLAIM_CONTRACT = Object.freeze({
+  protocol: NATIVE_LIST_OBSERVER_PROTOCOL,
+  observation: LIST_CONFIG.observation.native,
+  visibleRows: NATIVE_LIST_VISIBLE_ROW_COUNT,
+  maxLiveListItems: NATIVE_LIST_MAX_LIVE_LIST_ITEM_BOUND,
+  maxLiveListItemsDerivation: 'ceil(viewport-height/estimated-row-height)+leading+trailing',
+  metrics: NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
 });
 
 // Cases are data. A fixture implements this contract once; the shared harness

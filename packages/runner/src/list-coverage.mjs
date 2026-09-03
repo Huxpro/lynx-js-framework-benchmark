@@ -9,6 +9,8 @@ import {
   LIST_SOURCE_METRIC_CONTRACTS,
   LIST_WORKLOAD_CONTRACT,
   LIST_WORKLOAD_CONTRACT_VERSION,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
+  NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
   listCaseKey,
 } from '../../shared/src/list-workloads.mjs';
 
@@ -47,7 +49,7 @@ export function selectListCampaignRecords(records, entries) {
   return [...selected.values()].flatMap((candidate) => candidate.records);
 }
 
-function fixtureStatus(entry, harness) {
+function fixtureStatus(entry, harness, scale, diagnostic) {
   const fixture = entry.listFixture;
   if (fixture == null) {
     return {
@@ -56,12 +58,15 @@ function fixtureStatus(entry, harness) {
       source: { kind: 'entry-manifest', declared: false },
     };
   }
-  if (fixture.protocol !== LIST_FIXTURE_PROTOCOL) {
+  const expectedProtocol = diagnostic ? NATIVE_LIST_FIXTURE_PROTOCOL : LIST_FIXTURE_PROTOCOL;
+  if (fixture.protocol !== expectedProtocol
+    || (diagnostic && fixture.workloadProtocol !== LIST_FIXTURE_PROTOCOL)) {
     return {
       supported: false,
       reason: 'list-fixture-protocol-mismatch',
       source: {
         kind: 'entry-manifest', declared: true, protocol: fixture.protocol ?? null,
+        workloadProtocol: fixture.workloadProtocol ?? null,
       },
     };
   }
@@ -75,12 +80,23 @@ function fixtureStatus(entry, harness) {
       },
     };
   }
-  const relativeBundle = fixture.bundles?.[harness];
+  const scaleArtifact = diagnostic ? fixture.scales?.[String(scale)] : null;
+  const relativeBundle = diagnostic ? scaleArtifact?.bundle : fixture.bundles?.[harness];
   if (typeof relativeBundle !== 'string' || relativeBundle.length === 0) {
     return {
       supported: false,
       reason: `list-${harness}-bundle-not-declared`,
       source: { kind: 'entry-manifest', declared: true, protocol: fixture.protocol },
+    };
+  }
+  if (diagnostic && relativeBundle !== `dist/list/rows-${scale}/main.lynx.bundle`) {
+    return {
+      supported: false,
+      reason: 'list-native-scale-bundle-path-mismatch',
+      source: {
+        kind: 'entry-manifest', declared: true, protocol: fixture.protocol,
+        bundle: relativeBundle, scale,
+      },
     };
   }
   const bundle = path.resolve(entry.dir, relativeBundle);
@@ -105,7 +121,7 @@ function fixtureStatus(entry, harness) {
       },
     };
   }
-  const expectedSha256 = fixture.sha256?.[harness];
+  const expectedSha256 = diagnostic ? scaleArtifact?.sha256 : fixture.sha256?.[harness];
   if (typeof expectedSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedSha256)) {
     return {
       supported: false,
@@ -135,18 +151,26 @@ function fixtureStatus(entry, harness) {
       kind: 'entry-manifest-and-artifact', declared: true,
       protocol: fixture.protocol, contractSha256: fixture.contractSha256,
       bundle: relativeBundle, sha256: expectedSha256,
+      ...(diagnostic ? { workloadProtocol: fixture.workloadProtocol, scale } : {}),
     },
   };
 }
 
-function recordStatus(records, kase) {
+function recordStatus(records, kase, harness) {
   if (records.length === 0) return { status: 'unscheduled', reason: null, recordCount: 0 };
+  const metricContracts = {
+    ...Object.fromEntries(kase.sourceMetrics.map((metric) => [
+      metric, LIST_SOURCE_METRIC_CONTRACTS[metric],
+    ])),
+    ...(harness === 'native' ? NATIVE_LIST_OBSERVER_METRIC_CONTRACTS : {}),
+  };
+  const expectedMetrics = Object.keys(metricContracts);
   const byMetric = new Map();
   for (const record of records) {
     byMetric.set(record.metric, [...(byMetric.get(record.metric) ?? []), record]);
   }
-  const unexpected = [...byMetric.keys()].filter((metric) => !kase.sourceMetrics.includes(metric));
-  const missing = kase.sourceMetrics.filter((metric) => !byMetric.has(metric));
+  const unexpected = [...byMetric.keys()].filter((metric) => !expectedMetrics.includes(metric));
+  const missing = expectedMetrics.filter((metric) => !byMetric.has(metric));
   const duplicate = [...byMetric].filter(([, values]) => values.length !== 1)
     .map(([metric]) => metric);
   if (unexpected.length > 0 || missing.length > 0 || duplicate.length > 0) {
@@ -157,7 +181,7 @@ function recordStatus(records, kase) {
     };
   }
   const contractMismatch = records.filter((record) => {
-    const metric = LIST_SOURCE_METRIC_CONTRACTS[record.metric];
+    const metric = metricContracts[record.metric];
     return record.contractVersion !== LIST_WORKLOAD_CONTRACT_VERSION
       || record.boundary !== metric.boundary
       || record.unit !== metric.unit;
@@ -169,15 +193,53 @@ function recordStatus(records, kase) {
       recordCount: records.length,
     };
   }
-  if (records.every((record) => (record.dnfCount ?? 0) > 0 && (record.n ?? 0) === 0)) {
-    return { status: 'dnf', reason: null, recordCount: records.length };
+  const statuses = records.map((record) => {
+    if (record.measurementStatus != null) return record.measurementStatus;
+    if ((record.dnfCount ?? 0) > 0 && (record.n ?? 0) === 0) return 'dnf';
+    if ((record.n ?? 0) > 0 && (record.dnfCount ?? 0) === 0) return 'measured';
+    if ((record.n ?? 0) > 0 && (record.dnfCount ?? 0) > 0) return 'measured-with-dnf';
+    return 'invalid';
+  });
+  const invalidStatus = records.some((record, index) => {
+    const status = statuses[index];
+    if (status === 'not-measured') {
+      return (record.n ?? 0) !== 0
+        || (record.dnfCount ?? 0) !== 0
+        || !(record.notMeasuredCount > 0)
+        || typeof record.notMeasuredReason?.category !== 'string';
+    }
+    if (status === 'dnf') return (record.n ?? 0) !== 0 || !(record.dnfCount > 0);
+    if (status === 'measured') return !(record.n > 0) || (record.dnfCount ?? 0) !== 0;
+    if (status === 'measured-with-dnf') return !(record.n > 0) || !(record.dnfCount > 0);
+    return true;
+  });
+  if (invalidStatus) {
+    return {
+      status: 'invalid-incomparable',
+      reason: 'list source metrics contain an invalid measurement status or count shape',
+      recordCount: records.length,
+    };
   }
-  if (records.every((record) => (record.n ?? 0) > 0 && (record.dnfCount ?? 0) === 0)) {
-    return { status: 'measured', reason: null, recordCount: records.length };
+  const uniqueStatuses = new Set(statuses);
+  if (uniqueStatuses.size === 1) {
+    const [status] = uniqueStatuses;
+    const reason = status === 'not-measured'
+      ? records[0].notMeasuredReason?.category ?? null
+      : null;
+    return { status, reason, recordCount: records.length };
+  }
+  if (harness === 'native'
+    && statuses.some((status) => status === 'not-measured')
+    && records.filter((record) => !Object.hasOwn(
+      NATIVE_LIST_OBSERVER_METRIC_CONTRACTS, record.metric,
+    )).every((record) => ['measured', 'measured-with-dnf'].includes(record.measurementStatus))) {
+    const reason = records.find((record) => record.measurementStatus === 'not-measured')
+      ?.notMeasuredReason?.category ?? null;
+    return { status: 'not-measured', reason, recordCount: records.length };
   }
   return {
     status: 'invalid-incomparable',
-    reason: 'list source metrics mix observations, DNF, or empty evidence',
+    reason: 'list source metrics mix incompatible measurement states',
     recordCount: records.length,
   };
 }
@@ -186,14 +248,30 @@ export function buildListCoverage({ entries, sourceRecords = [] }) {
   const featured = entries
     .filter((entry) => (entry.tier ?? 'featured') === 'featured')
     .sort((left, right) => left.id.localeCompare(right.id));
+  const diagnostic = entries
+    .filter((entry) => entry.tier === 'lab'
+      && entry.id === 'octane-native-diagnostic'
+      && entry.listFixture?.protocol === NATIVE_LIST_FIXTURE_PROTOCOL
+      && Array.isArray(entry.harnesses)
+      && entry.harnesses.length === 1
+      && entry.harnesses[0] === 'native')
+    .sort((left, right) => left.id.localeCompare(right.id));
   const recordsByCase = new Map();
   for (const record of sourceRecords.filter((candidate) => candidate.suite === 'list')) {
     const key = listCaseKey(record);
     recordsByCase.set(key, [...(recordsByCase.get(key) ?? []), record]);
   }
-  const cells = featured.flatMap((entry) => LIST_HARNESSES.flatMap((harness) => {
-    const fixture = fixtureStatus(entry, harness);
+  const targets = [
+    ...featured.flatMap((entry) => LIST_HARNESSES.map((harness) => ({
+      entry, harness, diagnostic: false, rankingEligible: true,
+    }))),
+    ...diagnostic.map((entry) => ({
+      entry, harness: 'native', diagnostic: true, rankingEligible: false,
+    })),
+  ];
+  const cells = targets.flatMap(({ entry, harness, diagnostic: isDiagnostic, rankingEligible }) => {
     return LIST_CASES.flatMap((kase) => kase.scales.map((scale) => {
+      const fixture = fixtureStatus(entry, harness, scale, isDiagnostic);
       const expected = {
         entry: entry.id,
         harness,
@@ -202,11 +280,13 @@ export function buildListCoverage({ entries, sourceRecords = [] }) {
       };
       const key = listCaseKey(expected);
       const measured = fixture.supported
-        ? recordStatus(recordsByCase.get(key) ?? [], kase)
+        ? recordStatus(recordsByCase.get(key) ?? [], kase, harness)
         : { status: 'unsupported', reason: fixture.reason, recordCount: 0 };
       return {
         ...expected,
         key,
+        diagnostic: isDiagnostic,
+        rankingEligible,
         status: measured.status,
         reason: measured.reason,
         recordCount: measured.recordCount,
@@ -215,14 +295,19 @@ export function buildListCoverage({ entries, sourceRecords = [] }) {
         derivedMetrics: [...kase.derivedMetrics],
       };
     }));
-  }));
+  });
   const statuses = [...new Set(cells.map((cell) => cell.status))].sort();
   return {
     version: LIST_WORKLOAD_CONTRACT_VERSION,
     contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
     fixtureProtocol: LIST_FIXTURE_PROTOCOL,
+    nativeFixtureProtocol: NATIVE_LIST_FIXTURE_PROTOCOL,
     config: LIST_CONFIG,
+    // Preserve the historical meaning of entryIds: public featured coverage.
+    // Diagnostic rows remain explicit without becoming ranking participants.
     entryIds: featured.map((entry) => entry.id),
+    featuredEntryIds: featured.map((entry) => entry.id),
+    diagnosticEntryIds: diagnostic.map((entry) => entry.id),
     expectedCellCount: cells.length,
     sourceRunFiles: Object.fromEntries(LIST_HARNESSES.map((harness) => [
       harness,
