@@ -6,6 +6,19 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
+import {
+  LIST_CASES,
+  LIST_FIXTURE_PROTOCOL,
+  LIST_SOURCE_METRIC_CONTRACTS,
+  LIST_WORKLOAD_CONTRACT_VERSION,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
+  NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
+} from '@lynx-bench/shared/list-workloads';
+import {
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_LIST_FIXTURE_ID,
+  NATIVE_LIST_FIXTURE_ROLE,
+} from '@lynx-bench/shared/native-diagnostic-contract';
 
 import {
   collectRuns,
@@ -24,6 +37,7 @@ import {
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
 import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
+import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   appendNativeMethodRevision,
@@ -1283,6 +1297,131 @@ test('collector preserves capacity outcome counts while suppressing underfilled 
     assert.equal(history.acceptedCount, 4);
     assert.equal(history.failures[0].loadToCrashMs, 21_156);
     assert.equal(Object.hasOwn(history, 'samples'), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('diagnostic list coverage and observations use the same selected campaign', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-list-selection-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  const diagnosticDir = path.join(root, 'entries', NATIVE_DIAGNOSTIC_ENTRY_ID);
+  const listScales = [1_000, 10_000];
+  const scaleArtifacts = Object.fromEntries(listScales.map((scale) => {
+    const relative = `dist/list/rows-${scale}/main.lynx.bundle`;
+    const bundle = Buffer.from(`bounded-list-${scale}`);
+    const file = path.join(diagnosticDir, relative);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, bundle);
+    return [String(scale), {
+      bundle: relative,
+      sha256: crypto.createHash('sha256').update(bundle).digest('hex'),
+    }];
+  }));
+  const diagnostic = {
+    id: NATIVE_DIAGNOSTIC_ENTRY_ID,
+    tier: 'lab',
+    harnesses: ['native'],
+    dir: diagnosticDir,
+    distDir: path.join(diagnosticDir, 'dist'),
+    provenance: { commit: 'diagnostic-commit' },
+    listFixture: {
+      protocol: NATIVE_LIST_FIXTURE_PROTOCOL,
+      workloadProtocol: LIST_FIXTURE_PROTOCOL,
+      contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
+      scales: scaleArtifacts,
+    },
+  };
+  const listRecords = (environment) => LIST_CASES.flatMap((kase) =>
+    kase.scales.flatMap((scale) => {
+      const contracts = {
+        ...Object.fromEntries(kase.sourceMetrics.map((metric) => [
+          metric,
+          LIST_SOURCE_METRIC_CONTRACTS[metric],
+        ])),
+        ...NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
+      };
+      return Object.entries(contracts).map(([metric, contract], metricIndex) => ({
+        suite: 'list',
+        harness: 'native',
+        environment,
+        entry: NATIVE_DIAGNOSTIC_ENTRY_ID,
+        workload: kase.name,
+        scale,
+        metric,
+        boundary: contract.boundary,
+        unit: contract.unit,
+        contractVersion: LIST_WORKLOAD_CONTRACT_VERSION,
+        fixtureRole: NATIVE_LIST_FIXTURE_ROLE,
+        fixtureId: NATIVE_LIST_FIXTURE_ID,
+        diagnostic: true,
+        rankingEligible: false,
+        samples: [1, 2, 3, 4, 5].map((value) => value + metricIndex),
+        detailSamples: [null, null, null, null, null],
+        dnfCount: 0,
+        failures: [],
+        attemptedCount: 5,
+        acceptedCount: 5,
+        measurementStatus: 'measured',
+      }));
+    }));
+  const writeListRun = (file, generatedAt, machineId, records) => {
+    fs.writeFileSync(path.join(root, 'results/runs', file), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt,
+        machine: machine(machineId),
+        calibration: null,
+        entryCommits: { [NATIVE_DIAGNOSTIC_ENTRY_ID]: 'diagnostic-commit' },
+      },
+      records,
+    }));
+  };
+
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['react'],
+      entryCommits: { react: 'react-commit' },
+    });
+    const completeRecords = listRecords('native-complete');
+    writeListRun(
+      'list-complete.json',
+      '2026-01-02T00:00:00Z',
+      'native-complete',
+      completeRecords,
+    );
+    writeListRun(
+      'list-newer-partial.json',
+      '2026-01-03T00:00:00Z',
+      'native-newer',
+      [listRecords('native-newer')[0]],
+    );
+
+    const out = collectRuns({
+      root,
+      log: () => {},
+      entryTiers: entryTiers(['react'], [NATIVE_DIAGNOSTIC_ENTRY_ID]),
+      entries: [
+        {
+          id: 'react', tier: 'featured', distDir: path.join(root, 'missing-react'),
+          provenance: { commit: 'react-commit' },
+        },
+        diagnostic,
+      ],
+    });
+    const diagnosticCells = out.listCoverage.cells.filter((cell) => cell.diagnostic);
+    assert.equal(diagnosticCells.length, 4);
+    assert.equal(diagnosticCells.every((cell) => cell.status === 'measured'), true);
+    assert.deepEqual(out.listCoverage.sourceRunFiles.native, ['list-complete.json']);
+
+    const observations = out.nativeObservations.filter((item) => item.kind === 'list');
+    assert.equal(observations.length, 1);
+    assert.equal(observations[0].sourceRunFile, 'list-complete.json');
+    assert.equal(observations[0].sourceRecordCount, completeRecords.length);
+    const observationRuns = new Set(out.nativeObservationRecords
+      .filter((candidate) => candidate.suite === 'list')
+      .map((candidate) => candidate.runFile));
+    assert.deepEqual([...observationRuns], ['list-complete.json']);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

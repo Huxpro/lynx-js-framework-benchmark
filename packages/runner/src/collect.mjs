@@ -27,6 +27,10 @@ import {
   STORM_UPDATE_TICKS,
   TABLE_CASES,
 } from '@lynx-bench/shared/workloads';
+import {
+  NATIVE_CAPACITY_SUITE,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+} from '@lynx-bench/shared/native-diagnostic-contract';
 
 import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
@@ -1293,20 +1297,23 @@ const selectNativeObservations = (
   return { observations, records };
 };
 
-const selectDiagnosticNativeObservations = (records, entries) => {
+const selectDiagnosticNativeObservations = (records, listSourceRecords, entries) => {
   const diagnosticEntries = entries.filter((entry) => entry.tier === 'lab'
-    && entry.id === 'octane-native-diagnostic'
+    && entry.id === NATIVE_DIAGNOSTIC_ENTRY_ID
     && entry.harnesses?.length === 1
     && entry.harnesses[0] === 'native');
   const currentCommits = new Map(diagnosticEntries.map((entry) => [
     entry.id, entry.provenance?.commit ?? null,
   ]));
-  const candidates = records.filter((record) => currentCommits.has(record.entry)
+  const matchesCurrentDiagnostic = (record) => currentCommits.has(record.entry)
     && (record.entryCommit == null
       || currentCommits.get(record.entry) == null
       || record.entryCommit === currentCommits.get(record.entry))
-    && record.harness === 'native'
-    && ['native-capacity', 'list'].includes(record.suite));
+    && record.harness === 'native';
+  const capacityCandidates = records.filter((record) => matchesCurrentDiagnostic(record)
+    && record.suite === NATIVE_CAPACITY_SUITE);
+  const selectedListCandidates = listSourceRecords.filter(matchesCurrentDiagnostic);
+  const candidates = [...capacityCandidates, ...selectedListCandidates];
   const groups = new Map();
   for (const record of candidates) {
     const key = `${record.entry}|${record.suite}|${record.runFile}`;
@@ -1335,7 +1342,7 @@ const selectDiagnosticNativeObservations = (records, entries) => {
       machineId: first.machineId,
       sourceRunFile: first.runFile,
       sourceRecordCount: group.length,
-      kind: first.suite === 'native-capacity' ? 'capacity' : 'list',
+      kind: first.suite === NATIVE_CAPACITY_SUITE ? 'capacity' : 'list',
     });
     selectedRecords.push(...group);
   }
@@ -1925,7 +1932,8 @@ const buildHistory = ({
     });
   });
   const currentDiagnosticHistoryRecords = current.nativeObservationRecords
-    .filter((record) => record.diagnostic === true || record.entry === 'octane-native-diagnostic')
+    .filter((record) => record.diagnostic === true
+      || record.entry === NATIVE_DIAGNOSTIC_ENTRY_ID)
     .map((record) => historyRecord({
       meta: {
         machine: { id: record.machineId },
@@ -2323,6 +2331,7 @@ export function collectRuns({
   );
   const diagnosticNativeObservations = selectDiagnosticNativeObservations(
     [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile)),
+    listSourceRecords,
     currentEntries,
   );
   nativeObservations.observations.push(...diagnosticNativeObservations.observations);
