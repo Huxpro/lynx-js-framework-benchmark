@@ -59,6 +59,20 @@ export interface BenchRecord {
   dnfCount: number;
   attemptedCount?: number;
   acceptedCount?: number;
+  observationCount?: number;
+  observationCardinality?: 'one-observation-per-accepted-attempt'
+    | 'many-observations-per-accepted-attempt';
+  measurementStatus?: 'measured' | 'measured-with-dnf' | 'dnf' | 'not-measured';
+  notMeasuredCount?: number;
+  notMeasuredReason?: { category: string; message?: string };
+  outcomeCounts?: OutcomeCounts;
+  reportability?: Reportability;
+  presentationStatus?: 'not-reportable';
+  diagnostic?: boolean;
+  timingEligible?: boolean;
+  thresholdProbe?: boolean;
+  fixtureRole?: string;
+  outcomeProtocol?: string;
   failures?: {
     rep: number;
     category?: string;
@@ -66,6 +80,7 @@ export interface BenchRecord {
     timeoutMs?: number;
     triggerMode?: string;
     message?: string;
+    loadToCrashMs?: number;
     evidence?: Record<string, unknown>;
   }[];
   machineId: string | null;
@@ -111,6 +126,23 @@ export interface BenchRecord {
   sourceMedian?: number | null;
   targetCalibration?: { probeVersion: number; score: number };
   calibrationRatio?: number | null;
+}
+
+export interface OutcomeCounts {
+  attempted: number;
+  accepted: number;
+  dnf: number;
+  notMeasured: number;
+  byReason: Record<string, number>;
+}
+
+export interface Reportability {
+  protocol: 'accepted-sample-minimum-v1';
+  minAcceptedSamples: number;
+  acceptedCount: number;
+  attemptedCount: number;
+  status: 'reportable' | 'not-reportable';
+  reason: 'accepted-sample-minimum-not-met' | null;
 }
 
 export interface Machine {
@@ -169,6 +201,7 @@ export interface ComparisonRun {
 export type NativeCoverageStatus =
   | 'measured'
   | 'measured-with-dnf'
+  | 'not-reportable'
   | 'dnf'
   | 'unsupported'
   | 'unscheduled'
@@ -206,7 +239,12 @@ export interface NativeCoverageCell {
   record: {
     n: number;
     dnfCount: number;
+    attemptedCount: number | null;
+    acceptedCount: number | null;
+    observationCount: number;
     median: number | null;
+    reportability: Reportability | null;
+    outcomeCounts: OutcomeCounts | null;
     boundary: string;
     unit: string;
     runFile: string | null;
@@ -268,7 +306,9 @@ export interface PipelineCoverage {
 
 export type ListCoverageStatus =
   | 'measured'
+  | 'measured-with-dnf'
   | 'dnf'
+  | 'not-measured'
   | 'unsupported'
   | 'unscheduled'
   | 'invalid-incomparable';
@@ -323,6 +363,7 @@ export interface NativeObservation {
   machineId: string;
   sourceRunFile: string;
   sourceRecordCount: number;
+  kind?: 'capacity' | 'list';
 }
 
 export interface TimelineSnapshot {
@@ -633,7 +674,7 @@ export const TIMELINE_SNAPSHOTS: TimelineSnapshot[] = BENCHMARK_HISTORY.checkpoi
     },
     machines,
     nativeObservations: [],
-    nativeObservationRecords: [],
+    nativeObservationRecords: checkpoint.current ? collected.nativeObservationRecords : [],
     nativeCoverage: checkpoint.nativeCoverage ?? EMPTY_NATIVE_COVERAGE,
     pipelineCoverage: checkpoint.pipelineCoverage ?? EMPTY_PIPELINE_COVERAGE,
     listCoverage: checkpoint.listCoverage ?? EMPTY_LIST_COVERAGE,
@@ -698,6 +739,7 @@ export function filterRecords(records: BenchRecord[], filter: RecordFilter): Ben
   return records.filter((r) =>
     (r.rankingEligible !== false
       || r.descriptiveEligible === true
+      || r.diagnostic === true
       || (r.comparabilityStatus === 'incomplete-work' && r.n === 0 && r.dnfCount > 0))
     && (filter.suite == null || r.suite === filter.suite)
     && (filter.harness == null || r.harness === filter.harness)

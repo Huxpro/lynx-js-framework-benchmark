@@ -6,6 +6,7 @@ import {
 } from '../data';
 import { useBenchmarkData } from '../data-context';
 import { localizedWorkload, useI18n } from '../i18n';
+import { nativeOutcomeState } from '../derive.mjs';
 import { ResponsiveCopy } from './ResponsiveCopy';
 
 const TABLE_GROUPS = [
@@ -19,16 +20,55 @@ const TABLE_GROUPS = [
   },
 ];
 
+function reasonLabel(
+  category: string,
+  text: (english: string, chinese: string) => string,
+): string {
+  if (category === 'capacity/android-art-global-ref-table') {
+    return text('capacity · Android ART global-reference table', '容量 · Android ART 全局引用表');
+  }
+  if (category === 'timeout') return text('timeout', '超时');
+  if (category === 'process-failure') return text('process failure', '进程失败');
+  return category;
+}
+
+function outcomeReasonSummary(
+  record: BenchRecord,
+  text: (english: string, chinese: string) => string,
+): string {
+  return Object.entries(record.outcomeCounts?.byReason ?? {})
+    .filter(([, count]) => count > 0)
+    .map(([category, count]) => `${count} ${reasonLabel(category, text)}`)
+    .join(' · ');
+}
+
 function status(
   record: BenchRecord | undefined,
   text: (english: string, chinese: string) => string,
 ): string {
   if (!record) return text('not run', '未运行');
+  const outcome = nativeOutcomeState(record);
+  if (outcome === 'not-measured') {
+    const reason = record.notMeasuredReason?.category ?? 'observer unavailable';
+    return text(`not measured · ${reason}`, `未测量 · ${reason}`);
+  }
+  if (outcome === 'not-reportable' && record.reportability) {
+    const reasons = outcomeReasonSummary(record, text);
+    return text(
+      `not reportable · ${record.acceptedCount ?? 0}/${record.reportability.minAcceptedSamples} accepted`
+        + `${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}`
+        + `${reasons ? ` · ${reasons}` : ''}`,
+      `不可报告 · 接受 ${record.acceptedCount ?? 0}/${record.reportability.minAcceptedSamples}`
+        + `${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}`
+        + `${reasons ? ` · ${reasons}` : ''}`,
+    );
+  }
   if (record.median != null) {
     return `${fmtMs(record.median)} · n=${record.n}${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}`;
   }
   const failure = record.failures?.[0];
-  const category = failure?.category ?? 'DNF';
+  const reasons = outcomeReasonSummary(record, text);
+  const category = reasons || reasonLabel(failure?.category ?? 'DNF', text);
   const timeout = failure?.timeoutMs
     ? text(` · ${(failure.timeoutMs / 1000).toFixed(0)}s ceiling`, ` · 上限 ${(failure.timeoutMs / 1000).toFixed(0)} 秒`)
     : '';
@@ -50,6 +90,7 @@ function RecordList({
         {records.map(({ label, record }) => (
           <div
             className={`observation-row${record?.median == null ? ' dnf' : ''}`}
+            data-status={nativeOutcomeState(record)}
             key={label}
             title={record?.failures?.[0]?.message}
           >
@@ -81,27 +122,32 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
         const records = selectNativeObservations({
           harness: 'native',
           entry: observation.entryId,
-        });
+        }).filter((record) => observation.sourceRunFile == null
+          || record.runFile === observation.sourceRunFile);
         const table = records.filter((record) =>
           record.suite === 'table' && record.metric === 'latency');
         const startup = records.filter((record) =>
           record.suite === 'startup' && record.workload === 'startup');
+        const capacity = records.filter((record) => record.suite === 'native-capacity');
+        const list = records.filter((record) => record.suite === 'list');
         return (
-          <article className="observation-sheet" key={`${observation.entryId}:${observation.machineId}`}>
+          <article className="observation-sheet" key={`${observation.entryId}:${observation.machineId}:${observation.sourceRunFile}`}>
             <header>
               <div>
                 <div className="observation-entry">
                   <span style={{ background: entryColor(observation.entryId, theme) }} />
                   {shortLabel(observation.entryId)}
                 </div>
-                <div className="observation-boundary">
-                  {text('Real Native tap → renderer ACK → second Native frame', '真实 Native 点击 → renderer ACK → 第二个 Native 帧')}
-                </div>
+                <div className="observation-boundary">{observation.kind === 'capacity'
+                  ? text('Cold Native launch → semantic completion or correlated process death', '冷启动 Native → 语义完成或关联进程终止')
+                  : observation.kind === 'list'
+                    ? text('Bounded Native list · semantic receipt + declared allocation observer', '有界 Native 列表 · 语义凭据 + 已声明分配观察器')
+                    : text('Real Native tap → renderer ACK → second Native frame', '真实 Native 点击 → renderer ACK → 第二个 Native 帧')}</div>
               </div>
                 <div className="observation-stamp">{text('archive only', '仅归档')}</div>
             </header>
             <div className="observation-grid">
-              {TABLE_GROUPS.map((group) => (
+              {table.length > 0 && TABLE_GROUPS.map((group) => (
                 <RecordList
                   key={group.title}
                   title={text(group.title, group.title === 'interactive @1k' ? '交互 @1k' : '连续交互 @1k')}
@@ -112,7 +158,7 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
                   }))}
                 />
               ))}
-              <RecordList
+              {table.length > 0 && <RecordList
                 title={text('10k boundary', '10k 边界')}
                 records={[
                   { label: localizedWorkload('create', locale), record: table.find((record) => record.workload === 'create' && record.scale === 10000) },
@@ -120,8 +166,28 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
                   { label: localizedWorkload('select', locale), record: table.find((record) => record.workload === 'select' && record.scale === 10000) },
                   { label: localizedWorkload('clear', locale), record: table.find((record) => record.workload === 'clear' && record.scale === 10000) },
                 ]}
-              />
-              <RecordList
+              />}
+              {capacity.length > 0 && (
+                <RecordList
+                  title={text('eager capacity', '急切容量')}
+                  records={capacity.map((record) => ({
+                    label: `${record.scale.toLocaleString()} rows`,
+                    record,
+                  }))}
+                />
+              )}
+              {list.length > 0 && (
+                <RecordList
+                  title={text('bounded Native list', '有界 Native 列表')}
+                  records={['list-startup', 'list-recycle', 'list-fling'].map((workload) => ({
+                    label: localizedWorkload(workload, locale),
+                    record: list.find((record) => record.workload === workload
+                      && (record.metric === 'peakLiveNativeListItems'
+                        || record.metric === 'materializationTimesMs')),
+                  }))}
+                />
+              )}
+              {startup.length > 0 && <RecordList
                 title={text('startup', '启动')}
                 records={[0, 1000, 10000, 30000].flatMap((scale) => [
                   {
@@ -135,7 +201,7 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
                       record.metric === 'octaneSecondFrame' && record.scale === scale),
                   },
                 ])}
-              />
+              />}
             </div>
             <footer>
               <code>{observation.machineId}</code>

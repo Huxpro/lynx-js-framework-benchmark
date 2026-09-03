@@ -11,7 +11,12 @@ import {
   collectRuns,
   DATASET_CHECKPOINT_SPECS,
   HISTORY_REPLAY_SPEC,
+  samplingProblems,
 } from './collect.mjs';
+import {
+  NATIVE_CAPACITY_OUTCOME_PROTOCOL,
+  REPORTABILITY_PROTOCOL,
+} from './result-json.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
   CONNECTOR_PACKAGE_TREES_PROTOCOL,
@@ -1206,6 +1211,114 @@ test('collector preserves structured DNF evidence and rejects impossible failure
   }
 });
 
+test('collector preserves capacity outcome counts while suppressing underfilled public timing', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-capacity-report-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['react'],
+      entryCommits: { react: 'react-commit' },
+    });
+    const diagnostic = {
+      id: 'octane-native-diagnostic', tier: 'lab', harnesses: ['native'],
+      distDir: path.join(root, 'missing'),
+      provenance: { commit: 'diagnostic-commit' },
+    };
+    const outcomes = [10, 11, 12, 13].map((latencyMs, rep) => ({
+      rep, outcome: 'completed', latencyMs,
+    })).concat([{
+      rep: 4,
+      outcome: 'dnf',
+      failure: { category: 'capacity/android-art-global-ref-table', loadToCrashMs: 21_156 },
+    }]);
+    fs.writeFileSync(path.join(root, 'results/runs/capacity.json'), JSON.stringify({
+      schemaVersion: 4,
+      meta: {
+        generatedAt: '2026-01-02T00:00:00Z',
+        machine: machine('android'),
+        calibration: null,
+        entryCommits: { 'octane-native-diagnostic': 'diagnostic-commit' },
+      },
+      records: [{
+        suite: 'native-capacity', harness: 'native', environment: 'android',
+        entry: 'octane-native-diagnostic', workload: 'create', scale: 10000,
+        metric: 'loadToSemanticCompletion', boundary: 'native-launch-to-valid-completion-receipt',
+        unit: 'ms', contractVersion: 'native-eager-capacity-v2',
+        fixtureRole: 'eager-capacity-probe', outcomeProtocol: NATIVE_CAPACITY_OUTCOME_PROTOCOL,
+        diagnostic: true, rankingEligible: false, timingEligible: true,
+        samples: [10, 11, 12, 13], detailSamples: [null, null, null, null],
+        dnfCount: 1, attemptedCount: 5, acceptedCount: 4,
+        failures: [{
+          rep: 4, category: 'capacity/android-art-global-ref-table', loadToCrashMs: 21_156,
+        }],
+        diagnosticOutcomes: outcomes,
+        reportability: { protocol: REPORTABILITY_PROTOCOL, minAcceptedSamples: 5 },
+      }],
+    }));
+
+    const out = collectRuns({
+      root, log: () => {},
+      entryTiers: entryTiers(['react'], ['octane-native-diagnostic']),
+      entries: [
+        {
+          id: 'react', tier: 'featured', distDir: path.join(root, 'missing-react'),
+          provenance: { commit: 'react-commit' },
+        },
+        diagnostic,
+      ],
+    });
+    const archived = out.records.find((record) => record.suite === 'native-capacity');
+    assert.equal(archived.median, null);
+    assert.deepEqual(archived.samples, [10, 11, 12, 13]);
+    assert.equal(archived.presentationStatus, 'not-reportable');
+    assert.deepEqual(archived.outcomeCounts, {
+      attempted: 5, accepted: 4, dnf: 1, notMeasured: 0,
+      byReason: { 'capacity/android-art-global-ref-table': 1 },
+    });
+    assert.equal(out.nativeObservations[0].kind, 'capacity');
+    assert.equal(out.nativeObservationRecords[0].median, null);
+    const history = out.history.records.find((record) => record.suite === 'native-capacity');
+    assert.equal(history.median, null);
+    assert.equal(history.attemptedCount, 5);
+    assert.equal(history.acceptedCount, 4);
+    assert.equal(history.failures[0].loadToCrashMs, 21_156);
+    assert.equal(Object.hasOwn(history, 'samples'), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collector validates Native list distributions against observations and accepted attempts', () => {
+  const run = { meta: { receipt: { comparabilityCohort: 'test' } } };
+  const distribution = {
+    suite: 'list', harness: 'native', environment: 'android',
+    entry: 'octane-native-diagnostic', workload: 'list-fling', scale: 10000,
+    metric: 'materializationTimesMs', boundary: 'native-list-cell-materialization', unit: 'ms',
+    samples: [1, 2, 3, 4, 5, 6], detailSamples: [{}, {}, {}, {}, {}, {}],
+    n: 6, observationCount: 6,
+    observationCardinality: 'many-observations-per-accepted-attempt',
+    attemptedCount: 2, acceptedCount: 2, dnfCount: 0,
+  };
+  assert.deepEqual(samplingProblems(run, distribution), []);
+  assert.deepEqual(
+    samplingProblems(run, { ...distribution, observationCount: 5 }),
+    ['observation-count-mismatch'],
+  );
+  assert.deepEqual(
+    samplingProblems(run, { ...distribution, acceptedCount: 3 }),
+    ['attempted-count-invalid', 'attempt-accounting-overflow'],
+  );
+  assert.deepEqual(
+    samplingProblems(run, { ...distribution, observationCardinality: 'future-cardinality' }),
+    [
+      'observation-cardinality-invalid',
+      'accepted-count-mismatch',
+      'attempted-count-invalid',
+      'attempt-accounting-overflow',
+    ],
+  );
+});
+
 test('collector keeps incomplete historical storms auditable but removes them from rankings', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -1569,12 +1682,13 @@ test('history keeps a complete past entry set without requiring future featured 
 test('history audits every run but publishes only complete source-defined featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
-  assert.equal(out.listCoverage.expectedCellCount, 56);
-  assert.deepEqual(out.listCoverage.summary, { unsupported: 56 });
-  assert.ok(out.listCoverage.cells.every((cell) =>
+  assert.equal(out.listCoverage.expectedCellCount, 60);
+  assert.deepEqual(out.listCoverage.summary, { unscheduled: 4, unsupported: 56 });
+  assert.ok(out.listCoverage.cells.filter((cell) => !cell.diagnostic).every((cell) =>
     cell.fixture.kind === 'entry-manifest'
     && cell.fixture.declared === false
     && cell.reason === 'list-fixture-not-declared'));
+  assert.equal(out.listCoverage.cells.filter((cell) => cell.diagnostic).length, 4);
   assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
   const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
   assert.equal(bundleScale.length, 144);
@@ -1605,7 +1719,7 @@ test('history audits every run but publishes only complete source-defined featur
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 56);
+  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 60);
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );

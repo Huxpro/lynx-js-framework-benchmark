@@ -73,6 +73,31 @@ test('featured Native contract is exactly five black-box eligible entries by 23 
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, contract.entryIds.length);
 });
 
+test('Native coverage preserves reportability and typed per-reason outcomes', () => {
+  const contract = buildNativeMatrixContract(ENTRIES);
+  const record = {
+    ...recordFor(contract.cells[0]),
+    samples: [1, 2, 3, 4],
+    n: 4,
+    median: 2.5,
+    attemptedCount: 5,
+    acceptedCount: 4,
+    dnfCount: 1,
+    failures: [{ category: 'timeout' }],
+    reportability: { protocol: 'accepted-sample-minimum-v1', minAcceptedSamples: 5 },
+  };
+  const coverage = classifyNativeCoverage({ entries: ENTRIES, sourceRecords: [record] });
+  const cell = coverage.cells[0];
+  assert.equal(cell.status, 'not-reportable');
+  assert.equal(cell.record.attemptedCount, 5);
+  assert.equal(cell.record.acceptedCount, 4);
+  assert.equal(cell.record.reportability.status, 'not-reportable');
+  assert.deepEqual(cell.record.outcomeCounts, {
+    attempted: 5, accepted: 4, dnf: 1, notMeasured: 0, byReason: { timeout: 1 },
+  });
+  assert.throws(() => assertNativeCoverage(coverage), /not-reportable/);
+});
+
 test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupported, and derivation bugs', () => {
   const contract = buildNativeMatrixContract(ENTRIES);
   const measured = recordFor(contract.cells[0]);
@@ -209,7 +234,9 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
       'cli.mjs', 'connector-receipt.mjs', 'harness-native.mjs', 'native-coverage.mjs',
       'native-inputs.mjs', 'native-protocol.mjs', 'native-resume.mjs', 'run-matrix.mjs',
     ]) fs.writeFileSync(path.join(runner, relative), `source:${relative}`);
+    fs.writeFileSync(path.join(shared, 'list-workloads.mjs'), 'list workloads');
     fs.writeFileSync(path.join(shared, 'workloads.mjs'), 'workloads');
+    fs.writeFileSync(path.join(shared, 'native-diagnostic-contract.mjs'), 'native diagnostics');
     fs.writeFileSync(path.join(shared, 'schema.mjs'), 'schema');
     const adapterPath = path.join(root, 'adapter.mjs');
     fs.writeFileSync(adapterPath, 'adapter');

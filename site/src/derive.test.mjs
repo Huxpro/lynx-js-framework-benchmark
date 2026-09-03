@@ -4,12 +4,32 @@ import test from 'node:test';
 import {
   completeEntryScores,
   completeHistoryAggregateCells,
+  nativeOutcomeState,
   rankHistoryAggregate,
   rankHistoryCell,
   rebaseEntryScores,
   slopeFit,
   weightedGeomean,
 } from './derive.mjs';
+
+test('Native outcome states keep failure, not-measured, and absence semantics distinct', () => {
+  const failure = (category) => ({ median: null, dnfCount: 1, failures: [{ category }] });
+  assert.equal(nativeOutcomeState({
+    ...failure('capacity/android-art-global-ref-table'),
+    acceptedCount: 0,
+    reportability: { status: 'not-reportable' },
+  }), 'capacity');
+  assert.equal(nativeOutcomeState(failure('timeout')), 'timeout');
+  assert.equal(nativeOutcomeState(failure('process-failure')), 'process-failure');
+  assert.equal(nativeOutcomeState({ measurementStatus: 'not-measured' }), 'not-measured');
+  assert.equal(nativeOutcomeState({
+    median: null,
+    acceptedCount: 4,
+    reportability: { status: 'not-reportable' },
+  }), 'not-reportable');
+  assert.equal(nativeOutcomeState(undefined), 'absent');
+  assert.equal(nativeOutcomeState({ median: 1, dnfCount: 0 }), 'measured');
+});
 
 test('interactive scores exclude entries with stale/incomplete matrices', () => {
   const result = completeEntryScores(['a', 'b', 'partial'], [
@@ -76,6 +96,25 @@ test('history ranks only exact eligible cohort values and preserves every missin
   );
   assert.equal(rankHistoryCell(['fast'], records, false)[0].status, 'observation');
   assert.equal(rankHistoryCell(['fast', 'absent'], records)[0].status, 'observation');
+});
+
+test('underfilled reportability records remain observations and never rank or score', () => {
+  const underfilled = {
+    entry: 'underfilled', median: 1, dnfCount: 1, rankEligible: true,
+    reportability: { status: 'not-reportable', minAcceptedSamples: 5, acceptedCount: 4 },
+  };
+  const peer = { entry: 'peer', median: 10, dnfCount: 0, rankEligible: true };
+  const ranked = rankHistoryCell(['underfilled', 'peer'], [underfilled, peer]);
+  assert.equal(ranked[0].status, 'observation');
+  assert.equal(ranked[0].rank, null);
+  assert.equal(ranked[1].status, 'observation');
+
+  const cell = { key: 'create@1000', records: [underfilled, peer] };
+  assert.deepEqual(completeHistoryAggregateCells(['underfilled', 'peer'], [cell]), []);
+  const aggregate = rankHistoryAggregate(['underfilled', 'peer'], [cell]);
+  assert.equal(aggregate[0].status, 'observation');
+  assert.equal(aggregate[0].value, null);
+  assert.equal(aggregate[1].status, 'observation');
 });
 
 test('history interactive rank uses one complete unweighted operation matrix', () => {

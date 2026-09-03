@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { STARTUP_CASES, tableCasesForHarness } from '@lynx-bench/shared/workloads';
 import { entrySupportsHarness } from './entries.mjs';
+import { deriveOutcomeCounts, resolveReportability } from './result-json.mjs';
 
 export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-black-box-matrix-v2';
 export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 23;
@@ -113,10 +114,16 @@ function validateRecordCounts(record) {
 
 function compactRecord(record) {
   if (!record) return null;
+  const reportability = resolveReportability(record);
   return {
     n: record.n ?? 0,
     dnfCount: record.dnfCount ?? 0,
+    attemptedCount: record.attemptedCount ?? null,
+    acceptedCount: record.acceptedCount ?? null,
+    observationCount: record.observationCount ?? record.n ?? 0,
     median: record.median ?? null,
+    reportability,
+    outcomeCounts: record.outcomeCounts ?? deriveOutcomeCounts(record),
     boundary: record.boundary,
     unit: record.unit,
     runFile: record.runFile ?? null,
@@ -161,6 +168,10 @@ export function classifyNativeCoverage({
         reason = publishedMatches.length === 0
           ? 'selected source record is absent from derived comparison data'
           : 'derived comparison data contains duplicate records';
+      } else if (resolveReportability(record)?.status === 'not-reportable'
+        && (record.n ?? 0) > 0) {
+        status = 'not-reportable';
+        reason = 'accepted sample minimum not met';
       } else if (Number.isFinite(record.median) && (record.n ?? 0) > 0) {
         status = (record.dnfCount ?? 0) > 0 ? 'measured-with-dnf' : 'measured';
       } else if (isProvenUnsupported(record)) {
@@ -202,7 +213,11 @@ export function assertNativeCoverage(coverage, { allowUnscheduled = false } = {}
   }
   const keys = new Set(coverage.cells.map((cell) => cell.key));
   if (keys.size !== coverage.cells.length) throw new Error('Native coverage contains duplicate cells.');
-  const forbidden = new Set(['invalid-incomparable', 'display-derivation-bug']);
+  const forbidden = new Set([
+    'not-reportable',
+    'invalid-incomparable',
+    'display-derivation-bug',
+  ]);
   if (!allowUnscheduled) forbidden.add('unscheduled');
   const failures = coverage.cells.filter((cell) => forbidden.has(cell.status));
   if (failures.length > 0) {
