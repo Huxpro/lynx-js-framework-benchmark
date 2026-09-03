@@ -101,6 +101,7 @@ Cases (`workload × scale`) are defined once in `packages/shared/src/workloads.m
 | **element pipeline** | source: synchronous self-time + call counts for `create / props / events / topology / read / flush`; derived: `outsidePapiTime` from aligned samples | dedicated pipeline page's `pointerdown → dom-predicate` capture | pre-boot interception of the ElementPAPI surface assignment; Web-only |
 | **storm semantics** | source: operation time, pointer ticks, rAF-observable committed frames, CPU/wire totals; derived: contract outcome, coalescing ratio, bytes/messages per tick | first real pointerdown → terminal observed frame | dedicated `/storm` driver repeatedly issues standard actions; Web-only |
 | **list virtualization** | source: first visible content, recycle elapsed/cell/wire totals, fling elapsed/materialized cells/blank frames/materialization samples; derived: per-cell time/wire, materialized/s, p50/p99 | versioned visible-cell boundary for each harness | separate declarative `list` + keyed `list-item` fixture; Web composed-tree and Native visible-cell-tree observers never cross-rank |
+| **Native capacity diagnostic** | outcome: semantic completion, evidenced ART capacity DNF, timeout, or process failure; chronology retained only as diagnostic detail | cold Explorer launch → one valid completion receipt or one strictly classified terminal event | reserved unranked eager fixture; no DevTool/CDP session; see [`NATIVE_DIAGNOSTICS.md`](./NATIVE_DIAGNOSTICS.md) |
 | **static** | legacy scale-0 bundle metrics plus per-harness/per-scale `totalArtifactRaw/Gzip` and readable `mtsSectionRaw/Gzip` | — | exact `rows-N` artifact inspection with path/SHA receipt (JSON-format bundles expose `lepusCode.root`; binary bundles never masquerade as an MTS section) |
 
 Why this is neutral: ReactLynx, Vue-Lynx (vdom/vapor), and Octane-on-Lynx all ride the same
@@ -188,6 +189,11 @@ An entry opts in without changing the driver:
 Each declared artifact must stay inside its entry directory and match its manifest checksum. The
 same case data, viewport receipt, item-key semantics, and stimulus schedule drive every framework;
 the only harness-specific fields are the declared input and observation mechanisms.
+
+The reserved `octane-native-diagnostic` Lab entry has a second, scale-bound list-fixture manifest
+and a separate eager-capacity manifest. Its records are diagnostic observations, not featured
+benchmark cells. The strict artifact, observer, Android process/log, accepted-sample, and closure
+contracts are centralized in [NATIVE_DIAGNOSTICS.md](./NATIVE_DIAGNOSTICS.md).
 
 ## Harnesses
 

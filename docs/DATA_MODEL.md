@@ -19,6 +19,10 @@ These are the only files/fields that require an update when their real-world inp
 - Native campaign identity: versioned 115-cell matrix hash, immutable input-receipt and connector
   tree hashes, stable device-cohort identity, ordered structured lease-receipt chain, harness
   configuration, and the complete runtime policy;
+- Native diagnostic identity: reserved Lab entry, eager-capacity or bounded-list fixture role,
+  exact per-scale artifact hashes, versioned outcome/reportability contracts, and—for allocation
+  claims—the Native observer method revision plus measured overhead. The full non-ranking contract
+  is in [NATIVE_DIAGNOSTICS.md](./NATIVE_DIAGNOSTICS.md);
 - Native continuation evidence: every lease receipt retains its issue ID, expiry, anonymized serial
   hash, and derived lease ID; `cellLeaseIds` attributes every observation to one receipt without
   persisting the raw ADB serial;
@@ -182,6 +186,11 @@ Everything else is derived, including:
     join the same entry, harness, scale, and one normalized execution regime; a frontier containing
     more than one regime fails closed. Historical checkpoints cannot reuse a current artifact when
     their exact per-scale bytes were not retained (retroactive only where those bytes exist).
+16. Native diagnostics remain outside every ranking. Timing records require at least five accepted
+    samples; underfilled observations retain raw outcomes but publish null aggregates. Capacity
+    crashes retain strict typed DNF evidence and diagnostic `loadToCrashMs`; threshold probes never
+    emit timing samples. Missing real-Native list observer evidence is `not-measured`, never zero,
+    unsupported, or a proxy allocation result.
 
 The checked-in `results/latest.json` is useful for review diffs and static consumers, but deleting
 and regenerating it from the source files must reproduce the same data.

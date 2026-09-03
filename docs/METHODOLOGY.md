@@ -126,7 +126,11 @@ metric rather than silently changing the upstream interaction formula.
   `componentAtIndex` are observational implementation details, never framework-facing calls.
   Existing eager-table artifacts declare no list fixture, so their cells are explicitly
   unsupported instead of being proxied. A non-zero blank-frame count is valid measured data; only
-  driver/capture failure is DNF.
+  driver/capture failure is DNF. Native allocation claims additionally require a versioned real
+  device observer with its method revision and enable-through-disable overhead in the campaign
+  identity. Missing observer evidence is `not-measured`; Web, fake-PAPI, eager-table, and calculated
+  proxies cannot fill it. The distinct eager capacity probe and strict Android evidence contract
+  are specified in [NATIVE_DIAGNOSTICS.md](./NATIVE_DIAGNOSTICS.md).
 - **Staging Pareto (derived-only)**: for each startup scale, collection reads the matching
   `rows-N/main.web.bundle` or `main.lynx.bundle`, derives raw/gzip bytes, and retains the artifact
   path and SHA-256 beside the static record. The total axis uses the whole selected-harness
@@ -194,6 +198,11 @@ metric rather than silently changing the upstream interaction formula.
   order is fixed so every entry sees the same cycle.
 - Reported per sample set: median (headline), mean, sample std, min, p95, and a
   t-distribution 95% CI (octane's `stats` discipline); raw samples retained in run files.
+- Native diagnostic timing is reportable only at five accepted samples. An underfilled cell
+  remains an observation but exposes no public aggregate, score, ratio, or rank. `not-measured`
+  means the required observation boundary was unavailable before a credible attempt; it is neither
+  DNF nor a zero. Capacity `loadToCrashMs` and optional threshold probes are outcome diagnostics
+  only, never timing samples.
 - Raw `samples`/one-shot `value` are authoritative. Collection recalculates every statistic and
   ignores stored aggregate snapshots in run files; see [DATA_MODEL.md](./DATA_MODEL.md).
 - **DNF is data**: timeouts are counted (`dnfCount`), retained with per-repetition structured
