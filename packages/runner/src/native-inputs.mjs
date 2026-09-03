@@ -9,19 +9,32 @@ import {
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
 import {
+  assertNativeDiagnosticManifest,
   NATIVE_CAPACITY_BUILD_PROTOCOL,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_LIST_FIXTURE_ID,
+  NATIVE_LIST_FIXTURE_ROLE,
+  NATIVE_LIST_SCALES,
   NATIVE_STARTUP_PROTOCOL,
   nativeCapacityProvenancePath,
+  nativeListBundlePath,
+  nativeListProvenancePath,
 } from '@lynx-bench/shared/native-diagnostic-contract';
+import {
+  LIST_FIXTURE_PROTOCOL,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
+} from '@lynx-bench/shared/list-workloads';
 import {
   assertNativeCapacityDiagnosticEntry,
   assertNativeCapacityContract,
   NATIVE_CAPACITY_ENTRY_ID,
 } from './native-capacity-suite.mjs';
+import { buildNativeListInputContract } from './harness-native-list.mjs';
 import { NATIVE_CAPACITY_POLICY } from './native-protocol.mjs';
 
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
 export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v3';
+export const NATIVE_LIST_INPUT_RECEIPT_VERSION = 'native-list-input-receipt-v1';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
 export { NATIVE_STARTUP_PROTOCOL };
 
@@ -212,6 +225,199 @@ export function assertNativeInputsUnchanged(inputs) {
     const diskSha256 = sha256(fs.readFileSync(pinned.file));
     if (diskSha256 !== pinned.sha256) {
       throw new Error(`Native source changed on disk after snapshot: ${pinned.file} (${roles}).`);
+    }
+  }
+  return inputs;
+}
+
+function assertNativeListFixture(entry, manifest) {
+  assertNativeDiagnosticManifest(entry);
+  assertNativeDiagnosticManifest(manifest);
+  if (entry.id !== NATIVE_DIAGNOSTIC_ENTRY_ID
+    || entry.listFixture?.protocol !== NATIVE_LIST_FIXTURE_PROTOCOL
+    || entry.listFixture?.workloadProtocol !== LIST_FIXTURE_PROTOCOL
+    || JSON.stringify(Object.keys(entry.listFixture?.scales ?? {}))
+      !== JSON.stringify(NATIVE_LIST_SCALES.map(String))
+    || JSON.stringify(entry.listFixture) !== JSON.stringify(manifest.listFixture)) {
+    throw new Error('Native list inputs require the exact diagnostic bounded-list manifest.');
+  }
+}
+
+/** Snapshot the separate, non-ranking real-Native list campaign inputs. */
+export function snapshotNativeListInputs({
+  entry,
+  adapterPath,
+  observer = null,
+  root = repoRoot(),
+}) {
+  const immutableFiles = new Map();
+  const pinFile = (file, role) => {
+    const resolved = path.resolve(file);
+    const prior = immutableFiles.get(resolved);
+    if (prior) {
+      prior.roles.add(role);
+      return prior;
+    }
+    const snapshotBytes = fs.readFileSync(resolved);
+    const pinned = {
+      file: resolved,
+      snapshotBytes,
+      bytes: snapshotBytes.length,
+      sha256: sha256(snapshotBytes),
+      roles: new Set([role]),
+    };
+    immutableFiles.set(resolved, pinned);
+    return pinned;
+  };
+
+  const manifestPath = path.join(entry.dir, 'entry.json');
+  const manifestPin = pinFile(manifestPath, `${NATIVE_DIAGNOSTIC_ENTRY_ID}:manifest`);
+  const manifest = JSON.parse(manifestPin.snapshotBytes.toString('utf8'));
+  assertNativeListFixture(entry, manifest);
+  const sourceCommit = assertCapacitySourceRevision(entry.provenance, entry.id);
+  if (assertCapacitySourceRevision(manifest.provenance, `${entry.id} manifest`) !== sourceCommit) {
+    throw new Error(`${entry.id} manifest source revision differs from discovered entry.`);
+  }
+
+  const bundles = Object.fromEntries(NATIVE_LIST_SCALES.map((scale) => {
+    const key = String(scale);
+    const artifact = manifest.listFixture.scales[key];
+    if (artifact.bundle !== nativeListBundlePath(scale)) {
+      throw new Error(`${entry.id} ${scale}-row Native list bundle path is not scale-exact.`);
+    }
+    const bundlePath = path.join(entry.dir, artifact.bundle);
+    const bundlePin = pinFile(bundlePath, `${entry.id}:list-${scale}-bundle`);
+    const provenanceRelative = nativeListProvenancePath(scale);
+    const expectedChecksums = [
+      entry.listFixture.scales[key].sha256,
+      entry.provenance?.sha256?.[provenanceRelative],
+      entry.provenance?.buildReceipt?.artifacts?.list?.[key]?.sha256,
+      manifest.listFixture.scales[key].sha256,
+      manifest.provenance?.sha256?.[provenanceRelative],
+      manifest.provenance?.buildReceipt?.artifacts?.list?.[key]?.sha256,
+    ];
+    if (expectedChecksums.some((expected) => expected !== bundlePin.sha256)) {
+      throw new Error(
+        `${entry.id} ${scale}-row Native list bundle checksum does not match manifest provenance.`,
+      );
+    }
+    return [key, {
+      bundlePath,
+      bundleBytes: bundlePin.snapshotBytes,
+      relativePath: artifact.bundle,
+      sha256: bundlePin.sha256,
+    }];
+  }));
+
+  const listInput = buildNativeListInputContract({ entry, bundles, observer });
+  const resolvedAdapter = path.resolve(adapterPath);
+  const sourceFiles = [
+    resolvedAdapter,
+    path.join(root, 'packages/runner/src/cli.mjs'),
+    path.join(root, 'packages/runner/src/entries.mjs'),
+    path.join(root, 'packages/runner/src/harness-native.mjs'),
+    path.join(root, 'packages/runner/src/harness-native-list.mjs'),
+    path.join(root, 'packages/runner/src/list-coverage.mjs'),
+    path.join(root, 'packages/runner/src/native-inputs.mjs'),
+    path.join(root, 'packages/runner/src/result-json.mjs'),
+    path.join(root, 'packages/shared/src/list-workloads.mjs'),
+    path.join(root, 'packages/shared/src/native-diagnostic-contract.mjs'),
+    path.join(root, 'packages/shared/src/schema.mjs'),
+    path.join(root, 'packages/shared/src/stats.mjs'),
+  ];
+  const sources = Object.fromEntries(sourceFiles.map((file) => {
+    const pinned = pinFile(file, 'native-list-runner-source');
+    return [relativeOrAbsolute(root, file), { bytes: pinned.bytes, sha256: pinned.sha256 }];
+  }));
+  const receiptPayload = {
+    version: NATIVE_LIST_INPUT_RECEIPT_VERSION,
+    suite: 'list',
+    entryId: entry.id,
+    fixtureRole: NATIVE_LIST_FIXTURE_ROLE,
+    fixtureId: NATIVE_LIST_FIXTURE_ID,
+    diagnostic: true,
+    rankingEligible: false,
+    sourceCommit,
+    adapter: relativeOrAbsolute(root, resolvedAdapter),
+    observer: listInput.observer,
+    sources,
+    manifest: {
+      path: relativeOrAbsolute(root, manifestPath),
+      bytes: manifestPin.bytes,
+      sha256: manifestPin.sha256,
+    },
+    listInput: JSON.parse(JSON.stringify(listInput)),
+    listFixture: {
+      protocol: manifest.listFixture.protocol,
+      workloadProtocol: manifest.listFixture.workloadProtocol,
+      contractSha256: manifest.listFixture.contractSha256,
+      scales: Object.fromEntries(NATIVE_LIST_SCALES.map((scale) => {
+        const artifact = bundles[String(scale)];
+        return [String(scale), {
+          bundle: artifact.relativePath,
+          bytes: artifact.bundleBytes.length,
+          sha256: artifact.sha256,
+        }];
+      })),
+    },
+  };
+  return {
+    bundles,
+    observer: listInput.observer,
+    immutableFiles,
+    receipt: {
+      ...receiptPayload,
+      sha256: sha256(Buffer.from(JSON.stringify(receiptPayload))),
+    },
+  };
+}
+
+export function assertNativeListInputsUnchanged(inputs) {
+  const { sha256: receiptSha256, ...receiptPayload } = inputs?.receipt ?? {};
+  if (sha256(Buffer.from(JSON.stringify(receiptPayload))) !== receiptSha256) {
+    throw new Error('immutable Native list input receipt mutated in memory.');
+  }
+  if (inputs?.receipt?.version !== NATIVE_LIST_INPUT_RECEIPT_VERSION
+    || inputs.receipt.suite !== 'list'
+    || inputs.receipt.entryId !== NATIVE_DIAGNOSTIC_ENTRY_ID
+    || inputs.receipt.fixtureRole !== NATIVE_LIST_FIXTURE_ROLE
+    || inputs.receipt.fixtureId !== NATIVE_LIST_FIXTURE_ID
+    || inputs.receipt.diagnostic !== true
+    || inputs.receipt.rankingEligible !== false) {
+    throw new Error('immutable Native list input receipt has the wrong diagnostic identity.');
+  }
+  const receiptScales = inputs.receipt.listFixture?.scales ?? {};
+  if (JSON.stringify(Object.keys(inputs?.bundles ?? {}))
+    !== JSON.stringify(NATIVE_LIST_SCALES.map(String))
+    || JSON.stringify(Object.keys(receiptScales))
+      !== JSON.stringify(NATIVE_LIST_SCALES.map(String))) {
+    throw new Error('immutable Native list bundle selection mutated in memory.');
+  }
+  for (const scale of NATIVE_LIST_SCALES) {
+    const key = String(scale);
+    const bundle = inputs.bundles[key];
+    const receiptArtifact = receiptScales[key];
+    const contractArtifact = inputs.receipt.listInput?.artifacts?.[key];
+    const pinnedBundle = inputs.immutableFiles?.get(path.resolve(bundle?.bundlePath ?? ''));
+    if (!Buffer.isBuffer(bundle?.bundleBytes)
+      || sha256(bundle.bundleBytes) !== bundle.sha256
+      || pinnedBundle?.sha256 !== bundle.sha256
+      || bundle.relativePath !== receiptArtifact?.bundle
+      || bundle.bundleBytes.length !== receiptArtifact?.bytes
+      || bundle.sha256 !== receiptArtifact?.sha256
+      || bundle.relativePath !== contractArtifact?.snapshotRelativePath
+      || bundle.bundleBytes.length !== contractArtifact?.snapshotBytes
+      || bundle.sha256 !== contractArtifact?.snapshotSha256) {
+      throw new Error(`immutable ${scale}-row Native list bundle mutated in memory.`);
+    }
+  }
+  for (const pinned of inputs.immutableFiles?.values() ?? []) {
+    const roles = [...pinned.roles].sort().join(', ');
+    if (sha256(pinned.snapshotBytes) !== pinned.sha256) {
+      throw new Error(`immutable Native list input mutated in memory: ${pinned.file} (${roles}).`);
+    }
+    if (!fs.existsSync(pinned.file) || sha256(fs.readFileSync(pinned.file)) !== pinned.sha256) {
+      throw new Error(`Native list input changed on disk: ${pinned.file} (${roles}).`);
     }
   }
   return inputs;

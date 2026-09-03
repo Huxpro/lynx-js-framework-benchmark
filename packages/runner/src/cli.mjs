@@ -6,6 +6,7 @@
 //                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
 //                  [--native-capacity --capacity-disable-file bundle] [--capacity-thresholds]
+//                  [--native-list] [--native-list-observer json-or-file]
 //                  [--jit jit|interp] [--cpu-throttle N]
 //                  [--throttle-scope none|process-cgroup]
 //   lynx-bench preflight
@@ -27,8 +28,10 @@ import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
 import {
+  buildNativeListCampaign,
   loadNativeAdapter,
   loadNativeCapacityAdapter,
+  runNativeListHarness,
   runNativeHarness,
 } from './harness-native.mjs';
 import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
@@ -59,8 +62,10 @@ import {
 import {
   assertNativeCapacityInputsUnchanged,
   assertNativeInputsUnchanged,
+  assertNativeListInputsUnchanged,
   snapshotNativeCapacityInputs,
   snapshotNativeInputs,
+  snapshotNativeListInputs,
 } from './native-inputs.mjs';
 import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
 import {
@@ -224,6 +229,107 @@ async function runNativeCapacityCommand(args, entries) {
   console.log(`[run:native-capacity] ${records.length} records → ${path.relative(root, outPath)}`);
 }
 
+function parseNativeListObserver(value) {
+  if (value == null) return null;
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error('--native-list-observer requires a JSON object or local JSON file.');
+  }
+  const trimmed = value.trim();
+  const source = trimmed.startsWith('{')
+    ? trimmed
+    : fs.readFileSync(path.resolve(value), 'utf8');
+  let observer;
+  try {
+    observer = JSON.parse(source);
+  } catch (error) {
+    throw new Error(
+      `--native-list-observer is not valid JSON: ${error instanceof Error ? error.message : error}`,
+    );
+  }
+  if (observer == null || typeof observer !== 'object' || Array.isArray(observer)) {
+    throw new Error('--native-list-observer must resolve to a JSON object.');
+  }
+  return observer;
+}
+
+async function runNativeListCommand(args, entries) {
+  if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
+    throw new Error('Native list run requires --adapter <module.mjs>.');
+  }
+  const reps = args.reps == null ? 5 : Number(args.reps);
+  if (!Number.isSafeInteger(reps) || reps <= 0) {
+    throw new Error('--reps must be a positive safe integer.');
+  }
+  const entry = entries[0];
+  const root = repoRoot();
+  const requestedObserver = parseNativeListObserver(args['native-list-observer']);
+  const inputs = snapshotNativeListInputs({
+    entry,
+    adapterPath: args.adapter,
+    observer: requestedObserver,
+    root,
+  });
+  const campaign = buildNativeListCampaign({
+    inputReceipt: inputs.receipt,
+    label: typeof args['campaign-id'] === 'string' ? args['campaign-id'] : args.label ?? null,
+  });
+  const native = await runNativeListHarness({
+    adapterPath: args.adapter,
+    entry,
+    bundles: inputs.bundles,
+    observer: inputs.observer,
+    reps,
+    campaignId: campaign.id,
+    listInputs: { receipt: inputs.receipt },
+    campaignIdentity: {
+      campaignId: campaign.id,
+      listContractSha256: campaign.listContractSha256,
+      inputReceiptSha256: inputs.receipt.sha256,
+      fixtureRole: campaign.fixtureRole,
+      fixtureId: campaign.fixtureId,
+      observer: campaign.observer,
+    },
+    log: (line) => console.log(line),
+  });
+  assertNativeListInputsUnchanged(inputs);
+
+  const machine = native.machine ?? machineFingerprint();
+  const now = new Date();
+  const label = args.label ? `-${args.label}` : '';
+  const run = {
+    schemaVersion: SCHEMA_VERSION,
+    meta: {
+      generatedAt: now.toISOString(),
+      machine,
+      calibration: null,
+      harness: 'native',
+      adapter: path.resolve(args.adapter),
+      argv: process.argv.slice(2),
+      checkpoint: false,
+      checkpointComplete: true,
+      diagnostic: true,
+      rankingEligible: false,
+      fixtureRole: campaign.fixtureRole,
+      fixtureId: campaign.fixtureId,
+      observer: campaign.observer,
+      reportability: campaign.reportability,
+      campaign,
+      inputReceipt: inputs.receipt,
+      entryCommits: { [entry.id]: entry.provenance?.commit ?? null },
+    },
+    records: native.records,
+  };
+  const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const outPath = path.join(
+    root,
+    'results/runs',
+    `${stamp}-${machine.id}-native-list${label}.json`,
+  );
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, stringifyResult(run));
+  console.log(`[run:native-list] ${native.records.length} records → ${path.relative(root, outPath)}`);
+}
+
 async function cmdRun(args) {
   const harness = args.harness ?? 'web';
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
@@ -233,7 +339,14 @@ async function cmdRun(args) {
   if (args['capacity-thresholds'] != null && args['capacity-thresholds'] !== true) {
     throw new Error('--capacity-thresholds is a boolean flag and does not accept a value.');
   }
+  if (args['native-list'] != null && args['native-list'] !== true) {
+    throw new Error('--native-list is a boolean flag and does not accept a value.');
+  }
   const nativeCapacity = args['native-capacity'] === true;
+  const nativeList = args['native-list'] === true;
+  if (nativeCapacity && nativeList) {
+    throw new Error('--native-capacity and --native-list cannot be combined.');
+  }
   if (args['capacity-disable-file'] != null
     && typeof args['capacity-disable-file'] !== 'string') {
     throw new Error('--capacity-disable-file requires a local bundle path.');
@@ -244,6 +357,9 @@ async function cmdRun(args) {
   if (args['capacity-thresholds'] === true && !nativeCapacity) {
     throw new Error('--capacity-thresholds requires --native-capacity.');
   }
+  if (args['native-list-observer'] != null && !nativeList) {
+    throw new Error('--native-list-observer requires --native-list.');
+  }
   if (nativeCapacity && harness !== 'native') {
     throw new Error('--native-capacity requires --harness native.');
   }
@@ -252,6 +368,31 @@ async function cmdRun(args) {
     if (requestedEntries?.length !== 1 || requestedEntries[0] !== NATIVE_CAPACITY_ENTRY_ID) {
       throw new Error(
         `--native-capacity requires --entry ${NATIVE_CAPACITY_ENTRY_ID}.`,
+      );
+    }
+  }
+  if (nativeList && harness !== 'native') {
+    throw new Error('--native-list requires --harness native.');
+  }
+  if (nativeList) {
+    const requestedEntries = list(args.entry);
+    if (requestedEntries?.length !== 1 || requestedEntries[0] !== NATIVE_CAPACITY_ENTRY_ID) {
+      throw new Error(`--native-list requires --entry ${NATIVE_CAPACITY_ENTRY_ID}.`);
+    }
+    const conflicts = [
+      ['--suite', args.suite],
+      ['--case', args.case],
+      ['--scale', args.scale],
+      ['--startup-scale', args['startup-scale']],
+      ['--startup-reps', args['startup-reps']],
+      ['--storm-reps', args['storm-reps']],
+      ['--commit', args.commit],
+      ['--quick', args.quick],
+      ['--resume', args.resume],
+    ].filter(([, value]) => value != null);
+    if (conflicts.length > 0) {
+      throw new Error(
+        `--native-list cannot be combined with ${conflicts.map(([flag]) => flag).join(', ')}.`,
       );
     }
   }
@@ -302,6 +443,10 @@ async function cmdRun(args) {
   if (harness === 'native') {
     if (nativeCapacity) {
       await runNativeCapacityCommand(args, entries);
+      return;
+    }
+    if (nativeList) {
+      await runNativeListCommand(args, entries);
       return;
     }
     if (suites.includes('pipeline') || suites.includes('storm')) {
