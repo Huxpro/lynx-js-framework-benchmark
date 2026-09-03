@@ -3,13 +3,16 @@ import path from 'node:path';
 
 import {
   assertNativeDiagnosticManifest,
+  DEFAULT_MIN_ACCEPTED_SAMPLES,
   NATIVE_CAPACITY_CONTRACT_VERSION,
   NATIVE_CAPACITY_DEFAULT_SCALES,
   NATIVE_CAPACITY_FIXTURE_PROTOCOL,
   NATIVE_CAPACITY_FIXTURE_ROLE,
+  NATIVE_CAPACITY_OUTCOME_PROTOCOL,
   NATIVE_CAPACITY_SUITE,
   NATIVE_CAPACITY_THRESHOLD_SCALES,
   NATIVE_DIAGNOSTIC_ENTRY_ID,
+  REPORTABILITY_PROTOCOL,
 } from '@lynx-bench/shared/native-diagnostic-contract';
 import { makeRecord } from '@lynx-bench/shared/schema';
 
@@ -195,7 +198,11 @@ export async function runNativeCapacitySuite({
         }
         dnfCount++;
         failures.push({ rep, ...observed.failure });
-        diagnosticOutcomes.push({ rep, outcome: 'dnf', failure: observed.failure });
+        diagnosticOutcomes.push({
+          rep,
+          outcome: 'dnf',
+          failure: { category: observed.failure.category },
+        });
         continue;
       }
       if (!Number.isFinite(observed?.latencyMs)) {
@@ -205,7 +212,6 @@ export async function runNativeCapacitySuite({
         rep,
         outcome: 'completed',
         latencyMs: observed.latencyMs,
-        detail: observed.detail ?? null,
       });
       // Threshold bisection is outcome evidence only. It can locate a device-
       // specific boundary, but it never becomes a performance timing sample.
@@ -239,6 +245,11 @@ export async function runNativeCapacitySuite({
       diagnostic: true,
       rankingEligible: false,
       timingEligible: !thresholdProbe,
+      outcomeProtocol: NATIVE_CAPACITY_OUTCOME_PROTOCOL,
+      reportability: {
+        protocol: REPORTABILITY_PROTOCOL,
+        minAcceptedSamples: DEFAULT_MIN_ACCEPTED_SAMPLES,
+      },
       diagnosticOutcomes,
     };
     records.push(record);

@@ -20,6 +20,11 @@ import {
   snapshotNativeCapacityInputs,
 } from './native-inputs.mjs';
 import { NATIVE_CAPACITY_POLICY } from './native-protocol.mjs';
+import {
+  DEFAULT_MIN_ACCEPTED_SAMPLES,
+  NATIVE_CAPACITY_OUTCOME_PROTOCOL,
+  REPORTABILITY_PROTOCOL,
+} from '../../shared/src/native-diagnostic-contract.mjs';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -557,6 +562,11 @@ test('capacity execution requires the dedicated adapter hook and retains zero-sa
     assert.equal(record.dnfCount, 1);
     assert.equal(record.rankingEligible, false);
     assert.equal(record.diagnostic, true);
+    assert.equal(record.outcomeProtocol, NATIVE_CAPACITY_OUTCOME_PROTOCOL);
+    assert.deepEqual(record.reportability, {
+      protocol: REPORTABILITY_PROTOCOL,
+      minAcceptedSamples: DEFAULT_MIN_ACCEPTED_SAMPLES,
+    });
   }
 });
 
@@ -592,6 +602,9 @@ test('five ART capacity aborts remain five DNF outcomes with no timing aggregate
       failure.category === 'capacity/android-art-global-ref-table'), true);
     assert.equal(record.failures.every((failure) =>
       Number.isFinite(failure.loadToCrashMs)), true);
+    assert.equal(record.diagnosticOutcomes.every((outcome) =>
+      outcome.failure.category === 'capacity/android-art-global-ref-table'
+      && !Object.hasOwn(outcome.failure, 'loadToCrashMs')), true);
   }
 });
 
@@ -625,4 +638,9 @@ test('successful threshold outcomes retain evidence without creating timing samp
     thresholds.every((record) => record.diagnosticOutcomes[0].outcome === 'completed'),
     true,
   );
+  assert.equal(
+    records.every((record) => !Object.hasOwn(record.diagnosticOutcomes[0], 'detail')),
+    true,
+  );
+  assert.deepEqual(defaults[0].detailSamples, [{ receipt: 'valid' }]);
 });
