@@ -23,9 +23,11 @@ import {
   NATIVE_LIST_FIXTURE_ROLE,
   NATIVE_LIST_SCALES,
   REPORTABILITY_PROTOCOL,
+  nativeListBundlePath,
 } from '@lynx-bench/shared/native-diagnostic-contract';
 
 import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
+import { deriveOutcomeCounts } from './result-json.mjs';
 
 export {
   NATIVE_LIST_CAPABILITY_PROTOCOL,
@@ -141,7 +143,7 @@ function preflightBundle(entry, bundles, scale) {
   const actualSha256 = Buffer.isBuffer(snapshot.bundleBytes)
     ? sha256(snapshot.bundleBytes)
     : null;
-  const requiredRelativePath = `dist/list/rows-${scale}/main.lynx.bundle`;
+  const requiredRelativePath = nativeListBundlePath(scale);
   const expectedPath = path.resolve(entry.dir, declared.relativePath);
   if (!Buffer.isBuffer(snapshot.bundleBytes)
     || declared.relativePath !== requiredRelativePath
@@ -442,22 +444,8 @@ function recordBase(adapter, entry, kase, scale, metric, contract, observer) {
   };
 }
 
-function countOutcomes({ attemptedCount, acceptedCount, dnfCount, failures, notMeasured = 0 }) {
-  const byReason = {};
-  for (const failure of failures) {
-    byReason[failure.category] = (byReason[failure.category] ?? 0) + 1;
-  }
-  return {
-    attempted: attemptedCount,
-    accepted: acceptedCount,
-    dnf: dnfCount,
-    notMeasured,
-    byReason,
-  };
-}
-
 function notMeasuredRecord(base, reason) {
-  return {
+  const outcome = {
     ...makeRecord({ ...base, samples: [], dnfCount: 0, failures: [] }),
     ...base,
     measurementStatus: 'not-measured',
@@ -465,13 +453,10 @@ function notMeasuredRecord(base, reason) {
     acceptedCount: 0,
     notMeasuredCount: 1,
     notMeasuredReason: reason,
-    outcomeCounts: {
-      attempted: 0,
-      accepted: 0,
-      dnf: 0,
-      notMeasured: 1,
-      byReason: { [reason.category]: 1 },
-    },
+  };
+  return {
+    ...outcome,
+    outcomeCounts: deriveOutcomeCounts(outcome),
     observationCount: 0,
     observationCardinality: base.metric === 'materializationTimesMs'
       ? 'many-observations-per-accepted-attempt'
@@ -479,13 +464,16 @@ function notMeasuredRecord(base, reason) {
   };
 }
 
-function detailReferences(details, metric, isObserverMetric) {
+function detailObservations(details, metric, isObserverMetric) {
   return details.flatMap((detail) => {
     const value = isObserverMetric ? detail.observer?.[metric] : detail.sourceMetrics[metric];
-    const observationCount = Array.isArray(value) ? value.length : 1;
-    return Array.from({ length: observationCount }, (_, observationIndex) => ({
-      attemptId: detail.attemptId,
-      observationIndex,
+    const values = Array.isArray(value) ? value : [value];
+    return values.map((sample, observationIndex) => ({
+      sample,
+      reference: {
+        attemptId: detail.attemptId,
+        observationIndex,
+      },
     }));
   });
 }
@@ -515,8 +503,6 @@ function makeCaseRecords({
   entry,
   kase,
   scale,
-  sourceValues,
-  observerValues,
   details,
   dnfCount,
   failures,
@@ -533,12 +519,6 @@ function makeCaseRecords({
     detail.attemptId,
     detail,
   ]));
-  const outcomeCounts = countOutcomes({
-    attemptedCount,
-    acceptedCount: details.length,
-    dnfCount,
-    failures,
-  });
   const metricContracts = {
     ...Object.fromEntries(kase.sourceMetrics.map((metric) => [
       metric, LIST_SOURCE_METRIC_CONTRACTS[metric],
@@ -553,9 +533,9 @@ function makeCaseRecords({
       records.push(notMeasuredRecord(base, unavailable));
       continue;
     }
-    const values = isObserverMetric ? observerValues.get(metric) : sourceValues.get(metric);
-    const samples = values ?? [];
-    const detailSamples = detailReferences(details, metric, isObserverMetric);
+    const observations = detailObservations(details, metric, isObserverMetric);
+    const samples = observations.map(({ sample }) => sample);
+    const detailSamples = observations.map(({ reference }) => reference);
     const ownsEvidence = metric === ownerMetric;
     const recordFailures = ownsEvidence
       ? failures
@@ -576,7 +556,7 @@ function makeCaseRecords({
         ? dnfCount > 0 ? 'measured-with-dnf' : 'measured'
         : 'dnf',
       notMeasuredCount: 0,
-      outcomeCounts,
+      outcomeCounts: deriveOutcomeCounts(record),
       observationCount: samples.length,
       observationCardinality: metric === 'materializationTimesMs'
         ? 'many-observations-per-accepted-attempt'
@@ -640,7 +620,7 @@ export async function runNativeListMatrix({
       if (cellUnavailable != null) {
         records.push(...makeCaseRecords({
           adapter, entry, kase, scale,
-          sourceValues: new Map(), observerValues: new Map(), details: [],
+          details: [],
           dnfCount: 0, failures: [], attemptedCount: 0,
           observer: declaredObserver,
           observerUnavailable: null,
@@ -649,9 +629,6 @@ export async function runNativeListMatrix({
         await onProgress(records);
         continue;
       }
-      const sourceValues = new Map(kase.sourceMetrics.map((metric) => [metric, []]));
-      const observerValues = new Map(Object.keys(NATIVE_LIST_OBSERVER_METRIC_CONTRACTS)
-        .map((metric) => [metric, []]));
       const details = [];
       const failures = [];
       let dnfCount = 0;
@@ -715,15 +692,6 @@ export async function runNativeListMatrix({
           });
           continue;
         }
-        for (const metric of kase.sourceMetrics) {
-          const value = result.sourceMetrics[metric];
-          sourceValues.get(metric).push(...(Array.isArray(value) ? value : [value]));
-        }
-        if (declaredObserver != null) {
-          for (const metric of Object.keys(NATIVE_LIST_OBSERVER_METRIC_CONTRACTS)) {
-            observerValues.get(metric).push(result.observer[metric]);
-          }
-        }
         details.push({
           campaignId,
           attemptId: attempt.id,
@@ -741,7 +709,7 @@ export async function runNativeListMatrix({
       }
       records.push(...makeCaseRecords({
         adapter, entry, kase, scale,
-        sourceValues, observerValues, details,
+        details,
         dnfCount, failures, attemptedCount: reps,
         observer: declaredObserver,
         observerUnavailable,

@@ -13,7 +13,9 @@ import {
 
 import {
   DEFAULT_MIN_ACCEPTED_SAMPLES,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
   REPORTABILITY_PROTOCOL,
+  nativeListBundlePath,
 } from '../../shared/src/native-diagnostic-contract.mjs';
 
 import {
@@ -48,7 +50,7 @@ const OBSERVER = Object.freeze({
 
 function fixture() {
   const entry = {
-    id: 'octane-native-diagnostic',
+    id: NATIVE_DIAGNOSTIC_ENTRY_ID,
     tier: 'lab',
     harnesses: ['native'],
     framework: 'octane',
@@ -64,7 +66,7 @@ function fixture() {
   const bundles = {};
   for (const scale of [1_000, 10_000]) {
     const bundleBytes = Buffer.from(`native-list-${scale}`);
-    const relativePath = `dist/list/rows-${scale}/main.lynx.bundle`;
+    const relativePath = nativeListBundlePath(scale);
     const digest = sha256(bundleBytes);
     entry.listFixture.scales[String(scale)] = { bundle: relativePath, sha256: digest };
     bundles[String(scale)] = {
@@ -157,7 +159,7 @@ function measuredAttempt(context, overrides = {}) {
   const baseEvidence = {
     campaignId: CAMPAIGN_ID,
     attemptId: attempt.id,
-    entryId: 'octane-native-diagnostic',
+    entryId: NATIVE_DIAGNOSTIC_ENTRY_ID,
     fixtureRole: NATIVE_LIST_FIXTURE_ROLE,
     fixtureId: NATIVE_LIST_FIXTURE_ID,
     caseId: kase.name,
@@ -320,6 +322,13 @@ test('missing capability, observer, or exact scale artifact is not measured with
     .every(({ measurementStatus, notMeasuredReason }) =>
       measurementStatus === 'not-measured'
       && notMeasuredReason.category === 'native-list-scale-artifact-unavailable'));
+  assert.deepEqual(missing.find(({ scale }) => scale === 1_000).outcomeCounts, {
+    attempted: 0,
+    accepted: 0,
+    dnf: 0,
+    notMeasured: 1,
+    byReason: { 'native-list-scale-artifact-unavailable': 1 },
+  });
 
   const eagerEntry = structuredClone(entry);
   const eagerBytes = Buffer.from('eager-table-1000');
@@ -492,12 +501,23 @@ test('an adapter-declared launched DNF keeps its typed failure and emits no samp
     && outcomeCounts.accepted === 0
     && outcomeCounts.dnf === 1
     && outcomeCounts.byReason['native-list-capture-timeout'] === 1));
+  assert.deepEqual(startup[0].outcomeCounts, {
+    attempted: 1,
+    accepted: 0,
+    dnf: 1,
+    notMeasured: 0,
+    byReason: { 'native-list-capture-timeout': 1 },
+  });
 });
 
 test('materialization distributions preserve observation and attempt cardinality for collection', async () => {
   const { entry, bundles } = fixture();
   const records = await runNativeListMatrix({
-    adapter: adapter(async (_entry, context) => measuredAttempt(context)),
+    adapter: adapter(async (_entry, context) => {
+      const result = measuredAttempt(context);
+      result.sourceMetrics.materializationTimesMs = context.rep === 0 ? [1, 2, 3] : [4, 5];
+      return result;
+    }),
     entry,
     bundles,
     campaignId: CAMPAIGN_ID,
@@ -506,14 +526,14 @@ test('materialization distributions preserve observation and attempt cardinality
   });
   const distribution = records.find(({ workload, metric }) =>
     workload === 'list-fling' && metric === 'materializationTimesMs');
-  assert.deepEqual(distribution.samples, [1, 2, 3, 1, 2, 3]);
-  assert.equal(distribution.observationCount, 6);
+  assert.deepEqual(distribution.samples, [1, 2, 3, 4, 5]);
+  assert.equal(distribution.observationCount, 5);
   assert.equal(distribution.attemptedCount, 2);
   assert.equal(distribution.acceptedCount, 2);
   assert.equal(distribution.observationCardinality,
     'many-observations-per-accepted-attempt');
   assert.deepEqual(distribution.detailSamples.map(({ observationIndex }) => observationIndex),
-    [0, 1, 2, 0, 1, 2]);
+    [0, 1, 2, 0, 1]);
   assert.equal(new Set(distribution.detailSamples.map(({ attemptId }) => attemptId)).size, 2);
   const fling = records.filter(({ workload }) => workload === 'list-fling');
   const evidenceOwners = fling.filter(({ nativeListCellEvidence }) =>
@@ -521,12 +541,19 @@ test('materialization distributions preserve observation and attempt cardinality
   assert.equal(evidenceOwners.length, 1);
   assert.equal(evidenceOwners[0].metric, 'blankFrames');
   assert.equal(Object.keys(evidenceOwners[0].nativeListCellEvidence.acceptedAttemptsById).length, 2);
+  const acceptedDetails = Object.values(
+    evidenceOwners[0].nativeListCellEvidence.acceptedAttemptsById,
+  );
+  assert.deepEqual(
+    acceptedDetails.flatMap(({ sourceMetrics: metrics }) => metrics.materializationTimesMs),
+    distribution.samples,
+  );
   assert.equal((JSON.stringify(fling).match(/"checkpoint"/g) ?? []).length, 2);
   assert.equal((JSON.stringify(fling).match(/"teardown"/g) ?? []).length, 2);
   assert.equal((JSON.stringify(fling).match(/"sourceMetrics"/g) ?? []).length, 2);
   const derived = deriveListRecords(records.filter(({ workload }) => workload === 'list-fling'));
-  assert.equal(derived.find(({ metric }) => metric === 'materializationP50Ms').value, 2);
-  assert.equal(derived.find(({ metric }) => metric === 'materializationP99Ms').value, 3);
+  assert.equal(derived.find(({ metric }) => metric === 'materializationP50Ms').value, 3);
+  assert.equal(derived.find(({ metric }) => metric === 'materializationP99Ms').value, 4.96);
 });
 
 test('four accepted attempts remain auditable but timing is not reportable', async () => {
