@@ -56,7 +56,7 @@ export function selectListCampaignRecords(records, entries) {
   return [...selected.values()].flatMap((candidate) => candidate.records);
 }
 
-function fixtureStatus(entry, harness, scale, diagnostic) {
+function fixtureStatus(entry, harness, scale, diagnostic, artifactHashes) {
   if (diagnostic && (entry.id !== NATIVE_LIST_DIAGNOSTIC_ENTRY_ID
     || entry.tier !== 'lab'
     || harness !== 'native'
@@ -136,16 +136,6 @@ function fixtureStatus(entry, harness, scale, diagnostic) {
       },
     };
   }
-  if (!fs.existsSync(bundle)) {
-    return {
-      supported: false,
-      reason: `list-${harness}-bundle-missing`,
-      source: {
-        kind: 'entry-manifest', declared: true, protocol: fixture.protocol,
-        bundle: relativeBundle,
-      },
-    };
-  }
   const expectedSha256 = diagnostic ? scaleArtifact?.sha256 : fixture.sha256?.[harness];
   if (typeof expectedSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedSha256)) {
     return {
@@ -157,7 +147,23 @@ function fixtureStatus(entry, harness, scale, diagnostic) {
       },
     };
   }
-  const actualSha256 = crypto.createHash('sha256').update(fs.readFileSync(bundle)).digest('hex');
+  let actualSha256 = artifactHashes.get(bundle);
+  if (actualSha256 == null) {
+    try {
+      actualSha256 = crypto.createHash('sha256').update(fs.readFileSync(bundle)).digest('hex');
+      artifactHashes.set(bundle, actualSha256);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+      return {
+        supported: false,
+        reason: `list-${harness}-bundle-missing`,
+        source: {
+          kind: 'entry-manifest', declared: true, protocol: fixture.protocol,
+          bundle: relativeBundle,
+        },
+      };
+    }
+  }
   if (actualSha256 !== expectedSha256) {
     return {
       supported: false,
@@ -278,6 +284,7 @@ function recordStatus(records, kase, harness) {
 }
 
 export function buildListCoverage({ entries, sourceRecords = [] }) {
+  const artifactHashes = new Map();
   const featured = entries
     .filter((entry) => entry.id !== NATIVE_LIST_DIAGNOSTIC_ENTRY_ID
       && (entry.tier ?? 'featured') === 'featured')
@@ -300,7 +307,7 @@ export function buildListCoverage({ entries, sourceRecords = [] }) {
   ];
   const cells = targets.flatMap(({ entry, harness, diagnostic: isDiagnostic, rankingEligible }) => {
     return LIST_CASES.flatMap((kase) => kase.scales.map((scale) => {
-      const fixture = fixtureStatus(entry, harness, scale, isDiagnostic);
+      const fixture = fixtureStatus(entry, harness, scale, isDiagnostic, artifactHashes);
       const expected = {
         entry: entry.id,
         harness,
