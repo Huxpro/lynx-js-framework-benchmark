@@ -1,37 +1,31 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
 
+import {
+  assertNativeDiagnosticManifest,
+  NATIVE_CAPACITY_CONTRACT_VERSION,
+  NATIVE_CAPACITY_DEFAULT_SCALES,
+  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+  NATIVE_CAPACITY_FIXTURE_ROLE,
+  NATIVE_CAPACITY_SUITE,
+  NATIVE_CAPACITY_THRESHOLD_SCALES,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+} from '@lynx-bench/shared/native-diagnostic-contract';
 import { makeRecord } from '@lynx-bench/shared/schema';
 
-export const NATIVE_CAPACITY_ENTRY_ID = 'octane-native-diagnostic';
-export const NATIVE_CAPACITY_SUITE = 'native-capacity';
-export const NATIVE_CAPACITY_CONTRACT_VERSION = 'native-eager-capacity-v2';
+export const NATIVE_CAPACITY_ENTRY_ID = NATIVE_DIAGNOSTIC_ENTRY_ID;
 export const NATIVE_CAPACITY_CAMPAIGN_VERSION = 'native-capacity-campaign-v2';
-export const NATIVE_CAPACITY_DEFAULT_SCALES = Object.freeze([1_000, 10_000]);
-export const NATIVE_CAPACITY_THRESHOLD_SCALES = Object.freeze([6_000, 7_000, 7_500, 8_000]);
-export const NATIVE_CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
+export {
+  assertNativeDiagnosticManifest as assertNativeCapacityDiagnosticEntry,
+  NATIVE_CAPACITY_DEFAULT_SCALES,
+  NATIVE_CAPACITY_CONTRACT_VERSION,
+  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+  NATIVE_CAPACITY_SUITE,
+  NATIVE_CAPACITY_THRESHOLD_SCALES,
+};
 
-const EXPECTED_EMPTY_BUNDLE = 'dist/table/main.lynx.bundle';
-const EXPECTED_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
-const EXPECTED_BUILD_TABLE = 'benchmarks/lynx-table/app/dist/main.lynx.bundle';
-const EXPECTED_BUILD_LIST = Object.freeze({
-  1000: 'benchmarks/lynx-list/app/dist/rows-1000/main.lynx.bundle',
-  10000: 'benchmarks/lynx-list/app/dist/rows-10000/main.lynx.bundle',
-});
-const EXPECTED_CAPACITY_SCALES = Object.freeze([
-  ...NATIVE_CAPACITY_DEFAULT_SCALES,
-  ...NATIVE_CAPACITY_THRESHOLD_SCALES,
-].sort((a, b) => a - b));
-const EXPECTED_TOPOLOGY = Object.freeze({ elementsPerRow: 7, chromeElements: 42 });
 const sha256Json = (value) => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const sha256Bytes = (value) => crypto.createHash('sha256').update(value).digest('hex');
-
-const capacityBundlePath = (scale) =>
-  `dist/capacity/rows-${scale}/main.lynx.bundle`;
-const capacityProvenancePath = (scale) =>
-  `capacity/rows-${scale}/main.lynx.bundle`;
-const capacityBuildPath = (scale) =>
-  `benchmarks/lynx-table/app/dist-rows${scale}/main.lynx.bundle`;
 
 function positiveInteger(value, label, fallback) {
   if (value == null) return fallback;
@@ -40,61 +34,6 @@ function positiveInteger(value, label, fallback) {
     throw new Error(`${label} must be a positive safe integer.`);
   }
   return parsed;
-}
-
-function assertDiagnosticEntry(entry) {
-  if (
-    entry?.id !== NATIVE_CAPACITY_ENTRY_ID
-    || entry.tier !== 'lab'
-    || !Array.isArray(entry.harnesses)
-    || entry.harnesses.length !== 1
-    || entry.harnesses[0] !== 'native'
-    || entry.bundles?.lynx !== EXPECTED_EMPTY_BUNDLE
-    || entry.provenance?.buildReceipt?.protocol !== EXPECTED_BUILD_PROTOCOL
-    || JSON.stringify(Object.keys(entry.provenance?.buildReceipt?.artifacts ?? {}))
-      !== JSON.stringify(['table', 'capacity', 'list'])
-    || entry.provenance.buildReceipt.artifacts.table?.path !== EXPECTED_BUILD_TABLE
-    || JSON.stringify(Object.keys(entry.provenance.buildReceipt.artifacts.list ?? {}))
-      !== JSON.stringify(Object.keys(EXPECTED_BUILD_LIST))
-    || Object.entries(EXPECTED_BUILD_LIST).some(([scale, expectedPath]) =>
-      entry.provenance.buildReceipt.artifacts.list[scale]?.path !== expectedPath
-      || !/^[a-f0-9]{64}$/.test(
-        entry.provenance.buildReceipt.artifacts.list[scale]?.sha256 ?? '',
-      )
-      || entry.provenance.sha256?.[`list/rows-${scale}/main.lynx.bundle`]
-        !== entry.provenance.buildReceipt.artifacts.list[scale].sha256)
-  ) {
-    throw new Error(
-      `capacity diagnostic entry must be ${NATIVE_CAPACITY_ENTRY_ID}, lab-tier, Native-only, `
-      + `use ${EXPECTED_EMPTY_BUNDLE}, and declare ${EXPECTED_BUILD_PROTOCOL}.`,
-    );
-  }
-  const fixture = entry.capacityFixture;
-  if (fixture?.protocol !== NATIVE_CAPACITY_FIXTURE_PROTOCOL
-    || fixture.fixtureRole !== 'eager-capacity-probe'
-    || fixture.topology?.elementsPerRow !== EXPECTED_TOPOLOGY.elementsPerRow
-    || fixture.topology?.chromeElements !== EXPECTED_TOPOLOGY.chromeElements
-    || Object.keys(fixture.topology ?? {}).length !== Object.keys(EXPECTED_TOPOLOGY).length
-    || JSON.stringify(Object.keys(fixture.scales ?? {}))
-      !== JSON.stringify(EXPECTED_CAPACITY_SCALES.map(String))
-    || JSON.stringify(Object.keys(entry.provenance.buildReceipt.artifacts?.capacity ?? {}))
-      !== JSON.stringify(EXPECTED_CAPACITY_SCALES.map(String))) {
-    throw new Error('capacity diagnostic entry has an invalid capacityFixture contract.');
-  }
-  for (const scale of EXPECTED_CAPACITY_SCALES) {
-    const artifact = fixture.scales[String(scale)];
-    const expectedSha256 = artifact?.sha256;
-    if (artifact?.bundle !== capacityBundlePath(scale)
-      || !/^[a-f0-9]{64}$/.test(expectedSha256 ?? '')
-      || entry.provenance?.sha256?.[capacityProvenancePath(scale)] !== expectedSha256
-      || entry.provenance?.buildReceipt?.artifacts?.capacity?.[String(scale)]?.path
-        !== capacityBuildPath(scale)
-      || entry.provenance?.buildReceipt?.artifacts?.capacity?.[String(scale)]?.sha256
-        !== expectedSha256) {
-      throw new Error(`capacity diagnostic entry has an invalid ${scale}-row capacity artifact.`);
-    }
-  }
-  return entry;
 }
 
 export function assertNativeCapacityContract(contract) {
@@ -107,7 +46,7 @@ export function assertNativeCapacityContract(contract) {
   if (contract?.protocol !== NATIVE_CAPACITY_CONTRACT_VERSION
     || contract.suite !== NATIVE_CAPACITY_SUITE
     || contract.entryId !== NATIVE_CAPACITY_ENTRY_ID
-    || contract.fixtureRole !== 'eager-capacity-probe'
+    || contract.fixtureRole !== NATIVE_CAPACITY_FIXTURE_ROLE
     || contract.diagnostic !== true
     || contract.rankingEligible !== false
     || !Number.isSafeInteger(contract.reps)
@@ -163,7 +102,7 @@ export function resolveNativeCapacitySuite({
   if (entries.length !== 1) {
     throw new Error(`--native-capacity requires exactly the ${NATIVE_CAPACITY_ENTRY_ID} entry.`);
   }
-  const entry = assertDiagnosticEntry(entries[0]);
+  const entry = assertNativeDiagnosticManifest(entries[0]);
   const scales = [
     ...NATIVE_CAPACITY_DEFAULT_SCALES,
     ...(includeThresholds ? NATIVE_CAPACITY_THRESHOLD_SCALES : []),
@@ -172,7 +111,7 @@ export function resolveNativeCapacitySuite({
   const cells = scales.map((probeScale) => Object.freeze({
     suite: NATIVE_CAPACITY_SUITE,
     entry: NATIVE_CAPACITY_ENTRY_ID,
-    fixtureRole: 'eager-capacity-probe',
+    fixtureRole: NATIVE_CAPACITY_FIXTURE_ROLE,
     workload: 'create',
     scale: probeScale,
     artifact: Object.freeze({ ...entry.capacityFixture.scales[String(probeScale)] }),
@@ -184,7 +123,7 @@ export function resolveNativeCapacitySuite({
     protocol: NATIVE_CAPACITY_CONTRACT_VERSION,
     suite: NATIVE_CAPACITY_SUITE,
     entryId: NATIVE_CAPACITY_ENTRY_ID,
-    fixtureRole: 'eager-capacity-probe',
+    fixtureRole: NATIVE_CAPACITY_FIXTURE_ROLE,
     scales,
     reps: repetitions,
     diagnostic: true,
@@ -208,7 +147,7 @@ export async function runNativeCapacitySuite({
   log = () => {},
   onProgress = async () => {},
 }) {
-  assertDiagnosticEntry(entry);
+  assertNativeDiagnosticManifest(entry);
   assertNativeCapacityContract(contract);
   if (typeof adapter?.runCapacityProbe !== 'function') {
     throw new Error('native adapter is missing required runCapacityProbe().');

@@ -22,6 +22,25 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+  NATIVE_CAPACITY_FIXTURE_ROLE,
+  NATIVE_CAPACITY_SCALES,
+  NATIVE_CAPACITY_TOPOLOGY,
+  NATIVE_CAPACITY_BUILD_PROTOCOL,
+  NATIVE_DIAGNOSTIC_BUILD_RECEIPT_PATH,
+  NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+  NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH,
+  NATIVE_LIST_SCALES,
+  nativeCapacityBundlePath,
+  nativeCapacityBuildPath,
+  nativeCapacityProvenancePath,
+  nativeListBundlePath,
+  nativeListBuildPath,
+  nativeListProvenancePath,
+} from '../packages/shared/src/native-diagnostic-contract.mjs';
+import {
   LIST_FIXTURE_PROTOCOL,
   LIST_WORKLOAD_CONTRACT,
   NATIVE_LIST_FIXTURE_PROTOCOL,
@@ -40,14 +59,6 @@ const OCTANE_NEW_BUILD = process.env.OCTANE_NEW_BUILD ?? null;
 const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
 
 const AUTOROWS = [0, 1000, 10000, 30000];
-const NATIVE_CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
-const NATIVE_LIST_SCALES = [1000, 10000];
-const NATIVE_CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
-const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
-const NATIVE_CAPACITY_TOPOLOGY = Object.freeze({
-  elementsPerRow: 7,
-  chromeElements: 42,
-});
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
 const wants = (id) => ONLY.size === 0 || ONLY.has(id);
 
@@ -194,31 +205,31 @@ function vendorOctanePr791(buildDir) {
 }
 
 function vendorOctaneNativeDiagnostic(buildDir) {
-  const id = 'octane-native-diagnostic';
+  const id = NATIVE_DIAGNOSTIC_ENTRY_ID;
   if (!wants(id)) return;
   const artifactSpecs = {
     table: {
-      sourcePath: 'benchmarks/lynx-table/app/dist/main.lynx.bundle',
-      destinationPath: 'table/main.lynx.bundle',
+      sourcePath: NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+      destinationPath: NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH,
     },
   };
   const capacityArtifactSpecs = Object.fromEntries(NATIVE_CAPACITY_SCALES.map((rows) => [
     String(rows),
     {
-      sourcePath: `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
-      destinationPath: `capacity/rows-${rows}/main.lynx.bundle`,
+      sourcePath: nativeCapacityBuildPath(rows),
+      destinationPath: nativeCapacityProvenancePath(rows),
     },
   ]));
   const listArtifactSpecs = Object.fromEntries(NATIVE_LIST_SCALES.map((rows) => [
     String(rows),
     {
-      sourcePath: `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
-      destinationPath: `list/rows-${rows}/main.lynx.bundle`,
+      sourcePath: nativeListBuildPath(rows),
+      destinationPath: nativeListProvenancePath(rows),
     },
   ]));
   const receiptPath = path.join(
     buildDir,
-    'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
+    NATIVE_DIAGNOSTIC_BUILD_RECEIPT_PATH,
   );
   for (const [role, artifact] of [
     ...Object.entries(artifactSpecs),
@@ -346,15 +357,15 @@ function vendorOctaneNativeDiagnostic(buildDir) {
       buildReceipt: receipt,
       sha256: checks,
     },
-    bundles: { lynx: 'dist/table/main.lynx.bundle' },
+    bundles: { lynx: NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE },
     capacityFixture: {
       protocol: NATIVE_CAPACITY_FIXTURE_PROTOCOL,
-      fixtureRole: 'eager-capacity-probe',
+      fixtureRole: NATIVE_CAPACITY_FIXTURE_ROLE,
       topology: NATIVE_CAPACITY_TOPOLOGY,
       scales: Object.fromEntries(Object.entries(sourceCapacityArtifacts).map(([rows, artifact]) => [
         rows,
         {
-          bundle: `dist/${artifact.destinationPath}`,
+          bundle: nativeCapacityBundlePath(Number(rows)),
           sha256: checks[artifact.destinationPath],
         },
       ])),
@@ -366,7 +377,7 @@ function vendorOctaneNativeDiagnostic(buildDir) {
       scales: Object.fromEntries(Object.entries(sourceListArtifacts).map(([rows, artifact]) => [
         rows,
         {
-          bundle: `dist/${artifact.destinationPath}`,
+          bundle: nativeListBundlePath(Number(rows)),
           sha256: checks[artifact.destinationPath],
         },
       ])),

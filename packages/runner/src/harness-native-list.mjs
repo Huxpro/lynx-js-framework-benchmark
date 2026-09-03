@@ -16,6 +16,12 @@ import {
   NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
   NATIVE_LIST_OBSERVER_PROTOCOL,
 } from '@lynx-bench/shared/list-workloads';
+import {
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_LIST_FIXTURE_ID,
+  NATIVE_LIST_FIXTURE_ROLE,
+  NATIVE_LIST_SCALES,
+} from '@lynx-bench/shared/native-diagnostic-contract';
 
 import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
 
@@ -24,6 +30,8 @@ export {
   NATIVE_LIST_MAX_LIVE_LIST_ITEM_BOUND,
   NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
   NATIVE_LIST_OBSERVER_PROTOCOL,
+  NATIVE_LIST_FIXTURE_ID,
+  NATIVE_LIST_FIXTURE_ROLE,
 };
 
 export const NATIVE_LIST_RUN_CONTRACT_VERSION = 'lynx-native-list-run-v1';
@@ -31,14 +39,9 @@ export const NATIVE_LIST_INPUT_CONTRACT_VERSION = 'lynx-native-list-input-v1';
 export const NATIVE_LIST_ATTEMPT_PROTOCOL = 'lynx-native-list-attempt-v1';
 export const NATIVE_LIST_CHECKPOINT_PROTOCOL = 'lynx-native-list-checkpoint-v1';
 export const NATIVE_LIST_TEARDOWN_PROTOCOL = 'lynx-native-list-teardown-v1';
-export const NATIVE_LIST_FIXTURE_ROLE = 'bounded-native-list';
-export const NATIVE_LIST_FIXTURE_ID = 'octane-lynx-bounded-list-v1';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const sha256Json = (value) => sha256(JSON.stringify(value));
-const SCALE_VALUES = Object.freeze([...new Set(
-  LIST_CASES.flatMap((kase) => kase.scales),
-)].sort((left, right) => left - right));
 const CASE_NAMES = Object.freeze(LIST_CASES.map(({ name }) => name));
 
 function observerDeclaration(observer) {
@@ -69,7 +72,7 @@ function manifestArtifact(entry, scale) {
  * observer mutations visible in the enclosing campaign receipt.
  */
 export function buildNativeListInputContract({ entry, bundles = {}, observer = null }) {
-  const artifacts = Object.fromEntries(SCALE_VALUES.map((scale) => {
+  const artifacts = Object.fromEntries(NATIVE_LIST_SCALES.map((scale) => {
     const declared = manifestArtifact(entry, scale);
     const snapshot = bundles[String(scale)] ?? null;
     return [String(scale), {
@@ -110,7 +113,7 @@ function preflightEntry(entry) {
     || entry.listFixture?.protocol !== NATIVE_LIST_FIXTURE_PROTOCOL
     || entry.listFixture?.workloadProtocol !== LIST_FIXTURE_PROTOCOL
     || entry.listFixture?.contractSha256 !== LIST_WORKLOAD_CONTRACT_SHA256
-    || entry.id !== 'octane-native-diagnostic') {
+    || entry.id !== NATIVE_DIAGNOSTIC_ENTRY_ID) {
     return {
       category: 'native-list-fixture-contract-unavailable',
       message: 'entry does not declare the exact diagnostic bounded-list contract',

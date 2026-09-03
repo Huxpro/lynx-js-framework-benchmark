@@ -13,9 +13,10 @@ import {
   NATIVE_LIST_OBSERVER_METRIC_CONTRACTS,
   listCaseKey,
 } from '../../shared/src/list-workloads.mjs';
+import { NATIVE_DIAGNOSTIC_ENTRY_ID } from '../../shared/src/native-diagnostic-contract.mjs';
 
 export const LIST_HARNESSES = Object.freeze(['native', 'web']);
-export const NATIVE_LIST_DIAGNOSTIC_ENTRY_ID = 'octane-native-diagnostic';
+export const NATIVE_LIST_DIAGNOSTIC_ENTRY_ID = NATIVE_DIAGNOSTIC_ENTRY_ID;
 export const LIST_WORKLOAD_CONTRACT_SHA256 = crypto.createHash('sha256')
   .update(JSON.stringify(LIST_WORKLOAD_CONTRACT))
   .digest('hex');

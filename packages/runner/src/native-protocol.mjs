@@ -1,6 +1,14 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 
+import { NATIVE_STARTUP_PROTOCOL } from '@lynx-bench/shared/native-diagnostic-contract';
+import {
+  ANDROID_ART_CAPACITY_ACTIVITY,
+  ANDROID_ART_CAPACITY_CLASSIFIER_PROTOCOL,
+  ANDROID_ART_CAPACITY_PACKAGE,
+  DEVTOOL_DISABLED_LIFECYCLE_PROTOCOL,
+} from './android-art-capacity.mjs';
+
 export const NATIVE_SANDBOX_CAMPAIGN_VERSION = 'native-sandbox-campaign-v2';
 export const NATIVE_SANDBOX_ADAPTER_PROTOCOL = 'native-sandbox-adapter-v3';
 export const NATIVE_CAPACITY_ADAPTER_PROTOCOL = 'native-capacity-adapter-v1';
@@ -435,15 +443,15 @@ export const NATIVE_SANDBOX_POLICY = resolveNativeSandboxPolicy();
 export function resolveNativeCapacityPolicy(env = process.env) {
   const policy = {
     protocol: NATIVE_CAPACITY_ADAPTER_PROTOCOL,
-    packageName: 'com.lynx.explorer',
-    activity: 'com.lynx.explorer/.LynxViewShellActivity',
+    packageName: ANDROID_ART_CAPACITY_PACKAGE,
+    activity: ANDROID_ART_CAPACITY_ACTIVITY,
     triggerMode: 'eager-auto',
     devtoolMode: 'disabled-lifecycle-ack-no-cdp',
     processMode: 'force-stop-before-every-probe',
     observation: 'adb-logcat-epoch-and-package-pid',
-    startupProtocol: 'lynx-native-startup-v1',
-    classifierProtocol: 'android-art-global-ref-capacity-v1',
-    preflightProtocol: 'lynx-devtool-disabled-lifecycle-v1',
+    startupProtocol: NATIVE_STARTUP_PROTOCOL,
+    classifierProtocol: ANDROID_ART_CAPACITY_CLASSIFIER_PROTOCOL,
+    preflightProtocol: DEVTOOL_DISABLED_LIFECYCLE_PROTOCOL,
     timeoutMs: finite(env, 'LYNX_SANDBOX_CAPACITY_TIMEOUT_MS', 180_000, { positive: true }),
     preflightTimeoutMs: finite(
       env, 'LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS', 30_000, { positive: true },

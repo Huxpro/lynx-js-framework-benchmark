@@ -11,6 +11,10 @@ const listWorkloadsSource = new URL(
   '../packages/shared/src/list-workloads.mjs',
   import.meta.url,
 ).pathname;
+const nativeDiagnosticContractSource = new URL(
+  '../packages/shared/src/native-diagnostic-contract.mjs',
+  import.meta.url,
+).pathname;
 const LIST_CONTRACT_SHA256 =
   '8cc9d901f97e6e17ac6207b13d9bb9afb5163ce0d1142cffd1b1921726a2f87b';
 const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
@@ -25,6 +29,10 @@ function stageDiagnosticEntry() {
   const listWorkloads = path.join(root, 'packages/shared/src/list-workloads.mjs');
   fs.mkdirSync(path.dirname(listWorkloads), { recursive: true });
   fs.copyFileSync(listWorkloadsSource, listWorkloads);
+  fs.copyFileSync(
+    nativeDiagnosticContractSource,
+    path.join(root, 'packages/shared/src/native-diagnostic-contract.mjs'),
+  );
 
   const entryDir = path.join(root, 'entries/octane-native-diagnostic');
   const tableBundle = path.join(entryDir, 'dist/table/main.lynx.bundle');

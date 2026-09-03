@@ -4,6 +4,16 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
+import {
+  NATIVE_CAPACITY_SCALES,
+  NATIVE_CAPACITY_BUILD_PROTOCOL,
+  NATIVE_DIAGNOSTIC_BUILD_RECEIPT_PATH,
+  NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+  NATIVE_LIST_SCALES,
+  nativeCapacityBuildPath,
+  nativeListBuildPath,
+} from '../packages/shared/src/native-diagnostic-contract.mjs';
+
 const checkout = path.resolve(process.argv[2] ?? process.env.OCTANE_BUILD ?? '');
 const tableBuildScript = path.join(checkout, 'benchmarks/lynx-table/scripts/build-app.mjs');
 const listBuildScript = path.join(checkout, 'benchmarks/lynx-list/scripts/build-app.mjs');
@@ -15,9 +25,7 @@ const core = process.env.BENCH_CORE === 'block' ? 'block' : 'universal';
 const blockMode = process.env.BENCH_BLOCK_MODE === 'reconcile' ? 'reconcile' : 'scoped';
 const buildNativeDiagnostic = fs.existsSync(listBuildScript);
 const legacyTableScales = [0, 1000, 10000, 30000];
-const nativeCapacityScales = [1000, 6000, 7000, 7500, 8000, 10000];
-const nativeDiagnosticTableScales = [0, ...nativeCapacityScales, 30000];
-const nativeListScales = [1000, 10000];
+const nativeDiagnosticTableScales = [0, ...NATIVE_CAPACITY_SCALES, 30000];
 if (buildNativeDiagnostic && (core !== 'universal' || blockMode !== 'scoped')) {
   throw new Error(
     'Octane Native diagnostic artifacts require BENCH_CORE=universal and BENCH_BLOCK_MODE=scoped',
@@ -25,7 +33,7 @@ if (buildNativeDiagnostic && (core !== 'universal' || blockMode !== 'scoped')) {
 }
 const nativeDiagnosticReceipt = path.join(
   checkout,
-  'benchmarks/lynx-list/app/dist/octane-native-diagnostic-build.json',
+  NATIVE_DIAGNOSTIC_BUILD_RECEIPT_PATH,
 );
 let sourceCommit = null;
 if (buildNativeDiagnostic) {
@@ -69,7 +77,7 @@ for (const rows of tableScales) {
 }
 
 if (buildNativeDiagnostic) {
-  for (const rows of nativeListScales) {
+  for (const rows of NATIVE_LIST_SCALES) {
     execFileSync(process.execPath, [listBuildScript], {
       cwd: checkout,
       stdio: 'inherit',
@@ -77,36 +85,30 @@ if (buildNativeDiagnostic) {
     });
     const listBundle = path.join(
       checkout,
-      `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
+      nativeListBuildPath(rows),
     );
     if (!fs.existsSync(listBundle)) throw new Error(`missing ${listBundle}`);
   }
   const tableBundle = path.join(
     checkout,
-    'benchmarks/lynx-table/app/dist/main.lynx.bundle',
+    NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
   );
   const artifact = (file) => ({
     path: path.relative(checkout, file),
     sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
   });
   const payload = {
-    protocol: 'octane-native-diagnostic-build-v3',
+    protocol: NATIVE_CAPACITY_BUILD_PROTOCOL,
     sourceCommit,
     artifacts: {
       table: artifact(tableBundle),
-      capacity: Object.fromEntries(nativeCapacityScales.map((rows) => [
+      capacity: Object.fromEntries(NATIVE_CAPACITY_SCALES.map((rows) => [
         String(rows),
-        artifact(path.join(
-          checkout,
-          `benchmarks/lynx-table/app/dist-rows${rows}/main.lynx.bundle`,
-        )),
+        artifact(path.join(checkout, nativeCapacityBuildPath(rows))),
       ])),
-      list: Object.fromEntries(nativeListScales.map((rows) => [
+      list: Object.fromEntries(NATIVE_LIST_SCALES.map((rows) => [
         String(rows),
-        artifact(path.join(
-          checkout,
-          `benchmarks/lynx-list/app/dist/rows-${rows}/main.lynx.bundle`,
-        )),
+        artifact(path.join(checkout, nativeListBuildPath(rows))),
       ])),
     },
   };
@@ -119,6 +121,6 @@ if (buildNativeDiagnostic) {
 
 console.log(
   `[build-octane-upstream] ${core}/${blockMode} table rows ${tableScales.join('/')}`
-  + (buildNativeDiagnostic ? ` + bounded Native list rows ${nativeListScales.join('/')}` : '')
+  + (buildNativeDiagnostic ? ` + bounded Native list rows ${NATIVE_LIST_SCALES.join('/')}` : '')
   + ' complete',
 );

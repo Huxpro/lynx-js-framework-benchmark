@@ -9,36 +9,21 @@ import {
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
 import {
+  NATIVE_CAPACITY_BUILD_PROTOCOL,
+  NATIVE_STARTUP_PROTOCOL,
+  nativeCapacityProvenancePath,
+} from '@lynx-bench/shared/native-diagnostic-contract';
+import {
+  assertNativeCapacityDiagnosticEntry,
   assertNativeCapacityContract,
-  NATIVE_CAPACITY_DEFAULT_SCALES,
-  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
-  NATIVE_CAPACITY_THRESHOLD_SCALES,
+  NATIVE_CAPACITY_ENTRY_ID,
 } from './native-capacity-suite.mjs';
 import { NATIVE_CAPACITY_POLICY } from './native-protocol.mjs';
 
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
 export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v3';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
-export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
-
-const NATIVE_CAPACITY_ENTRY_ID = 'octane-native-diagnostic';
-const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
-const NATIVE_CAPACITY_BUILD_ARTIFACT = 'benchmarks/lynx-table/app/dist/main.lynx.bundle';
-const NATIVE_CAPACITY_LIST_SCALES = [1_000, 10_000];
-const nativeCapacityBuildListArtifact = (scale) =>
-  `benchmarks/lynx-list/app/dist/rows-${scale}/main.lynx.bundle`;
-const NATIVE_CAPACITY_BUNDLE_REL = 'dist/table/main.lynx.bundle';
-const NATIVE_CAPACITY_SCALES = [
-  ...NATIVE_CAPACITY_DEFAULT_SCALES,
-  ...NATIVE_CAPACITY_THRESHOLD_SCALES,
-].sort((a, b) => a - b);
-const NATIVE_CAPACITY_TOPOLOGY = { elementsPerRow: 7, chromeElements: 42 };
-const nativeCapacityBundleRel = (scale) =>
-  `dist/capacity/rows-${scale}/main.lynx.bundle`;
-const nativeCapacityProvenanceRel = (scale) =>
-  `capacity/rows-${scale}/main.lynx.bundle`;
-const nativeCapacityBuildArtifact = (scale) =>
-  `benchmarks/lynx-table/app/dist-rows${scale}/main.lynx.bundle`;
+export { NATIVE_STARTUP_PROTOCOL };
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -169,6 +154,8 @@ export function snapshotNativeInputs({
     path.join(root, 'packages/runner/src/native-protocol.mjs'),
     path.join(root, 'packages/runner/src/native-resume.mjs'),
     path.join(root, 'packages/runner/src/run-matrix.mjs'),
+    path.join(root, 'packages/shared/src/list-workloads.mjs'),
+    path.join(root, 'packages/shared/src/native-diagnostic-contract.mjs'),
     path.join(root, 'packages/shared/src/workloads.mjs'),
     path.join(root, 'packages/shared/src/schema.mjs'),
   ];
@@ -241,68 +228,11 @@ function assertCapacitySourceRevision(provenance, label) {
   if (buildReceipt.protocol !== NATIVE_CAPACITY_BUILD_PROTOCOL) {
     throw new Error(`${label} has an invalid Native capacity build protocol.`);
   }
-  if (JSON.stringify(Object.keys(buildReceipt.artifacts ?? {}))
-    !== JSON.stringify(['table', 'capacity', 'list'])
-    || buildReceipt.artifacts?.table?.path !== NATIVE_CAPACITY_BUILD_ARTIFACT
-    || !/^[a-f0-9]{64}$/.test(buildReceipt.artifacts?.table?.sha256 ?? '')
-    || provenance.sha256?.['table/main.lynx.bundle'] !== buildReceipt.artifacts.table.sha256
-    || JSON.stringify(Object.keys(buildReceipt.artifacts?.list ?? {}))
-      !== JSON.stringify(NATIVE_CAPACITY_LIST_SCALES.map(String))) {
-    throw new Error(`${label} has an invalid Native diagnostic build artifact map.`);
-  }
-  if (JSON.stringify(Object.keys(buildReceipt.artifacts?.capacity ?? {}))
-    !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
-    throw new Error(`${label} has an invalid Native capacity build artifact map.`);
-  }
-  for (const scale of NATIVE_CAPACITY_SCALES) {
-    const artifact = buildReceipt.artifacts.capacity[String(scale)];
-    if (artifact?.path !== nativeCapacityBuildArtifact(scale)
-      || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')) {
-      throw new Error(`${label} has an invalid ${scale}-row Native capacity build artifact.`);
-    }
-  }
-  for (const scale of NATIVE_CAPACITY_LIST_SCALES) {
-    const artifact = buildReceipt.artifacts.list[String(scale)];
-    if (artifact?.path !== nativeCapacityBuildListArtifact(scale)
-      || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')
-      || provenance.sha256?.[`list/rows-${scale}/main.lynx.bundle`] !== artifact.sha256) {
-      throw new Error(`${label} has an invalid ${scale}-row Native list build artifact.`);
-    }
-  }
   const { sha256: receiptSha256, ...receiptPayload } = buildReceipt;
   if (receiptSha256 !== sha256(Buffer.from(JSON.stringify(receiptPayload)))) {
     throw new Error(`${label} has an invalid Native capacity build receipt checksum.`);
   }
   return commit;
-}
-
-function assertCapacityManifestShape(manifest, label) {
-  if (manifest?.id !== NATIVE_CAPACITY_ENTRY_ID
-    || manifest.tier !== 'lab'
-    || !Array.isArray(manifest.harnesses)
-    || manifest.harnesses.length !== 1
-    || manifest.harnesses[0] !== 'native'
-    || manifest.bundles?.lynx !== NATIVE_CAPACITY_BUNDLE_REL) {
-    throw new Error(`${label} is not the exact Native capacity diagnostic manifest.`);
-  }
-  const fixture = manifest.capacityFixture;
-  if (fixture?.protocol !== NATIVE_CAPACITY_FIXTURE_PROTOCOL
-    || fixture.fixtureRole !== 'eager-capacity-probe'
-    || fixture.topology?.elementsPerRow !== NATIVE_CAPACITY_TOPOLOGY.elementsPerRow
-    || fixture.topology?.chromeElements !== NATIVE_CAPACITY_TOPOLOGY.chromeElements
-    || Object.keys(fixture.topology ?? {}).length !== Object.keys(NATIVE_CAPACITY_TOPOLOGY).length
-    || JSON.stringify(Object.keys(fixture.scales ?? {}))
-      !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
-    throw new Error(`${label} has an invalid Native capacity fixture contract.`);
-  }
-  for (const scale of NATIVE_CAPACITY_SCALES) {
-    const artifact = fixture.scales[String(scale)];
-    if (artifact?.bundle !== nativeCapacityBundleRel(scale)
-      || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')) {
-      throw new Error(`${label} has an invalid ${scale}-row Native capacity fixture artifact.`);
-    }
-  }
-  return manifest;
 }
 
 /** Snapshot the separate, unranked eager-capacity input contract. */
@@ -315,7 +245,7 @@ export function snapshotNativeCapacityInputs({
   connectorPackageTrees = null,
   root = repoRoot(),
 }) {
-  assertCapacityManifestShape(entry, entry?.id ?? 'capacity entry');
+  assertNativeCapacityDiagnosticEntry(entry);
   assertNativeCapacityContract(contract);
   if (runtimePolicy === null || typeof runtimePolicy !== 'object' || Array.isArray(runtimePolicy)) {
     throw new Error('Native capacity runtime policy must be an object.');
@@ -344,9 +274,8 @@ export function snapshotNativeCapacityInputs({
 
   const manifestPath = path.join(entry.dir, 'entry.json');
   const manifestPin = pinFile(manifestPath, `${NATIVE_CAPACITY_ENTRY_ID}:manifest`);
-  const manifest = assertCapacityManifestShape(
+  const manifest = assertNativeCapacityDiagnosticEntry(
     JSON.parse(manifestPin.snapshotBytes.toString('utf8')),
-    `${NATIVE_CAPACITY_ENTRY_ID} manifest`,
   );
   const sourceCommit = assertCapacitySourceRevision(entry.provenance, entry.id);
   if (assertCapacitySourceRevision(manifest.provenance, `${entry.id} manifest`) !== sourceCommit) {
@@ -374,7 +303,7 @@ export function snapshotNativeCapacityInputs({
     const artifact = manifest.capacityFixture.scales[key];
     const bundlePath = path.join(entry.dir, artifact.bundle);
     const bundlePin = pinFile(bundlePath, `${entry.id}:capacity-${scale}-bundle`);
-    const provenanceRelative = nativeCapacityProvenanceRel(scale);
+    const provenanceRelative = nativeCapacityProvenancePath(scale);
     const expectedChecksums = [
       entry.capacityFixture.scales[key].sha256,
       entry.provenance?.sha256?.[provenanceRelative],
@@ -411,6 +340,8 @@ export function snapshotNativeCapacityInputs({
     path.join(root, 'packages/runner/src/native-inputs.mjs'),
     path.join(root, 'packages/runner/src/native-protocol.mjs'),
     path.join(root, 'packages/runner/src/run-matrix.mjs'),
+    path.join(root, 'packages/shared/src/list-workloads.mjs'),
+    path.join(root, 'packages/shared/src/native-diagnostic-contract.mjs'),
     path.join(root, 'packages/shared/src/schema.mjs'),
     path.join(root, 'packages/shared/src/stats.mjs'),
   ];

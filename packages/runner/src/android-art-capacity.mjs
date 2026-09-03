@@ -1,5 +1,13 @@
+import {
+  NATIVE_CAPACITY_SUITE,
+  NATIVE_STARTUP_PROTOCOL,
+} from '@lynx-bench/shared/native-diagnostic-contract';
+
 export const ANDROID_ART_CAPACITY_CLASSIFIER_PROTOCOL = 'android-art-global-ref-capacity-v1';
 export const ANDROID_ART_CAPACITY_PACKAGE = 'com.lynx.explorer';
+export const ANDROID_ART_CAPACITY_ACTIVITY =
+  `${ANDROID_ART_CAPACITY_PACKAGE}/.LynxViewShellActivity`;
+export const DEVTOOL_DISABLED_LIFECYCLE_PROTOCOL = 'lynx-devtool-disabled-lifecycle-v1';
 export const ANDROID_ART_GLOBAL_REF_OVERFLOW =
   'JNI ERROR (app bug): global reference table overflow (max=51200)';
 export const NATIVE_CAPACITY_STARTUP_MARKER = '__NATIVE_BENCH_STARTUP__';
@@ -79,7 +87,7 @@ export function validateDevtoolDisabledLifecycle(log, marker) {
     && acknowledgementIndex > disabledIndex
     && (reenabledIndex === -1 || reenabledIndex < disabledIndex);
   return {
-    protocol: 'lynx-devtool-disabled-lifecycle-v1',
+    protocol: DEVTOOL_DISABLED_LIFECYCLE_PROTOCOL,
     valid,
     markerFound: attempt.markerFound,
     disabledAcknowledged: disabledIndex !== -1 && acknowledgementIndex > disabledIndex,
@@ -95,7 +103,7 @@ function validateStartupPayload(payload, expectedRows) {
   if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error('startup receipt must be an object.');
   }
-  if (payload.protocol !== 'lynx-native-startup-v1') {
+  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) {
     throw new Error('startup receipt has the wrong protocol.');
   }
   for (const key of ['moduleStartMs', 'commitAckMs', 'firstFrameMs', 'secondFrameMs']) {
@@ -259,7 +267,7 @@ function failure(category, attempt, evidence, detail = {}) {
     dnf: true,
     failure: {
       category,
-      phase: 'native-capacity',
+      phase: NATIVE_CAPACITY_SUITE,
       entry: attempt.entryId,
       workload: 'create',
       scale: attempt.scale,
@@ -338,7 +346,7 @@ export function classifyAndroidArtCapacity({
         message: startupReceipts.length > 1
           ? 'duplicate startup receipts invalidate the capacity attempt.'
           : `invalid startup receipt: ${startupReceipts[0]?.error ?? 'missing'}`,
-        producerProtocol: 'lynx-native-startup-v1',
+        producerProtocol: NATIVE_STARTUP_PROTOCOL,
       });
     }
     const receipt = startupReceipts[0];

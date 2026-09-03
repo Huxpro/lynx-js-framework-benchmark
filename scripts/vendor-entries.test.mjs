@@ -11,6 +11,10 @@ const listWorkloadsSource = new URL(
   '../packages/shared/src/list-workloads.mjs',
   import.meta.url,
 ).pathname;
+const nativeDiagnosticContractSource = new URL(
+  '../packages/shared/src/native-diagnostic-contract.mjs',
+  import.meta.url,
+).pathname;
 const CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
 const LIST_SCALES = [1000, 10000];
 
@@ -20,6 +24,10 @@ function stageVendorScript(repo) {
   const listWorkloads = path.join(repo, 'packages/shared/src/list-workloads.mjs');
   fs.mkdirSync(path.dirname(listWorkloads), { recursive: true });
   fs.copyFileSync(listWorkloadsSource, listWorkloads);
+  fs.copyFileSync(
+    nativeDiagnosticContractSource,
+    path.join(repo, 'packages/shared/src/native-diagnostic-contract.mjs'),
+  );
 }
 
 function sha256(value) {

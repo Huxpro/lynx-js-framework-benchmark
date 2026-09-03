@@ -120,7 +120,9 @@ function fixture() {
   ]) fs.writeFileSync(path.join(runner, relative), `source:${relative}`);
   const shared = path.join(root, 'packages/shared/src');
   fs.mkdirSync(shared, { recursive: true });
-  for (const relative of ['schema.mjs', 'stats.mjs']) {
+  for (const relative of [
+    'list-workloads.mjs', 'native-diagnostic-contract.mjs', 'schema.mjs', 'stats.mjs',
+  ]) {
     fs.writeFileSync(path.join(shared, relative), `source:${relative}`);
   }
   const adapterPath = path.join(root, 'adapter.mjs');
