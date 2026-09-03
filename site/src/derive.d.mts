@@ -3,6 +3,7 @@ export interface DerivedCell {
   values: Record<string, number | null | undefined>;
 }
 
+export const NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY: string;
 export function geomean(values: number[]): number | null;
 export function weightedGeomean(values: number[], weights: number[]): number | null;
 export function nativeOutcomeState(record: {

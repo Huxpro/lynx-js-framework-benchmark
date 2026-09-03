@@ -1,4 +1,5 @@
 import {
+  NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY,
   NATIVE_CAPACITY_SUITE,
   NATIVE_STARTUP_PROTOCOL,
 } from '@lynx-bench/shared/native-diagnostic-contract';
@@ -14,7 +15,6 @@ export const NATIVE_CAPACITY_STARTUP_MARKER = '__NATIVE_BENCH_STARTUP__';
 
 const LAST_ENTRIES = 'Last 10 entries';
 const SUMMARY = 'Summary:';
-const CAPACITY_CATEGORY = 'capacity/android-art-global-ref-table';
 
 function finite(value, label) {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite.`);
@@ -402,7 +402,7 @@ export function classifyAndroidArtCapacity({
     && capacity.tableTotal.index < capacity.fatal.index
     && capacity.fatal.atMs <= capacity.death.atMs;
   if (completeCapacitySignature) {
-    return failure(CAPACITY_CATEGORY, attempt, {
+    return failure(NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY, attempt, {
       terminal: { kind: terminal?.kind ?? 'death', atMs: terminal?.atMs ?? capacity.death.atMs },
       loadToCrashMs: capacity.death.atMs - launchedAtMs,
       exactOverflow: capacity.overflow.raw,

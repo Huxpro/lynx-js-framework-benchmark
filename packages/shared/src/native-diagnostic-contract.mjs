@@ -4,6 +4,8 @@ export const NATIVE_DIAGNOSTIC_ENTRY_ID = 'octane-native-diagnostic';
 export const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
 export const NATIVE_CAPACITY_CONTRACT_VERSION = 'native-eager-capacity-v2';
 export const NATIVE_CAPACITY_OUTCOME_PROTOCOL = 'native-capacity-outcomes-v1';
+export const NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY =
+  'capacity/android-art-global-ref-table';
 export const NATIVE_CAPACITY_SUITE = 'native-capacity';
 export const REPORTABILITY_PROTOCOL = 'accepted-sample-minimum-v1';
 export const DEFAULT_MIN_ACCEPTED_SAMPLES = 5;

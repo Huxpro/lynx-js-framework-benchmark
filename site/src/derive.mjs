@@ -1,3 +1,10 @@
+import {
+  NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY as ANDROID_ART_CATEGORY,
+} from '../../packages/shared/src/native-diagnostic-contract.mjs';
+
+export const NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY =
+  ANDROID_ART_CATEGORY;
+
 const valid = (value) => typeof value === 'number' && Number.isFinite(value) && value > 0;
 const reportable = (record) => record?.reportability?.status !== 'not-reportable';
 
@@ -8,7 +15,7 @@ export function nativeOutcomeState(record) {
   if (record.reportability?.status === 'not-reportable' && (record.acceptedCount ?? 0) > 0) {
     return 'not-reportable';
   }
-  if (categories.has('capacity/android-art-global-ref-table')) return 'capacity';
+  if (categories.has(NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY)) return 'capacity';
   if (categories.has('timeout')) return 'timeout';
   if (categories.has('process-failure')) return 'process-failure';
   if (record.reportability?.status === 'not-reportable') return 'not-reportable';

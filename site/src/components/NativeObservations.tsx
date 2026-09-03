@@ -6,7 +6,10 @@ import {
 } from '../data';
 import { useBenchmarkData } from '../data-context';
 import { localizedWorkload, useI18n } from '../i18n';
-import { nativeOutcomeState } from '../derive.mjs';
+import {
+  NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY,
+  nativeOutcomeState,
+} from '../derive.mjs';
 import { ResponsiveCopy } from './ResponsiveCopy';
 
 const TABLE_GROUPS = [
@@ -24,7 +27,7 @@ function reasonLabel(
   category: string,
   text: (english: string, chinese: string) => string,
 ): string {
-  if (category === 'capacity/android-art-global-ref-table') {
+  if (category === NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY) {
     return text('capacity · Android ART global-reference table', '容量 · Android ART 全局引用表');
   }
   if (category === 'timeout') return text('timeout', '超时');
