@@ -17,10 +17,12 @@ import {
   NATIVE_LIST_OBSERVER_PROTOCOL,
 } from '@lynx-bench/shared/list-workloads';
 import {
+  DEFAULT_MIN_ACCEPTED_SAMPLES,
   NATIVE_DIAGNOSTIC_ENTRY_ID,
   NATIVE_LIST_FIXTURE_ID,
   NATIVE_LIST_FIXTURE_ROLE,
   NATIVE_LIST_SCALES,
+  REPORTABILITY_PROTOCOL,
 } from '@lynx-bench/shared/native-diagnostic-contract';
 
 import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
@@ -38,6 +40,7 @@ export const NATIVE_LIST_RUN_CONTRACT_VERSION = 'lynx-native-list-run-v1';
 export const NATIVE_LIST_INPUT_CONTRACT_VERSION = 'lynx-native-list-input-v1';
 export const NATIVE_LIST_ATTEMPT_PROTOCOL = 'lynx-native-list-attempt-v1';
 export const NATIVE_LIST_CHECKPOINT_PROTOCOL = 'lynx-native-list-checkpoint-v1';
+export const NATIVE_LIST_CELL_EVIDENCE_PROTOCOL = 'lynx-native-list-cell-evidence-v1';
 export const NATIVE_LIST_TEARDOWN_PROTOCOL = 'lynx-native-list-teardown-v1';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
@@ -430,6 +433,26 @@ function recordBase(adapter, entry, kase, scale, metric, contract, observer) {
     nativeListObserver: observerDeclaration(observer),
     diagnostic: true,
     rankingEligible: false,
+    ...(['ms', 'ms/cell'].includes(contract.unit) ? {
+      reportability: {
+        protocol: REPORTABILITY_PROTOCOL,
+        minAcceptedSamples: DEFAULT_MIN_ACCEPTED_SAMPLES,
+      },
+    } : {}),
+  };
+}
+
+function countOutcomes({ attemptedCount, acceptedCount, dnfCount, failures, notMeasured = 0 }) {
+  const byReason = {};
+  for (const failure of failures) {
+    byReason[failure.category] = (byReason[failure.category] ?? 0) + 1;
+  }
+  return {
+    attempted: attemptedCount,
+    accepted: acceptedCount,
+    dnf: dnfCount,
+    notMeasured,
+    byReason,
   };
 }
 
@@ -442,11 +465,49 @@ function notMeasuredRecord(base, reason) {
     acceptedCount: 0,
     notMeasuredCount: 1,
     notMeasuredReason: reason,
+    outcomeCounts: {
+      attempted: 0,
+      accepted: 0,
+      dnf: 0,
+      notMeasured: 1,
+      byReason: { [reason.category]: 1 },
+    },
     observationCount: 0,
     observationCardinality: base.metric === 'materializationTimesMs'
       ? 'many-observations-per-accepted-attempt'
       : 'one-observation-per-accepted-attempt',
   };
+}
+
+function detailReferences(details, metric, isObserverMetric) {
+  return details.flatMap((detail) => {
+    const value = isObserverMetric ? detail.observer?.[metric] : detail.sourceMetrics[metric];
+    const observationCount = Array.isArray(value) ? value.length : 1;
+    return Array.from({ length: observationCount }, (_, observationIndex) => ({
+      attemptId: detail.attemptId,
+      observationIndex,
+    }));
+  });
+}
+
+function failureReferences(failures, ownerMetric) {
+  return failures.map(({ rep, attemptId, category }) => ({
+    rep,
+    attemptId,
+    category,
+    evidenceRef: {
+      protocol: NATIVE_LIST_CELL_EVIDENCE_PROTOCOL,
+      ownerMetric,
+      attemptId,
+    },
+  }));
+}
+
+function cellEvidenceOwnerMetric(kase) {
+  return [...kase.sourceMetrics].reverse().find((metric) => {
+    const unit = LIST_SOURCE_METRIC_CONTRACTS[metric].unit;
+    return unit !== 'ms' && unit !== 'bytes';
+  }) ?? kase.sourceMetrics[0];
 }
 
 function makeCaseRecords({
@@ -465,6 +526,19 @@ function makeCaseRecords({
   cellUnavailable,
 }) {
   const records = [];
+  // Prefer a terminal semantic metric so collector-derived timing and ratio
+  // records do not copy the cell's full receipt payload.
+  const ownerMetric = cellEvidenceOwnerMetric(kase);
+  const acceptedAttemptsById = Object.fromEntries(details.map((detail) => [
+    detail.attemptId,
+    detail,
+  ]));
+  const outcomeCounts = countOutcomes({
+    attemptedCount,
+    acceptedCount: details.length,
+    dnfCount,
+    failures,
+  });
   const metricContracts = {
     ...Object.fromEntries(kase.sourceMetrics.map((metric) => [
       metric, LIST_SOURCE_METRIC_CONTRACTS[metric],
@@ -481,18 +555,17 @@ function makeCaseRecords({
     }
     const values = isObserverMetric ? observerValues.get(metric) : sourceValues.get(metric);
     const samples = values ?? [];
-    const detailSamples = isObserverMetric
-      ? [...details]
-      : details.flatMap((detail) => {
-        const value = detail.sourceMetrics[metric];
-        return Array.isArray(value) ? value.map(() => detail) : [detail];
-      });
+    const detailSamples = detailReferences(details, metric, isObserverMetric);
+    const ownsEvidence = metric === ownerMetric;
+    const recordFailures = ownsEvidence
+      ? failures
+      : failureReferences(failures, ownerMetric);
     const record = makeRecord({
       ...base,
       samples,
       detailSamples,
       dnfCount,
-      failures,
+      failures: recordFailures,
       attemptedCount,
       acceptedCount: details.length,
     });
@@ -503,10 +576,23 @@ function makeCaseRecords({
         ? dnfCount > 0 ? 'measured-with-dnf' : 'measured'
         : 'dnf',
       notMeasuredCount: 0,
+      outcomeCounts,
       observationCount: samples.length,
       observationCardinality: metric === 'materializationTimesMs'
         ? 'many-observations-per-accepted-attempt'
         : 'one-observation-per-accepted-attempt',
+      ...(ownsEvidence ? {
+        nativeListCellEvidence: {
+          protocol: NATIVE_LIST_CELL_EVIDENCE_PROTOCOL,
+          ownerMetric,
+          acceptedAttemptsById,
+        },
+      } : {
+        nativeListCellEvidenceRef: {
+          protocol: NATIVE_LIST_CELL_EVIDENCE_PROTOCOL,
+          ownerMetric,
+        },
+      }),
     });
   }
   return records;
@@ -613,7 +699,7 @@ export async function runNativeListMatrix({
           if (result?.dnf === true) {
             validateDnfAttempt(result, receivedContext);
             dnfCount++;
-            failures.push({ rep, ...result.failure });
+            failures.push({ rep, attemptId: attempt.id, ...result.failure });
             continue;
           }
           validateMeasuredAttempt(result, receivedContext, receiptIds, declaredObserver);
@@ -621,6 +707,7 @@ export async function runNativeListMatrix({
           dnfCount++;
           failures.push({
             rep,
+            attemptId: attempt.id,
             category: result == null
               ? 'native-list-adapter-failure'
               : 'invalid-native-list-evidence',

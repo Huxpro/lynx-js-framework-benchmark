@@ -12,8 +12,14 @@ import {
 } from '../../shared/src/list-workloads.mjs';
 
 import {
+  DEFAULT_MIN_ACCEPTED_SAMPLES,
+  REPORTABILITY_PROTOCOL,
+} from '../../shared/src/native-diagnostic-contract.mjs';
+
+import {
   NATIVE_LIST_ATTEMPT_PROTOCOL,
   NATIVE_LIST_CAPABILITY_PROTOCOL,
+  NATIVE_LIST_CELL_EVIDENCE_PROTOCOL,
   NATIVE_LIST_CHECKPOINT_PROTOCOL,
   NATIVE_LIST_FIXTURE_ID,
   NATIVE_LIST_FIXTURE_ROLE,
@@ -26,6 +32,7 @@ import {
 } from './harness-native-list.mjs';
 import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
 import { deriveListRecords } from './list-derivation.mjs';
+import { materializeRecordOutcomes } from './result-json.mjs';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const CAMPAIGN_ID = 'native-list-campaign-test';
@@ -243,6 +250,11 @@ test('Native list schedules the exact shared cases with distinct immutable scale
     && record.rankingEligible === false
     && record.contractVersion === LIST_WORKLOAD_CONTRACT_VERSION));
   assert.ok(records.every((record) => record.measurementStatus === 'measured'));
+  assert.ok(records.filter(({ unit }) => ['ms', 'ms/cell'].includes(unit))
+    .every(({ reportability }) => reportability.protocol === REPORTABILITY_PROTOCOL
+      && reportability.minAcceptedSamples === DEFAULT_MIN_ACCEPTED_SAMPLES));
+  assert.ok(records.filter(({ unit }) => !['ms', 'ms/cell'].includes(unit))
+    .every((record) => record.reportability == null));
   assert.equal(
     records.find(({ metric }) => metric === 'peakLiveNativeListItems').median,
     NATIVE_LIST_MAX_LIVE_LIST_ITEM_BOUND,
@@ -272,9 +284,19 @@ test('Native list proves reuse and teardown separately with its declared observe
   assert.ok(recycle.every(({ nativeListObserver }) =>
     nativeListObserver.methodRevision === OBSERVER.methodRevision
     && nativeListObserver.measurementOverhead.value === 0.75));
+  const owner = recycle.find(({ metric }) => metric === 'recycledCells');
+  const evidence = Object.values(owner.nativeListCellEvidence.acceptedAttemptsById);
+  assert.equal(evidence.length, 1);
+  assert.equal(evidence[0].campaignId, CAMPAIGN_ID);
+  assert.equal(evidence[0].fixtureId, NATIVE_LIST_FIXTURE_ID);
+  assert.ok(evidence[0].checkpoint && evidence[0].observer && evidence[0].teardown);
+  assert.ok(recycle.filter((record) => record !== owner)
+    .every(({ nativeListCellEvidence, nativeListCellEvidenceRef }) =>
+      nativeListCellEvidence == null
+      && nativeListCellEvidenceRef.protocol === NATIVE_LIST_CELL_EVIDENCE_PROTOCOL
+      && nativeListCellEvidenceRef.ownerMetric === owner.metric));
   assert.ok(recycle.every(({ detailSamples }) => detailSamples.every((detail) =>
-    detail.campaignId === CAMPAIGN_ID
-    && detail.fixtureId === NATIVE_LIST_FIXTURE_ID)));
+    Object.keys(detail).join('|') === 'attemptId|observationIndex')));
 });
 
 test('missing capability, observer, or exact scale artifact is not measured without eager fallback', async () => {
@@ -456,6 +478,20 @@ test('an adapter-declared launched DNF keeps its typed failure and emits no samp
     && n === 0
     && dnfCount === 1
     && failures[0].category === 'native-list-capture-timeout'));
+  const startup = records.filter(({ workload, scale }) =>
+    workload === 'list-startup' && scale === 1_000);
+  const owner = startup.find(({ nativeListCellEvidence }) => nativeListCellEvidence != null);
+  assert.equal(owner.failures[0].timeoutMs, 180_000);
+  assert.equal(startup.filter(({ failures }) => failures[0].timeoutMs === 180_000).length, 1);
+  assert.ok(startup.filter((record) => record !== owner).every(({ failures }) =>
+    failures[0].evidenceRef.protocol === NATIVE_LIST_CELL_EVIDENCE_PROTOCOL
+    && failures[0].evidenceRef.ownerMetric === owner.metric
+    && failures[0].evidenceRef.attemptId === owner.failures[0].attemptId));
+  assert.ok(startup.every(({ outcomeCounts }) =>
+    outcomeCounts.attempted === 1
+    && outcomeCounts.accepted === 0
+    && outcomeCounts.dnf === 1
+    && outcomeCounts.byReason['native-list-capture-timeout'] === 1));
 });
 
 test('materialization distributions preserve observation and attempt cardinality for collection', async () => {
@@ -476,9 +512,83 @@ test('materialization distributions preserve observation and attempt cardinality
   assert.equal(distribution.acceptedCount, 2);
   assert.equal(distribution.observationCardinality,
     'many-observations-per-accepted-attempt');
+  assert.deepEqual(distribution.detailSamples.map(({ observationIndex }) => observationIndex),
+    [0, 1, 2, 0, 1, 2]);
+  assert.equal(new Set(distribution.detailSamples.map(({ attemptId }) => attemptId)).size, 2);
+  const fling = records.filter(({ workload }) => workload === 'list-fling');
+  const evidenceOwners = fling.filter(({ nativeListCellEvidence }) =>
+    nativeListCellEvidence != null);
+  assert.equal(evidenceOwners.length, 1);
+  assert.equal(evidenceOwners[0].metric, 'blankFrames');
+  assert.equal(Object.keys(evidenceOwners[0].nativeListCellEvidence.acceptedAttemptsById).length, 2);
+  assert.equal((JSON.stringify(fling).match(/"checkpoint"/g) ?? []).length, 2);
+  assert.equal((JSON.stringify(fling).match(/"teardown"/g) ?? []).length, 2);
+  assert.equal((JSON.stringify(fling).match(/"sourceMetrics"/g) ?? []).length, 2);
   const derived = deriveListRecords(records.filter(({ workload }) => workload === 'list-fling'));
   assert.equal(derived.find(({ metric }) => metric === 'materializationP50Ms').value, 2);
   assert.equal(derived.find(({ metric }) => metric === 'materializationP99Ms').value, 3);
+});
+
+test('four accepted attempts remain auditable but timing is not reportable', async () => {
+  const { entry, bundles } = fixture();
+  const records = await runNativeListMatrix({
+    adapter: adapter(async (_entry, context) => {
+      if (context.rep !== 4) return measuredAttempt(context);
+      return {
+        protocol: NATIVE_LIST_ATTEMPT_PROTOCOL,
+        campaignId: CAMPAIGN_ID,
+        attemptId: context.attempt.id,
+        entryId: entry.id,
+        fixtureRole: NATIVE_LIST_FIXTURE_ROLE,
+        fixtureId: NATIVE_LIST_FIXTURE_ID,
+        caseId: context.kase.name,
+        scale: context.scale,
+        bundleSha256: context.bundleSha256,
+        contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
+        openedAtMs: context.attempt.openedAtMs,
+        closedAtMs: context.attempt.openedAtMs,
+        dnf: true,
+        failure: { category: 'native-list-capture-timeout', timeoutMs: 180_000 },
+      };
+    }),
+    entry,
+    bundles,
+    campaignId: CAMPAIGN_ID,
+    observer: OBSERVER,
+    reps: 5,
+  });
+  const recycle = records.filter(({ workload }) => workload === 'list-recycle');
+  const timing = recycle.find(({ metric }) => metric === 'operationTimeMs');
+  assert.deepEqual(timing.reportability, {
+    protocol: REPORTABILITY_PROTOCOL,
+    minAcceptedSamples: DEFAULT_MIN_ACCEPTED_SAMPLES,
+  });
+  assert.equal(timing.attemptedCount, 5);
+  assert.equal(timing.acceptedCount, 4);
+  assert.equal(timing.dnfCount, 1);
+  assert.equal(timing.measurementStatus, 'measured-with-dnf');
+  assert.deepEqual(timing.outcomeCounts, {
+    attempted: 5,
+    accepted: 4,
+    dnf: 1,
+    notMeasured: 0,
+    byReason: { 'native-list-capture-timeout': 1 },
+  });
+  const presentedTiming = materializeRecordOutcomes(timing, { publicBoundary: true });
+  assert.equal(presentedTiming.reportability.status, 'not-reportable');
+  assert.equal(presentedTiming.median, null);
+  assert.equal(presentedTiming.samples.length, 4);
+
+  const semantic = recycle.find(({ metric }) => metric === 'recycledCells');
+  assert.equal(semantic.reportability, undefined);
+  assert.equal(materializeRecordOutcomes(semantic, { publicBoundary: true }).median, 16);
+  const derived = deriveListRecords(recycle);
+  const derivedTiming = derived.find(({ metric }) => metric === 'timePerRecycledCellMs');
+  assert.deepEqual(derivedTiming.reportability, timing.reportability);
+  assert.equal(derivedTiming.nativeListCellEvidence, undefined);
+  assert.equal(derivedTiming.nativeListCellEvidenceRef.ownerMetric, 'recycledCells');
+  assert.equal(derived.find(({ metric }) => metric === 'wireToMtsBytesPerCell')
+    .reportability, undefined);
 });
 
 test('observer reports must keep peak live distinct and within the viewport-plus-buffer bound', async () => {
