@@ -1,6 +1,7 @@
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync, spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import http from 'node:http';
+import { performance } from 'node:perf_hooks';
 import { TransformStream } from 'node:stream/web';
 
 import {
@@ -8,7 +9,16 @@ import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
 } from '@lynx-bench/shared/workloads';
-import { NATIVE_STARTUP_PROTOCOL, NATIVE_TABLE_PROTOCOL } from '../src/native-inputs.mjs';
+import { NATIVE_CAPACITY_FIXTURE_ROLE } from '@lynx-bench/shared/native-diagnostic-contract';
+import {
+  NATIVE_CAPACITY_ENTRY_ID,
+  NATIVE_CAPACITY_SUITE,
+} from '../src/native-capacity-suite.mjs';
+import {
+  NATIVE_CAPACITY_INPUT_RECEIPT_VERSION,
+  NATIVE_STARTUP_PROTOCOL,
+  NATIVE_TABLE_PROTOCOL,
+} from '../src/native-inputs.mjs';
 import {
   NATIVE_CAPACITY_POLICY,
   NATIVE_SANDBOX_POLICY,
@@ -70,10 +80,15 @@ function adb(serial, ...args) {
 }
 
 function capacityAdb(serial, ...args) {
-  return execFileSync('adb', ['-s', serial, ...args], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  }).trim();
+  return new Promise((resolve, reject) => {
+    execFile('adb', ['-s', serial, ...args], {
+      encoding: 'utf8',
+      maxBuffer: 8 * 1024 * 1024,
+    }, (error, stdout) => {
+      if (error) reject(error);
+      else resolve(stdout.trim());
+    });
+  });
 }
 
 function calibrateDeviceClock(serial) {
@@ -497,12 +512,123 @@ export function assertRuntimeConnectorPackageTrees(expected, actual = resolveCon
 }
 
 function capacityCommand(serial, injected) {
-  return injected ?? ((...args) => capacityAdb(serial, ...args));
+  const invoke = injected ?? ((...args) => capacityAdb(serial, ...args));
+  return (...args) => Promise.resolve(invoke(...args));
 }
 
-function capacityPids(command) {
+export function createCapacityLogBuffer() {
+  let chunks = [];
+  return {
+    append(chunk) {
+      if (chunk != null && String(chunk).length > 0) chunks.push(String(chunk));
+    },
+    reset() {
+      chunks = [];
+    },
+    cursor() {
+      return chunks.length;
+    },
+    readFrom(cursor) {
+      if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor > chunks.length) {
+        throw new Error('Native capacity log cursor is outside the current capture.');
+      }
+      return { cursor: chunks.length, text: chunks.slice(cursor).join('') };
+    },
+    snapshot() {
+      return chunks.join('');
+    },
+    async close() {},
+  };
+}
+
+function startCapacityLogcat(serial) {
+  const buffer = createCapacityLogBuffer();
+  const child = spawn('adb', ['-s', serial, 'logcat', '-v', 'epoch'], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  let failure = null;
+  let closing = false;
+  child.stdout.setEncoding('utf8');
+  child.stderr.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => buffer.append(chunk));
+  child.stderr.on('data', (chunk) => {
+    stderr = `${stderr}${chunk}`.slice(-8_192);
+  });
+  child.once('error', (error) => {
+    failure = error;
+  });
+  const closed = new Promise((resolve) => {
+    child.once('close', (code, signal) => {
+      if (!closing && failure === null) {
+        failure = new Error(
+          `Native capacity logcat stream exited (${code ?? 'null'}/${signal ?? 'no-signal'}): ${stderr}`,
+        );
+      }
+      resolve();
+    });
+  });
+  const assertHealthy = () => {
+    if (failure !== null) throw failure;
+  };
+  return {
+    append: buffer.append,
+    reset: buffer.reset,
+    cursor: buffer.cursor,
+    readFrom(cursor) {
+      assertHealthy();
+      return buffer.readFrom(cursor);
+    },
+    snapshot() {
+      assertHealthy();
+      return buffer.snapshot();
+    },
+    async close() {
+      if (closing) return closed;
+      closing = true;
+      if (child.exitCode === null && child.signalCode === null) child.kill();
+      await closed;
+    },
+  };
+}
+
+function assertCapacityLogcat(logcat) {
+  for (const method of ['reset', 'cursor', 'readFrom', 'snapshot', 'close']) {
+    if (typeof logcat?.[method] !== 'function') {
+      throw new Error(`Native capacity logcat capture is missing ${method}().`);
+    }
+  }
+  return logcat;
+}
+
+function createCapacityEvidenceWindow(marker, includesLine) {
+  let markerFound = false;
+  let partial = '';
+  const lines = [];
+  return {
+    append(chunk) {
+      const incoming = `${partial}${chunk}`.split('\n');
+      partial = incoming.pop() ?? '';
+      for (const line of incoming) {
+        if (!markerFound && line.includes(marker)) markerFound = true;
+        if (markerFound && (line.includes(marker) || includesLine(line))) lines.push(line);
+      }
+    },
+    snapshot() {
+      return lines.join('\n');
+    },
+  };
+}
+
+function appendLogcatDelta(logcat, window, cursor) {
+  const update = logcat.readFrom(cursor);
+  window.append(update.text);
+  return update.cursor;
+}
+
+async function capacityPids(command) {
   try {
-    return String(command('shell', 'pidof', ANDROID_ART_CAPACITY_PACKAGE) ?? '')
+    return String(await command('shell', 'pidof', ANDROID_ART_CAPACITY_PACKAGE) ?? '')
       .trim()
       .split(/\s+/)
       .filter(Boolean)
@@ -513,9 +639,13 @@ function capacityPids(command) {
   }
 }
 
-function readCapacityThermalState(command, now) {
-  const battery = String(command('shell', 'dumpsys', 'battery') ?? '');
-  const thermal = String(command('shell', 'dumpsys', 'thermalservice') ?? '');
+async function readCapacityThermalState(command, now) {
+  const [batteryOutput, thermalOutput] = await Promise.all([
+    command('shell', 'dumpsys', 'battery'),
+    command('shell', 'dumpsys', 'thermalservice'),
+  ]);
+  const battery = String(batteryOutput ?? '');
+  const thermal = String(thermalOutput ?? '');
   const batteryTemperature = /\btemperature:\s*(-?\d+)/.exec(battery);
   const thermalStatus = /\bThermal Status:\s*(\d+)/i.exec(thermal)
     ?? /\bmStatus=(\d+)/.exec(thermal);
@@ -527,18 +657,18 @@ function readCapacityThermalState(command, now) {
 }
 
 async function waitForCapacityThermalReady(command, runtime) {
-  const { now, wait, policy } = runtime;
-  const deadline = now() + policy.thermalGateTimeoutMs;
+  const { now, monotonicNow, wait, policy } = runtime;
+  const deadline = monotonicNow() + policy.thermalGateTimeoutMs;
   let state;
   do {
-    state = readCapacityThermalState(command, now);
+    state = await readCapacityThermalState(command, now);
     if (state.batteryTemperatureC !== null
       && state.batteryTemperatureC <= policy.maxBatteryTemperatureC
       && state.thermalStatus === policy.requiredThermalStatus) {
       return state;
     }
     await wait(policy.thermalPollMs);
-  } while (now() < deadline);
+  } while (monotonicNow() < deadline);
   throw new Error(
     `Native capacity thermal gate timed out after ${policy.thermalGateTimeoutMs}ms: `
     + JSON.stringify(state),
@@ -546,16 +676,16 @@ async function waitForCapacityThermalReady(command, runtime) {
 }
 
 async function ensureCapacityInteractive(command, runtime) {
-  const stayAwake = Number(command(
+  const stayAwake = Number(await command(
     'shell', 'settings', 'get', 'global', 'stay_on_while_plugged_in',
   ));
   if (!Number.isSafeInteger(stayAwake) || stayAwake === 0) {
     throw new Error('Native capacity device stay-on-while-plugged gate is not enabled.');
   }
-  command('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
-  command('shell', 'wm', 'dismiss-keyguard');
+  await command('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
+  await command('shell', 'wm', 'dismiss-keyguard');
   await runtime.wait(Math.min(250, runtime.policy.pollMs));
-  const power = String(command('shell', 'dumpsys', 'power') ?? '');
+  const power = String(await command('shell', 'dumpsys', 'power') ?? '');
   if (!/mWakefulness=Awake/.test(power) || !/Display Power: state=ON/.test(power)) {
     throw new Error('Native capacity device did not reach the interactive display-on gate.');
   }
@@ -600,7 +730,7 @@ export async function createCapacityAdapter({
   if (JSON.stringify(policy) !== JSON.stringify(NATIVE_CAPACITY_POLICY)
     || capacityInputs?.receipt?.runtimePolicy == null
     || JSON.stringify(policy) !== JSON.stringify(capacityInputs.receipt.runtimePolicy)
-    || capacityInputs.receipt.version !== 'native-capacity-input-receipt-v3'
+    || capacityInputs.receipt.version !== NATIVE_CAPACITY_INPUT_RECEIPT_VERSION
     || sha256(Buffer.from(JSON.stringify(inputReceiptPayload))) !== inputReceiptSha256
     || capacityInputs.receipt.sha256 !== campaignIdentity.inputReceiptSha256
     || capacityInputs.receipt.contract?.sha256 !== campaignIdentity.matrixContractSha256
@@ -623,8 +753,11 @@ export async function createCapacityAdapter({
     throw new Error(`invalid LYNX_SANDBOX_PORT: ${env.LYNX_SANDBOX_PORT}`);
   }
   const command = capacityCommand(serial, capacityRuntime?.adb);
+  const now = capacityRuntime?.now ?? Date.now;
   const runtime = {
-    now: capacityRuntime?.now ?? Date.now,
+    now,
+    monotonicNow: capacityRuntime?.monotonicNow
+      ?? (capacityRuntime?.now == null ? performance.now.bind(performance) : now),
     wait: capacityRuntime?.wait ?? delay,
     policy,
   };
@@ -633,18 +766,24 @@ export async function createCapacityAdapter({
   const startServer = capacityRuntime?.startBundleServer ?? startBundleServer;
   const server = await startServer(port, () => activeBundle);
   try {
-    command('reverse', `tcp:${port}`, `tcp:${port}`);
+    await command('reverse', `tcp:${port}`, `tcp:${port}`);
   } catch (error) {
     await new Promise((resolve) => server.close(resolve));
     throw error;
   }
 
-  const model = String(command('shell', 'getprop', 'ro.product.model') || 'android')
-    .replace(/\s+/g, '-').toLowerCase();
-  const osVersion = String(command('shell', 'getprop', 'ro.build.version.release') || 'unknown');
-  const cpuModel = String(command('shell', 'getprop', 'ro.product.board') || model);
-  const cores = Number(command('shell', 'nproc')) || null;
-  const explorerPackage = readExplorerPackageVersionFromCommand(command);
+  const [modelOutput, osVersionOutput, cpuModelOutput, coresOutput, explorerPackage] =
+    await Promise.all([
+      command('shell', 'getprop', 'ro.product.model'),
+      command('shell', 'getprop', 'ro.build.version.release'),
+      command('shell', 'getprop', 'ro.product.board'),
+      command('shell', 'nproc'),
+      readExplorerPackageVersionFromCommand(command),
+    ]);
+  const model = String(modelOutput || 'android').replace(/\s+/g, '-').toLowerCase();
+  const osVersion = String(osVersionOutput || 'unknown');
+  const cpuModel = String(cpuModelOutput || model);
+  const cores = Number(coresOutput) || null;
   const environment = `lynx-native-android-${model}-${osVersion}-capacity-nocdp`;
   const harnessConfig = {
     ...policy,
@@ -677,6 +816,9 @@ export async function createCapacityAdapter({
     thermalGates: [],
     devtoolPreflights: [],
   };
+  const startLogcat = capacityRuntime?.startLogcat
+    ?? (() => startCapacityLogcat(serial));
+  const logcat = assertCapacityLogcat(await startLogcat());
 
   const activate = (input, role, extra = {}) => {
     activeBundle = {
@@ -690,27 +832,34 @@ export async function createCapacityAdapter({
   const bundleUrl = (role, nonce) =>
     `http://127.0.0.1:${port}/main.lynx.bundle?role=${encodeURIComponent(role)}`
     + `&run=${encodeURIComponent(nonce)}`;
-  const logs = () => String(command('logcat', '-d', '-v', 'epoch') ?? '');
   const mark = (marker) => command('shell', 'log', '-t', 'lynx-bench-capacity', marker);
 
   async function runDisablePreflight(ordinal) {
     activate(capacityInputs.preflight, 'devtool-disabled-preflight');
-    command('logcat', '-c');
+    await command('logcat', '-c');
+    logcat.reset();
     const marker = `__NATIVE_CAPACITY_PREFLIGHT__${ordinal}-${runtime.now()}`;
-    mark(marker);
+    const evidenceWindow = createCapacityEvidenceWindow(marker, (line) =>
+      line.includes('DevTool disabled. Transitioning to ATTACHED.')
+      || line.includes('__OCTANE_DEVTOOL_DISABLED__=true')
+      || line.includes('DevTool enabled. Transitioning to ENABLED.'));
+    let logCursor = logcat.cursor();
+    await mark(marker);
     const url = bundleUrl('devtool-disabled-preflight', `${ordinal}-${runtime.now()}`);
-    command(
+    await command(
       'shell', 'am', 'start', '-n', policy.activity, '--es', 'lynx_initial_url', url,
     );
-    const deadline = runtime.now() + policy.preflightTimeoutMs;
+    const deadline = runtime.monotonicNow() + policy.preflightTimeoutMs;
     let lifecycle;
     do {
       await runtime.wait(policy.pollMs);
-      lifecycle = validateDevtoolDisabledLifecycle(logs(), marker);
+      logCursor = appendLogcatDelta(logcat, evidenceWindow, logCursor);
+      lifecycle = validateDevtoolDisabledLifecycle(evidenceWindow.snapshot(), marker);
       if (lifecycle.disabledAcknowledged) break;
-    } while (runtime.now() < deadline);
+    } while (runtime.monotonicNow() < deadline);
     await runtime.wait(policy.finalizationMs);
-    lifecycle = validateDevtoolDisabledLifecycle(logs(), marker);
+    appendLogcatDelta(logcat, evidenceWindow, logCursor);
+    lifecycle = validateDevtoolDisabledLifecycle(evidenceWindow.snapshot(), marker);
     if (!lifecycle.valid) {
       throw new Error(
         `DevTool preflight did not preserve a disabled lifecycle: ${JSON.stringify(lifecycle)}`,
@@ -740,10 +889,10 @@ export async function createCapacityAdapter({
         sha256: context.bundleSha256,
         relativePath: receiptArtifact?.bundle,
       }, receiptArtifact, `${entry.id} rows-${context.scale} capacity bundle`);
-      if (entry.id !== 'octane-native-diagnostic'
+      if (entry.id !== NATIVE_CAPACITY_ENTRY_ID
         || entry.framework !== 'octane'
-        || context.suite !== 'native-capacity'
-        || context.fixtureRole !== 'eager-capacity-probe'
+        || context.suite !== NATIVE_CAPACITY_SUITE
+        || context.fixtureRole !== NATIVE_CAPACITY_FIXTURE_ROLE
         || context.contractSha256 !== campaignIdentity.matrixContractSha256) {
         throw new Error('capacity probe does not match the pinned Octane eager fixture contract.');
       }
@@ -752,23 +901,23 @@ export async function createCapacityAdapter({
         entry: entry.id, scale: context.scale, rep: context.rep, ...thermal,
       });
       await ensureCapacityInteractive(command, runtime);
-      command('shell', 'am', 'force-stop', policy.packageName);
+      await command('shell', 'am', 'force-stop', policy.packageName);
       const ordinal = `${context.scale}-${context.rep}`;
       const devtoolPreflight = await runDisablePreflight(ordinal);
 
-      const pidDeadline = runtime.now() + policy.pidTimeoutMs;
-      let pids = capacityPids(command);
-      while (pids.length === 0 && runtime.now() < pidDeadline) {
+      const pidDeadline = runtime.monotonicNow() + policy.pidTimeoutMs;
+      let pids = await capacityPids(command);
+      while (pids.length === 0 && runtime.monotonicNow() < pidDeadline) {
         await runtime.wait(policy.pollMs);
-        pids = capacityPids(command);
+        pids = await capacityPids(command);
       }
       if (pids.length !== 1) {
-        command('shell', 'am', 'force-stop', policy.packageName);
+        await command('shell', 'am', 'force-stop', policy.packageName);
         return {
           dnf: true,
           failure: {
             category: 'process-failure',
-            phase: 'native-capacity',
+            phase: NATIVE_CAPACITY_SUITE,
             entry: entry.id,
             workload: 'create',
             scale: context.scale,
@@ -782,43 +931,55 @@ export async function createCapacityAdapter({
       // satisfy the attempt with a later receipt from a replacement process.
       const pid = pids[0];
 
+      logcat.reset();
       const marker = `__NATIVE_CAPACITY_ATTEMPT__${ordinal}-${runtime.now()}`;
-      mark(marker);
+      const terminalWindow = createCapacityEvidenceWindow(marker, (line) =>
+        line.includes('__NATIVE_BENCH_STARTUP__')
+        || (line.includes(policy.packageName) && line.includes('has died')));
+      let logCursor = logcat.cursor();
+      await mark(marker);
       activate({ bundleBytes: context.bundleBytes, sha256: context.bundleSha256 }, 'capacity', {
         entryId: entry.id,
         scale: context.scale,
       });
-      const launchedAtMs = Number(command('shell', 'date', '+%s%3N'));
+      const launchedAtMs = Number(await command('shell', 'date', '+%s%3N'));
       if (!Number.isFinite(launchedAtMs)) {
         throw new Error('could not capture the device launch timestamp for a capacity attempt.');
       }
+      const hostLaunchedAtMs = runtime.monotonicNow();
       const url = bundleUrl('capacity', `${ordinal}-${runtime.now()}`);
-      command(
+      await command(
         'shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW',
         '-d', `lynx://open?url=${encodeURIComponent(url)}`, policy.packageName,
       );
       const deadlineMs = launchedAtMs + policy.timeoutMs;
+      const hostDeadlineMs = hostLaunchedAtMs + policy.timeoutMs;
       let terminal = null;
-      let finalLog = '';
       try {
         while (terminal === null) {
           await runtime.wait(policy.pollMs);
-          finalLog = logs();
-          pids = capacityPids(command);
+          logCursor = appendLogcatDelta(logcat, terminalWindow, logCursor);
+          pids = await capacityPids(command);
+          const elapsedMs = Math.max(0, runtime.monotonicNow() - hostLaunchedAtMs);
           terminal = selectAndroidCapacityTerminal({
-            log: finalLog,
+            log: terminalWindow.snapshot(),
             marker,
             packageName: policy.packageName,
             pid,
             launchedAtMs,
             expectedRows: context.scale,
-            nowMs: Number(command('shell', 'date', '+%s%3N')),
+            nowMs: elapsedMs >= policy.timeoutMs
+              ? deadlineMs
+              : launchedAtMs + elapsedMs,
             deadlineMs,
             currentPids: pids,
           });
         }
         await runtime.wait(policy.finalizationMs);
-        finalLog = logs();
+        if (runtime.monotonicNow() < hostDeadlineMs && terminal.kind === 'deadline') {
+          throw new Error('Native capacity monotonic deadline was selected before its cutoff.');
+        }
+        const finalLog = logcat.snapshot();
         const observed = classifyAndroidArtCapacity({
           log: finalLog,
           marker,
@@ -854,21 +1015,22 @@ export async function createCapacityAdapter({
         }
         return observed;
       } finally {
-        command('shell', 'am', 'force-stop', policy.packageName);
+        await command('shell', 'am', 'force-stop', policy.packageName);
       }
     },
 
     async dispose() {
       if (disposed) return;
       disposed = true;
+      await logcat.close();
       await new Promise((resolve) => server.close(resolve));
       try {
-        command('reverse', '--remove', `tcp:${port}`);
+        await command('reverse', '--remove', `tcp:${port}`);
       } catch {
         // The device lease may have expired; local server cleanup still completed.
       }
       try {
-        machine.thermalEnd = readCapacityThermalState(command, runtime.now);
+        machine.thermalEnd = await readCapacityThermalState(command, runtime.now);
       } catch (error) {
         machine.thermalEnd = { capturedAt: new Date(runtime.now()).toISOString(), error: String(error) };
       }
@@ -876,8 +1038,10 @@ export async function createCapacityAdapter({
   };
 }
 
-function readExplorerPackageVersionFromCommand(command) {
-  const output = String(command('shell', 'dumpsys', 'package', ANDROID_ART_CAPACITY_PACKAGE) ?? '');
+async function readExplorerPackageVersionFromCommand(command) {
+  const output = String(
+    await command('shell', 'dumpsys', 'package', ANDROID_ART_CAPACITY_PACKAGE) ?? '',
+  );
   return {
     versionName: /\bversionName=([^\s]+)/.exec(output)?.[1] ?? null,
     versionCode: Number(/\bversionCode=(\d+)/.exec(output)?.[1] ?? NaN) || null,

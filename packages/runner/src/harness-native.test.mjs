@@ -13,6 +13,7 @@ import {
   isNativeTransientTransportFailure,
   nativeTransportFailureDnf,
   createCapacityAdapter,
+  createCapacityLogBuffer,
 } from '../adapters/lynx-sandbox-android.mjs';
 
 import {
@@ -547,9 +548,10 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   let now = 1_700_000_000_000;
   let getBundle = null;
   let marker = null;
-  let phase = null;
   let launchedAtMs = null;
   const commands = [];
+  const logcat = createCapacityLogBuffer();
+  let logcatStarts = 0;
   const startup = () => ({
     protocol: 'lynx-native-startup-v1',
     moduleStartMs: launchedAtMs + 1,
@@ -564,7 +566,7 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   });
   const logLine = (atMs, process, message) =>
     `${(atMs / 1_000).toFixed(3)} ${process} ${process} I Lynx : ${message}`;
-  const adb = (...args) => {
+  const adb = async (...args) => {
     commands.push(args);
     const text = args.join(' ');
     if (text === 'shell getprop ro.product.model') return 'aries';
@@ -585,34 +587,28 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
       return '';
     }
     if (args[0] === 'shell' && args[1] === 'am' && args.includes('start')) {
+      await new Promise((resolve) => setImmediate(resolve));
       getBundle().served++;
       if (args.includes('-W')) {
-        phase = 'measurement';
         launchedAtMs = now;
-      } else {
-        phase = 'preflight';
-      }
-      return 'Status: ok';
-    }
-    if (text === 'logcat -d -v epoch') {
-      if (phase === 'preflight') {
-        return [
-          logLine(now - 1, 3131, marker),
-          logLine(now, 3131, 'DevTool disabled. Transitioning to ATTACHED.'),
-          logLine(now + 1, 3131, '__OCTANE_DEVTOOL_DISABLED__=true'),
-        ].join('\n');
-      }
-      if (phase === 'measurement') {
-        return [
+        logcat.append([
           logLine(launchedAtMs - 1, 3131, marker),
           logLine(
             launchedAtMs + 5,
             3131,
             `__NATIVE_BENCH_STARTUP__ ${JSON.stringify(startup())}`,
           ),
-        ].join('\n');
+          '',
+        ].join('\n'));
+      } else {
+        logcat.append([
+          logLine(now - 1, 3131, marker),
+          logLine(now, 3131, 'DevTool disabled. Transitioning to ATTACHED.'),
+          logLine(now + 1, 3131, '__OCTANE_DEVTOOL_DISABLED__=true'),
+          '',
+        ].join('\n'));
       }
-      return '';
+      return 'Status: ok';
     }
     return '';
   };
@@ -670,7 +666,12 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
       env: { LYNX_SANDBOX_SERIAL: serial, LYNX_SANDBOX_PORT: '8765' },
       adb,
       now: () => now,
+      monotonicNow: () => now,
       wait: async (ms) => { now += ms; },
+      startLogcat: async () => {
+        logcatStarts++;
+        return logcat;
+      },
       startBundleServer: async (_port, getter) => {
         getBundle = getter;
         return { close(callback) { callback(); } };
@@ -696,7 +697,25 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
     false,
   );
   assert.equal(adapter.machine.devtoolPreflights[0].valid, true);
+  assert.equal(logcatStarts, 1);
+  assert.equal(commands.filter((args) => args.join(' ') === 'shell date +%s%3N').length, 1);
+  assert.equal(commands.some((args) => args[0] === 'logcat' && args.includes('-d')), false);
   await adapter.dispose();
+});
+
+test('capacity log capture exposes deltas while retaining the complete finalized attempt', () => {
+  const capture = createCapacityLogBuffer();
+  capture.append('1.000 1 1 I Lynx : marker\nSummary:\n');
+  let cursor = 0;
+  const first = capture.readFrom(cursor);
+  cursor = first.cursor;
+  assert.equal(first.text, '1.000 1 1 I Lynx : marker\nSummary:\n');
+  capture.append('30026 of com.lynx.tasm.behavior.PaintingContext$a (30026 unique instances)\n');
+  const second = capture.readFrom(cursor);
+  assert.match(second.text, /30026 of com\.lynx/);
+  assert.match(capture.snapshot(), /Summary:\n30026 of com\.lynx/);
+  capture.reset();
+  assert.equal(capture.snapshot(), '');
 });
 
 test('without an adapter the harness still explains itself instead of proxying', async () => {
