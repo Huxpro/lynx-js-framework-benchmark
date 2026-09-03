@@ -6,15 +6,18 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 export const NATIVE_CAPACITY_ENTRY_ID = 'octane-native-diagnostic';
 export const NATIVE_CAPACITY_SUITE = 'native-capacity';
 export const NATIVE_CAPACITY_CONTRACT_VERSION = 'native-eager-capacity-v2';
-export const NATIVE_CAPACITY_CAMPAIGN_VERSION = 'native-capacity-campaign-v1';
+export const NATIVE_CAPACITY_CAMPAIGN_VERSION = 'native-capacity-campaign-v2';
 export const NATIVE_CAPACITY_DEFAULT_SCALES = Object.freeze([1_000, 10_000]);
 export const NATIVE_CAPACITY_THRESHOLD_SCALES = Object.freeze([6_000, 7_000, 7_500, 8_000]);
 export const NATIVE_CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
 
 const EXPECTED_EMPTY_BUNDLE = 'dist/table/main.lynx.bundle';
-const EXPECTED_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const EXPECTED_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
 const EXPECTED_BUILD_TABLE = 'benchmarks/lynx-table/app/dist/main.lynx.bundle';
-const EXPECTED_BUILD_LIST = 'benchmarks/lynx-list/app/dist/main.lynx.bundle';
+const EXPECTED_BUILD_LIST = Object.freeze({
+  1000: 'benchmarks/lynx-list/app/dist/rows-1000/main.lynx.bundle',
+  10000: 'benchmarks/lynx-list/app/dist/rows-10000/main.lynx.bundle',
+});
 const EXPECTED_CAPACITY_SCALES = Object.freeze([
   ...NATIVE_CAPACITY_DEFAULT_SCALES,
   ...NATIVE_CAPACITY_THRESHOLD_SCALES,
@@ -51,7 +54,15 @@ function assertDiagnosticEntry(entry) {
     || JSON.stringify(Object.keys(entry.provenance?.buildReceipt?.artifacts ?? {}))
       !== JSON.stringify(['table', 'capacity', 'list'])
     || entry.provenance.buildReceipt.artifacts.table?.path !== EXPECTED_BUILD_TABLE
-    || entry.provenance.buildReceipt.artifacts.list?.path !== EXPECTED_BUILD_LIST
+    || JSON.stringify(Object.keys(entry.provenance.buildReceipt.artifacts.list ?? {}))
+      !== JSON.stringify(Object.keys(EXPECTED_BUILD_LIST))
+    || Object.entries(EXPECTED_BUILD_LIST).some(([scale, expectedPath]) =>
+      entry.provenance.buildReceipt.artifacts.list[scale]?.path !== expectedPath
+      || !/^[a-f0-9]{64}$/.test(
+        entry.provenance.buildReceipt.artifacts.list[scale]?.sha256 ?? '',
+      )
+      || entry.provenance.sha256?.[`list/rows-${scale}/main.lynx.bundle`]
+        !== entry.provenance.buildReceipt.artifacts.list[scale].sha256)
   ) {
     throw new Error(
       `capacity diagnostic entry must be ${NATIVE_CAPACITY_ENTRY_ID}, lab-tier, Native-only, `

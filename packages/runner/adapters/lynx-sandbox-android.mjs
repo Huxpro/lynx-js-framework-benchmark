@@ -10,11 +10,18 @@ import {
 } from '@lynx-bench/shared/workloads';
 import { NATIVE_STARTUP_PROTOCOL, NATIVE_TABLE_PROTOCOL } from '../src/native-inputs.mjs';
 import {
+  NATIVE_CAPACITY_POLICY,
   NATIVE_SANDBOX_POLICY,
   assertNativeLeaseReceipt,
   buildNativeDeviceCohort,
   nativeSerialSha256,
 } from '../src/native-protocol.mjs';
+import {
+  ANDROID_ART_CAPACITY_PACKAGE,
+  classifyAndroidArtCapacity,
+  selectAndroidCapacityTerminal,
+  validateDevtoolDisabledLifecycle,
+} from '../src/android-art-capacity.mjs';
 import {
   assertConnectorPackageTrees,
   assertConnectorPackageTreesMatch,
@@ -60,6 +67,13 @@ async function loadConnectorModule() {
 
 function adb(serial, ...args) {
   return execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8' }).trim();
+}
+
+function capacityAdb(serial, ...args) {
+  return execFileSync('adb', ['-s', serial, ...args], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  }).trim();
 }
 
 function calibrateDeviceClock(serial) {
@@ -297,6 +311,7 @@ function validateNativeTablePayloadUnchecked(payload, {
 
 function validateNativeStartupPayloadUnchecked(payload, {
   entryId,
+  framework,
   expectedRows,
   renderGraceFrames = RENDER_GRACE_FRAMES,
 } = {}) {
@@ -324,7 +339,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
       `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
     );
   }
-  if (entryId === 'octane') {
+  if (entryId === 'octane' || framework === 'octane') {
     assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
     if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
       throw new Error('Octane startup transport acknowledgement is outside the render interval.');
@@ -481,7 +496,395 @@ export function assertRuntimeConnectorPackageTrees(expected, actual = resolveCon
   return assertConnectorPackageTreesMatch(expected, actual);
 }
 
-export default async function createAdapter({ log = () => {}, campaignIdentity = null } = {}) {
+function capacityCommand(serial, injected) {
+  return injected ?? ((...args) => capacityAdb(serial, ...args));
+}
+
+function capacityPids(command) {
+  try {
+    return String(command('shell', 'pidof', ANDROID_ART_CAPACITY_PACKAGE) ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(Number)
+      .filter((value) => Number.isSafeInteger(value) && value > 0);
+  } catch {
+    return [];
+  }
+}
+
+function readCapacityThermalState(command, now) {
+  const battery = String(command('shell', 'dumpsys', 'battery') ?? '');
+  const thermal = String(command('shell', 'dumpsys', 'thermalservice') ?? '');
+  const batteryTemperature = /\btemperature:\s*(-?\d+)/.exec(battery);
+  const thermalStatus = /\bThermal Status:\s*(\d+)/i.exec(thermal)
+    ?? /\bmStatus=(\d+)/.exec(thermal);
+  return {
+    capturedAt: new Date(now()).toISOString(),
+    batteryTemperatureC: batteryTemperature ? Number(batteryTemperature[1]) / 10 : null,
+    thermalStatus: thermalStatus ? Number(thermalStatus[1]) : null,
+  };
+}
+
+async function waitForCapacityThermalReady(command, runtime) {
+  const { now, wait, policy } = runtime;
+  const deadline = now() + policy.thermalGateTimeoutMs;
+  let state;
+  do {
+    state = readCapacityThermalState(command, now);
+    if (state.batteryTemperatureC !== null
+      && state.batteryTemperatureC <= policy.maxBatteryTemperatureC
+      && state.thermalStatus === policy.requiredThermalStatus) {
+      return state;
+    }
+    await wait(policy.thermalPollMs);
+  } while (now() < deadline);
+  throw new Error(
+    `Native capacity thermal gate timed out after ${policy.thermalGateTimeoutMs}ms: `
+    + JSON.stringify(state),
+  );
+}
+
+async function ensureCapacityInteractive(command, runtime) {
+  const stayAwake = Number(command(
+    'shell', 'settings', 'get', 'global', 'stay_on_while_plugged_in',
+  ));
+  if (!Number.isSafeInteger(stayAwake) || stayAwake === 0) {
+    throw new Error('Native capacity device stay-on-while-plugged gate is not enabled.');
+  }
+  command('shell', 'input', 'keyevent', 'KEYCODE_WAKEUP');
+  command('shell', 'wm', 'dismiss-keyguard');
+  await runtime.wait(Math.min(250, runtime.policy.pollMs));
+  const power = String(command('shell', 'dumpsys', 'power') ?? '');
+  if (!/mWakefulness=Awake/.test(power) || !/Display Power: state=ON/.test(power)) {
+    throw new Error('Native capacity device did not reach the interactive display-on gate.');
+  }
+}
+
+function assertCapacityBytes(value, expected, label) {
+  if (!Buffer.isBuffer(value?.bundleBytes)
+    || !/^[a-f0-9]{64}$/.test(value?.sha256 ?? '')
+    || sha256(value.bundleBytes) !== value.sha256
+    || value.sha256 !== expected?.sha256
+    || value.relativePath !== expected?.bundle
+    || value.bundleBytes.length !== expected?.bytes) {
+    throw new Error(`${label} does not match the immutable Native capacity input receipt.`);
+  }
+}
+
+export async function createCapacityAdapter({
+  log = () => {},
+  campaignIdentity = null,
+  capacityInputs = null,
+  capacityRuntime = null,
+} = {}) {
+  const env = capacityRuntime?.env ?? process.env;
+  const serial = env.LYNX_SANDBOX_SERIAL;
+  if (!serial) {
+    throw new Error('lynx capacity adapter requires LYNX_SANDBOX_SERIAL=<leased adb serial>.');
+  }
+  const leaseReceipt = assertNativeLeaseReceipt(campaignIdentity?.leaseReceipt);
+  if (leaseReceipt.serialSha256 !== nativeSerialSha256(serial)) {
+    throw new Error('capacity campaign lease receipt does not match LYNX_SANDBOX_SERIAL.');
+  }
+  if (!campaignIdentity
+    || typeof campaignIdentity.campaignId !== 'string'
+    || typeof campaignIdentity.matrixContractSha256 !== 'string'
+    || typeof campaignIdentity.inputReceiptSha256 !== 'string') {
+    throw new Error(
+      'lynx capacity adapter requires campaignId, matrixContractSha256, and inputReceiptSha256.',
+    );
+  }
+  const policy = capacityInputs?.runtimePolicy;
+  const { sha256: inputReceiptSha256, ...inputReceiptPayload } = capacityInputs?.receipt ?? {};
+  if (JSON.stringify(policy) !== JSON.stringify(NATIVE_CAPACITY_POLICY)
+    || capacityInputs?.receipt?.runtimePolicy == null
+    || JSON.stringify(policy) !== JSON.stringify(capacityInputs.receipt.runtimePolicy)
+    || capacityInputs.receipt.version !== 'native-capacity-input-receipt-v3'
+    || sha256(Buffer.from(JSON.stringify(inputReceiptPayload))) !== inputReceiptSha256
+    || capacityInputs.receipt.sha256 !== campaignIdentity.inputReceiptSha256
+    || capacityInputs.receipt.contract?.sha256 !== campaignIdentity.matrixContractSha256
+    || capacityInputs.receipt.connectorPackageTrees !== null) {
+    throw new Error('lynx capacity adapter requires the exact immutable no-CDP runtime receipt.');
+  }
+  if (capacityInputs.receipt.preflight?.protocol !== policy.preflightProtocol
+    || capacityInputs.receipt.preflight?.serving !== 'immutable-local-http'
+    || capacityInputs.receipt.preflight?.source !== 'operator-supplied-local-bundle') {
+    throw new Error('lynx capacity adapter requires the pinned local DevTool-disable preflight.');
+  }
+  assertCapacityBytes(
+    capacityInputs.preflight,
+    capacityInputs.receipt.preflight,
+    'DevTool-disable preflight bundle',
+  );
+
+  const port = Number(env.LYNX_SANDBOX_PORT ?? DEFAULT_PORT);
+  if (!Number.isInteger(port) || port <= 0 || port > 65535) {
+    throw new Error(`invalid LYNX_SANDBOX_PORT: ${env.LYNX_SANDBOX_PORT}`);
+  }
+  const command = capacityCommand(serial, capacityRuntime?.adb);
+  const runtime = {
+    now: capacityRuntime?.now ?? Date.now,
+    wait: capacityRuntime?.wait ?? delay,
+    policy,
+  };
+  let activeBundle = null;
+  let disposed = false;
+  const startServer = capacityRuntime?.startBundleServer ?? startBundleServer;
+  const server = await startServer(port, () => activeBundle);
+  try {
+    command('reverse', `tcp:${port}`, `tcp:${port}`);
+  } catch (error) {
+    await new Promise((resolve) => server.close(resolve));
+    throw error;
+  }
+
+  const model = String(command('shell', 'getprop', 'ro.product.model') || 'android')
+    .replace(/\s+/g, '-').toLowerCase();
+  const osVersion = String(command('shell', 'getprop', 'ro.build.version.release') || 'unknown');
+  const cpuModel = String(command('shell', 'getprop', 'ro.product.board') || model);
+  const cores = Number(command('shell', 'nproc')) || null;
+  const explorerPackage = readExplorerPackageVersionFromCommand(command);
+  const environment = `lynx-native-android-${model}-${osVersion}-capacity-nocdp`;
+  const harnessConfig = {
+    ...policy,
+    campaignId: campaignIdentity.campaignId,
+    capacityContractSha256: campaignIdentity.matrixContractSha256,
+    inputReceiptSha256: campaignIdentity.inputReceiptSha256,
+    preflightSha256: capacityInputs.preflight.sha256,
+  };
+  const harnessConfigId = createHash('sha256')
+    .update(JSON.stringify(harnessConfig))
+    .digest('hex')
+    .slice(0, 12);
+  const machine = {
+    id: `${environment}-${leaseReceipt.deviceLeaseId}-${harnessConfigId}`,
+    platform: 'android',
+    environment,
+    osVersion,
+    cpuModel,
+    cores,
+    deviceModel: model,
+    explorerPackage,
+    serialSha256: leaseReceipt.serialSha256,
+    deviceLeaseId: leaseReceipt.deviceLeaseId,
+    leaseReceipt,
+    ...harnessConfig,
+    harnessConfigId,
+    connectorPackageTrees: null,
+    connectorInitialized: false,
+    servedInputs: [],
+    thermalGates: [],
+    devtoolPreflights: [],
+  };
+
+  const activate = (input, role, extra = {}) => {
+    activeBundle = {
+      role,
+      ...extra,
+      bytes: input.bundleBytes,
+      sha256: input.sha256,
+      served: 0,
+    };
+  };
+  const bundleUrl = (role, nonce) =>
+    `http://127.0.0.1:${port}/main.lynx.bundle?role=${encodeURIComponent(role)}`
+    + `&run=${encodeURIComponent(nonce)}`;
+  const logs = () => String(command('logcat', '-d', '-v', 'epoch') ?? '');
+  const mark = (marker) => command('shell', 'log', '-t', 'lynx-bench-capacity', marker);
+
+  async function runDisablePreflight(ordinal) {
+    activate(capacityInputs.preflight, 'devtool-disabled-preflight');
+    command('logcat', '-c');
+    const marker = `__NATIVE_CAPACITY_PREFLIGHT__${ordinal}-${runtime.now()}`;
+    mark(marker);
+    const url = bundleUrl('devtool-disabled-preflight', `${ordinal}-${runtime.now()}`);
+    command(
+      'shell', 'am', 'start', '-n', policy.activity, '--es', 'lynx_initial_url', url,
+    );
+    const deadline = runtime.now() + policy.preflightTimeoutMs;
+    let lifecycle;
+    do {
+      await runtime.wait(policy.pollMs);
+      lifecycle = validateDevtoolDisabledLifecycle(logs(), marker);
+      if (lifecycle.disabledAcknowledged) break;
+    } while (runtime.now() < deadline);
+    await runtime.wait(policy.finalizationMs);
+    lifecycle = validateDevtoolDisabledLifecycle(logs(), marker);
+    if (!lifecycle.valid) {
+      throw new Error(
+        `DevTool preflight did not preserve a disabled lifecycle: ${JSON.stringify(lifecycle)}`,
+      );
+    }
+    if (activeBundle.served < 1) {
+      throw new Error('DevTool-disable preflight did not fetch its pinned local bundle.');
+    }
+    const evidence = {
+      ...lifecycle,
+      marker,
+      bundleSha256: activeBundle.sha256,
+      bundleServed: activeBundle.served,
+    };
+    machine.devtoolPreflights.push(evidence);
+    return evidence;
+  }
+
+  return {
+    environment,
+    machine,
+
+    async runCapacityProbe(entry, context) {
+      const receiptArtifact = capacityInputs.receipt.capacityFixture?.scales?.[String(context.scale)];
+      assertCapacityBytes({
+        bundleBytes: context.bundleBytes,
+        sha256: context.bundleSha256,
+        relativePath: receiptArtifact?.bundle,
+      }, receiptArtifact, `${entry.id} rows-${context.scale} capacity bundle`);
+      if (entry.id !== 'octane-native-diagnostic'
+        || entry.framework !== 'octane'
+        || context.suite !== 'native-capacity'
+        || context.fixtureRole !== 'eager-capacity-probe'
+        || context.contractSha256 !== campaignIdentity.matrixContractSha256) {
+        throw new Error('capacity probe does not match the pinned Octane eager fixture contract.');
+      }
+      const thermal = await waitForCapacityThermalReady(command, runtime);
+      machine.thermalGates.push({
+        entry: entry.id, scale: context.scale, rep: context.rep, ...thermal,
+      });
+      await ensureCapacityInteractive(command, runtime);
+      command('shell', 'am', 'force-stop', policy.packageName);
+      const ordinal = `${context.scale}-${context.rep}`;
+      const devtoolPreflight = await runDisablePreflight(ordinal);
+
+      const pidDeadline = runtime.now() + policy.pidTimeoutMs;
+      let pids = capacityPids(command);
+      while (pids.length === 0 && runtime.now() < pidDeadline) {
+        await runtime.wait(policy.pollMs);
+        pids = capacityPids(command);
+      }
+      if (pids.length !== 1) {
+        command('shell', 'am', 'force-stop', policy.packageName);
+        return {
+          dnf: true,
+          failure: {
+            category: 'process-failure',
+            phase: 'native-capacity',
+            entry: entry.id,
+            workload: 'create',
+            scale: context.scale,
+            message: `expected one preflight Explorer PID, observed ${JSON.stringify(pids)}.`,
+            evidence: { observedPids: pids, devtoolPreflight },
+          },
+        };
+      }
+      // The disable preflight and eager deep-link deliberately share this one
+      // cold-process lifetime. Pin the PID before launch so a restart can never
+      // satisfy the attempt with a later receipt from a replacement process.
+      const pid = pids[0];
+
+      const marker = `__NATIVE_CAPACITY_ATTEMPT__${ordinal}-${runtime.now()}`;
+      mark(marker);
+      activate({ bundleBytes: context.bundleBytes, sha256: context.bundleSha256 }, 'capacity', {
+        entryId: entry.id,
+        scale: context.scale,
+      });
+      const launchedAtMs = Number(command('shell', 'date', '+%s%3N'));
+      if (!Number.isFinite(launchedAtMs)) {
+        throw new Error('could not capture the device launch timestamp for a capacity attempt.');
+      }
+      const url = bundleUrl('capacity', `${ordinal}-${runtime.now()}`);
+      command(
+        'shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW',
+        '-d', `lynx://open?url=${encodeURIComponent(url)}`, policy.packageName,
+      );
+      const deadlineMs = launchedAtMs + policy.timeoutMs;
+      let terminal = null;
+      let finalLog = '';
+      try {
+        while (terminal === null) {
+          await runtime.wait(policy.pollMs);
+          finalLog = logs();
+          pids = capacityPids(command);
+          terminal = selectAndroidCapacityTerminal({
+            log: finalLog,
+            marker,
+            packageName: policy.packageName,
+            pid,
+            launchedAtMs,
+            expectedRows: context.scale,
+            nowMs: Number(command('shell', 'date', '+%s%3N')),
+            deadlineMs,
+            currentPids: pids,
+          });
+        }
+        await runtime.wait(policy.finalizationMs);
+        finalLog = logs();
+        const observed = classifyAndroidArtCapacity({
+          log: finalLog,
+          marker,
+          packageName: policy.packageName,
+          pid,
+          launchedAtMs,
+          deadlineMs,
+          terminal,
+          entryId: entry.id,
+          scale: context.scale,
+          bundleSha256: context.bundleSha256,
+          fixtureRole: context.fixtureRole,
+          bundleServed: activeBundle.served,
+        });
+        const servedInput = {
+          entry: entry.id,
+          scale: context.scale,
+          rep: context.rep,
+          suite: context.suite,
+          sha256: context.bundleSha256,
+          bytes: context.bundleBytes.length,
+          served: activeBundle.served,
+          marker,
+          pid,
+        };
+        machine.servedInputs.push(servedInput);
+        if (observed.dnf) {
+          observed.failure.evidence.devtoolPreflight = devtoolPreflight;
+          observed.failure.evidence.servedInput = servedInput;
+        } else {
+          observed.detail.devtoolPreflight = devtoolPreflight;
+          observed.detail.servedInput = servedInput;
+        }
+        return observed;
+      } finally {
+        command('shell', 'am', 'force-stop', policy.packageName);
+      }
+    },
+
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      await new Promise((resolve) => server.close(resolve));
+      try {
+        command('reverse', '--remove', `tcp:${port}`);
+      } catch {
+        // The device lease may have expired; local server cleanup still completed.
+      }
+      try {
+        machine.thermalEnd = readCapacityThermalState(command, runtime.now);
+      } catch (error) {
+        machine.thermalEnd = { capturedAt: new Date(runtime.now()).toISOString(), error: String(error) };
+      }
+    },
+  };
+}
+
+function readExplorerPackageVersionFromCommand(command) {
+  const output = String(command('shell', 'dumpsys', 'package', ANDROID_ART_CAPACITY_PACKAGE) ?? '');
+  return {
+    versionName: /\bversionName=([^\s]+)/.exec(output)?.[1] ?? null,
+    versionCode: Number(/\bversionCode=(\d+)/.exec(output)?.[1] ?? NaN) || null,
+  };
+}
+
+async function createRankedAdapter({ log = () => {}, campaignIdentity = null } = {}) {
   const serial = process.env.LYNX_SANDBOX_SERIAL;
   if (!serial) {
     throw new Error('lynx sandbox adapter requires LYNX_SANDBOX_SERIAL=<leased adb serial>.');
@@ -1547,4 +1950,10 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       await directTransport?.close().catch(() => {});
     },
   };
+}
+
+export default async function createAdapter(context = {}) {
+  return context.mode === 'capacity'
+    ? createCapacityAdapter(context)
+    : createRankedAdapter(context);
 }

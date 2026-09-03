@@ -12,6 +12,7 @@ import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
   nativeTransportFailureDnf,
+  createCapacityAdapter,
 } from '../adapters/lynx-sandbox-android.mjs';
 
 import {
@@ -23,7 +24,12 @@ import {
   resolveConnectorPackageTrees,
 } from './connector-receipt.mjs';
 import {
+  NATIVE_CAPACITY_POLICY,
+  parseNativeLeaseReceipt,
+} from './native-protocol.mjs';
+import {
   loadNativeAdapter,
+  loadNativeCapacityAdapter,
   runNativeHarness,
   runNativeMatrix,
 } from './harness-native.mjs';
@@ -509,6 +515,188 @@ test('adapter modules are validated against the documented contract', async () =
   const partial = path.join(dir, 'partial.mjs');
   fs.writeFileSync(partial, `export default () => ({ environment: 'x', loadBundle: async () => {} });`);
   await assert.rejects(() => loadNativeAdapter(partial), /missing driveCase/);
+});
+
+test('capacity adapter modules use a separate no-CDP contract', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-capacity-adapter-'));
+  const adapterPath = path.join(dir, 'adapter.mjs');
+  fs.writeFileSync(adapterPath, `export default async (context) => {
+    if (context.mode !== 'capacity') throw new Error('wrong mode');
+    return {
+      environment: 'lynx-native-android-capacity',
+      runCapacityProbe: async () => ({ latencyMs: 1 }),
+      dispose: async () => {},
+    };
+  };`);
+  const adapter = await loadNativeCapacityAdapter(adapterPath);
+  assert.equal(adapter.environment, 'lynx-native-android-capacity');
+  assert.equal(typeof adapter.loadBundle, 'undefined');
+
+  const partialPath = path.join(dir, 'partial.mjs');
+  fs.writeFileSync(partialPath, `export default async () => ({
+    environment: 'lynx-native-android-capacity', dispose: async () => {},
+  });`);
+  await assert.rejects(
+    () => loadNativeCapacityAdapter(partialPath),
+    /missing runCapacityProbe/,
+  );
+});
+
+test('sandbox capacity mode completes through direct ADB logs without initializing CDP', async () => {
+  const serial = 'capacity-device:5555';
+  let now = 1_700_000_000_000;
+  let getBundle = null;
+  let marker = null;
+  let phase = null;
+  let launchedAtMs = null;
+  const commands = [];
+  const startup = () => ({
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: launchedAtMs + 1,
+    commitAckMs: launchedAtMs + 2,
+    firstFrameMs: launchedAtMs + 3,
+    secondFrameMs: launchedAtMs + 4,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    transportEvidence: {
+      kind: 'octane-root.render', acknowledged: true, ackMs: launchedAtMs + 2,
+    },
+    postState: { rowCount: 1_000 },
+  });
+  const logLine = (atMs, process, message) =>
+    `${(atMs / 1_000).toFixed(3)} ${process} ${process} I Lynx : ${message}`;
+  const adb = (...args) => {
+    commands.push(args);
+    const text = args.join(' ');
+    if (text === 'shell getprop ro.product.model') return 'aries';
+    if (text === 'shell getprop ro.build.version.release') return '10';
+    if (text === 'shell getprop ro.product.board') return 'aries-board';
+    if (text === 'shell nproc') return '8';
+    if (text === 'shell dumpsys package com.lynx.explorer') {
+      return 'versionName=1.0 versionCode=1';
+    }
+    if (text === 'shell dumpsys battery') return 'temperature: 340';
+    if (text === 'shell dumpsys thermalservice') return 'Thermal Status: 0';
+    if (text === 'shell settings get global stay_on_while_plugged_in') return '3';
+    if (text === 'shell dumpsys power') return 'mWakefulness=Awake\nDisplay Power: state=ON';
+    if (text === 'shell date +%s%3N') return String(now);
+    if (text === 'shell pidof com.lynx.explorer') return '3131';
+    if (args[0] === 'shell' && args[1] === 'log') {
+      marker = args.at(-1);
+      return '';
+    }
+    if (args[0] === 'shell' && args[1] === 'am' && args.includes('start')) {
+      getBundle().served++;
+      if (args.includes('-W')) {
+        phase = 'measurement';
+        launchedAtMs = now;
+      } else {
+        phase = 'preflight';
+      }
+      return 'Status: ok';
+    }
+    if (text === 'logcat -d -v epoch') {
+      if (phase === 'preflight') {
+        return [
+          logLine(now - 1, 3131, marker),
+          logLine(now, 3131, 'DevTool disabled. Transitioning to ATTACHED.'),
+          logLine(now + 1, 3131, '__OCTANE_DEVTOOL_DISABLED__=true'),
+        ].join('\n');
+      }
+      if (phase === 'measurement') {
+        return [
+          logLine(launchedAtMs - 1, 3131, marker),
+          logLine(
+            launchedAtMs + 5,
+            3131,
+            `__NATIVE_BENCH_STARTUP__ ${JSON.stringify(startup())}`,
+          ),
+        ].join('\n');
+      }
+      return '';
+    }
+    return '';
+  };
+  const preflightBytes = Buffer.from('preflight');
+  const capacityBytes = Buffer.from('capacity');
+  const preflightSha = crypto.createHash('sha256').update(preflightBytes).digest('hex');
+  const capacitySha = crypto.createHash('sha256').update(capacityBytes).digest('hex');
+  const inputReceiptPayload = {
+    version: 'native-capacity-input-receipt-v3',
+    runtimePolicy: NATIVE_CAPACITY_POLICY,
+    connectorPackageTrees: null,
+    contract: { sha256: 'c'.repeat(64) },
+    preflight: {
+      bundle: 'dist/table/main.lynx.bundle', bytes: preflightBytes.length, sha256: preflightSha,
+      protocol: 'lynx-devtool-disabled-lifecycle-v1',
+      serving: 'immutable-local-http',
+      source: 'operator-supplied-local-bundle',
+    },
+    capacityFixture: {
+      scales: {
+        1000: {
+          bundle: 'dist/capacity/rows-1000/main.lynx.bundle',
+          bytes: capacityBytes.length,
+          sha256: capacitySha,
+        },
+      },
+    },
+  };
+  const inputReceipt = {
+    ...inputReceiptPayload,
+    sha256: crypto.createHash('sha256')
+      .update(JSON.stringify(inputReceiptPayload))
+      .digest('hex'),
+  };
+  const leaseReceipt = parseNativeLeaseReceipt({
+    serial, issueId: 'octane-888', expiredAt: now + 600_000,
+  }, { serial, now });
+  const adapter = await createCapacityAdapter({
+    capacityInputs: {
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
+      receipt: inputReceipt,
+      preflight: {
+        bundleBytes: preflightBytes,
+        relativePath: inputReceipt.preflight.bundle,
+        sha256: preflightSha,
+      },
+    },
+    campaignIdentity: {
+      campaignId: 'capacity-campaign',
+      matrixContractSha256: inputReceipt.contract.sha256,
+      inputReceiptSha256: inputReceipt.sha256,
+      leaseReceipt,
+    },
+    capacityRuntime: {
+      env: { LYNX_SANDBOX_SERIAL: serial, LYNX_SANDBOX_PORT: '8765' },
+      adb,
+      now: () => now,
+      wait: async (ms) => { now += ms; },
+      startBundleServer: async (_port, getter) => {
+        getBundle = getter;
+        return { close(callback) { callback(); } };
+      },
+    },
+  });
+  const observed = await adapter.runCapacityProbe({
+    id: 'octane-native-diagnostic', framework: 'octane',
+  }, {
+    suite: 'native-capacity',
+    fixtureRole: 'eager-capacity-probe',
+    scale: 1_000,
+    rep: 0,
+    bundleBytes: capacityBytes,
+    bundleSha256: capacitySha,
+    contractSha256: inputReceipt.contract.sha256,
+  });
+  assert.equal(observed.latencyMs, 4);
+  assert.equal(adapter.machine.connectorInitialized, false);
+  assert.equal(typeof adapter.loadBundle, 'undefined');
+  assert.equal(
+    commands.some((args) => /cdp|listClients|openPage|createDefaultConnector/i.test(args.join(' '))),
+    false,
+  );
+  assert.equal(adapter.machine.devtoolPreflights[0].valid, true);
+  await adapter.dispose();
 });
 
 test('without an adapter the harness still explains itself instead of proxying', async () => {

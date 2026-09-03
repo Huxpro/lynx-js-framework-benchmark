@@ -14,16 +14,19 @@ import {
   NATIVE_CAPACITY_FIXTURE_PROTOCOL,
   NATIVE_CAPACITY_THRESHOLD_SCALES,
 } from './native-capacity-suite.mjs';
+import { NATIVE_CAPACITY_POLICY } from './native-protocol.mjs';
 
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
-export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v2';
+export const NATIVE_CAPACITY_INPUT_RECEIPT_VERSION = 'native-capacity-input-receipt-v3';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
 export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
 
 const NATIVE_CAPACITY_ENTRY_ID = 'octane-native-diagnostic';
-const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const NATIVE_CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
 const NATIVE_CAPACITY_BUILD_ARTIFACT = 'benchmarks/lynx-table/app/dist/main.lynx.bundle';
-const NATIVE_CAPACITY_BUILD_LIST_ARTIFACT = 'benchmarks/lynx-list/app/dist/main.lynx.bundle';
+const NATIVE_CAPACITY_LIST_SCALES = [1_000, 10_000];
+const nativeCapacityBuildListArtifact = (scale) =>
+  `benchmarks/lynx-list/app/dist/rows-${scale}/main.lynx.bundle`;
 const NATIVE_CAPACITY_BUNDLE_REL = 'dist/table/main.lynx.bundle';
 const NATIVE_CAPACITY_SCALES = [
   ...NATIVE_CAPACITY_DEFAULT_SCALES,
@@ -243,9 +246,8 @@ function assertCapacitySourceRevision(provenance, label) {
     || buildReceipt.artifacts?.table?.path !== NATIVE_CAPACITY_BUILD_ARTIFACT
     || !/^[a-f0-9]{64}$/.test(buildReceipt.artifacts?.table?.sha256 ?? '')
     || provenance.sha256?.['table/main.lynx.bundle'] !== buildReceipt.artifacts.table.sha256
-    || buildReceipt.artifacts?.list?.path !== NATIVE_CAPACITY_BUILD_LIST_ARTIFACT
-    || !/^[a-f0-9]{64}$/.test(buildReceipt.artifacts?.list?.sha256 ?? '')
-    || provenance.sha256?.['list/main.lynx.bundle'] !== buildReceipt.artifacts.list.sha256) {
+    || JSON.stringify(Object.keys(buildReceipt.artifacts?.list ?? {}))
+      !== JSON.stringify(NATIVE_CAPACITY_LIST_SCALES.map(String))) {
     throw new Error(`${label} has an invalid Native diagnostic build artifact map.`);
   }
   if (JSON.stringify(Object.keys(buildReceipt.artifacts?.capacity ?? {}))
@@ -257,6 +259,14 @@ function assertCapacitySourceRevision(provenance, label) {
     if (artifact?.path !== nativeCapacityBuildArtifact(scale)
       || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')) {
       throw new Error(`${label} has an invalid ${scale}-row Native capacity build artifact.`);
+    }
+  }
+  for (const scale of NATIVE_CAPACITY_LIST_SCALES) {
+    const artifact = buildReceipt.artifacts.list[String(scale)];
+    if (artifact?.path !== nativeCapacityBuildListArtifact(scale)
+      || !/^[a-f0-9]{64}$/.test(artifact?.sha256 ?? '')
+      || provenance.sha256?.[`list/rows-${scale}/main.lynx.bundle`] !== artifact.sha256) {
+      throw new Error(`${label} has an invalid ${scale}-row Native list build artifact.`);
     }
   }
   const { sha256: receiptSha256, ...receiptPayload } = buildReceipt;
@@ -301,6 +311,7 @@ export function snapshotNativeCapacityInputs({
   contract,
   runtimePolicy,
   adapterPath,
+  preflightPath,
   connectorPackageTrees = null,
   root = repoRoot(),
 }) {
@@ -309,7 +320,12 @@ export function snapshotNativeCapacityInputs({
   if (runtimePolicy === null || typeof runtimePolicy !== 'object' || Array.isArray(runtimePolicy)) {
     throw new Error('Native capacity runtime policy must be an object.');
   }
-  if (connectorPackageTrees != null) assertConnectorPackageTrees(connectorPackageTrees);
+  if (JSON.stringify(runtimePolicy) !== JSON.stringify(NATIVE_CAPACITY_POLICY)) {
+    throw new Error('Native capacity runtime policy must match the dedicated no-CDP policy.');
+  }
+  if (connectorPackageTrees != null) {
+    throw new Error('Native capacity inputs must not include a DevTool connector package tree.');
+  }
 
   const immutableFiles = new Map();
   const pinFile = (file, role) => {
@@ -338,6 +354,19 @@ export function snapshotNativeCapacityInputs({
   }
   if (JSON.stringify(entry.capacityFixture) !== JSON.stringify(manifest.capacityFixture)) {
     throw new Error(`${entry.id} discovered capacityFixture differs from its pinned manifest.`);
+  }
+
+  if (typeof preflightPath !== 'string' || preflightPath.length === 0) {
+    throw new Error(
+      'Native capacity inputs require --capacity-disable-file with a local DevTool-disable bundle.',
+    );
+  }
+  const preflightBundlePath = path.resolve(preflightPath);
+  const preflightPin = pinFile(preflightBundlePath, `${entry.id}:devtool-disabled-preflight`);
+  if (!preflightPin.snapshotBytes.includes(Buffer.from('__OCTANE_DEVTOOL_DISABLED__=true'))) {
+    throw new Error(
+      'Native capacity DevTool-disable preflight bundle lacks __OCTANE_DEVTOOL_DISABLED__=true.',
+    );
   }
 
   const bundles = Object.fromEntries(contract.scales.map((scale) => {
@@ -376,7 +405,7 @@ export function snapshotNativeCapacityInputs({
   const sourceFiles = [
     resolvedAdapter,
     path.join(root, 'packages/runner/src/cli.mjs'),
-    path.join(root, 'packages/runner/src/connector-receipt.mjs'),
+    path.join(root, 'packages/runner/src/android-art-capacity.mjs'),
     path.join(root, 'packages/runner/src/harness-native.mjs'),
     path.join(root, 'packages/runner/src/native-capacity-suite.mjs'),
     path.join(root, 'packages/runner/src/native-inputs.mjs'),
@@ -397,12 +426,26 @@ export function snapshotNativeCapacityInputs({
     runtimePolicy: JSON.parse(JSON.stringify(runtimePolicy)),
     sourceCommit,
     adapter: relativeOrAbsolute(root, resolvedAdapter),
-    connectorPackageTrees,
+    connectorPackageTrees: null,
     sources,
     manifest: {
       path: relativeOrAbsolute(root, manifestPath),
       bytes: manifestPin.bytes,
       sha256: manifestPin.sha256,
+    },
+    preflight: {
+      protocol: runtimePolicy.preflightProtocol,
+      bundle: relativeOrAbsolute(root, preflightBundlePath),
+      bytes: preflightPin.bytes,
+      sha256: preflightPin.sha256,
+      serving: 'immutable-local-http',
+      launch: 'explicit-lynx-initial-url',
+      source: 'operator-supplied-local-bundle',
+      requiredEvidence: [
+        'DevTool disabled. Transitioning to ATTACHED.',
+        '__OCTANE_DEVTOOL_DISABLED__=true',
+      ],
+      forbiddenEvidence: ['DevTool enabled. Transitioning to ENABLED.'],
     },
     capacityFixture: {
       protocol: manifest.capacityFixture.protocol,
@@ -421,8 +464,14 @@ export function snapshotNativeCapacityInputs({
   };
   return {
     bundles,
+    preflight: {
+      bundlePath: preflightBundlePath,
+      bundleBytes: preflightPin.snapshotBytes,
+      relativePath: relativeOrAbsolute(root, preflightBundlePath),
+      sha256: preflightPin.sha256,
+    },
     immutableFiles,
-    connectorPackageTrees,
+    connectorPackageTrees: null,
     receipt: {
       ...receiptPayload,
       sha256: sha256(Buffer.from(JSON.stringify(receiptPayload))),
@@ -435,11 +484,20 @@ export function assertNativeCapacityInputsUnchanged(inputs) {
   if (sha256(Buffer.from(JSON.stringify(receiptPayload))) !== receiptSha256) {
     throw new Error('immutable Native capacity input receipt mutated in memory.');
   }
-  if (inputs?.connectorPackageTrees != null) {
-    assertConnectorPackageTreesMatch(
-      inputs.connectorPackageTrees,
-      refreshConnectorPackageTrees(inputs.connectorPackageTrees),
-    );
+  if (inputs?.connectorPackageTrees != null || inputs?.receipt?.connectorPackageTrees != null) {
+    throw new Error('immutable Native capacity inputs unexpectedly contain a DevTool connector.');
+  }
+  const receiptPreflight = inputs?.receipt?.preflight;
+  const preflight = inputs?.preflight;
+  const pinnedPreflight = inputs.immutableFiles?.get(path.resolve(preflight?.bundlePath ?? ''));
+  if (!Buffer.isBuffer(preflight?.bundleBytes)
+    || sha256(preflight.bundleBytes) !== preflight.sha256
+    || pinnedPreflight?.sha256 !== preflight.sha256
+    || preflight.relativePath !== receiptPreflight?.bundle
+    || preflight.bundleBytes.length !== receiptPreflight?.bytes
+    || preflight.sha256 !== receiptPreflight?.sha256
+    || receiptPreflight?.serving !== 'immutable-local-http') {
+    throw new Error('immutable Native capacity DevTool-disable preflight mutated in memory.');
   }
   const receiptScales = inputs?.receipt?.capacityFixture?.scales ?? {};
   if (JSON.stringify(Object.keys(inputs?.bundles ?? {}))

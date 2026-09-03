@@ -17,6 +17,7 @@ import {
 import { runNativeHarness, runNativeMatrix } from './harness-native.mjs';
 import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
 import {
+  NATIVE_CAPACITY_POLICY,
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   appendNativeMethodRevision,
   appendNativeLeaseReceipt,
@@ -267,6 +268,42 @@ test('approved method revision preserves the campaign base and attributes the ex
   }), /active method revision/);
 });
 
+test('capacity method receipts cannot resume across policy or preflight drift', () => {
+  const invariant = {
+    version: 'native-capacity-input-receipt-v3',
+    runtimePolicy: NATIVE_CAPACITY_POLICY,
+    preflight: { sha256: '1'.repeat(64), protocol: 'lynx-devtool-disabled-lifecycle-v1' },
+    capacityFixture: { protocol: 'lynx-native-capacity-fixture-v1' },
+  };
+  const base = methodInputReceipt({
+    adapter: { bytes: 1, sha256: 'a'.repeat(64) },
+    classifier: { bytes: 1, sha256: 'b'.repeat(64) },
+  }, invariant);
+  const chain = createNativeMethodRevisionChain(base);
+  const changedSource = methodInputReceipt({
+    adapter: { bytes: 2, sha256: 'c'.repeat(64) },
+    classifier: { bytes: 1, sha256: 'b'.repeat(64) },
+  }, invariant);
+  assert.doesNotThrow(() => appendNativeMethodRevision(chain, changedSource, 'approved-source-fix'));
+
+  const changedPolicy = methodInputReceipt(changedSource.sources, {
+    ...invariant,
+    runtimePolicy: { ...NATIVE_CAPACITY_POLICY, timeoutMs: NATIVE_CAPACITY_POLICY.timeoutMs + 1 },
+  });
+  assert.throws(
+    () => appendNativeMethodRevision(chain, changedPolicy, 'invalid-policy-drift'),
+    /may change runner sources only/,
+  );
+  const changedPreflight = methodInputReceipt(changedSource.sources, {
+    ...invariant,
+    preflight: { ...invariant.preflight, sha256: '2'.repeat(64) },
+  });
+  assert.throws(
+    () => appendNativeMethodRevision(chain, changedPreflight, 'invalid-preflight-drift'),
+    /may change runner sources only/,
+  );
+});
+
 function snapshots(entryId) {
   const map = new Map();
   for (const rows of [0, 1000, 10000, 30000]) {
@@ -406,4 +443,33 @@ test('strict producer validation failures become cell-local evidenced DNF', () =
     if (suite === 'startup') assert.deepEqual(dnf.metricContracts.map(({ name }) => name), ['fcp', 'settled']);
     else assert.equal(dnf.metricContracts, undefined);
   }
+});
+
+test('diagnostic Octane startup receipts require Octane transport evidence', () => {
+  const payload = {
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: 10,
+    commitAckMs: 11,
+    firstFrameMs: 12,
+    secondFrameMs: 13,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    transportEvidence: { kind: 'octane-root.render', acknowledged: true, ackMs: 11 },
+    postState: {
+      rowCount: 1_000,
+      firstId: 1,
+      secondId: 2,
+      thirdId: 3,
+      row998Id: 999,
+      selectedId: null,
+      firstLabel: 'row 1',
+    },
+  };
+  assert.doesNotThrow(() => validateNativeStartupPayload(payload, {
+    entryId: 'octane-native-diagnostic', framework: 'octane', expectedRows: 1_000,
+  }));
+  assert.throws(() => validateNativeStartupPayload({
+    ...payload, transportEvidence: undefined,
+  }, {
+    entryId: 'octane-native-diagnostic', framework: 'octane', expectedRows: 1_000,
+  }), /transportEvidence/);
 });

@@ -111,6 +111,29 @@ export async function loadNativeAdapter(adapterPath, context = {}) {
   return adapter;
 }
 
+/** Load the diagnostic direct-ADB surface without requiring ranked/CDP methods. */
+export async function loadNativeCapacityAdapter(adapterPath, context = {}) {
+  const resolved = path.resolve(adapterPath);
+  const module = await import(pathToFileURL(resolved).href);
+  const factory = module.default;
+  if (typeof factory !== 'function') {
+    throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
+  }
+  const adapter = await factory({ ...context, mode: 'capacity' });
+  for (const method of ['runCapacityProbe', 'dispose']) {
+    if (typeof adapter?.[method] !== 'function') {
+      throw new Error(`native capacity adapter ${adapterPath} is missing ${method}().`);
+    }
+  }
+  if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
+    throw new Error(`native capacity adapter ${adapterPath} must declare a device-class environment string.`);
+  }
+  if (adapter.environment === 'lynx-for-web') {
+    throw new Error('native capacity adapter environment must not be "lynx-for-web".');
+  }
+  return adapter;
+}
+
 /**
  * Drive the full case matrix through one adapter. Timeouts inside the adapter
  * surface as `{dnf: true}` observations and are counted, never dropped; any

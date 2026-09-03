@@ -19,11 +19,12 @@ import {
   assertNativeCapacityInputsUnchanged,
   snapshotNativeCapacityInputs,
 } from './native-inputs.mjs';
+import { NATIVE_CAPACITY_POLICY } from './native-protocol.mjs';
 
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const CAPACITY_FIXTURE_PROTOCOL = 'lynx-native-capacity-fixture-v1';
-const CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v2';
+const CAPACITY_BUILD_PROTOCOL = 'octane-native-diagnostic-build-v3';
 const ALL_CAPACITY_SCALES = [1000, 6000, 7000, 7500, 8000, 10000];
 
 function capacityArtifacts(make = (rows) => ({
@@ -56,8 +57,14 @@ function diagnosticEntry(overrides = {}) {
             sha256: '1'.repeat(64),
           })),
           list: {
-            path: 'benchmarks/lynx-list/app/dist/main.lynx.bundle',
-            sha256: '1'.repeat(64),
+            1000: {
+              path: 'benchmarks/lynx-list/app/dist/rows-1000/main.lynx.bundle',
+              sha256: '1'.repeat(64),
+            },
+            10000: {
+              path: 'benchmarks/lynx-list/app/dist/rows-10000/main.lynx.bundle',
+              sha256: '1'.repeat(64),
+            },
           },
         },
       },
@@ -67,7 +74,8 @@ function diagnosticEntry(overrides = {}) {
           `capacity/rows-${rows}/main.lynx.bundle`,
           '1'.repeat(64),
         ])),
-        'list/main.lynx.bundle': '1'.repeat(64),
+        'list/rows-1000/main.lynx.bundle': '1'.repeat(64),
+        'list/rows-10000/main.lynx.bundle': '1'.repeat(64),
       },
     },
     capacityFixture: {
@@ -107,7 +115,7 @@ function fixture() {
   const runner = path.join(root, 'packages/runner/src');
   fs.mkdirSync(runner, { recursive: true });
   for (const relative of [
-    'cli.mjs', 'connector-receipt.mjs', 'harness-native.mjs', 'native-capacity-suite.mjs',
+    'android-art-capacity.mjs', 'cli.mjs', 'connector-receipt.mjs', 'harness-native.mjs', 'native-capacity-suite.mjs',
     'native-inputs.mjs', 'native-protocol.mjs', 'run-matrix.mjs',
   ]) fs.writeFileSync(path.join(runner, relative), `source:${relative}`);
   const shared = path.join(root, 'packages/shared/src');
@@ -117,6 +125,8 @@ function fixture() {
   }
   const adapterPath = path.join(root, 'adapter.mjs');
   fs.writeFileSync(adapterPath, 'adapter');
+  const preflightPath = path.join(root, 'devtool-disabled.lynx.bundle');
+  fs.writeFileSync(preflightPath, 'bundle __OCTANE_DEVTOOL_DISABLED__=true');
   const entryDir = path.join(root, `entries/${NATIVE_CAPACITY_ENTRY_ID}`);
   const distDir = path.join(entryDir, 'dist');
   fs.mkdirSync(path.join(distDir, 'table'), { recursive: true });
@@ -142,7 +152,7 @@ function fixture() {
   const { sha256: _priorReceipt, ...receiptPayload } = entry.provenance.buildReceipt;
   entry.provenance.buildReceipt.sha256 = sha256(JSON.stringify(receiptPayload));
   fs.writeFileSync(path.join(entryDir, 'entry.json'), JSON.stringify(entry));
-  return { root, runner, shared, adapterPath, bundlePaths, entry };
+  return { root, runner, shared, adapterPath, preflightPath, bundlePaths, entry };
 }
 
 test('capacity suite is opt-in and defaults to the exact diagnostic entry and 1k/10k', () => {
@@ -268,11 +278,12 @@ test('capacity receipt binds contract, policy, topology, selected bundles, and r
   const current = fixture();
   try {
     const suite = resolveNativeCapacitySuite({ requested: true, entries: [current.entry] });
-    const snapshot = (runtimePolicy = { timeoutMs: 180_000 }) => snapshotNativeCapacityInputs({
+    const snapshot = (runtimePolicy = NATIVE_CAPACITY_POLICY) => snapshotNativeCapacityInputs({
       entry: current.entry,
       contract: suite.contract,
       runtimePolicy,
       adapterPath: current.adapterPath,
+      preflightPath: current.preflightPath,
       root: current.root,
     });
     const initial = snapshot();
@@ -282,6 +293,12 @@ test('capacity receipt binds contract, policy, topology, selected bundles, and r
       current.entry.capacityFixture.scales['1000'].sha256,
     );
     assert.equal(initial.receipt.sourceCommit, current.entry.provenance.commit);
+    assert.equal(initial.preflight.sha256, sha256(fs.readFileSync(current.preflightPath)));
+    assert.equal(initial.receipt.preflight.protocol, 'lynx-devtool-disabled-lifecycle-v1');
+    assert.deepEqual(initial.receipt.preflight.requiredEvidence, [
+      'DevTool disabled. Transitioning to ATTACHED.',
+      '__OCTANE_DEVTOOL_DISABLED__=true',
+    ]);
     assert.deepEqual(initial.receipt.capacityFixture, {
       protocol: CAPACITY_FIXTURE_PROTOCOL,
       fixtureRole: 'eager-capacity-probe',
@@ -314,8 +331,24 @@ test('capacity receipt binds contract, policy, topology, selected bundles, and r
       /1000-row Native capacity bundle mutated/,
     );
 
-    const policyChanged = snapshot({ timeoutMs: 180_001 });
-    assert.notEqual(policyChanged.receipt.sha256, initial.receipt.sha256);
+    assert.throws(
+      () => snapshot({ ...NATIVE_CAPACITY_POLICY, timeoutMs: 180_001 }),
+      /dedicated no-CDP policy/,
+    );
+    const preflightBound = snapshot();
+    preflightBound.preflight.bundleBytes = Buffer.from('changed');
+    assert.throws(
+      () => assertNativeCapacityInputsUnchanged(preflightBound),
+      /preflight mutated/,
+    );
+    const preflightDiskBound = snapshot();
+    const preflightOriginal = fs.readFileSync(current.preflightPath);
+    fs.appendFileSync(current.preflightPath, 'changed');
+    assert.throws(
+      () => assertNativeCapacityInputsUnchanged(preflightDiskBound),
+      /capacity input changed on disk/,
+    );
+    fs.writeFileSync(current.preflightPath, preflightOriginal);
     const thresholdSuite = resolveNativeCapacitySuite({
       requested: true,
       includeThresholds: true,
@@ -324,8 +357,9 @@ test('capacity receipt binds contract, policy, topology, selected bundles, and r
     const scalesChanged = snapshotNativeCapacityInputs({
       entry: current.entry,
       contract: thresholdSuite.contract,
-      runtimePolicy: { timeoutMs: 180_000 },
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
       adapterPath: current.adapterPath,
+      preflightPath: current.preflightPath,
       root: current.root,
     });
     assert.notEqual(scalesChanged.receipt.sha256, initial.receipt.sha256);
@@ -357,6 +391,29 @@ test('capacity receipt binds contract, policy, topology, selected bundles, and r
   }
 });
 
+test('capacity receipt requires a local disable bundle with its own acknowledgement producer', () => {
+  const current = fixture();
+  try {
+    const suite = resolveNativeCapacitySuite({ requested: true, entries: [current.entry] });
+    const snapshot = (preflightPath) => snapshotNativeCapacityInputs({
+      entry: current.entry,
+      contract: suite.contract,
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
+      adapterPath: current.adapterPath,
+      preflightPath,
+      root: current.root,
+    });
+    assert.throws(() => snapshot(undefined), /require --capacity-disable-file/);
+    assert.throws(
+      () => snapshot(path.join(current.entry.dir, 'dist/table/main.lynx.bundle')),
+      /lacks __OCTANE_DEVTOOL_DISABLED__=true/,
+    );
+    assert.doesNotThrow(() => snapshot(current.preflightPath));
+  } finally {
+    fs.rmSync(current.root, { recursive: true, force: true });
+  }
+});
+
 test('capacity receipt fails closed on source revision and bundle checksum drift', () => {
   const current = fixture();
   try {
@@ -366,8 +423,9 @@ test('capacity receipt fails closed on source revision and bundle checksum drift
       () => snapshotNativeCapacityInputs({
         entry: current.entry,
         contract: suite.contract,
-        runtimePolicy: {},
+        runtimePolicy: NATIVE_CAPACITY_POLICY,
         adapterPath: current.adapterPath,
+        preflightPath: current.preflightPath,
         root: current.root,
       }),
       /source revision/,
@@ -378,8 +436,9 @@ test('capacity receipt fails closed on source revision and bundle checksum drift
       () => snapshotNativeCapacityInputs({
         entry: current.entry,
         contract: suite.contract,
-        runtimePolicy: {},
+        runtimePolicy: NATIVE_CAPACITY_POLICY,
         adapterPath: current.adapterPath,
+        preflightPath: current.preflightPath,
         root: current.root,
       }),
       /bundle checksum/,
@@ -406,8 +465,9 @@ test('capacity receipt rejects a checksum-valid bundle with the wrong fixture pr
       () => snapshotNativeCapacityInputs({
         entry: current.entry,
         contract: suite.contract,
-        runtimePolicy: {},
+        runtimePolicy: NATIVE_CAPACITY_POLICY,
         adapterPath: current.adapterPath,
+        preflightPath: current.preflightPath,
         root: current.root,
       }),
       /lacks lynx-native-startup-v1/,
@@ -424,8 +484,9 @@ test('capacity receipt changes for any coherently updated selected capacity bund
     const snapshot = () => snapshotNativeCapacityInputs({
       entry: current.entry,
       contract: suite.contract,
-      runtimePolicy: {},
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
       adapterPath: current.adapterPath,
+      preflightPath: current.preflightPath,
       root: current.root,
     });
     const initial = snapshot();
@@ -494,6 +555,41 @@ test('capacity execution requires the dedicated adapter hook and retains zero-sa
     assert.equal(record.dnfCount, 1);
     assert.equal(record.rankingEligible, false);
     assert.equal(record.diagnostic, true);
+  }
+});
+
+test('five ART capacity aborts remain five DNF outcomes with no timing aggregate', async () => {
+  const entry = diagnosticEntry();
+  const suite = resolveNativeCapacitySuite({ requested: true, entries: [entry], reps: 5 });
+  const execution = executionFixture(suite.contract.scales);
+  const records = await runNativeCapacitySuite({
+    adapter: {
+      environment: 'android-capacity-test',
+      async runCapacityProbe(_entry, probe) {
+        return {
+          dnf: true,
+          failure: {
+            category: 'capacity/android-art-global-ref-table',
+            loadToCrashMs: 21_000 + probe.rep,
+          },
+        };
+      },
+    },
+    entry: execution.entry,
+    contract: suite.contract,
+    bundles: execution.bundles,
+  });
+  for (const record of records) {
+    assert.equal(record.attemptedCount, 5);
+    assert.equal(record.acceptedCount, 0);
+    assert.equal(record.dnfCount, 5);
+    assert.deepEqual(record.samples, []);
+    assert.equal(record.n, 0);
+    assert.equal(record.median, null);
+    assert.equal(record.failures.every((failure) =>
+      failure.category === 'capacity/android-art-global-ref-table'), true);
+    assert.equal(record.failures.every((failure) =>
+      Number.isFinite(failure.loadToCrashMs)), true);
   }
 });
 

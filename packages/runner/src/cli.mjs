@@ -5,7 +5,7 @@
 //                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
 //                  [--reps N] [--quick] [--label x]
 //                  [--harness web|native]
-//                  [--native-capacity] [--capacity-thresholds]
+//                  [--native-capacity --capacity-disable-file bundle] [--capacity-thresholds]
 //                  [--jit jit|interp] [--cpu-throttle N]
 //                  [--throttle-scope none|process-cgroup]
 //   lynx-bench preflight
@@ -26,7 +26,11 @@ import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
-import { loadNativeAdapter, runNativeHarness } from './harness-native.mjs';
+import {
+  loadNativeAdapter,
+  loadNativeCapacityAdapter,
+  runNativeHarness,
+} from './harness-native.mjs';
 import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
@@ -61,6 +65,7 @@ import {
 import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  NATIVE_CAPACITY_POLICY,
   NATIVE_SANDBOX_POLICY,
   appendNativeLeaseReceipt,
   deriveNativeLeaseExpirySafety,
@@ -128,16 +133,13 @@ async function runNativeCapacityCommand(args, entries) {
   }
 
   const root = repoRoot();
-  const connectorPackageTrees = resolveConnectorPackageTrees({
-    fromPath: path.resolve(args.adapter),
-  });
-  assertConnectorPackageTrees(connectorPackageTrees);
   const inputs = snapshotNativeCapacityInputs({
     entry: resolved.entry,
     contract: resolved.contract,
-    runtimePolicy: NATIVE_SANDBOX_POLICY,
+    runtimePolicy: NATIVE_CAPACITY_POLICY,
     adapterPath: args.adapter,
-    connectorPackageTrees,
+    preflightPath: args['capacity-disable-file']
+      ?? process.env.LYNX_SANDBOX_CAPACITY_DISABLE_FILE,
     root,
   });
   const leaseReceiptInput = args['lease-receipt']
@@ -155,18 +157,20 @@ async function runNativeCapacityCommand(args, entries) {
     label: typeof args['campaign-id'] === 'string' ? args['campaign-id'] : args.label ?? null,
     capacityContractSha256: resolved.contract.sha256,
     inputReceiptSha256: inputs.receipt.sha256,
-    connectorPackageTreesSha256: connectorPackageTrees.sha256,
-    runtimePolicy: NATIVE_SANDBOX_POLICY,
+    runtimePolicy: NATIVE_CAPACITY_POLICY,
   };
   const campaign = { ...campaignPayload, id: sha256Json(campaignPayload).slice(0, 16) };
-  const adapter = await loadNativeAdapter(args.adapter, {
+  const adapter = await loadNativeCapacityAdapter(args.adapter, {
     log: (line) => console.log(line),
+    capacityInputs: {
+      preflight: inputs.preflight,
+      receipt: inputs.receipt,
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
+    },
     campaignIdentity: {
       campaignId: campaign.id,
       matrixContractSha256: resolved.contract.sha256,
       inputReceiptSha256: inputs.receipt.sha256,
-      connectorPackageTrees,
-      connectorPackageTreesSha256: connectorPackageTrees.sha256,
       leaseReceipt,
     },
   });
@@ -202,7 +206,7 @@ async function runNativeCapacityCommand(args, entries) {
       rankingEligible: false,
       campaign,
       capacityContract: resolved.contract,
-      runtimePolicy: NATIVE_SANDBOX_POLICY,
+      runtimePolicy: NATIVE_CAPACITY_POLICY,
       leaseChain: appendNativeLeaseReceipt(null, leaseReceipt),
       inputReceipt: inputs.receipt,
       entryCommits: { [resolved.entry.id]: resolved.entry.provenance.commit },
@@ -230,6 +234,13 @@ async function cmdRun(args) {
     throw new Error('--capacity-thresholds is a boolean flag and does not accept a value.');
   }
   const nativeCapacity = args['native-capacity'] === true;
+  if (args['capacity-disable-file'] != null
+    && typeof args['capacity-disable-file'] !== 'string') {
+    throw new Error('--capacity-disable-file requires a local bundle path.');
+  }
+  if (args['capacity-disable-file'] != null && !nativeCapacity) {
+    throw new Error('--capacity-disable-file requires --native-capacity.');
+  }
   if (args['capacity-thresholds'] === true && !nativeCapacity) {
     throw new Error('--capacity-thresholds requires --native-capacity.');
   }
