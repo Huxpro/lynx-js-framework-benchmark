@@ -118,6 +118,15 @@ test('recognizes issue #888 only with the complete same-attempt same-PID signatu
   assert.match(result.failure.evidence.summary, /PaintingContext\$a/);
   assert.match(result.failure.evidence.summary, /m7\.w/);
 
+  const interleavedPid = signature.replace(
+    line(launch + 14, '20444 of m7.w (20444 unique instances)'),
+    line(launch + 14, '20444 of m7.w (20444 unique instances)', 9999),
+  );
+  assert.equal(
+    classify(interleavedPid, { kind: 'death', atMs: launch + 19 }).failure.category,
+    'process-failure',
+  );
+
   for (const changed of [
     signature.replace('20444 of m7.w (20444 unique instances)\n', ''),
     signature.replace('51200 global references (51027 unique instances)\n', ''),
@@ -157,6 +166,14 @@ test('stale signatures, unrelated process failures, PID restarts, and live cutof
   assert.equal(classify(base(), deadline).failure.category, 'timeout');
   assert.equal(classify(
     base(line(launch + 10, 'ANR in com.lynx.explorer')),
+    deadline,
+  ).failure.category, 'process-failure');
+  assert.equal(classify(
+    base(line(launch + 10, 'Fatal signal 11 (SIGSEGV), code 1', 9999)),
+    deadline,
+  ).failure.category, 'timeout');
+  assert.equal(classify(
+    base(line(launch + 10, 'ANR in com.lynx.explorer PID: 4242', 1000)),
     deadline,
   ).failure.category, 'process-failure');
 });

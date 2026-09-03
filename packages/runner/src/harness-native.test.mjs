@@ -11,6 +11,7 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import createSandboxAdapter, {
   createCapacityAdapter,
+  createCapacityCommand,
   createCapacityLogBuffer,
   isNativeTransientTransportFailure,
   nativeTransportFailureDnf,
@@ -590,6 +591,7 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   let launchedAtMs = null;
   let measurementAttempt = 0;
   let processAlive = false;
+  let preflightValid = true;
   const commands = [];
   const logcat = createCapacityLogBuffer();
   let logcatStarts = 0;
@@ -689,13 +691,15 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
           processAlive = false;
         }
       } else {
-        processAlive = true;
-        logcat.append([
-          logLine(now - 1, 3131, marker),
-          logLine(now, 3131, 'DevTool disabled. Transitioning to ATTACHED.'),
-          logLine(now + 1, 3131, '__OCTANE_DEVTOOL_DISABLED__=true'),
-          '',
-        ].join('\n'));
+      processAlive = true;
+        if (preflightValid) {
+          logcat.append([
+            logLine(now - 1, 3131, marker),
+            logLine(now, 3131, 'DevTool disabled. Transitioning to ATTACHED.'),
+            logLine(now + 1, 3131, '__OCTANE_DEVTOOL_DISABLED__=true'),
+            '',
+          ].join('\n'));
+        }
       }
       return 'Status: ok';
     }
@@ -733,7 +737,7 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
       .digest('hex'),
   };
   const leaseReceipt = parseNativeLeaseReceipt({
-    serial, issueId: 'octane-888', expiredAt: now + 600_000,
+    serial, issueId: 'octane-888', expiredAt: now + 2_000_000,
   }, { serial, now });
   const capacityInputs = {
     runtimePolicy: NATIVE_CAPACITY_POLICY,
@@ -817,6 +821,42 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   assert.doesNotMatch(capacityFailure.failure.evidence.summary, /UNRELATED BEFORE SUMMARY/);
   assert.doesNotMatch(capacityFailure.failure.evidence.summary, /UNRELATED AFTER SUMMARY/);
   assert.equal(commands.filter((args) => args.join(' ') === 'shell date +%s%3N').length, 2);
+
+  preflightValid = false;
+  const forceStopsBeforeFailedPreflight = commands.filter(
+    (args) => args.join(' ') === 'shell am force-stop com.lynx.explorer',
+  ).length;
+  await assert.rejects(() => adapter.runCapacityProbe({
+    id: 'octane-native-diagnostic', framework: 'octane',
+  }, {
+    suite: 'native-capacity',
+    fixtureRole: 'eager-capacity-probe',
+    scale: 1_000,
+    rep: 2,
+    bundleBytes: capacityBytes,
+    bundleSha256: capacitySha,
+    contractSha256: inputReceipt.contract.sha256,
+  }), /DevTool preflight did not preserve a disabled lifecycle/);
+  assert.equal(processAlive, false);
+  assert.equal(commands.filter(
+    (args) => args.join(' ') === 'shell am force-stop com.lynx.explorer',
+  ).length, forceStopsBeforeFailedPreflight + 2);
+
+  preflightValid = true;
+  now = leaseReceipt.expiredAt - adapter.machine.leaseExpirySafety.effectiveSafetyMs + 1;
+  const commandsBeforeLeaseRejection = commands.length;
+  await assert.rejects(() => adapter.runCapacityProbe({
+    id: 'octane-native-diagnostic', framework: 'octane',
+  }, {
+    suite: 'native-capacity',
+    fixtureRole: 'eager-capacity-probe',
+    scale: 1_000,
+    rep: 3,
+    bundleBytes: capacityBytes,
+    bundleSha256: capacitySha,
+    contractSha256: inputReceipt.contract.sha256,
+  }), /lease-expiry safety envelope/);
+  assert.equal(commands.length, commandsBeforeLeaseRejection);
   await adapter.dispose();
   await adapter.dispose();
   assert.equal(logcatCloses, 1);
@@ -854,6 +894,18 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   assert.equal(failedInitLogcatCloses, 1);
   assert.equal(failedInitServerCloses, 1);
   assert.equal(commands.filter((args) => args.join(' ') === 'reverse --remove tcp:8765').length, 2);
+});
+
+test('capacity ADB commands have a hard timeout even with an injected transport', async () => {
+  const command = createCapacityCommand(
+    'test-device',
+    () => new Promise(() => {}),
+    5,
+  );
+  await assert.rejects(
+    () => command('shell', 'blocked'),
+    /timed out after 5ms: shell blocked/,
+  );
 });
 
 test('capacity log capture drains each chunk exactly once and resets phase evidence', () => {

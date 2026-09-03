@@ -87,6 +87,13 @@ thermal status 0 and battery temperature at or below 35 °C, and identifies the 
 after launch. Capacity evidence comes only from the pinned bundle, process state, epoch-stamped
 logcat stream, and completion receipt.
 
+Every capacity ADB command has a 30-second default timeout
+(`LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS`). Before each probe, the adapter derives a worst-case
+lease envelope from the thermal, preflight, PID-discovery, capacity, finalization, command, and
+cleanup windows. A probe does not start inside that envelope. The cleanup margin defaults to 30
+seconds (`LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS`); an optional
+`LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS` may increase, but never reduce, the derived bound.
+
 The list lane requires a real Native adapter capability and an allocation observer using
 `lynx-native-list-allocation-observer-v1`. The campaign identity includes the observer's non-empty
 method revision and measured enable-through-disable overhead in milliseconds. A valid observer

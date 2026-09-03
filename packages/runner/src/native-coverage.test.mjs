@@ -22,7 +22,12 @@ import {
   NATIVE_MATRIX_CELL_COUNT_PER_ENTRY,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
-import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './native-protocol.mjs';
+import {
+  deriveNativeCapacityLeaseExpirySafety,
+  deriveNativeLeaseExpirySafety,
+  resolveNativeCapacityPolicy,
+  resolveNativeSandboxPolicy,
+} from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
 
 const ENTRIES = [
@@ -220,6 +225,39 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   assert.throws(
     () => resolveNativeSandboxPolicy({ LYNX_SANDBOX_RENDER_GRACE_FRAMES: '1' }),
     /must be 2/,
+  );
+});
+
+test('capacity lease safety covers every phase, command timeout, and cleanup', () => {
+  const policy = resolveNativeCapacityPolicy({
+    LYNX_SANDBOX_CAPACITY_TIMEOUT_MS: '44',
+    LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS: '22',
+    LYNX_SANDBOX_CAPACITY_PID_TIMEOUT_MS: '33',
+    LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS: '8',
+    LYNX_SANDBOX_CAPACITY_POLL_MS: '6',
+    LYNX_SANDBOX_CAPACITY_FINALIZATION_MS: '5',
+    LYNX_SANDBOX_CAPACITY_THERMAL_GATE_TIMEOUT_MS: '99',
+    LYNX_SANDBOX_CAPACITY_THERMAL_POLL_MS: '7',
+    LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS: '9',
+  });
+  const safety = deriveNativeCapacityLeaseExpirySafety(policy);
+  assert.equal(safety.commandTimeoutCount, 14);
+  assert.equal(safety.minimumSafetyMs, 360);
+  assert.equal(safety.effectiveSafetyMs, 360);
+  assert.throws(
+    () => deriveNativeCapacityLeaseExpirySafety(resolveNativeCapacityPolicy({
+      LYNX_SANDBOX_CAPACITY_TIMEOUT_MS: '44',
+      LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS: '22',
+      LYNX_SANDBOX_CAPACITY_PID_TIMEOUT_MS: '33',
+      LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS: '8',
+      LYNX_SANDBOX_CAPACITY_POLL_MS: '6',
+      LYNX_SANDBOX_CAPACITY_FINALIZATION_MS: '5',
+      LYNX_SANDBOX_CAPACITY_THERMAL_GATE_TIMEOUT_MS: '99',
+      LYNX_SANDBOX_CAPACITY_THERMAL_POLL_MS: '7',
+      LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS: '9',
+      LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS: '359',
+    })),
+    /below the derived minimum 360ms/,
   );
 });
 

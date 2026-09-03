@@ -45,7 +45,7 @@ import {
 } from './preflight.mjs';
 import { jsFlagsForRegime, launchBrowser } from './browser.mjs';
 import { runReceipt } from './provenance.mjs';
-import { stringifyResult } from './result-json.mjs';
+import { redactCommandArgv, stringifyResult } from './result-json.mjs';
 import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
 import { resolveThrottleScope } from './web-regime-policy.mjs';
@@ -204,7 +204,7 @@ async function runNativeCapacityCommand(args, entries) {
       calibration: null,
       harness: 'native',
       adapter: path.resolve(args.adapter),
-      argv: process.argv.slice(2),
+      argv: redactCommandArgv(process.argv.slice(2)),
       checkpoint: false,
       checkpointComplete: true,
       diagnostic: true,
@@ -304,7 +304,7 @@ async function runNativeListCommand(args, entries) {
       calibration: null,
       harness: 'native',
       adapter: path.resolve(args.adapter),
-      argv: process.argv.slice(2),
+      argv: redactCommandArgv(process.argv.slice(2)),
       checkpoint: false,
       checkpointComplete: true,
       diagnostic: true,
@@ -618,7 +618,7 @@ async function cmdRun(args) {
           calibration: null,
           harness: 'native',
           adapter: path.resolve(args.adapter),
-          argv: process.argv.slice(2),
+          argv: redactCommandArgv(process.argv.slice(2)),
           checkpoint: true,
           checkpointComplete: complete,
           deviceCohort,
@@ -811,7 +811,7 @@ async function cmdRun(args) {
       ...(processThrottleEntryVerifications.length === 0
         ? {}
         : { processThrottleEntryVerifications }),
-      argv: process.argv.slice(2),
+      argv: redactCommandArgv(process.argv.slice(2)),
       entryCommits: Object.fromEntries(
         entries.map((e) => [e.id, e.provenance?.commit ?? null]),
       ),

@@ -24,7 +24,9 @@ import {
   NATIVE_SANDBOX_POLICY,
   assertNativeLeaseReceipt,
   buildNativeDeviceCohort,
+  deriveNativeCapacityLeaseExpirySafety,
   nativeSerialSha256,
+  shouldStopBeforeLeaseExpiry,
 } from '../src/native-protocol.mjs';
 import {
   ANDROID_ART_CAPACITY_PACKAGE,
@@ -80,11 +82,12 @@ function adb(serial, ...args) {
   return execFileSync('adb', ['-s', serial, ...args], { encoding: 'utf8' }).trim();
 }
 
-function capacityAdb(serial, ...args) {
+function capacityAdb(serial, timeoutMs, ...args) {
   return new Promise((resolve, reject) => {
     execFile('adb', ['-s', serial, ...args], {
       encoding: 'utf8',
       maxBuffer: 8 * 1024 * 1024,
+      timeout: timeoutMs,
     }, (error, stdout) => {
       if (error) reject(error);
       else resolve(stdout.trim());
@@ -512,9 +515,21 @@ export function assertRuntimeConnectorPackageTrees(expected, actual = resolveCon
   return assertConnectorPackageTreesMatch(expected, actual);
 }
 
-function capacityCommand(serial, injected) {
-  const invoke = injected ?? ((...args) => capacityAdb(serial, ...args));
-  return (...args) => Promise.resolve(invoke(...args));
+export function createCapacityCommand(serial, injected, timeoutMs) {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Native capacity ADB timeout must be positive.');
+  }
+  const invoke = injected ?? ((...args) => capacityAdb(serial, timeoutMs, ...args));
+  return (...args) => {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(
+        `Native capacity ADB command timed out after ${timeoutMs}ms: ${args.join(' ')}`,
+      )), timeoutMs);
+    });
+    return Promise.race([Promise.resolve().then(() => invoke(...args)), timeout])
+      .finally(() => clearTimeout(timer));
+  };
 }
 
 const DEFAULT_CAPACITY_LOG_BUFFER_CHARS = 8 * 1024 * 1024;
@@ -819,7 +834,11 @@ export async function createCapacityAdapter({
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
     throw new Error(`invalid LYNX_SANDBOX_PORT: ${env.LYNX_SANDBOX_PORT}`);
   }
-  const command = capacityCommand(serial, capacityRuntime?.adb);
+  const command = createCapacityCommand(
+    serial,
+    capacityRuntime?.adb,
+    policy.commandTimeoutMs,
+  );
   const now = capacityRuntime?.now ?? Date.now;
   const runtime = {
     now,
@@ -902,12 +921,14 @@ export async function createCapacityAdapter({
   const cpuModel = String(cpuModelOutput || model);
   const cores = Number(coresOutput) || null;
   const environment = `lynx-native-android-${model}-${osVersion}-capacity-nocdp`;
+  const leaseExpirySafety = deriveNativeCapacityLeaseExpirySafety(policy);
   const harnessConfig = {
     ...policy,
     campaignId: campaignIdentity.campaignId,
     capacityContractSha256: campaignIdentity.matrixContractSha256,
     inputReceiptSha256: campaignIdentity.inputReceiptSha256,
     preflightSha256: capacityInputs.preflight.sha256,
+    leaseExpirySafety,
   };
   const harnessConfigId = createHash('sha256')
     .update(JSON.stringify(harnessConfig))
@@ -1007,67 +1028,75 @@ export async function createCapacityAdapter({
         || context.contractSha256 !== campaignIdentity.matrixContractSha256) {
         throw new Error('capacity probe does not match the pinned Octane eager fixture contract.');
       }
-      const thermal = await waitForCapacityThermalReady(command, runtime);
-      machine.thermalGates.push({
-        entry: entry.id, scale: context.scale, rep: context.rep, ...thermal,
-      });
-      await ensureCapacityInteractive(command, runtime);
-      await command('shell', 'am', 'force-stop', policy.packageName);
-      const ordinal = `${context.scale}-${context.rep}`;
-      const devtoolPreflight = await runDisablePreflight(ordinal);
-
-      const pidDeadline = runtime.monotonicNow() + policy.pidTimeoutMs;
-      let pids = await capacityPids(command);
-      while (pids.length === 0 && runtime.monotonicNow() < pidDeadline) {
-        await runtime.wait(policy.pollMs);
-        pids = await capacityPids(command);
+      if (shouldStopBeforeLeaseExpiry(leaseReceipt, {
+        now: runtime.now(),
+        safetyMs: leaseExpirySafety.effectiveSafetyMs,
+      })) {
+        throw new Error(
+          `Native capacity probe cannot start inside its ${leaseExpirySafety.effectiveSafetyMs}ms `
+          + 'lease-expiry safety envelope.',
+        );
       }
-      if (pids.length !== 1) {
-        await command('shell', 'am', 'force-stop', policy.packageName);
-        return {
-          dnf: true,
-          failure: {
-            category: 'process-failure',
-            phase: NATIVE_CAPACITY_SUITE,
-            entry: entry.id,
-            workload: 'create',
-            scale: context.scale,
-            message: `expected one preflight Explorer PID, observed ${JSON.stringify(pids)}.`,
-            evidence: { observedPids: pids, devtoolPreflight },
-          },
-        };
-      }
-      // The disable preflight and eager deep-link deliberately share this one
-      // cold-process lifetime. Pin the PID before launch so a restart can never
-      // satisfy the attempt with a later receipt from a replacement process.
-      const pid = pids[0];
-
-      logcat.reset();
-      const marker = `__NATIVE_CAPACITY_ATTEMPT__${ordinal}-${runtime.now()}`;
-      const terminalWindow = createCapacityEvidenceWindow(marker, {
-        phase: 'attempt',
-        packageName: policy.packageName,
-        pid,
-      });
-      await mark(marker);
-      activate({ bundleBytes: context.bundleBytes, sha256: context.bundleSha256 }, 'capacity', {
-        entryId: entry.id,
-        scale: context.scale,
-      });
-      const launchedAtMs = Number(await command('shell', 'date', '+%s%3N'));
-      if (!Number.isFinite(launchedAtMs)) {
-        throw new Error('could not capture the device launch timestamp for a capacity attempt.');
-      }
-      const hostLaunchedAtMs = runtime.monotonicNow();
-      const url = bundleUrl('capacity', `${ordinal}-${runtime.now()}`);
-      await command(
-        'shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW',
-        '-d', `lynx://open?url=${encodeURIComponent(url)}`, policy.packageName,
-      );
-      const deadlineMs = launchedAtMs + policy.timeoutMs;
-      const hostDeadlineMs = hostLaunchedAtMs + policy.timeoutMs;
-      let terminal = null;
       try {
+        const thermal = await waitForCapacityThermalReady(command, runtime);
+        machine.thermalGates.push({
+          entry: entry.id, scale: context.scale, rep: context.rep, ...thermal,
+        });
+        await ensureCapacityInteractive(command, runtime);
+        await command('shell', 'am', 'force-stop', policy.packageName);
+        const ordinal = `${context.scale}-${context.rep}`;
+        const devtoolPreflight = await runDisablePreflight(ordinal);
+
+        const pidDeadline = runtime.monotonicNow() + policy.pidTimeoutMs;
+        let pids = await capacityPids(command);
+        while (pids.length === 0 && runtime.monotonicNow() < pidDeadline) {
+          await runtime.wait(policy.pollMs);
+          pids = await capacityPids(command);
+        }
+        if (pids.length !== 1) {
+          return {
+            dnf: true,
+            failure: {
+              category: 'process-failure',
+              phase: NATIVE_CAPACITY_SUITE,
+              entry: entry.id,
+              workload: 'create',
+              scale: context.scale,
+              message: `expected one preflight Explorer PID, observed ${JSON.stringify(pids)}.`,
+              evidence: { observedPids: pids, devtoolPreflight },
+            },
+          };
+        }
+        // The disable preflight and eager deep-link deliberately share this one
+        // cold-process lifetime. Pin the PID before launch so a restart can never
+        // satisfy the attempt with a later receipt from a replacement process.
+        const pid = pids[0];
+
+        logcat.reset();
+        const marker = `__NATIVE_CAPACITY_ATTEMPT__${ordinal}-${runtime.now()}`;
+        const terminalWindow = createCapacityEvidenceWindow(marker, {
+          phase: 'attempt',
+          packageName: policy.packageName,
+          pid,
+        });
+        await mark(marker);
+        activate({ bundleBytes: context.bundleBytes, sha256: context.bundleSha256 }, 'capacity', {
+          entryId: entry.id,
+          scale: context.scale,
+        });
+        const launchedAtMs = Number(await command('shell', 'date', '+%s%3N'));
+        if (!Number.isFinite(launchedAtMs)) {
+          throw new Error('could not capture the device launch timestamp for a capacity attempt.');
+        }
+        const hostLaunchedAtMs = runtime.monotonicNow();
+        const url = bundleUrl('capacity', `${ordinal}-${runtime.now()}`);
+        await command(
+          'shell', 'am', 'start', '-W', '-a', 'android.intent.action.VIEW',
+          '-d', `lynx://open?url=${encodeURIComponent(url)}`, policy.packageName,
+        );
+        const deadlineMs = launchedAtMs + policy.timeoutMs;
+        const hostDeadlineMs = hostLaunchedAtMs + policy.timeoutMs;
+        let terminal = null;
         while (terminal === null) {
           await runtime.wait(policy.pollMs);
           terminalWindow.append(logcat.drain());
@@ -1162,7 +1191,11 @@ export async function createListAdapter({ listRuntime = null } = {}) {
   if (!serial) {
     throw new Error('lynx list adapter requires LYNX_SANDBOX_SERIAL=<leased adb serial>.');
   }
-  const command = capacityCommand(serial, listRuntime?.adb);
+  const command = createCapacityCommand(
+    serial,
+    listRuntime?.adb,
+    NATIVE_CAPACITY_POLICY.commandTimeoutMs,
+  );
   const [modelOutput, osVersionOutput, cpuModelOutput, coresOutput, explorerPackage] =
     await Promise.all([
       command('shell', 'getprop', 'ro.product.model'),

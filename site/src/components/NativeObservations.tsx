@@ -6,10 +6,8 @@ import {
 } from '../data';
 import { useBenchmarkData } from '../data-context';
 import { localizedWorkload, useI18n } from '../i18n';
-import {
-  NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY,
-  nativeOutcomeState,
-} from '../derive.mjs';
+import { nativeOutcomeState } from '../derive.mjs';
+import { nativeObservationStatus } from '../native-observation-status.mjs';
 import { ResponsiveCopy } from './ResponsiveCopy';
 
 const TABLE_GROUPS = [
@@ -22,61 +20,6 @@ const TABLE_GROUPS = [
     records: ['updateStorm', 'selectStorm'],
   },
 ];
-
-function reasonLabel(
-  category: string,
-  text: (english: string, chinese: string) => string,
-): string {
-  if (category === NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY) {
-    return text('capacity · Android ART global-reference table', '容量 · Android ART 全局引用表');
-  }
-  if (category === 'timeout') return text('timeout', '超时');
-  if (category === 'process-failure') return text('process failure', '进程失败');
-  return category;
-}
-
-function outcomeReasonSummary(
-  record: BenchRecord,
-  text: (english: string, chinese: string) => string,
-): string {
-  return Object.entries(record.outcomeCounts?.byReason ?? {})
-    .filter(([, count]) => count > 0)
-    .map(([category, count]) => `${count} ${reasonLabel(category, text)}`)
-    .join(' · ');
-}
-
-function status(
-  record: BenchRecord | undefined,
-  text: (english: string, chinese: string) => string,
-): string {
-  if (!record) return text('not run', '未运行');
-  const outcome = nativeOutcomeState(record);
-  if (outcome === 'not-measured') {
-    const reason = record.notMeasuredReason?.category ?? 'observer unavailable';
-    return text(`not measured · ${reason}`, `未测量 · ${reason}`);
-  }
-  if (outcome === 'not-reportable' && record.reportability) {
-    const reasons = outcomeReasonSummary(record, text);
-    return text(
-      `not reportable · ${record.acceptedCount ?? 0}/${record.reportability.minAcceptedSamples} accepted`
-        + `${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}`
-        + `${reasons ? ` · ${reasons}` : ''}`,
-      `不可报告 · 接受 ${record.acceptedCount ?? 0}/${record.reportability.minAcceptedSamples}`
-        + `${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}`
-        + `${reasons ? ` · ${reasons}` : ''}`,
-    );
-  }
-  if (record.median != null) {
-    return `${fmtMs(record.median)} · n=${record.n}${record.dnfCount ? ` · ${record.dnfCount} DNF` : ''}`;
-  }
-  const failure = record.failures?.[0];
-  const reasons = outcomeReasonSummary(record, text);
-  const category = reasons || reasonLabel(failure?.category ?? 'DNF', text);
-  const timeout = failure?.timeoutMs
-    ? text(` · ${(failure.timeoutMs / 1000).toFixed(0)}s ceiling`, ` · 上限 ${(failure.timeoutMs / 1000).toFixed(0)} 秒`)
-    : '';
-  return `${record.dnfCount} DNF · ${category}${timeout}`;
-}
 
 function RecordList({
   title,
@@ -98,7 +41,7 @@ function RecordList({
             title={record?.failures?.[0]?.message}
           >
             <span>{label}</span>
-            <strong>{status(record, text)}</strong>
+            <strong>{nativeObservationStatus(record, { text, formatMs: fmtMs })}</strong>
           </div>
         ))}
       </div>

@@ -27,6 +27,26 @@ export function redactResultString(value) {
   return value.replace(CLIENT_ID, 'clientId: [redacted]');
 }
 
+export function redactCommandArgv(argv) {
+  if (!Array.isArray(argv)) throw new Error('result argv must be an array.');
+  const redacted = [];
+  for (let index = 0; index < argv.length; index++) {
+    const argument = argv[index];
+    if (argument === '--lease-receipt') {
+      redacted.push(argument);
+      if (index + 1 < argv.length) {
+        redacted.push('[redacted]');
+        index++;
+      }
+    } else if (typeof argument === 'string' && argument.startsWith('--lease-receipt=')) {
+      redacted.push('--lease-receipt=[redacted]');
+    } else {
+      redacted.push(argument);
+    }
+  }
+  return redacted;
+}
+
 function isRecord(value) {
   return value != null
     && typeof value === 'object'

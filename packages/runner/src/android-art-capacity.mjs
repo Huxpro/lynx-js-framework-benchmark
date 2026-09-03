@@ -188,6 +188,18 @@ function findDeath(lines, packageName, pid) {
   return lines.find((line) => deathLineMatches(line.raw, packageName, pid)) ?? null;
 }
 
+function isTargetFailure(line, packageName, pid) {
+  const escapedPackage = packageName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const targetAuthored = line.pid === pid
+    && /FATAL EXCEPTION|OutOfMemoryError|Fatal signal (?!6 \(SIGABRT\), code -1 \(SI_QUEUE\))|app::onAppJSError|main-thread\.js exception|loadCard failed/.test(
+      line.raw,
+    );
+  const anr = new RegExp(`\\bANR in ${escapedPackage}\\b`).test(line.raw)
+    && (line.pid === pid
+      || new RegExp(`\\b(?:PID|pid)[=: ]+${pid}\\b`).test(line.raw));
+  return targetAuthored || anr;
+}
+
 /**
  * Choose the first externally observable terminal event. The returned event is
  * intentionally provisional: classification happens only after the adapter
@@ -245,7 +257,7 @@ function findCapacityEvidence(lines, { packageName, pid }) {
     && /\b51200 global references \(\d+ unique instances\)/.test(line.raw));
   const summaryLines = summaryStart === -1 || tableTotalIndex === -1
     ? []
-    : lines.slice(summaryStart, tableTotalIndex + 1);
+    : lines.slice(summaryStart, tableTotalIndex + 1).filter((line) => line.pid === pid);
   const summaryRaw = summaryLines.map((line) => line.raw).join('\n');
   return {
     overflow,
@@ -322,11 +334,9 @@ export function classifyAndroidArtCapacity({
       ? { ...receipt, valid: false, error: `startup receipt arrived after ${terminal.kind}.` }
       : receipt);
   const enabled = observed.lines.filter((line) =>
-    line.raw.includes('DevTool enabled. Transitioning to ENABLED.'));
+    line.pid === pid && line.raw.includes('DevTool enabled. Transitioning to ENABLED.'));
   const otherFailureEvidence = observed.lines.filter((line) =>
-    /FATAL EXCEPTION|\bANR in com\.lynx\.explorer\b|OutOfMemoryError|Fatal signal (?!6 \(SIGABRT\), code -1 \(SI_QUEUE\))|app::onAppJSError|main-thread\.js exception|loadCard failed/.test(
-      line.raw,
-    ));
+    isTargetFailure(line, packageName, pid));
   if (enabled.length > 0) {
     return failure('process-failure', attempt, {
       devtoolEnabledEvidence: enabled.map((line) => line.raw),

@@ -309,6 +309,48 @@ export function deriveNativeLeaseExpirySafety(policy, { reps, startupReps }) {
   });
 }
 
+/**
+ * Bound one capacity probe before it starts. The command count covers the ADB
+ * calls outside phase deadlines plus the final command that can overrun each
+ * deadline; every command has its own timeout in the Android adapter.
+ */
+export function deriveNativeCapacityLeaseExpirySafety(policy) {
+  object(policy, 'Native capacity policy');
+  const commandTimeoutCount = 14;
+  const minimumSafetyMs = policy.thermalGateTimeoutMs
+    + policy.preflightTimeoutMs
+    + policy.pidTimeoutMs
+    + policy.timeoutMs
+    + (2 * policy.finalizationMs)
+    + policy.thermalPollMs
+    + (3 * policy.pollMs)
+    + Math.min(250, policy.pollMs)
+    + (commandTimeoutCount * policy.commandTimeoutMs)
+    + policy.leaseCleanupMarginMs;
+  const overrideMs = policy.leaseStopSafetyOverrideMs;
+  if (overrideMs != null && overrideMs < minimumSafetyMs) {
+    throw new Error(
+      `LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS=${overrideMs} is below the derived minimum `
+      + `${minimumSafetyMs}ms probe envelope.`,
+    );
+  }
+  return Object.freeze({
+    protocol: 'native-capacity-lease-expiry-safety-v1',
+    thermalGateTimeoutMs: policy.thermalGateTimeoutMs,
+    preflightTimeoutMs: policy.preflightTimeoutMs,
+    pidTimeoutMs: policy.pidTimeoutMs,
+    capacityTimeoutMs: policy.timeoutMs,
+    finalizationCount: 2,
+    finalizationMs: policy.finalizationMs,
+    commandTimeoutCount,
+    commandTimeoutMs: policy.commandTimeoutMs,
+    cleanupMarginMs: policy.leaseCleanupMarginMs,
+    minimumSafetyMs,
+    overrideMs,
+    effectiveSafetyMs: overrideMs ?? minimumSafetyMs,
+  });
+}
+
 export function buildNativeDeviceCohort({
   serialSha256,
   environment,
@@ -457,6 +499,9 @@ export function resolveNativeCapacityPolicy(env = process.env) {
       env, 'LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS', 30_000, { positive: true },
     ),
     pidTimeoutMs: finite(env, 'LYNX_SANDBOX_CAPACITY_PID_TIMEOUT_MS', 10_000, { positive: true }),
+    commandTimeoutMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS', 30_000, { positive: true },
+    ),
     pollMs: finite(env, 'LYNX_SANDBOX_CAPACITY_POLL_MS', 250, { positive: true }),
     finalizationMs: finite(
       env, 'LYNX_SANDBOX_CAPACITY_FINALIZATION_MS', 500, { positive: true },
@@ -469,6 +514,12 @@ export function resolveNativeCapacityPolicy(env = process.env) {
     ),
     thermalPollMs: finite(
       env, 'LYNX_SANDBOX_CAPACITY_THERMAL_POLL_MS', 5_000, { positive: true },
+    ),
+    leaseCleanupMarginMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS', 30_000, { positive: true },
+    ),
+    leaseStopSafetyOverrideMs: optionalPositive(
+      env, 'LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS',
     ),
     requiredThermalStatus: 0,
     requireInteractiveDisplay: true,

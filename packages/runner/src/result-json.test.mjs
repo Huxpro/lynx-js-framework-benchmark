@@ -6,6 +6,7 @@ import {
   NATIVE_CAPACITY_OUTCOME_PROTOCOL,
   REPORTABILITY_PROTOCOL,
   materializeRecordOutcomes,
+  redactCommandArgv,
   redactResultString,
   stringifyResult,
 } from './result-json.mjs';
@@ -37,6 +38,29 @@ test('result serialization redacts DevTool client IDs at every nesting level', (
     },
     safe: 'No response found without a client identifier',
   });
+});
+
+test('persisted argv redacts inline and separate Native lease receipts', () => {
+  const serial = 'device-secret:5555';
+  const argv = [
+    'run',
+    '--lease-receipt',
+    `{"serial":"${serial}"}`,
+    `--lease-receipt={"serial":"${serial}"}`,
+    '--label',
+    'safe',
+  ];
+  assert.deepEqual(redactCommandArgv(argv), [
+    'run',
+    '--lease-receipt',
+    '[redacted]',
+    '--lease-receipt=[redacted]',
+    '--label',
+    'safe',
+  ]);
+  assert.equal(JSON.stringify(redactCommandArgv(argv)).includes(serial), false);
+  assert.equal(argv.includes(serial), false);
+  assert.match(argv[2], /device-secret/);
 });
 
 const capacityRecord = (overrides = {}) => ({

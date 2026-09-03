@@ -133,6 +133,7 @@ export interface OutcomeCounts {
   accepted: number;
   dnf: number;
   notMeasured: number;
+  outcomeOnlyCompleted?: number;
   byReason: Record<string, number>;
 }
 
