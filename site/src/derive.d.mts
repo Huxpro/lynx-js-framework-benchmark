@@ -3,8 +3,17 @@ export interface DerivedCell {
   values: Record<string, number | null | undefined>;
 }
 
+export const NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY: string;
 export function geomean(values: number[]): number | null;
 export function weightedGeomean(values: number[], weights: number[]): number | null;
+export function nativeOutcomeState(record: {
+  median?: number | null;
+  dnfCount?: number;
+  measurementStatus?: string;
+  reportability?: { status?: string };
+  failures?: { category?: string }[];
+} | null | undefined): 'absent' | 'not-measured' | 'not-reportable' | 'capacity'
+  | 'timeout' | 'process-failure' | 'dnf' | 'measured';
 export function completeEntryScores(ids: string[], cells: DerivedCell[], weights?: number[]): {
   scores: { id: string; value: number | null }[];
   missing: string[];

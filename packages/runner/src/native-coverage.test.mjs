@@ -22,7 +22,12 @@ import {
   NATIVE_MATRIX_CELL_COUNT_PER_ENTRY,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
-import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './native-protocol.mjs';
+import {
+  deriveNativeCapacityLeaseExpirySafety,
+  deriveNativeLeaseExpirySafety,
+  resolveNativeCapacityPolicy,
+  resolveNativeSandboxPolicy,
+} from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
 
 const ENTRIES = [
@@ -71,6 +76,31 @@ test('featured Native contract is exactly five black-box eligible entries by 23 
     assert.equal(cells.filter((cell) => cell.suite === 'startup').length, 8);
   }
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, contract.entryIds.length);
+});
+
+test('Native coverage preserves reportability and typed per-reason outcomes', () => {
+  const contract = buildNativeMatrixContract(ENTRIES);
+  const record = {
+    ...recordFor(contract.cells[0]),
+    samples: [1, 2, 3, 4],
+    n: 4,
+    median: 2.5,
+    attemptedCount: 5,
+    acceptedCount: 4,
+    dnfCount: 1,
+    failures: [{ category: 'timeout' }],
+    reportability: { protocol: 'accepted-sample-minimum-v1', minAcceptedSamples: 5 },
+  };
+  const coverage = classifyNativeCoverage({ entries: ENTRIES, sourceRecords: [record] });
+  const cell = coverage.cells[0];
+  assert.equal(cell.status, 'not-reportable');
+  assert.equal(cell.record.attemptedCount, 5);
+  assert.equal(cell.record.acceptedCount, 4);
+  assert.equal(cell.record.reportability.status, 'not-reportable');
+  assert.deepEqual(cell.record.outcomeCounts, {
+    attempted: 5, accepted: 4, dnf: 1, notMeasured: 0, byReason: { timeout: 1 },
+  });
+  assert.throws(() => assertNativeCoverage(coverage), /not-reportable/);
 });
 
 test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupported, and derivation bugs', () => {
@@ -198,6 +228,39 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   );
 });
 
+test('capacity lease safety covers every phase, command timeout, and cleanup', () => {
+  const policy = resolveNativeCapacityPolicy({
+    LYNX_SANDBOX_CAPACITY_TIMEOUT_MS: '44',
+    LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS: '22',
+    LYNX_SANDBOX_CAPACITY_PID_TIMEOUT_MS: '33',
+    LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS: '8',
+    LYNX_SANDBOX_CAPACITY_POLL_MS: '6',
+    LYNX_SANDBOX_CAPACITY_FINALIZATION_MS: '5',
+    LYNX_SANDBOX_CAPACITY_THERMAL_GATE_TIMEOUT_MS: '99',
+    LYNX_SANDBOX_CAPACITY_THERMAL_POLL_MS: '7',
+    LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS: '9',
+  });
+  const safety = deriveNativeCapacityLeaseExpirySafety(policy);
+  assert.equal(safety.commandTimeoutCount, 14);
+  assert.equal(safety.minimumSafetyMs, 360);
+  assert.equal(safety.effectiveSafetyMs, 360);
+  assert.throws(
+    () => deriveNativeCapacityLeaseExpirySafety(resolveNativeCapacityPolicy({
+      LYNX_SANDBOX_CAPACITY_TIMEOUT_MS: '44',
+      LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS: '22',
+      LYNX_SANDBOX_CAPACITY_PID_TIMEOUT_MS: '33',
+      LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS: '8',
+      LYNX_SANDBOX_CAPACITY_POLL_MS: '6',
+      LYNX_SANDBOX_CAPACITY_FINALIZATION_MS: '5',
+      LYNX_SANDBOX_CAPACITY_THERMAL_GATE_TIMEOUT_MS: '99',
+      LYNX_SANDBOX_CAPACITY_THERMAL_POLL_MS: '7',
+      LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS: '9',
+      LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS: '359',
+    })),
+    /below the derived minimum 360ms/,
+  );
+});
+
 test('immutable input receipt detects source, manifest, patch, bundle, and memory mutation', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'native-input-receipt-'));
   try {
@@ -209,7 +272,9 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
       'cli.mjs', 'connector-receipt.mjs', 'harness-native.mjs', 'native-coverage.mjs',
       'native-inputs.mjs', 'native-protocol.mjs', 'native-resume.mjs', 'run-matrix.mjs',
     ]) fs.writeFileSync(path.join(runner, relative), `source:${relative}`);
+    fs.writeFileSync(path.join(shared, 'list-workloads.mjs'), 'list workloads');
     fs.writeFileSync(path.join(shared, 'workloads.mjs'), 'workloads');
+    fs.writeFileSync(path.join(shared, 'native-diagnostic-contract.mjs'), 'native diagnostics');
     fs.writeFileSync(path.join(shared, 'schema.mjs'), 'schema');
     const adapterPath = path.join(root, 'adapter.mjs');
     fs.writeFileSync(adapterPath, 'adapter');

@@ -12,6 +12,7 @@ import { ResponsiveCopy } from './ResponsiveCopy';
 const STATUS_ORDER: NativeCoverageStatus[] = [
   'measured',
   'measured-with-dnf',
+  'not-reportable',
   'dnf',
   'unsupported',
   'unscheduled',
@@ -22,6 +23,7 @@ const STATUS_ORDER: NativeCoverageStatus[] = [
 export const COVERAGE_LABELS: Record<NativeCoverageStatus, string> = {
   measured: 'measured',
   'measured-with-dnf': 'measured + DNF',
+  'not-reportable': 'not reportable',
   dnf: 'DNF',
   unsupported: 'unsupported',
   unscheduled: 'not scheduled',
@@ -32,6 +34,7 @@ export const COVERAGE_LABELS: Record<NativeCoverageStatus, string> = {
 const COVERAGE_LABELS_ZH: Record<NativeCoverageStatus, string> = {
   measured: '已测量',
   'measured-with-dnf': '已测量 + DNF',
+  'not-reportable': '不可报告',
   dnf: 'DNF',
   unsupported: '不支持',
   unscheduled: '未调度',
@@ -93,8 +96,8 @@ export function NativeCoverage() {
       </div>
       <ResponsiveCopy className="section-copy">
         {text(
-          'Every featured entry has 27 table-latency cells and eight startup cells. Only one complete machine + lease + method + input-receipt cohort can enter rankings; archived measurements remain evidence, but cannot fill this ledger.',
-          '每个 featured 条目都有 27 个表格延迟单元和 8 个启动单元。只有一个完整且一致的 machine + lease + method + input-receipt cohort 可以进入排名；归档测量仍作为证据保留，但不能填充这份台账。',
+          'Every featured entry has 15 table-latency cells and eight startup cells. Only one complete machine + lease + method + input-receipt cohort can enter rankings; archived measurements remain evidence, but cannot fill this ledger.',
+          '每个 featured 条目都有 15 个表格延迟单元和 8 个启动单元。只有一个完整且一致的 machine + lease + method + input-receipt cohort 可以进入排名；归档测量仍作为证据保留，但不能填充这份台账。',
         )}
       </ResponsiveCopy>
       <div className="coverage-summary" aria-label={text('Native coverage status totals', 'Native 覆盖状态总计')}>

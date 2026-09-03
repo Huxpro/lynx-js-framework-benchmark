@@ -1,0 +1,141 @@
+{
+  "id": "octane-native-diagnostic",
+  "label": "Octane Native diagnostics",
+  "framework": "octane",
+  "frameworkVersion": "0.2.2",
+  "config": "unranked Native eager-table capacity probe and scale-bound bounded list",
+  "tags": [
+    "diagnostic",
+    "capacity-probe"
+  ],
+  "tier": "lab",
+  "harnesses": [
+    "native"
+  ],
+  "color": "#ff415a",
+  "presentation": {
+    "order": 999,
+    "colorLight": "#ff415a",
+    "colorDark": "#ff415a"
+  },
+  "kind": "vendored",
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "d34abf723e7a66a6d2772c5ca91ec07794fafe88",
+    "commit": "d34abf723e7a66a6d2772c5ca91ec07794fafe88",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "node scripts/build-octane-upstream.mjs <clean-octane-checkout>",
+    "builtAt": "2026-09-02T21:04:33-04:00",
+    "buildReceipt": {
+      "protocol": "octane-native-diagnostic-build-v3",
+      "sourceCommit": "d34abf723e7a66a6d2772c5ca91ec07794fafe88",
+      "artifacts": {
+        "table": {
+          "path": "benchmarks/lynx-table/app/dist/main.lynx.bundle",
+          "sha256": "b4632c96da9d04af902d23631a27378159a7f9853a8ea1ed6c70c11f36bff6ea"
+        },
+        "capacity": {
+          "1000": {
+            "path": "benchmarks/lynx-table/app/dist-rows1000/main.lynx.bundle",
+            "sha256": "18f9be938e69785f01d77c7da45b4f299be44bd24a56b3064da9dc7e0954ef53"
+          },
+          "6000": {
+            "path": "benchmarks/lynx-table/app/dist-rows6000/main.lynx.bundle",
+            "sha256": "30a1160b2397ffaef6110d3725bb7c01033bdf9586387f41ec0e9e216f424213"
+          },
+          "7000": {
+            "path": "benchmarks/lynx-table/app/dist-rows7000/main.lynx.bundle",
+            "sha256": "f381849d4d33209cd2fe5604dffc23083d74a3216affe26c1886a0c8b522a56e"
+          },
+          "7500": {
+            "path": "benchmarks/lynx-table/app/dist-rows7500/main.lynx.bundle",
+            "sha256": "d2b837f23a63380cf2677ec3655c1cc141c71f68d96c6342f93e6489b2ef7490"
+          },
+          "8000": {
+            "path": "benchmarks/lynx-table/app/dist-rows8000/main.lynx.bundle",
+            "sha256": "c3259bb65407d687a20a306fba29b505a5b5e116a181b32bf4e5a7b99b9e39f5"
+          },
+          "10000": {
+            "path": "benchmarks/lynx-table/app/dist-rows10000/main.lynx.bundle",
+            "sha256": "c72324f749cd83a09ae6c14b60b1ba115ae58480a4e6281dda91e8fa79f35ece"
+          }
+        },
+        "list": {
+          "1000": {
+            "path": "benchmarks/lynx-list/app/dist/rows-1000/main.lynx.bundle",
+            "sha256": "bda355ae5bb9c1da4058d095f0dcba1cdaf9361888c6c00f3967b822dc33cfc2"
+          },
+          "10000": {
+            "path": "benchmarks/lynx-list/app/dist/rows-10000/main.lynx.bundle",
+            "sha256": "607ed28c10fb50e57438afa75c5094eabe2671da6b040b246ec49566a634c60e"
+          }
+        }
+      },
+      "sha256": "b6c7de7f3236031c07bbc51eaaab3b0a5e796508c876de8752e5814465d3a3af"
+    },
+    "sha256": {
+      "table/main.lynx.bundle": "b4632c96da9d04af902d23631a27378159a7f9853a8ea1ed6c70c11f36bff6ea",
+      "capacity/rows-1000/main.lynx.bundle": "18f9be938e69785f01d77c7da45b4f299be44bd24a56b3064da9dc7e0954ef53",
+      "capacity/rows-6000/main.lynx.bundle": "30a1160b2397ffaef6110d3725bb7c01033bdf9586387f41ec0e9e216f424213",
+      "capacity/rows-7000/main.lynx.bundle": "f381849d4d33209cd2fe5604dffc23083d74a3216affe26c1886a0c8b522a56e",
+      "capacity/rows-7500/main.lynx.bundle": "d2b837f23a63380cf2677ec3655c1cc141c71f68d96c6342f93e6489b2ef7490",
+      "capacity/rows-8000/main.lynx.bundle": "c3259bb65407d687a20a306fba29b505a5b5e116a181b32bf4e5a7b99b9e39f5",
+      "capacity/rows-10000/main.lynx.bundle": "c72324f749cd83a09ae6c14b60b1ba115ae58480a4e6281dda91e8fa79f35ece",
+      "list/rows-1000/main.lynx.bundle": "bda355ae5bb9c1da4058d095f0dcba1cdaf9361888c6c00f3967b822dc33cfc2",
+      "list/rows-10000/main.lynx.bundle": "607ed28c10fb50e57438afa75c5094eabe2671da6b040b246ec49566a634c60e"
+    }
+  },
+  "bundles": {
+    "lynx": "dist/table/main.lynx.bundle"
+  },
+  "capacityFixture": {
+    "protocol": "lynx-native-capacity-fixture-v1",
+    "fixtureRole": "eager-capacity-probe",
+    "topology": {
+      "elementsPerRow": 7,
+      "chromeElements": 42
+    },
+    "scales": {
+      "1000": {
+        "bundle": "dist/capacity/rows-1000/main.lynx.bundle",
+        "sha256": "18f9be938e69785f01d77c7da45b4f299be44bd24a56b3064da9dc7e0954ef53"
+      },
+      "6000": {
+        "bundle": "dist/capacity/rows-6000/main.lynx.bundle",
+        "sha256": "30a1160b2397ffaef6110d3725bb7c01033bdf9586387f41ec0e9e216f424213"
+      },
+      "7000": {
+        "bundle": "dist/capacity/rows-7000/main.lynx.bundle",
+        "sha256": "f381849d4d33209cd2fe5604dffc23083d74a3216affe26c1886a0c8b522a56e"
+      },
+      "7500": {
+        "bundle": "dist/capacity/rows-7500/main.lynx.bundle",
+        "sha256": "d2b837f23a63380cf2677ec3655c1cc141c71f68d96c6342f93e6489b2ef7490"
+      },
+      "8000": {
+        "bundle": "dist/capacity/rows-8000/main.lynx.bundle",
+        "sha256": "c3259bb65407d687a20a306fba29b505a5b5e116a181b32bf4e5a7b99b9e39f5"
+      },
+      "10000": {
+        "bundle": "dist/capacity/rows-10000/main.lynx.bundle",
+        "sha256": "c72324f749cd83a09ae6c14b60b1ba115ae58480a4e6281dda91e8fa79f35ece"
+      }
+    }
+  },
+  "listFixture": {
+    "protocol": "lynx-list-fixture-v2",
+    "workloadProtocol": "lynx-list-fixture-v1",
+    "contractSha256": "8cc9d901f97e6e17ac6207b13d9bb9afb5163ce0d1142cffd1b1921726a2f87b",
+    "scales": {
+      "1000": {
+        "bundle": "dist/list/rows-1000/main.lynx.bundle",
+        "sha256": "bda355ae5bb9c1da4058d095f0dcba1cdaf9361888c6c00f3967b822dc33cfc2"
+      },
+      "10000": {
+        "bundle": "dist/list/rows-10000/main.lynx.bundle",
+        "sha256": "607ed28c10fb50e57438afa75c5094eabe2671da6b040b246ec49566a634c60e"
+      }
+    }
+  }
+}

@@ -16,7 +16,7 @@
   "scripts": {
     "build": "pnpm -r --filter './entries/*' build",
     "bench": "node packages/runner/src/cli.mjs",
-    "test": "node --test packages/runner/src/*.test.mjs site/src/*.test.mjs",
+    "test": "node --test scripts/*.test.mjs packages/runner/src/*.test.mjs site/src/*.test.mjs",
     "site:dev": "pnpm --filter site dev",
     "site:build": "pnpm --filter site build"
   }

@@ -1,4 +1,27 @@
+import {
+  NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY as ANDROID_ART_CATEGORY,
+} from '../../packages/shared/src/native-diagnostic-contract.mjs';
+
+export const NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY =
+  ANDROID_ART_CATEGORY;
+
 const valid = (value) => typeof value === 'number' && Number.isFinite(value) && value > 0;
+const reportable = (record) => record?.reportability?.status !== 'not-reportable';
+
+export function nativeOutcomeState(record) {
+  if (record == null) return 'absent';
+  if (record.measurementStatus === 'not-measured') return 'not-measured';
+  const categories = new Set((record.failures ?? []).map((failure) => failure.category));
+  if (record.reportability?.status === 'not-reportable' && (record.acceptedCount ?? 0) > 0) {
+    return 'not-reportable';
+  }
+  if (categories.has(NATIVE_CAPACITY_ANDROID_ART_GLOBAL_REF_FAILURE_CATEGORY)) return 'capacity';
+  if (categories.has('timeout')) return 'timeout';
+  if (categories.has('process-failure')) return 'process-failure';
+  if (record.reportability?.status === 'not-reportable') return 'not-reportable';
+  if ((record.dnfCount ?? 0) > 0 && record.median == null) return 'dnf';
+  return 'measured';
+}
 
 export function geomean(values) {
   const clean = values.filter(valid);
@@ -66,7 +89,8 @@ export function slopeFit(points) {
 export function rankHistoryCell(entryIds, records, cohortEligible = true) {
   const byEntry = new Map(records.map((record) => [record.entry, record]));
   const eligible = cohortEligible ? entryIds.map((entry) => byEntry.get(entry))
-    .filter((record) => record?.rankEligible !== false && valid(record?.median)) : [];
+    .filter((record) => reportable(record)
+      && record?.rankEligible !== false && valid(record?.median)) : [];
   eligible.sort((a, b) => a.median - b.median || a.entry.localeCompare(b.entry));
   const ranks = new Map();
   let priorValue = null;
@@ -81,6 +105,7 @@ export function rankHistoryCell(entryIds, records, cohortEligible = true) {
     const record = byEntry.get(entry) ?? null;
     let status = 'ranked';
     if (!record) status = 'missing';
+    else if (!reportable(record)) status = 'observation';
     else if (!cohortEligible || eligible.length < 2) status = 'observation';
     else if (record.dnfCount > 0 && !valid(record.median)) status = 'dnf';
     else if (record.rankEligible === false) status = 'incomparable';
@@ -95,7 +120,7 @@ export function rankHistoryCell(entryIds, records, cohortEligible = true) {
 export function completeHistoryAggregateCells(entryIds, cells) {
   return cells.filter((cell) => entryIds.every((entry) => {
     const record = cell.records.find((candidate) => candidate.entry === entry);
-    return record?.rankEligible !== false && valid(record?.median);
+    return reportable(record) && record?.rankEligible !== false && valid(record?.median);
   }));
 }
 
@@ -116,7 +141,8 @@ export function rankHistoryAggregate(
   const completeIds = entryIds.filter((entry) => {
     const records = recordsFor(entry);
     return records.length > 0
-      && records.every((record) => record?.rankEligible !== false && valid(record?.median));
+      && records.every((record) => reportable(record)
+        && record?.rankEligible !== false && valid(record?.median));
   });
   const score = completeEntryScores(completeIds, recordsByCell.map((cell) => ({
     key: cell.key,
@@ -141,6 +167,7 @@ export function rankHistoryAggregate(
     const present = records.filter(Boolean);
     let status = 'ranked';
     if (present.length !== records.length || records.length === 0) status = 'missing';
+    else if (records.some((record) => !reportable(record))) status = 'observation';
     else if (!cohortEligible || completeIds.length < 2) status = 'observation';
     else if (records.some((record) => record.dnfCount > 0 && !valid(record.median))) status = 'dnf';
     else if (records.some((record) => record.rankEligible === false)) status = 'incomparable';

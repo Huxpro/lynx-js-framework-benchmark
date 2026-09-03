@@ -27,6 +27,10 @@ import {
   STORM_UPDATE_TICKS,
   TABLE_CASES,
 } from '@lynx-bench/shared/workloads';
+import {
+  NATIVE_CAPACITY_SUITE,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+} from '@lynx-bench/shared/native-diagnostic-contract';
 
 import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
@@ -44,6 +48,10 @@ import {
 } from './native-protocol.mjs';
 import { stormContractPass } from './storm-contract.mjs';
 import {
+  materializeRecordOutcomes,
+  resolveReportability,
+} from './result-json.mjs';
+import {
   assertListCoverage,
   buildListCoverage,
   selectListCampaignRecords,
@@ -56,9 +64,12 @@ const recordKey = (machineId, r) =>
 const cellKey = (r) => [r.suite, comparisonKey(r)].join('|');
 const DEFAULT_WEB_REGIME_KEY = webRegimeKey({ harness: 'web' });
 const isBenchmarkRecord = (r) => !['bundle', 'bundle-scale'].includes(r.suite);
-const isRankingEligible = (record) => record.rankingEligible !== false;
+const isRankingEligible = (record) => record.rankingEligible !== false
+  && resolveReportability(record)?.status !== 'not-reportable';
 const isComparisonVisible = (record) => isRankingEligible(record)
   || record.descriptiveEligible === true
+  || record.diagnostic === true
+  || resolveReportability(record) != null
   || (record.comparabilityStatus === 'incomplete-work'
     && observationValues(record).length === 0
     && (record.dnfCount ?? 0) > 0);
@@ -465,7 +476,7 @@ export function pipelineWorkClassification(records, record) {
   return own;
 }
 
-function samplingProblems(run, record) {
+export function samplingProblems(run, record) {
   if (
     !run.meta.receipt
     || !isBenchmarkRecord(record)
@@ -476,21 +487,46 @@ function samplingProblems(run, record) {
   const sourceCount = Array.isArray(record.samples)
     ? record.samples.length
     : Number.isFinite(record.value) ? 1 : 0;
-  if (!Number.isInteger(record.acceptedCount) || record.acceptedCount !== sourceCount) {
+  const distribution = record.suite === 'list'
+    && record.harness === 'native'
+    && record.metric === 'materializationTimesMs'
+    && record.observationCardinality === 'many-observations-per-accepted-attempt';
+  if (record.suite === 'list'
+    && record.harness === 'native'
+    && record.metric === 'materializationTimesMs'
+    && record.observationCardinality !== 'many-observations-per-accepted-attempt') {
+    problems.push('observation-cardinality-invalid');
+  }
+  if (distribution) {
+    if (!Number.isInteger(record.observationCount)
+      || record.observationCount !== sourceCount) {
+      problems.push('observation-count-mismatch');
+    }
+    if (record.detailSamples != null
+      && (!Array.isArray(record.detailSamples) || record.detailSamples.length !== sourceCount)) {
+      problems.push('observation-detail-count-mismatch');
+    }
+    if (!Number.isInteger(record.acceptedCount) || record.acceptedCount < 0) {
+      problems.push('accepted-count-invalid');
+    }
+  } else if (!Number.isInteger(record.acceptedCount) || record.acceptedCount !== sourceCount) {
     problems.push('accepted-count-mismatch');
   }
-  if (!Number.isInteger(record.attemptedCount) || record.attemptedCount < sourceCount) {
+  if (!Number.isInteger(record.attemptedCount)
+    || record.attemptedCount < (distribution ? record.acceptedCount ?? 0 : sourceCount)) {
     problems.push('attempted-count-invalid');
   }
   if (
     record.metric === 'latency'
     || record.metric === 'fcp'
     || record.metric === 'settled'
+    || record.suite === 'list'
     || record.suite === 'pipeline'
     || record.suite === 'storm'
   ) {
     if (Number.isInteger(record.attemptedCount)) {
-      const accounted = sourceCount + (record.dnfCount ?? 0);
+      const accounted = (distribution ? record.acceptedCount : sourceCount)
+        + (record.dnfCount ?? 0);
       if (accounted < record.attemptedCount) problems.push('attempt-accounting-underflow');
       if (accounted > record.attemptedCount) problems.push('attempt-accounting-overflow');
     }
@@ -505,6 +541,7 @@ function classifyComparability(run, records) {
     const pipeline = pipelineWorkClassification(records, record);
     const storm = stormContractClassification(records, record);
     const problems = samplingProblems(run, record);
+    const reportability = resolveReportability(record);
     const unthrottledWorkerCpu = record.harness === 'web'
       && record.metric === 'btsCpu'
       && record.cpuThrottle > 1
@@ -568,13 +605,15 @@ function classifyComparability(run, records) {
     } else if (cohort) {
       comparabilityStatus = 'comparable';
     }
-    const rankingEligible = comparabilityStatus !== 'incomplete-work'
+    const rankingEligible = reportability?.status !== 'not-reportable'
+      && comparabilityStatus !== 'incomplete-work'
       && comparabilityStatus !== 'unverified-work'
       && comparabilityStatus !== 'incompatible-sampling'
       && comparabilityStatus !== 'invalid-measurement'
       && comparabilityStatus !== 'incompatible-controls'
       && comparabilityStatus !== 'contract-failed';
-    const descriptiveEligible = comparabilityStatus === 'contract-failed';
+    const descriptiveEligible = comparabilityStatus === 'contract-failed'
+      || reportability?.status === 'not-reportable';
     if (comparabilityStatus === null && cohort === null) {
       return { ...record, comparabilityStatus: 'legacy-unverified' };
     }
@@ -801,7 +840,9 @@ const normalizeRun = (rawRun, file) => {
     if (Array.isArray(record.failures) && record.failures.length > (record.dnfCount ?? 0)) {
       throw new Error(`${file}: record ${index} failures cannot exceed dnfCount`);
     }
-    return normalizeRecord(rawRun, record);
+    return materializeRecordOutcomes(normalizeRecord(rawRun, record), {
+      allowInvalidAccounting: true,
+    });
   });
   const records = classifyComparability(
     rawRun,
@@ -1256,6 +1297,58 @@ const selectNativeObservations = (
   return { observations, records };
 };
 
+const selectDiagnosticNativeObservations = (records, listSourceRecords, entries) => {
+  const diagnosticEntries = entries.filter((entry) => entry.tier === 'lab'
+    && entry.id === NATIVE_DIAGNOSTIC_ENTRY_ID
+    && entry.harnesses?.length === 1
+    && entry.harnesses[0] === 'native');
+  const currentCommits = new Map(diagnosticEntries.map((entry) => [
+    entry.id, entry.provenance?.commit ?? null,
+  ]));
+  const matchesCurrentDiagnostic = (record) => currentCommits.has(record.entry)
+    && (record.entryCommit == null
+      || currentCommits.get(record.entry) == null
+      || record.entryCommit === currentCommits.get(record.entry))
+    && record.harness === 'native';
+  const capacityCandidates = records.filter((record) => matchesCurrentDiagnostic(record)
+    && record.suite === NATIVE_CAPACITY_SUITE);
+  const selectedListCandidates = listSourceRecords.filter(matchesCurrentDiagnostic);
+  const candidates = [...capacityCandidates, ...selectedListCandidates];
+  const groups = new Map();
+  for (const record of candidates) {
+    const key = `${record.entry}|${record.suite}|${record.runFile}`;
+    groups.set(key, [...(groups.get(key) ?? []), record]);
+  }
+  const selectedGroups = new Map();
+  for (const group of groups.values()) {
+    const first = group[0];
+    const key = `${first.entry}|${first.suite}`;
+    const prior = selectedGroups.get(key);
+    const order = `${first.runGeneratedAt ?? ''}|${first.runFile ?? ''}`;
+    const priorOrder = prior == null
+      ? null
+      : `${prior[0].runGeneratedAt ?? ''}|${prior[0].runFile ?? ''}`;
+    if (prior == null || order > priorOrder) selectedGroups.set(key, group);
+  }
+  const observations = [];
+  const selectedRecords = [];
+  for (const group of selectedGroups.values()) {
+    const first = group[0];
+    observations.push({
+      entryId: first.entry,
+      harness: 'native',
+      environment: first.environment,
+      generatedAt: first.runGeneratedAt,
+      machineId: first.machineId,
+      sourceRunFile: first.runFile,
+      sourceRecordCount: group.length,
+      kind: first.suite === NATIVE_CAPACITY_SUITE ? 'capacity' : 'list',
+    });
+    selectedRecords.push(...group);
+  }
+  return { observations, records: selectedRecords };
+};
+
 const annotate = (run, file, record, comparisonKind = 'archive') => ({
   ...record,
   machineId: run.meta.machine.id,
@@ -1319,11 +1412,19 @@ const publicHistoryEntry = (run, record) => {
 const sourceCommit = (run, record) =>
   run.meta.entryCommits?.[record.sourceEntry ?? record.entry] ?? null;
 
-const exactObservationHistoryFields = (record) =>
-  ['pipeline', 'storm'].includes(record.suite) ? {
+const exactObservationHistoryFields = (record) => ({
+  ...(record.attemptedCount != null ? { attemptedCount: record.attemptedCount } : {}),
+  ...(record.acceptedCount != null ? { acceptedCount: record.acceptedCount } : {}),
+  ...(record.observationCount != null ? { observationCount: record.observationCount } : {}),
+  ...(record.outcomeCounts != null ? { outcomeCounts: record.outcomeCounts } : {}),
+  ...(record.reportability != null ? { reportability: record.reportability } : {}),
+  ...(record.presentationStatus != null
+    ? { presentationStatus: record.presentationStatus } : {}),
+  ...(record.measurementStatus != null ? { measurementStatus: record.measurementStatus } : {}),
+  ...(record.notMeasuredCount != null ? { notMeasuredCount: record.notMeasuredCount } : {}),
+  ...(record.notMeasuredReason != null ? { notMeasuredReason: record.notMeasuredReason } : {}),
+  ...(['pipeline', 'storm'].includes(record.suite) ? {
     samples: record.samples,
-    attemptedCount: record.attemptedCount,
-    acceptedCount: record.acceptedCount,
     ...(record.metric === 'operationTime' ? { detailSamples: record.detailSamples } : {}),
     ...(record.derivedFrom ? { derivedFrom: record.derivedFrom } : {}),
     ...(record.comparabilityReasons?.length
@@ -1333,7 +1434,8 @@ const exactObservationHistoryFields = (record) =>
     ...(record.workClassification ? { workClassification: record.workClassification } : {}),
     ...(record.pipelineControl ? { pipelineControl: record.pipelineControl } : {}),
     ...(record.stormControl ? { stormControl: record.stormControl } : {}),
-  } : {};
+  } : {}),
+});
 
 const stormTransportEvidence = (run, record) => {
   if (record.harness !== 'web' || record.metric !== 'latency'
@@ -1373,6 +1475,11 @@ const stormTransportEvidence = (run, record) => {
 };
 
 const historyRecord = (run, file, record, comparisonKind, cohortId) => {
+  const presented = materializeRecordOutcomes(record, {
+    publicBoundary: true,
+    allowInvalidAccounting: true,
+  });
+  record = presented;
   const sourceEntry = record.sourceEntry ?? record.entry;
   const entry = publicHistoryEntry(run, record);
   const transport = stormTransportEvidence(run, record);
@@ -1774,7 +1881,7 @@ const buildHistory = ({
     }
   }
 
-  const currentHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
+  const currentCohortHistoryRecords = current.comparison.harnesses.flatMap((cohort) => {
     const cohortRecords = current.records.filter((record) => record.harness === cohort.harness
       && ((record.suite === 'bundle-scale'
         && (cohort.harness !== 'web'
@@ -1824,6 +1931,23 @@ const buildHistory = ({
       };
     });
   });
+  const currentDiagnosticHistoryRecords = current.nativeObservationRecords
+    .filter((record) => record.diagnostic === true
+      || record.entry === NATIVE_DIAGNOSTIC_ENTRY_ID)
+    .map((record) => historyRecord({
+      meta: {
+        machine: { id: record.machineId },
+        generatedAt: record.runGeneratedAt,
+        entryCommits: { [record.sourceEntry ?? record.entry]: record.entryCommit },
+      },
+      records: current.nativeObservationRecords,
+    }, record.runFile, record, 'isolated-observation',
+    `current:native-diagnostic:${record.machineId}:${record.runFile}`))
+    .map((record) => ({ ...record, rankEligible: false, descriptiveEligible: true }));
+  const currentHistoryRecords = [
+    ...currentCohortHistoryRecords,
+    ...currentDiagnosticHistoryRecords,
+  ];
   const currentActiveRecordIndexes = currentHistoryRecords.map(
     (_, index) => records.length + index,
   );
@@ -1843,7 +1967,8 @@ const buildHistory = ({
     listCoverage: current.listCoverage,
     activeRecordIndexes: currentActiveRecordIndexes,
     identityPointers: identityPointers(currentHistoryRecords, entryById),
-    sourceIndexes: [...new Set(current.records.filter(isBenchmarkRecord)
+    sourceIndexes: [...new Set([...current.records, ...current.nativeObservationRecords]
+      .filter(isBenchmarkRecord)
       .map((record) => sources.findIndex((source) => source.runFile === record.runFile))
       .filter((index) => index >= 0))],
     harnesses: current.comparison.harnesses.map((cohort) => ({
@@ -2204,6 +2329,13 @@ export function collectRuns({
     nativeCohort,
     nativeArchiveOnlyFiles,
   );
+  const diagnosticNativeObservations = selectDiagnosticNativeObservations(
+    [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile)),
+    listSourceRecords,
+    currentEntries,
+  );
+  nativeObservations.observations.push(...diagnosticNativeObservations.observations);
+  nativeObservations.records.push(...diagnosticNativeObservations.records);
   const nativeComparison = nativeCohort ? {
     harness: 'native',
     environment: nativeCohort.environment,
@@ -2316,12 +2448,24 @@ export function collectRuns({
     machineRegimes,
     records: [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile))
       .map(compactPipelineOutputRecord)
+      .map((record) => materializeRecordOutcomes(record, {
+        publicBoundary: true,
+        allowInvalidAccounting: true,
+      }))
       .concat(archiveStaticRecords),
     comparison,
-    comparisonRecords,
+    comparisonRecords: comparisonRecords.map((record) =>
+      materializeRecordOutcomes(record, {
+        publicBoundary: true,
+        allowInvalidAccounting: true,
+      })),
     labComparisonRecords,
     nativeObservations: nativeObservations.observations,
-    nativeObservationRecords: nativeObservations.records,
+    nativeObservationRecords: nativeObservations.records.map((record) =>
+      materializeRecordOutcomes(record, {
+        publicBoundary: true,
+        allowInvalidAccounting: true,
+      })),
     nativeCoverage,
     pipelineCoverage,
     listCoverage,

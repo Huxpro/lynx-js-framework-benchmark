@@ -1,8 +1,17 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 
+import { NATIVE_STARTUP_PROTOCOL } from '@lynx-bench/shared/native-diagnostic-contract';
+import {
+  ANDROID_ART_CAPACITY_ACTIVITY,
+  ANDROID_ART_CAPACITY_CLASSIFIER_PROTOCOL,
+  ANDROID_ART_CAPACITY_PACKAGE,
+  DEVTOOL_DISABLED_LIFECYCLE_PROTOCOL,
+} from './android-art-capacity.mjs';
+
 export const NATIVE_SANDBOX_CAMPAIGN_VERSION = 'native-sandbox-campaign-v2';
 export const NATIVE_SANDBOX_ADAPTER_PROTOCOL = 'native-sandbox-adapter-v3';
+export const NATIVE_CAPACITY_ADAPTER_PROTOCOL = 'native-capacity-adapter-v1';
 export const NATIVE_LEASE_RECEIPT_PROTOCOL = 'lynx-sandbox-lease-receipt-v1';
 export const NATIVE_LEASE_CHAIN_PROTOCOL = 'lynx-sandbox-lease-chain-v1';
 export const NATIVE_DEVICE_COHORT_PROTOCOL = 'native-device-cohort-v1';
@@ -300,6 +309,48 @@ export function deriveNativeLeaseExpirySafety(policy, { reps, startupReps }) {
   });
 }
 
+/**
+ * Bound one capacity probe before it starts. The command count covers the ADB
+ * calls outside phase deadlines plus the final command that can overrun each
+ * deadline; every command has its own timeout in the Android adapter.
+ */
+export function deriveNativeCapacityLeaseExpirySafety(policy) {
+  object(policy, 'Native capacity policy');
+  const commandTimeoutCount = 14;
+  const minimumSafetyMs = policy.thermalGateTimeoutMs
+    + policy.preflightTimeoutMs
+    + policy.pidTimeoutMs
+    + policy.timeoutMs
+    + (2 * policy.finalizationMs)
+    + policy.thermalPollMs
+    + (3 * policy.pollMs)
+    + Math.min(250, policy.pollMs)
+    + (commandTimeoutCount * policy.commandTimeoutMs)
+    + policy.leaseCleanupMarginMs;
+  const overrideMs = policy.leaseStopSafetyOverrideMs;
+  if (overrideMs != null && overrideMs < minimumSafetyMs) {
+    throw new Error(
+      `LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS=${overrideMs} is below the derived minimum `
+      + `${minimumSafetyMs}ms probe envelope.`,
+    );
+  }
+  return Object.freeze({
+    protocol: 'native-capacity-lease-expiry-safety-v1',
+    thermalGateTimeoutMs: policy.thermalGateTimeoutMs,
+    preflightTimeoutMs: policy.preflightTimeoutMs,
+    pidTimeoutMs: policy.pidTimeoutMs,
+    capacityTimeoutMs: policy.timeoutMs,
+    finalizationCount: 2,
+    finalizationMs: policy.finalizationMs,
+    commandTimeoutCount,
+    commandTimeoutMs: policy.commandTimeoutMs,
+    cleanupMarginMs: policy.leaseCleanupMarginMs,
+    minimumSafetyMs,
+    overrideMs,
+    effectiveSafetyMs: overrideMs ?? minimumSafetyMs,
+  });
+}
+
 export function buildNativeDeviceCohort({
   serialSha256,
   environment,
@@ -424,3 +475,60 @@ export function resolveNativeSandboxPolicy(env = process.env) {
 }
 
 export const NATIVE_SANDBOX_POLICY = resolveNativeSandboxPolicy();
+
+/**
+ * Capacity diagnostics deliberately use a different lifecycle from ranked
+ * Native measurements. There is no DevTool connector, CDP session, UI tap, or
+ * in-process driver in this policy; the eager fixture and Android process/log
+ * boundary are the complete observation surface.
+ */
+export function resolveNativeCapacityPolicy(env = process.env) {
+  const policy = {
+    protocol: NATIVE_CAPACITY_ADAPTER_PROTOCOL,
+    packageName: ANDROID_ART_CAPACITY_PACKAGE,
+    activity: ANDROID_ART_CAPACITY_ACTIVITY,
+    triggerMode: 'eager-auto',
+    devtoolMode: 'disabled-lifecycle-ack-no-cdp',
+    processMode: 'force-stop-before-every-probe',
+    observation: 'adb-logcat-epoch-and-package-pid',
+    startupProtocol: NATIVE_STARTUP_PROTOCOL,
+    classifierProtocol: ANDROID_ART_CAPACITY_CLASSIFIER_PROTOCOL,
+    preflightProtocol: DEVTOOL_DISABLED_LIFECYCLE_PROTOCOL,
+    timeoutMs: finite(env, 'LYNX_SANDBOX_CAPACITY_TIMEOUT_MS', 180_000, { positive: true }),
+    preflightTimeoutMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_PREFLIGHT_TIMEOUT_MS', 30_000, { positive: true },
+    ),
+    pidTimeoutMs: finite(env, 'LYNX_SANDBOX_CAPACITY_PID_TIMEOUT_MS', 10_000, { positive: true }),
+    commandTimeoutMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_ADB_TIMEOUT_MS', 30_000, { positive: true },
+    ),
+    pollMs: finite(env, 'LYNX_SANDBOX_CAPACITY_POLL_MS', 250, { positive: true }),
+    finalizationMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_FINALIZATION_MS', 500, { positive: true },
+    ),
+    maxBatteryTemperatureC: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_MAX_BATTERY_TEMP_C', 35,
+    ),
+    thermalGateTimeoutMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_THERMAL_GATE_TIMEOUT_MS', 300_000, { positive: true },
+    ),
+    thermalPollMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_THERMAL_POLL_MS', 5_000, { positive: true },
+    ),
+    leaseCleanupMarginMs: finite(
+      env, 'LYNX_SANDBOX_CAPACITY_LEASE_CLEANUP_MARGIN_MS', 30_000, { positive: true },
+    ),
+    leaseStopSafetyOverrideMs: optionalPositive(
+      env, 'LYNX_SANDBOX_CAPACITY_LEASE_STOP_SAFETY_MS',
+    ),
+    requiredThermalStatus: 0,
+    requireInteractiveDisplay: true,
+    requireStayAwake: true,
+  };
+  if (policy.maxBatteryTemperatureC < 0) {
+    throw new Error('LYNX_SANDBOX_CAPACITY_MAX_BATTERY_TEMP_C must be non-negative.');
+  }
+  return Object.freeze(policy);
+}
+
+export const NATIVE_CAPACITY_POLICY = resolveNativeCapacityPolicy();

@@ -5,18 +5,67 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+  NATIVE_CAPACITY_FIXTURE_ROLE,
+  NATIVE_CAPACITY_SCALES,
+  NATIVE_CAPACITY_TOPOLOGY,
+  NATIVE_CAPACITY_BUILD_PROTOCOL,
+  NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+  NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH,
+  NATIVE_LIST_SCALES,
+  nativeCapacityBuildPath,
+  nativeCapacityBundlePath,
+  nativeCapacityProvenancePath,
+  nativeListBuildPath,
+  nativeListBundlePath,
+  nativeListProvenancePath,
+} from '../packages/shared/src/native-diagnostic-contract.mjs';
+import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
+} from '../packages/shared/src/list-workloads.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
 
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
+const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const LIST_WORKLOAD_CONTRACT_SHA256 = sha256(JSON.stringify(LIST_WORKLOAD_CONTRACT));
+const fileHashes = new Map();
+const sha256File = (file) => {
+  let digest = fileHashes.get(file);
+  if (digest == null) {
+    digest = sha256(fs.readFileSync(file));
+    fileHashes.set(file, digest);
+  }
+  return digest;
+};
 
 let failures = 0;
 const fail = (msg) => {
   console.error('  [FAIL]', msg);
   failures += 1;
 };
+
+function resolveEntryPath(dir, relative, label) {
+  if (typeof relative !== 'string' || relative.length === 0) {
+    fail(`${label} missing (${relative})`);
+    return null;
+  }
+  const file = path.resolve(dir, relative);
+  const withinEntry = path.relative(dir, file);
+  if (withinEntry.startsWith('..') || path.isAbsolute(withinEntry)) {
+    fail(`${label} must stay inside its entry (${relative})`);
+    return null;
+  }
+  return file;
+}
 
 const ids = fs.readdirSync(entriesDir).filter((d) =>
   fs.existsSync(path.join(entriesDir, d, 'entry.json')));
@@ -90,6 +139,142 @@ for (const id of ids) {
       fail(`${id}: PR #791 entry must be explicitly Web-only`);
     }
   }
+  if (id === NATIVE_DIAGNOSTIC_ENTRY_ID) {
+    if (manifest.tier !== 'lab') {
+      fail(`${id}: must remain an unranked lab entry`);
+    }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['native'])) {
+      fail(`${id}: must remain explicitly Native-only`);
+    }
+    if (manifest.ranking != null || manifest.webLab != null || manifest.nativeLab != null) {
+      fail(`${id}: must remain unranked and outside featured/Lab comparison contracts`);
+    }
+    if (JSON.stringify(manifest.tags) !== JSON.stringify(['diagnostic', 'capacity-probe'])) {
+      fail(`${id}: must retain its diagnostic capacity-probe role`);
+    }
+    if (manifest.bundles?.lynx !== NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE) {
+      fail(`${id}: empty table Native bundle path must be ${NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE}`);
+    }
+    if (manifest.bundles?.web != null) {
+      fail(`${id}: diagnostic entry must not declare a Web bundle`);
+    }
+    if (!/^[0-9a-f]{40}$/.test(manifest.provenance?.commit ?? '')
+      || manifest.provenance?.ref !== manifest.provenance?.commit) {
+      fail(`${id}: provenance must name one immutable source revision`);
+    }
+    if (manifest.provenance?.patched !== false || manifest.provenance?.patchFile != null) {
+      fail(`${id}: Native artifacts must come from a clean Octane checkout`);
+    }
+    const diagnosticChecks = manifest.provenance?.sha256 ?? {};
+    const expectedCapacityKeys = NATIVE_CAPACITY_SCALES.map(
+      nativeCapacityProvenancePath,
+    );
+    const expectedKeys = [
+      ...expectedCapacityKeys,
+      ...NATIVE_LIST_SCALES.map(nativeListProvenancePath),
+      NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH,
+    ].sort();
+    if (JSON.stringify(Object.keys(diagnosticChecks).sort()) !== JSON.stringify(expectedKeys)) {
+      fail(`${id}: provenance must checksum exactly the empty table, six capacity, and two list Native bundles`);
+    }
+    const capacityFixture = manifest.capacityFixture;
+    if (capacityFixture?.protocol !== NATIVE_CAPACITY_FIXTURE_PROTOCOL) {
+      fail(`${id}: capacityFixture protocol must be ${NATIVE_CAPACITY_FIXTURE_PROTOCOL}`);
+    }
+    if (capacityFixture?.fixtureRole !== NATIVE_CAPACITY_FIXTURE_ROLE) {
+      fail(`${id}: capacityFixture role must be ${NATIVE_CAPACITY_FIXTURE_ROLE}`);
+    }
+    if (capacityFixture?.topology?.elementsPerRow !== NATIVE_CAPACITY_TOPOLOGY.elementsPerRow
+      || capacityFixture?.topology?.chromeElements !== NATIVE_CAPACITY_TOPOLOGY.chromeElements
+      || Object.keys(capacityFixture?.topology ?? {}).length
+        !== Object.keys(NATIVE_CAPACITY_TOPOLOGY).length) {
+      fail(`${id}: capacityFixture topology must be 7 elements per row plus 42 chrome elements`);
+    }
+    if (JSON.stringify(Object.keys(capacityFixture?.scales ?? {}))
+      !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
+      fail(`${id}: capacityFixture must declare exactly scales ${NATIVE_CAPACITY_SCALES.join(', ')}`);
+    }
+    for (const rows of NATIVE_CAPACITY_SCALES) {
+      const artifact = capacityFixture?.scales?.[String(rows)];
+      const expectedBundle = nativeCapacityBundlePath(rows);
+      const expectedChecksum = diagnosticChecks[nativeCapacityProvenancePath(rows)];
+      if (artifact?.bundle !== expectedBundle) {
+        fail(`${id}: capacityFixture ${rows} bundle path must be ${expectedBundle}`);
+      }
+      if (artifact?.sha256 !== expectedChecksum) {
+        fail(`${id}: capacityFixture ${rows} checksum must match vendored provenance`);
+      }
+      const file = resolveEntryPath(dir, artifact?.bundle, `${id}: capacityFixture ${rows} bundle path`);
+      if (file == null) continue;
+      if (!fs.existsSync(file)) {
+        fail(`${id}: capacityFixture ${rows} bundle missing (${artifact.bundle})`);
+      } else if (sha256File(file) !== artifact.sha256) {
+        fail(`${id}: sha256 mismatch for capacityFixture ${rows} bundle`);
+      }
+    }
+    const listFixture = manifest.listFixture;
+    if (listFixture?.protocol !== NATIVE_LIST_FIXTURE_PROTOCOL) {
+      fail(`${id}: listFixture protocol must be ${NATIVE_LIST_FIXTURE_PROTOCOL}`);
+    }
+    if (listFixture?.workloadProtocol !== LIST_FIXTURE_PROTOCOL) {
+      fail(`${id}: listFixture workload protocol must be ${LIST_FIXTURE_PROTOCOL}`);
+    }
+    if (JSON.stringify(Object.keys(listFixture?.scales ?? {}))
+      !== JSON.stringify(NATIVE_LIST_SCALES.map(String))) {
+      fail(`${id}: listFixture must declare exactly scales ${NATIVE_LIST_SCALES.join(', ')}`);
+    }
+    for (const rows of NATIVE_LIST_SCALES) {
+      const artifact = listFixture?.scales?.[String(rows)];
+      const expectedBundle = nativeListBundlePath(rows);
+      const expectedChecksum = diagnosticChecks[nativeListProvenancePath(rows)];
+      if (artifact?.bundle !== expectedBundle) {
+        fail(`${id}: listFixture ${rows} bundle path must be ${expectedBundle}`);
+      }
+      if (artifact?.sha256 !== expectedChecksum) {
+        fail(`${id}: listFixture ${rows} checksum must match vendored provenance`);
+      }
+      const file = resolveEntryPath(dir, artifact?.bundle, `${id}: listFixture ${rows} bundle path`);
+      if (file == null) continue;
+      if (!fs.existsSync(file)) {
+        fail(`${id}: listFixture ${rows} bundle missing (${artifact.bundle})`);
+      } else if (sha256File(file) !== artifact.sha256) {
+        fail(`${id}: sha256 mismatch for listFixture ${rows} bundle`);
+      }
+    }
+    const receipt = manifest.provenance?.buildReceipt;
+    if (receipt == null) {
+      fail(`${id}: versioned Native build receipt is missing`);
+    } else {
+      const { sha256: receiptSha256, ...receiptPayload } = receipt;
+      if (
+        receipt.protocol !== NATIVE_CAPACITY_BUILD_PROTOCOL
+        || receiptSha256
+          !== sha256(JSON.stringify(receiptPayload))
+      ) {
+        fail(`${id}: Native build receipt protocol or checksum is invalid`);
+      }
+      if (receipt.sourceCommit !== manifest.provenance?.commit) {
+        fail(`${id}: Native build receipt source revision does not match provenance`);
+      }
+      const expectedArtifacts = {
+        table: {
+          path: NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+          sha256: diagnosticChecks[NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH],
+        },
+        capacity: Object.fromEntries(NATIVE_CAPACITY_SCALES.map((rows) => [String(rows), {
+          path: nativeCapacityBuildPath(rows),
+          sha256: diagnosticChecks[nativeCapacityProvenancePath(rows)],
+        }])),
+        list: Object.fromEntries(NATIVE_LIST_SCALES.map((rows) => [String(rows), {
+          path: nativeListBuildPath(rows),
+          sha256: diagnosticChecks[nativeListProvenancePath(rows)],
+        }])),
+      };
+      if (JSON.stringify(receipt.artifacts) !== JSON.stringify(expectedArtifacts)) {
+        fail(`${id}: Native build receipt artifacts do not match vendored bundles`);
+      }
+    }
+  }
   if (manifest.provenance?.patched && manifest.provenance?.patchFile) {
     if (!fs.existsSync(path.join(root, manifest.provenance.patchFile))) {
       fail(`${id}: provenance.patchFile ${manifest.provenance.patchFile} does not exist`);
@@ -98,16 +283,58 @@ for (const id of ids) {
   const checks = manifest.provenance?.sha256 ?? {};
   if (Object.keys(checks).length === 0) fail(`${id}: no sha256 checksums`);
   for (const [rel, expected] of Object.entries(checks)) {
-    const file = path.join(dir, 'dist', rel);
+    if (!/^[0-9a-f]{64}$/.test(expected)) {
+      fail(`${id}: invalid sha256 for dist/${rel}`);
+      continue;
+    }
+    const file = resolveEntryPath(path.join(dir, 'dist'), rel, `${id}: checksum path`);
+    if (file == null) continue;
     if (!fs.existsSync(file)) {
       fail(`${id}: checksummed bundle missing: dist/${rel}`);
       continue;
     }
-    const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+    const actual = sha256File(file);
     if (actual !== expected) fail(`${id}: sha256 mismatch for dist/${rel}`);
   }
-  const web = path.join(dir, manifest.bundles?.web ?? '');
-  if (!fs.existsSync(web)) fail(`${id}: bundles.web missing (${manifest.bundles?.web})`);
+  for (const harness of manifest.harnesses ?? ['web', 'native']) {
+    const key = harness === 'native' ? 'lynx' : 'web';
+    const relative = manifest.bundles?.[key];
+    const bundle = resolveEntryPath(dir, relative, `${id}: bundles.${key}`);
+    if (bundle == null) continue;
+    if (!fs.existsSync(bundle)) fail(`${id}: bundles.${key} missing (${relative})`);
+  }
+  if (manifest.listFixture != null) {
+    const expectedProtocol = id === NATIVE_DIAGNOSTIC_ENTRY_ID
+      ? NATIVE_LIST_FIXTURE_PROTOCOL
+      : LIST_FIXTURE_PROTOCOL;
+    if (manifest.listFixture.protocol !== expectedProtocol) {
+      fail(`${id}: listFixture protocol must be ${expectedProtocol}`);
+    }
+    if (manifest.listFixture.contractSha256 !== LIST_WORKLOAD_CONTRACT_SHA256) {
+      fail(`${id}: listFixture contractSha256 does not match the current list workload`);
+    }
+    for (const harness of id === NATIVE_DIAGNOSTIC_ENTRY_ID ? [] : ['web', 'native']) {
+      const relative = manifest.listFixture.bundles?.[harness];
+      if (relative == null) continue;
+      const bundle = resolveEntryPath(
+        dir,
+        relative,
+        `${id}: listFixture ${harness} bundle path`,
+      );
+      if (bundle == null) continue;
+      if (!fs.existsSync(bundle)) {
+        fail(`${id}: listFixture ${harness} bundle missing (${relative})`);
+        continue;
+      }
+      const expected = manifest.listFixture.sha256?.[harness];
+      if (!/^[0-9a-f]{64}$/.test(expected ?? '')) {
+        fail(`${id}: listFixture ${harness} checksum missing or invalid`);
+        continue;
+      }
+      const actual = sha256File(bundle);
+      if (actual !== expected) fail(`${id}: sha256 mismatch for listFixture ${harness} bundle`);
+    }
+  }
 }
 
 if (failures) {

@@ -6,12 +6,15 @@ import { useI18n } from '../i18n';
 import { ResponsiveCopy } from './ResponsiveCopy';
 
 const STATUS_ORDER: ListCoverageStatus[] = [
-  'measured', 'dnf', 'unsupported', 'unscheduled', 'invalid-incomparable',
+  'measured', 'measured-with-dnf', 'dnf', 'not-measured',
+  'unsupported', 'unscheduled', 'invalid-incomparable',
 ];
 
 const LABELS: Record<ListCoverageStatus, [string, string]> = {
   measured: ['measured', '已测量'],
+  'measured-with-dnf': ['measured + DNF', '已测量 + DNF'],
   dnf: ['DNF', 'DNF'],
+  'not-measured': ['not measured', '未测量'],
   unsupported: ['unsupported', '不支持'],
   unscheduled: ['not scheduled', '未调度'],
   'invalid-incomparable': ['invalid', '无效'],

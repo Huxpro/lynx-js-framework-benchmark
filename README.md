@@ -134,6 +134,15 @@ results-site deployment. Install it only in the Native runner environment. Web b
 tests, and site builds need no private registry credentials; the Native adapter validates the
 device-only dependency when selected.
 
+### Diagnostic Native capacity and bounded-list runs
+
+The reserved `octane-native-diagnostic` Lab entry keeps an eager, unranked ART-capacity probe
+separate from the logical bounded-list workload. These diagnostics use measured, DNF, and
+not-measured outcomes, require five accepted samples before timing is reportable, and never enter
+the featured Native ranking. The exact no-CDP device protocol, ART crash signature, real Native
+list-observer requirement, commands, and pending issue-closure gate are in
+[docs/NATIVE_DIAGNOSTICS.md](docs/NATIVE_DIAGNOSTICS.md).
+
 ### Incremental / hypothesis runs
 
 ```bash

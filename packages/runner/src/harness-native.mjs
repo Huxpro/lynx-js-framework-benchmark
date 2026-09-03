@@ -40,13 +40,35 @@
 // itself and exits, and nothing in this repository registers a proxy adapter
 // (node --jitless and jsdom PAPI proxies were explicitly rejected — see
 // docs/METHODOLOGY.md "Harness separation").
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { summarize } from '@lynx-bench/shared/stats';
 import { makeRecord } from '@lynx-bench/shared/schema';
+import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT_VERSION,
+  NATIVE_LIST_CAPABILITY_PROTOCOL,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
+} from '@lynx-bench/shared/list-workloads';
+import {
+  DEFAULT_MIN_ACCEPTED_SAMPLES,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_LIST_FIXTURE_ID,
+  NATIVE_LIST_FIXTURE_ROLE,
+  REPORTABILITY_PROTOCOL,
+} from '@lynx-bench/shared/native-diagnostic-contract';
 
-import { nativeBundleSnapshot } from './native-inputs.mjs';
+import {
+  NATIVE_LIST_INPUT_CONTRACT_VERSION,
+  runNativeListMatrix,
+} from './harness-native-list.mjs';
+import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
+import {
+  nativeBundleSnapshot,
+  NATIVE_LIST_INPUT_RECEIPT_VERSION,
+} from './native-inputs.mjs';
 import { NATIVE_SANDBOX_POLICY } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES } from './run-matrix.mjs';
 import { nativeStartupMetricContracts } from './native-coverage.mjs';
@@ -56,6 +78,11 @@ export const NATIVE_BOUNDARIES = {
   fcp: 'native-open-to-fcp',
   settled: 'native-open-to-pipeline-end',
 };
+export const NATIVE_LIST_CAMPAIGN_VERSION = 'native-list-campaign-v1';
+
+const sha256Json = (value) => crypto.createHash('sha256')
+  .update(JSON.stringify(value))
+  .digest('hex');
 
 export class NativeLeaseExpiryStop extends Error {
   constructor(records) {
@@ -89,26 +116,133 @@ async function classifyCellFailure(adapter, error, context) {
   return observed;
 }
 
-export async function loadNativeAdapter(adapterPath, context = {}) {
+async function createNativeAdapter(adapterPath, context, {
+  mode = null,
+  label = 'native adapter',
+  validateSurface = () => {},
+  webEnvironmentMessage = 'native adapter environment must not be "lynx-for-web".',
+} = {}) {
   const resolved = path.resolve(adapterPath);
   const module = await import(pathToFileURL(resolved).href);
   const factory = module.default;
   if (typeof factory !== 'function') {
     throw new Error(`native adapter ${adapterPath} must default-export createAdapter(context).`);
   }
-  const adapter = await factory(context);
-  for (const method of ['loadBundle', 'driveCase', 'collect', 'collectStartup', 'dispose']) {
-    if (typeof adapter?.[method] !== 'function') {
-      throw new Error(`native adapter ${adapterPath} is missing ${method}().`);
-    }
-  }
-  if (typeof adapter.environment !== 'string' || adapter.environment.length === 0) {
-    throw new Error(`native adapter ${adapterPath} must declare a device-class environment string.`);
+  const adapter = await factory(mode === null ? context : { ...context, mode });
+  validateSurface(adapter);
+  if (typeof adapter?.environment !== 'string' || adapter.environment.length === 0) {
+    throw new Error(
+      `${label} ${adapterPath} must declare a device-class environment string.`,
+    );
   }
   if (adapter.environment === 'lynx-for-web') {
-    throw new Error('native adapter environment must not be "lynx-for-web"; native and web records are never comparable.');
+    throw new Error(webEnvironmentMessage);
   }
   return adapter;
+}
+
+export async function loadNativeAdapter(adapterPath, context = {}) {
+  const adapter = await createNativeAdapter(adapterPath, context, {
+    validateSurface(candidate) {
+      for (const method of ['loadBundle', 'driveCase', 'collect', 'collectStartup', 'dispose']) {
+        if (typeof candidate?.[method] !== 'function') {
+          throw new Error(`native adapter ${adapterPath} is missing ${method}().`);
+        }
+      }
+    },
+    webEnvironmentMessage: 'native adapter environment must not be "lynx-for-web"; native and web records are never comparable.',
+  });
+  return adapter;
+}
+
+/** Load the diagnostic direct-ADB surface without requiring ranked/CDP methods. */
+export async function loadNativeCapacityAdapter(adapterPath, context = {}) {
+  const adapter = await createNativeAdapter(adapterPath, context, {
+    mode: 'capacity',
+    label: 'native capacity adapter',
+    validateSurface(candidate) {
+      for (const method of ['runCapacityProbe', 'dispose']) {
+        if (typeof candidate?.[method] !== 'function') {
+          throw new Error(`native capacity adapter ${adapterPath} is missing ${method}().`);
+        }
+      }
+    },
+    webEnvironmentMessage: 'native capacity adapter environment must not be "lynx-for-web".',
+  });
+  return adapter;
+}
+
+/** Load only the real-Native bounded-list adapter surface. */
+export async function loadNativeListAdapter(adapterPath, context = {}) {
+  const adapter = await createNativeAdapter(adapterPath, context, {
+    mode: 'list',
+    label: 'native list adapter',
+    validateSurface(candidate) {
+      if (typeof candidate?.dispose !== 'function') {
+        throw new Error(`native list adapter ${adapterPath} is missing dispose().`);
+      }
+      if (candidate.runListCase != null && typeof candidate.runListCase !== 'function') {
+        throw new Error(`native list adapter ${adapterPath} has malformed runListCase.`);
+      }
+      const capability = candidate.listCapability;
+      if (capability != null
+        && (typeof capability !== 'object'
+          || Array.isArray(capability)
+          || (capability.protocol != null
+            && capability.protocol !== NATIVE_LIST_CAPABILITY_PROTOCOL))) {
+        throw new Error(
+          `native list adapter ${adapterPath} has an unknown or malformed listCapability contract.`,
+        );
+      }
+    },
+    webEnvironmentMessage: 'native list adapter environment must not be "lynx-for-web".',
+  });
+  return adapter;
+}
+
+export function buildNativeListCampaign({ inputReceipt, label = null }) {
+  const { sha256: receiptSha256, ...receiptPayload } = inputReceipt ?? {};
+  const listInput = inputReceipt?.listInput;
+  const { sha256: listInputSha256, ...listInputPayload } = listInput ?? {};
+  if (inputReceipt?.version !== NATIVE_LIST_INPUT_RECEIPT_VERSION
+    || inputReceipt.suite !== 'list'
+    || inputReceipt.entryId !== NATIVE_DIAGNOSTIC_ENTRY_ID
+    || inputReceipt.fixtureRole !== NATIVE_LIST_FIXTURE_ROLE
+    || inputReceipt.fixtureId !== NATIVE_LIST_FIXTURE_ID
+    || inputReceipt.diagnostic !== true
+    || inputReceipt.rankingEligible !== false
+    || listInput?.protocol !== NATIVE_LIST_INPUT_CONTRACT_VERSION
+    || listInput.entryId !== NATIVE_DIAGNOSTIC_ENTRY_ID
+    || listInput.fixture?.protocol !== NATIVE_LIST_FIXTURE_PROTOCOL
+    || listInput.fixture?.workloadProtocol !== LIST_FIXTURE_PROTOCOL
+    || listInput.fixture?.contractSha256 !== LIST_WORKLOAD_CONTRACT_SHA256
+    || listInput.workload?.version !== LIST_WORKLOAD_CONTRACT_VERSION
+    || listInput.workload?.sha256 !== LIST_WORKLOAD_CONTRACT_SHA256
+    || JSON.stringify(inputReceipt.observer) !== JSON.stringify(listInput.observer)
+    || !/^[a-f0-9]{64}$/.test(receiptSha256 ?? '')
+    || sha256Json(receiptPayload) !== receiptSha256
+    || !/^[a-f0-9]{64}$/.test(listInputSha256 ?? '')
+    || sha256Json(listInputPayload) !== listInputSha256) {
+    throw new Error('Native list campaign requires an immutable diagnostic list input receipt.');
+  }
+  const payload = {
+    version: NATIVE_LIST_CAMPAIGN_VERSION,
+    suite: 'list',
+    label,
+    entryId: NATIVE_DIAGNOSTIC_ENTRY_ID,
+    fixtureRole: NATIVE_LIST_FIXTURE_ROLE,
+    fixtureId: NATIVE_LIST_FIXTURE_ID,
+    listContractSha256: listInput.workload.sha256,
+    inputReceiptSha256: receiptSha256,
+    observer: inputReceipt.observer,
+    reportability: {
+      protocol: REPORTABILITY_PROTOCOL,
+      minAcceptedSamples: DEFAULT_MIN_ACCEPTED_SAMPLES,
+    },
+    diagnostic: true,
+    rankingEligible: false,
+  };
+  return Object.freeze({ ...payload, id: sha256Json(payload).slice(0, 16) });
 }
 
 /**
@@ -413,6 +547,34 @@ export async function runNativeHarness(options = undefined) {
       environment: adapter.environment,
       machine: adapter.machine ?? null,
       stoppedForLeaseExpiry,
+    };
+  } finally {
+    await adapter.dispose();
+  }
+}
+
+export async function runNativeListHarness(options = undefined) {
+  if (!options?.adapterPath) {
+    throw new Error(
+      'Native list run requires --adapter <module.mjs> implementing the real-Native list contract.',
+    );
+  }
+  const adapter = await loadNativeListAdapter(options.adapterPath, {
+    log: options.log,
+    listInputs: options.listInputs ?? null,
+    campaignIdentity: options.campaignIdentity ?? null,
+  });
+  try {
+    const onProgress = async (records) => options.onProgress?.({
+      records,
+      environment: adapter.environment,
+      machine: adapter.machine ?? null,
+    });
+    const records = await runNativeListMatrix({ ...options, adapter, onProgress });
+    return {
+      records,
+      environment: adapter.environment,
+      machine: adapter.machine ?? null,
     };
   } finally {
     await adapter.dispose();

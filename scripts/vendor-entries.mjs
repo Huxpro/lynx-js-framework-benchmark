@@ -21,6 +21,31 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+  NATIVE_CAPACITY_FIXTURE_ROLE,
+  NATIVE_CAPACITY_SCALES,
+  NATIVE_CAPACITY_TOPOLOGY,
+  NATIVE_CAPACITY_BUILD_PROTOCOL,
+  NATIVE_DIAGNOSTIC_BUILD_RECEIPT_PATH,
+  NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+  NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE,
+  NATIVE_DIAGNOSTIC_ENTRY_ID,
+  NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH,
+  NATIVE_LIST_SCALES,
+  nativeCapacityBundlePath,
+  nativeCapacityBuildPath,
+  nativeCapacityProvenancePath,
+  nativeListBundlePath,
+  nativeListBuildPath,
+  nativeListProvenancePath,
+} from '../packages/shared/src/native-diagnostic-contract.mjs';
+import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+  NATIVE_LIST_FIXTURE_PROTOCOL,
+} from '../packages/shared/src/list-workloads.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VUE_BUILD = process.env.VUE_LYNX_BUILD
   ?? path.join(os.homedir(), 'github/vue-lynx-bench-build');
@@ -54,8 +79,9 @@ const PRESENTATION = {
   'octane-dom': { order: 103, colorLight: '#4f1d05', colorDark: '#ffd6bf' },
 };
 
-const sha256 = (file) =>
-  crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const sha256Value = (value) => crypto.createHash('sha256').update(value).digest('hex');
+const sha256 = (file) => sha256Value(fs.readFileSync(file));
+const LIST_WORKLOAD_CONTRACT_SHA256 = sha256Value(JSON.stringify(LIST_WORKLOAD_CONTRACT));
 
 const sourceDate = (dir) => execFileSync(
   'git', ['show', '-s', '--format=%cI', 'HEAD'], { cwd: dir },
@@ -176,6 +202,189 @@ function vendorOctanePr791(buildDir) {
       from: path.join(appDir, rows === 0 ? 'dist' : `dist-rows${rows}`),
     })),
   });
+}
+
+function vendorOctaneNativeDiagnostic(buildDir) {
+  const id = NATIVE_DIAGNOSTIC_ENTRY_ID;
+  if (!wants(id)) return;
+  const artifactSpecs = {
+    table: {
+      sourcePath: NATIVE_DIAGNOSTIC_BUILD_TABLE_PATH,
+      destinationPath: NATIVE_DIAGNOSTIC_TABLE_PROVENANCE_PATH,
+    },
+  };
+  const capacityArtifactSpecs = Object.fromEntries(NATIVE_CAPACITY_SCALES.map((rows) => [
+    String(rows),
+    {
+      sourcePath: nativeCapacityBuildPath(rows),
+      destinationPath: nativeCapacityProvenancePath(rows),
+    },
+  ]));
+  const listArtifactSpecs = Object.fromEntries(NATIVE_LIST_SCALES.map((rows) => [
+    String(rows),
+    {
+      sourcePath: nativeListBuildPath(rows),
+      destinationPath: nativeListProvenancePath(rows),
+    },
+  ]));
+  const receiptPath = path.join(
+    buildDir,
+    NATIVE_DIAGNOSTIC_BUILD_RECEIPT_PATH,
+  );
+  for (const [role, artifact] of [
+    ...Object.entries(artifactSpecs),
+    ...Object.entries(capacityArtifactSpecs).map(([rows, artifact]) => [
+      `capacity ${rows}`,
+      artifact,
+    ]),
+    ...Object.entries(listArtifactSpecs).map(([rows, artifact]) => [
+      `list ${rows}`,
+      artifact,
+    ]),
+  ]) {
+    const file = path.join(buildDir, artifact.sourcePath);
+    if (!fs.existsSync(file)) {
+      throw new Error(`${id}: missing ${role} Native bundle (${file})`);
+    }
+  }
+
+  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  if (!fs.existsSync(receiptPath)) {
+    throw new Error(`${id}: missing versioned Native build receipt (${receiptPath})`);
+  }
+  const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'));
+  const { sha256: receiptSha256, ...receiptPayload } = receipt;
+  if (
+    receipt.protocol !== NATIVE_CAPACITY_BUILD_PROTOCOL
+    || JSON.stringify(Object.keys(receipt.artifacts ?? {}))
+      !== JSON.stringify(['table', 'capacity', 'list'])
+    || receiptSha256 !== sha256Value(JSON.stringify(receiptPayload))
+  ) {
+    throw new Error(`${id}: Native build receipt protocol or checksum is invalid`);
+  }
+  if (receipt.sourceCommit !== sourceGit.commit) {
+    throw new Error(
+      `${id}: Native build receipt source ${receipt.sourceCommit} does not match checkout ${sourceGit.commit}`,
+    );
+  }
+  const sourceArtifacts = Object.fromEntries(
+    Object.entries(artifactSpecs).map(([role, artifact]) => {
+      const file = path.join(buildDir, artifact.sourcePath);
+      return [role, { ...artifact, file, sha256: sha256(file) }];
+    }),
+  );
+  const sourceCapacityArtifacts = Object.fromEntries(
+    Object.entries(capacityArtifactSpecs).map(([rows, artifact]) => {
+      const file = path.join(buildDir, artifact.sourcePath);
+      return [rows, { ...artifact, file, sha256: sha256(file) }];
+    }),
+  );
+  const sourceListArtifacts = Object.fromEntries(
+    Object.entries(listArtifactSpecs).map(([rows, artifact]) => {
+      const file = path.join(buildDir, artifact.sourcePath);
+      return [rows, { ...artifact, file, sha256: sha256(file) }];
+    }),
+  );
+  for (const [role, artifact] of Object.entries(sourceArtifacts)) {
+    if (
+      receipt.artifacts?.[role]?.path !== artifact.sourcePath
+      || receipt.artifacts?.[role]?.sha256 !== artifact.sha256
+    ) {
+      throw new Error(`${id}: ${role} Native bundle does not match its build receipt`);
+    }
+  }
+  if (JSON.stringify(Object.keys(receipt.artifacts?.capacity ?? {}))
+    !== JSON.stringify(NATIVE_CAPACITY_SCALES.map(String))) {
+    throw new Error(`${id}: Native build receipt must bind exactly the supported capacity scales`);
+  }
+  if (JSON.stringify(Object.keys(receipt.artifacts?.list ?? {}))
+    !== JSON.stringify(NATIVE_LIST_SCALES.map(String))) {
+    throw new Error(`${id}: Native build receipt must bind exactly the supported list scales`);
+  }
+  for (const [rows, artifact] of Object.entries(sourceListArtifacts)) {
+    if (
+      receipt.artifacts?.list?.[rows]?.path !== artifact.sourcePath
+      || receipt.artifacts?.list?.[rows]?.sha256 !== artifact.sha256
+    ) {
+      throw new Error(`${id}: list ${rows} Native bundle does not match its build receipt`);
+    }
+  }
+  for (const [rows, artifact] of Object.entries(sourceCapacityArtifacts)) {
+    if (
+      receipt.artifacts?.capacity?.[rows]?.path !== artifact.sourcePath
+      || receipt.artifacts?.capacity?.[rows]?.sha256 !== artifact.sha256
+    ) {
+      throw new Error(`${id}: capacity ${rows} Native bundle does not match its build receipt`);
+    }
+  }
+  const version = JSON.parse(
+    fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  const dir = path.join(root, 'entries', id);
+  const dist = path.join(dir, 'dist');
+  fs.rmSync(dist, { recursive: true, force: true });
+  const checks = {};
+  for (const artifact of [
+    ...Object.values(sourceArtifacts),
+    ...Object.values(sourceCapacityArtifacts),
+    ...Object.values(sourceListArtifacts),
+  ]) {
+    const destination = path.join(dist, artifact.destinationPath);
+    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    fs.copyFileSync(artifact.file, destination);
+    checks[artifact.destinationPath] = artifact.sha256;
+  }
+  const manifest = {
+    id,
+    label: 'Octane Native diagnostics',
+    framework: 'octane',
+    frameworkVersion: version,
+    config: 'unranked Native eager-table capacity probe and scale-bound bounded list',
+    tags: ['diagnostic', 'capacity-probe'],
+    tier: 'lab',
+    harnesses: ['native'],
+    color: '#ff415a',
+    presentation: { order: 999, colorLight: '#ff415a', colorDark: '#ff415a' },
+    kind: 'vendored',
+    provenance: {
+      source: 'https://github.com/octanejs/octane',
+      ref: sourceGit.commit,
+      commit: sourceGit.commit,
+      patched: false,
+      patchFile: null,
+      buildCommand: 'node scripts/build-octane-upstream.mjs <clean-octane-checkout>',
+      builtAt: sourceDate(buildDir),
+      buildReceipt: receipt,
+      sha256: checks,
+    },
+    bundles: { lynx: NATIVE_DIAGNOSTIC_EMPTY_TABLE_BUNDLE },
+    capacityFixture: {
+      protocol: NATIVE_CAPACITY_FIXTURE_PROTOCOL,
+      fixtureRole: NATIVE_CAPACITY_FIXTURE_ROLE,
+      topology: NATIVE_CAPACITY_TOPOLOGY,
+      scales: Object.fromEntries(Object.entries(sourceCapacityArtifacts).map(([rows, artifact]) => [
+        rows,
+        {
+          bundle: nativeCapacityBundlePath(Number(rows)),
+          sha256: checks[artifact.destinationPath],
+        },
+      ])),
+    },
+    listFixture: {
+      protocol: NATIVE_LIST_FIXTURE_PROTOCOL,
+      workloadProtocol: LIST_FIXTURE_PROTOCOL,
+      contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
+      scales: Object.fromEntries(Object.entries(sourceListArtifacts).map(([rows, artifact]) => [
+        rows,
+        {
+          bundle: nativeListBundlePath(Number(rows)),
+          sha256: checks[artifact.destinationPath],
+        },
+      ])),
+    },
+  };
+  fs.writeFileSync(path.join(dir, 'entry.json'), JSON.stringify(manifest, null, 2));
+  console.log(`[vendor] ${id}: ${Object.keys(checks).length} Native bundles`);
 }
 
 function vendorNewLynxBlockSnapshot(id, label, buildDir) {
@@ -363,6 +572,8 @@ vendor({
     ),
   })),
 });
+
+vendorOctaneNativeDiagnostic(OCTANE_BUILD);
 
 if (
   wants('octane-hux1')
