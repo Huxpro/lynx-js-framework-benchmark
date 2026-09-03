@@ -20,6 +20,7 @@ import {
   snapshotNativeCapacityInputs,
 } from './native-inputs.mjs';
 import { NATIVE_CAPACITY_POLICY } from './native-protocol.mjs';
+import { stringifyResult } from './result-json.mjs';
 import {
   DEFAULT_MIN_ACCEPTED_SAMPLES,
   NATIVE_CAPACITY_OUTCOME_PROTOCOL,
@@ -643,4 +644,23 @@ test('successful threshold outcomes retain evidence without creating timing samp
     true,
   );
   assert.deepEqual(defaults[0].detailSamples, [{ receipt: 'valid' }]);
+
+  const persisted = JSON.parse(stringifyResult({ records })).records;
+  const persistedThresholds = persisted.filter((record) => record.thresholdProbe);
+  for (const record of persistedThresholds) {
+    assert.deepEqual(record.outcomeCounts, {
+      attempted: 1,
+      accepted: 0,
+      dnf: 0,
+      notMeasured: 0,
+      byReason: {},
+      outcomeOnlyCompleted: 1,
+    });
+    assert.equal(record.reportability.status, 'not-reportable');
+    assert.equal(record.n, 0);
+    assert.deepEqual(record.samples, []);
+    for (const field of ['median', 'mean', 'std', 'min', 'max', 'p95', 'ci95']) {
+      assert.equal(record[field], null, field);
+    }
+  }
 });

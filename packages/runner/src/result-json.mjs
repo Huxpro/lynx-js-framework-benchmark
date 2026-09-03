@@ -76,9 +76,20 @@ function assertCapacityOutcomeContract(record) {
   if (record.fixtureRole !== NATIVE_CAPACITY_FIXTURE_ROLE) {
     throw new Error(`unknown native capacity fixture role ${String(record.fixtureRole)}.`);
   }
-  if (record.outcomeProtocol != null
-    && record.outcomeProtocol !== NATIVE_CAPACITY_OUTCOME_PROTOCOL) {
+  if (record.outcomeProtocol !== NATIVE_CAPACITY_OUTCOME_PROTOCOL) {
     throw new Error(`unknown native capacity outcome protocol ${String(record.outcomeProtocol)}.`);
+  }
+  if (record.reportability?.protocol !== REPORTABILITY_PROTOCOL) {
+    throw new Error(
+      `unknown native capacity reportability protocol `
+      + `${String(record.reportability?.protocol)}.`,
+    );
+  }
+  if (record.reportability.minAcceptedSamples !== DEFAULT_MIN_ACCEPTED_SAMPLES) {
+    throw new Error(
+      `native capacity reportability must be ${REPORTABILITY_PROTOCOL} with `
+      + `${DEFAULT_MIN_ACCEPTED_SAMPLES} accepted samples.`,
+    );
   }
   if (!Array.isArray(record.diagnosticOutcomes)) {
     throw new Error('native capacity record must preserve diagnosticOutcomes.');
@@ -128,8 +139,12 @@ function assertCapacityOutcomeContract(record) {
       throw new Error('native capacity DNF outcomes do not reconcile with failure evidence.');
     }
   }
-  if (record.timingEligible === false) {
-    if (record.thresholdProbe !== true || acceptedCount !== 0 || samples.length !== 0) {
+  const outcomeOnly = record.thresholdProbe === true && record.timingEligible === false;
+  if ((record.thresholdProbe === true || record.timingEligible === false) && !outcomeOnly) {
+    throw new Error('native capacity threshold probes must be explicitly outcome-only.');
+  }
+  if (outcomeOnly) {
+    if (acceptedCount !== 0 || samples.length !== 0) {
       throw new Error('outcome-only native capacity probes must retain zero timing samples.');
     }
   } else if (completedCount !== acceptedCount || samples.length !== acceptedCount) {
@@ -149,8 +164,16 @@ export function deriveOutcomeCounts(record) {
   if (acceptedCount > attemptedCount) {
     throw new Error('acceptedCount cannot exceed attemptedCount.');
   }
-  if (acceptedCount + (record.dnfCount ?? 0) !== attemptedCount) {
-    throw new Error('accepted and DNF counts must account for every attempt.');
+  const outcomeOnly = record.suite === NATIVE_CAPACITY_SUITE
+    && record.thresholdProbe === true
+    && record.timingEligible === false;
+  const outcomeOnlyCompleted = outcomeOnly
+    ? (record.diagnosticOutcomes ?? []).filter((outcome) => outcome.outcome === 'completed').length
+    : 0;
+  if (acceptedCount + outcomeOnlyCompleted + (record.dnfCount ?? 0) !== attemptedCount) {
+    throw new Error(
+      'accepted, outcome-only completed, and DNF counts must account for every attempt.',
+    );
   }
   const byReason = {};
   for (const failure of record.failures ?? []) {
@@ -171,6 +194,7 @@ export function deriveOutcomeCounts(record) {
     dnf: record.dnfCount ?? 0,
     notMeasured: record.notMeasuredCount ?? 0,
     byReason,
+    ...(outcomeOnly ? { outcomeOnlyCompleted } : {}),
   };
 }
 
@@ -219,19 +243,13 @@ export function materializeRecordOutcomes(record, {
   return out;
 }
 
-function prepare(value) {
-  if (Array.isArray(value)) return value.map(prepare);
-  if (value == null || typeof value !== 'object') return value;
-  const prepared = Object.fromEntries(Object.entries(value).map(([key, child]) => [key, prepare(child)]));
-  return isRecord(prepared) ? materializeRecordOutcomes(prepared) : prepared;
-}
-
 export function stringifyResult(value) {
   return JSON.stringify(
-    prepare(value),
-    (_key, candidate) => typeof candidate === 'string'
-      ? redactResultString(candidate)
-      : candidate,
+    value,
+    (_key, candidate) => {
+      if (typeof candidate === 'string') return redactResultString(candidate);
+      return isRecord(candidate) ? materializeRecordOutcomes(candidate) : candidate;
+    },
     1,
   );
 }
