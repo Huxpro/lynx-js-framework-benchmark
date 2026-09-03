@@ -107,6 +107,33 @@ test('list campaign selection is coherent per harness and ignores stale entry co
     .map(({ runFile }) => runFile))], ['native.json']);
 });
 
+test('list campaign selection keeps featured and diagnostic Native cohorts independent', () => {
+  const entries = [
+    { id: 'react', tier: 'featured', provenance: { commit: 'react-current' } },
+    {
+      id: 'octane-native-diagnostic', tier: 'lab',
+      provenance: { commit: 'diagnostic-current' },
+    },
+  ];
+  const records = [
+    {
+      suite: 'list', harness: 'native', entry: 'react', entryCommit: 'react-current',
+      runFile: 'featured.json', runGeneratedAt: '2026-01-01',
+      workload: 'list-startup', scale: 1000, metric: 'firstVisibleContentMs',
+    },
+    {
+      suite: 'list', harness: 'native', entry: 'octane-native-diagnostic',
+      entryCommit: 'diagnostic-current', runFile: 'diagnostic.json',
+      runGeneratedAt: '2026-01-02', workload: 'list-startup', scale: 1000,
+      metric: 'firstVisibleContentMs',
+    },
+  ];
+  const selected = selectListCampaignRecords(records, entries);
+  assert.deepEqual(selected.map(({ runFile }) => runFile).sort(), [
+    'diagnostic.json', 'featured.json',
+  ]);
+});
+
 test('list coverage includes only explicitly diagnostic Native lab fixtures', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-native-list-coverage-'));
   try {
@@ -146,6 +173,39 @@ test('list coverage includes only explicitly diagnostic Native lab fixtures', ()
     assert.ok(coverage.cells.every(({ harness, diagnostic: isDiagnostic, rankingEligible }) =>
       harness === 'native' && isDiagnostic === true && rankingEligible === false));
     assert.deepEqual(coverage.summary, { unscheduled: 4 });
+
+    const malformed = buildListCoverage({
+      entries: [{ ...diagnostic, tier: 'featured', harnesses: ['web'] }],
+    });
+    assert.deepEqual(malformed.entryIds, []);
+    assert.deepEqual(malformed.diagnosticEntryIds, ['octane-native-diagnostic']);
+    assert.equal(malformed.expectedCellCount, 4);
+    assert.ok(malformed.cells.every((cell) =>
+      cell.diagnostic === true
+      && cell.rankingEligible === false
+      && cell.status === 'unsupported'
+      && cell.reason === 'native-list-diagnostic-entry-contract-mismatch'));
+
+    const futureProtocol = buildListCoverage({
+      entries: [{
+        ...diagnostic,
+        listFixture: { ...diagnostic.listFixture, protocol: 'lynx-list-fixture-v999' },
+      }],
+    });
+    assert.deepEqual(futureProtocol.summary, { 'invalid-incomparable': 4 });
+    assert.ok(futureProtocol.cells.every((cell) =>
+      cell.reason === 'list-fixture-protocol-mismatch'));
+    assert.throws(
+      () => assertListCoverage(futureProtocol),
+      /list coverage contains 4 invalid cells/,
+    );
+
+    const contradictory = structuredClone(coverage);
+    contradictory.cells[0].rankingEligible = true;
+    assert.throws(
+      () => assertListCoverage(contradictory),
+      /contradicts diagnostic or ranking identity/,
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -210,6 +270,20 @@ test('Native list coverage distinguishes not measured, DNF, measured, and invali
     assert.equal(status('list-startup', 10000), 'dnf');
     assert.equal(status('list-recycle', 10000), 'measured');
     assert.equal(status('list-fling', 10000), 'unscheduled');
+
+    for (const record of records.filter((candidate) =>
+      candidate.workload === 'list-startup'
+      && candidate.scale === 1000
+      && !Object.hasOwn(NATIVE_LIST_OBSERVER_METRIC_CONTRACTS, candidate.metric))) {
+      record.measurementStatus = 'dnf';
+      record.dnfCount = 1;
+      record.notMeasuredCount = 0;
+      record.notMeasuredReason = null;
+      record.failures = [{ category: 'capture-timeout' }];
+    }
+    const observerMissingAfterSourceDnf = buildListCoverage({ entries: [entry], sourceRecords: records });
+    assert.equal(observerMissingAfterSourceDnf.cells.find((cell) =>
+      cell.workload === 'list-startup' && cell.scale === 1000).status, 'not-measured');
 
     records.find(({ workload, metric }) =>
       workload === 'list-recycle' && metric === 'peakLiveNativeListItems').boundary = 'wrong';
