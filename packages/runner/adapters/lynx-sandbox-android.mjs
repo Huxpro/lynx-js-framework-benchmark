@@ -28,6 +28,7 @@ import {
 } from '../src/native-protocol.mjs';
 import {
   ANDROID_ART_CAPACITY_PACKAGE,
+  androidLogPid,
   classifyAndroidArtCapacity,
   selectAndroidCapacityTerminal,
   validateDevtoolDisabledLifecycle,
@@ -516,26 +517,59 @@ function capacityCommand(serial, injected) {
   return (...args) => Promise.resolve(invoke(...args));
 }
 
-export function createCapacityLogBuffer() {
+const DEFAULT_CAPACITY_LOG_BUFFER_CHARS = 8 * 1024 * 1024;
+
+export function createCapacityLogBuffer({
+  maxBufferedChars = DEFAULT_CAPACITY_LOG_BUFFER_CHARS,
+} = {}) {
+  if (!Number.isSafeInteger(maxBufferedChars) || maxBufferedChars <= 0) {
+    throw new Error('Native capacity log buffer limit must be a positive integer.');
+  }
   let chunks = [];
+  let head = 0;
+  let bufferedChars = 0;
   return {
     append(chunk) {
-      if (chunk != null && String(chunk).length > 0) chunks.push(String(chunk));
+      if (chunk == null) return;
+      const text = String(chunk);
+      if (text.length === 0) return;
+      if (text.length >= maxBufferedChars) {
+        chunks = [text.slice(-maxBufferedChars)];
+        head = 0;
+        bufferedChars = maxBufferedChars;
+        return;
+      }
+      chunks.push(text);
+      bufferedChars += text.length;
+      while (bufferedChars > maxBufferedChars) {
+        const excess = bufferedChars - maxBufferedChars;
+        if (chunks[head].length <= excess) {
+          bufferedChars -= chunks[head].length;
+          head++;
+        } else {
+          chunks[head] = chunks[head].slice(excess);
+          bufferedChars = maxBufferedChars;
+        }
+      }
+      if (head >= 1_024 && head * 2 >= chunks.length) {
+        chunks = chunks.slice(head);
+        head = 0;
+      }
     },
     reset() {
       chunks = [];
+      head = 0;
+      bufferedChars = 0;
     },
-    cursor() {
-      return chunks.length;
-    },
-    readFrom(cursor) {
-      if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor > chunks.length) {
-        throw new Error('Native capacity log cursor is outside the current capture.');
-      }
-      return { cursor: chunks.length, text: chunks.slice(cursor).join('') };
+    drain() {
+      const text = chunks.slice(head).join('');
+      chunks = [];
+      head = 0;
+      bufferedChars = 0;
+      return text;
     },
     snapshot() {
-      return chunks.join('');
+      return chunks.slice(head).join('');
     },
     async close() {},
   };
@@ -574,10 +608,9 @@ function startCapacityLogcat(serial) {
   return {
     append: buffer.append,
     reset: buffer.reset,
-    cursor: buffer.cursor,
-    readFrom(cursor) {
+    drain() {
       assertHealthy();
-      return buffer.readFrom(cursor);
+      return buffer.drain();
     },
     snapshot() {
       assertHealthy();
@@ -593,7 +626,7 @@ function startCapacityLogcat(serial) {
 }
 
 function assertCapacityLogcat(logcat) {
-  for (const method of ['reset', 'cursor', 'readFrom', 'snapshot', 'close']) {
+  for (const method of ['reset', 'drain', 'snapshot', 'close']) {
     if (typeof logcat?.[method] !== 'function') {
       throw new Error(`Native capacity logcat capture is missing ${method}().`);
     }
@@ -601,29 +634,63 @@ function assertCapacityLogcat(logcat) {
   return logcat;
 }
 
-function createCapacityEvidenceWindow(marker, includesLine) {
+const CAPACITY_FAILURE_LINE =
+  /FATAL EXCEPTION|\bANR in com\.lynx\.explorer\b|OutOfMemoryError|Fatal signal |app::onAppJSError|main-thread\.js exception|loadCard failed/;
+
+function createCapacityEvidenceWindow(marker, {
+  phase,
+  packageName = ANDROID_ART_CAPACITY_PACKAGE,
+  pid = null,
+}) {
   let markerFound = false;
+  let inSummary = false;
   let partial = '';
   const lines = [];
+  const retainAttemptLine = (line) => {
+    if (inSummary) {
+      if (androidLogPid(line) === pid
+        && /\b51200 global references \(\d+ unique instances\)/.test(line)) {
+        inSummary = false;
+      }
+      return true;
+    }
+    if (androidLogPid(line) === pid && line.includes('Summary:')) {
+      inSummary = true;
+      return true;
+    }
+    return line.includes('__NATIVE_BENCH_STARTUP__')
+      || line.includes('DevTool enabled. Transitioning to ENABLED.')
+      || line.includes('JNI ERROR (app bug): global reference table overflow')
+      || line.includes('Last 10 entries')
+      || CAPACITY_FAILURE_LINE.test(line)
+      || (line.includes(packageName) && line.includes('has died'));
+  };
+  const retainPreflightLine = (line) =>
+    line.includes('DevTool disabled. Transitioning to ATTACHED.')
+    || line.includes('__OCTANE_DEVTOOL_DISABLED__=true')
+    || line.includes('DevTool enabled. Transitioning to ENABLED.');
+  const accept = (line) => {
+    if (!markerFound && line.includes(marker)) markerFound = true;
+    if (!markerFound) return;
+    if (line.includes(marker)
+      || (phase === 'preflight' ? retainPreflightLine(line) : retainAttemptLine(line))) {
+      lines.push(line);
+    }
+  };
   return {
     append(chunk) {
       const incoming = `${partial}${chunk}`.split('\n');
       partial = incoming.pop() ?? '';
-      for (const line of incoming) {
-        if (!markerFound && line.includes(marker)) markerFound = true;
-        if (markerFound && (line.includes(marker) || includesLine(line))) lines.push(line);
-      }
+      for (const line of incoming) accept(line);
     },
-    snapshot() {
+    snapshot({ finalize = false } = {}) {
+      if (finalize && partial.length > 0) {
+        accept(partial);
+        partial = '';
+      }
       return lines.join('\n');
     },
   };
-}
-
-function appendLogcatDelta(logcat, window, cursor) {
-  const update = logcat.readFrom(cursor);
-  window.append(update.text);
-  return update.cursor;
 }
 
 async function capacityPids(command) {
@@ -763,23 +830,73 @@ export async function createCapacityAdapter({
   };
   let activeBundle = null;
   let disposed = false;
+  let server = null;
+  let reverseInstalled = false;
+  let logcat = null;
+  let teardownPromise = null;
   const startServer = capacityRuntime?.startBundleServer ?? startBundleServer;
-  const server = await startServer(port, () => activeBundle);
+  const startLogcat = capacityRuntime?.startLogcat
+    ?? (() => startCapacityLogcat(serial));
+  const closeServer = () => new Promise((resolve, reject) => {
+    if (server === null) {
+      resolve();
+      return;
+    }
+    try {
+      server.close((error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+  const teardown = () => {
+    if (teardownPromise !== null) return teardownPromise;
+    const cleanups = [
+      ['logcat', () => logcat?.close()],
+      ['bundle server', closeServer],
+      ['ADB reverse', () => (
+        reverseInstalled
+          ? command('reverse', '--remove', `tcp:${port}`)
+          : undefined
+      )],
+    ];
+    teardownPromise = Promise.allSettled(
+      cleanups.map(([, cleanup]) => Promise.resolve().then(cleanup)),
+    ).then((results) => {
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          log(`[sandbox] capacity ${cleanups[index][0]} cleanup failed: ${String(result.reason)}`);
+        }
+      });
+    });
+    return teardownPromise;
+  };
+
+  let modelOutput;
+  let osVersionOutput;
+  let cpuModelOutput;
+  let coresOutput;
+  let explorerPackage;
   try {
+    server = await startServer(port, () => activeBundle);
     await command('reverse', `tcp:${port}`, `tcp:${port}`);
+    reverseInstalled = true;
+    [modelOutput, osVersionOutput, cpuModelOutput, coresOutput, explorerPackage] =
+      await Promise.all([
+        command('shell', 'getprop', 'ro.product.model'),
+        command('shell', 'getprop', 'ro.build.version.release'),
+        command('shell', 'getprop', 'ro.product.board'),
+        command('shell', 'nproc'),
+        readExplorerPackageVersionFromCommand(command),
+      ]);
+    logcat = await startLogcat();
+    assertCapacityLogcat(logcat);
   } catch (error) {
-    await new Promise((resolve) => server.close(resolve));
+    await teardown();
     throw error;
   }
-
-  const [modelOutput, osVersionOutput, cpuModelOutput, coresOutput, explorerPackage] =
-    await Promise.all([
-      command('shell', 'getprop', 'ro.product.model'),
-      command('shell', 'getprop', 'ro.build.version.release'),
-      command('shell', 'getprop', 'ro.product.board'),
-      command('shell', 'nproc'),
-      readExplorerPackageVersionFromCommand(command),
-    ]);
   const model = String(modelOutput || 'android').replace(/\s+/g, '-').toLowerCase();
   const osVersion = String(osVersionOutput || 'unknown');
   const cpuModel = String(cpuModelOutput || model);
@@ -816,10 +933,6 @@ export async function createCapacityAdapter({
     thermalGates: [],
     devtoolPreflights: [],
   };
-  const startLogcat = capacityRuntime?.startLogcat
-    ?? (() => startCapacityLogcat(serial));
-  const logcat = assertCapacityLogcat(await startLogcat());
-
   const activate = (input, role, extra = {}) => {
     activeBundle = {
       role,
@@ -839,11 +952,7 @@ export async function createCapacityAdapter({
     await command('logcat', '-c');
     logcat.reset();
     const marker = `__NATIVE_CAPACITY_PREFLIGHT__${ordinal}-${runtime.now()}`;
-    const evidenceWindow = createCapacityEvidenceWindow(marker, (line) =>
-      line.includes('DevTool disabled. Transitioning to ATTACHED.')
-      || line.includes('__OCTANE_DEVTOOL_DISABLED__=true')
-      || line.includes('DevTool enabled. Transitioning to ENABLED.'));
-    let logCursor = logcat.cursor();
+    const evidenceWindow = createCapacityEvidenceWindow(marker, { phase: 'preflight' });
     await mark(marker);
     const url = bundleUrl('devtool-disabled-preflight', `${ordinal}-${runtime.now()}`);
     await command(
@@ -853,13 +962,15 @@ export async function createCapacityAdapter({
     let lifecycle;
     do {
       await runtime.wait(policy.pollMs);
-      logCursor = appendLogcatDelta(logcat, evidenceWindow, logCursor);
+      evidenceWindow.append(logcat.drain());
       lifecycle = validateDevtoolDisabledLifecycle(evidenceWindow.snapshot(), marker);
       if (lifecycle.disabledAcknowledged) break;
     } while (runtime.monotonicNow() < deadline);
     await runtime.wait(policy.finalizationMs);
-    appendLogcatDelta(logcat, evidenceWindow, logCursor);
-    lifecycle = validateDevtoolDisabledLifecycle(evidenceWindow.snapshot(), marker);
+    evidenceWindow.append(logcat.drain());
+    lifecycle = validateDevtoolDisabledLifecycle(
+      evidenceWindow.snapshot({ finalize: true }), marker,
+    );
     if (!lifecycle.valid) {
       throw new Error(
         `DevTool preflight did not preserve a disabled lifecycle: ${JSON.stringify(lifecycle)}`,
@@ -933,10 +1044,11 @@ export async function createCapacityAdapter({
 
       logcat.reset();
       const marker = `__NATIVE_CAPACITY_ATTEMPT__${ordinal}-${runtime.now()}`;
-      const terminalWindow = createCapacityEvidenceWindow(marker, (line) =>
-        line.includes('__NATIVE_BENCH_STARTUP__')
-        || (line.includes(policy.packageName) && line.includes('has died')));
-      let logCursor = logcat.cursor();
+      const terminalWindow = createCapacityEvidenceWindow(marker, {
+        phase: 'attempt',
+        packageName: policy.packageName,
+        pid,
+      });
       await mark(marker);
       activate({ bundleBytes: context.bundleBytes, sha256: context.bundleSha256 }, 'capacity', {
         entryId: entry.id,
@@ -958,7 +1070,7 @@ export async function createCapacityAdapter({
       try {
         while (terminal === null) {
           await runtime.wait(policy.pollMs);
-          logCursor = appendLogcatDelta(logcat, terminalWindow, logCursor);
+          terminalWindow.append(logcat.drain());
           pids = await capacityPids(command);
           const elapsedMs = Math.max(0, runtime.monotonicNow() - hostLaunchedAtMs);
           terminal = selectAndroidCapacityTerminal({
@@ -979,7 +1091,8 @@ export async function createCapacityAdapter({
         if (runtime.monotonicNow() < hostDeadlineMs && terminal.kind === 'deadline') {
           throw new Error('Native capacity monotonic deadline was selected before its cutoff.');
         }
-        const finalLog = logcat.snapshot();
+        terminalWindow.append(logcat.drain());
+        const finalLog = terminalWindow.snapshot({ finalize: true });
         const observed = classifyAndroidArtCapacity({
           log: finalLog,
           marker,
@@ -1020,19 +1133,14 @@ export async function createCapacityAdapter({
     },
 
     async dispose() {
-      if (disposed) return;
+      if (disposed) return teardown();
       disposed = true;
-      await logcat.close();
-      await new Promise((resolve) => server.close(resolve));
-      try {
-        await command('reverse', '--remove', `tcp:${port}`);
-      } catch {
-        // The device lease may have expired; local server cleanup still completed.
-      }
       try {
         machine.thermalEnd = await readCapacityThermalState(command, runtime.now);
       } catch (error) {
         machine.thermalEnd = { capturedAt: new Date(runtime.now()).toISOString(), error: String(error) };
+      } finally {
+        await teardown();
       }
     },
   };
@@ -1045,6 +1153,46 @@ async function readExplorerPackageVersionFromCommand(command) {
   return {
     versionName: /\bversionName=([^\s]+)/.exec(output)?.[1] ?? null,
     versionCode: Number(/\bversionCode=(\d+)/.exec(output)?.[1] ?? NaN) || null,
+  };
+}
+
+export async function createListAdapter({ listRuntime = null } = {}) {
+  const env = listRuntime?.env ?? process.env;
+  const serial = env.LYNX_SANDBOX_SERIAL;
+  if (!serial) {
+    throw new Error('lynx list adapter requires LYNX_SANDBOX_SERIAL=<leased adb serial>.');
+  }
+  const command = capacityCommand(serial, listRuntime?.adb);
+  const [modelOutput, osVersionOutput, cpuModelOutput, coresOutput, explorerPackage] =
+    await Promise.all([
+      command('shell', 'getprop', 'ro.product.model'),
+      command('shell', 'getprop', 'ro.build.version.release'),
+      command('shell', 'getprop', 'ro.product.board'),
+      command('shell', 'nproc'),
+      readExplorerPackageVersionFromCommand(command),
+    ]);
+  const model = String(modelOutput || 'android').replace(/\s+/g, '-').toLowerCase();
+  const osVersion = String(osVersionOutput || 'unknown');
+  const cpuModel = String(cpuModelOutput || model);
+  const cores = Number(coresOutput) || null;
+  const environment = `lynx-native-android-${model}-${osVersion}-list-capability-unavailable`;
+  const serialSha256 = nativeSerialSha256(serial);
+  return {
+    environment,
+    machine: {
+      id: `${environment}-${serialSha256.slice(0, 12)}`,
+      platform: 'android',
+      environment,
+      osVersion,
+      cpuModel,
+      cores,
+      deviceModel: model,
+      explorerPackage,
+      serialSha256,
+      connectorPackageTrees: null,
+      connectorInitialized: false,
+    },
+    async dispose() {},
   };
 }
 
@@ -2117,7 +2265,7 @@ async function createRankedAdapter({ log = () => {}, campaignIdentity = null } =
 }
 
 export default async function createAdapter(context = {}) {
-  return context.mode === 'capacity'
-    ? createCapacityAdapter(context)
-    : createRankedAdapter(context);
+  if (context.mode === 'capacity') return createCapacityAdapter(context);
+  if (context.mode === 'list') return createListAdapter(context);
+  return createRankedAdapter(context);
 }

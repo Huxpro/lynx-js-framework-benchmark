@@ -9,11 +9,11 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
-import {
-  isNativeTransientTransportFailure,
-  nativeTransportFailureDnf,
+import createSandboxAdapter, {
   createCapacityAdapter,
   createCapacityLogBuffer,
+  isNativeTransientTransportFailure,
+  nativeTransportFailureDnf,
 } from '../adapters/lynx-sandbox-android.mjs';
 
 import {
@@ -543,15 +543,58 @@ test('capacity adapter modules use a separate no-CDP contract', async () => {
   );
 });
 
+test('sandbox list mode reports a real device without initializing ranked CDP', async () => {
+  const commands = [];
+  const adapter = await createSandboxAdapter({
+    mode: 'list',
+    listRuntime: {
+      env: { LYNX_SANDBOX_SERIAL: 'list-device:5555' },
+      async adb(...args) {
+        commands.push(args);
+        const text = args.join(' ');
+        if (text === 'shell getprop ro.product.model') return 'Aries Device';
+        if (text === 'shell getprop ro.build.version.release') return '10';
+        if (text === 'shell getprop ro.product.board') return 'aries-board';
+        if (text === 'shell nproc') return '8';
+        if (text === 'shell dumpsys package com.lynx.explorer') {
+          return 'versionName=1.0 versionCode=1';
+        }
+        throw new Error(`unexpected list-mode ADB call: ${text}`);
+      },
+    },
+  });
+
+  assert.equal(
+    adapter.environment,
+    'lynx-native-android-aries-device-10-list-capability-unavailable',
+  );
+  assert.equal(adapter.machine.connectorInitialized, false);
+  assert.equal(adapter.listCapability, undefined);
+  assert.equal(adapter.runListCase, undefined);
+  assert.deepEqual(commands.map((args) => args.join(' ')).sort(), [
+    'shell dumpsys package com.lynx.explorer',
+    'shell getprop ro.build.version.release',
+    'shell getprop ro.product.board',
+    'shell getprop ro.product.model',
+    'shell nproc',
+  ]);
+  await adapter.dispose();
+  await adapter.dispose();
+});
+
 test('sandbox capacity mode completes through direct ADB logs without initializing CDP', async () => {
   const serial = 'capacity-device:5555';
   let now = 1_700_000_000_000;
   let getBundle = null;
   let marker = null;
   let launchedAtMs = null;
+  let measurementAttempt = 0;
+  let processAlive = false;
   const commands = [];
   const logcat = createCapacityLogBuffer();
   let logcatStarts = 0;
+  let logcatCloses = 0;
+  let serverCloses = 0;
   const startup = () => ({
     protocol: 'lynx-native-startup-v1',
     moduleStartMs: launchedAtMs + 1,
@@ -581,26 +624,72 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
     if (text === 'shell settings get global stay_on_while_plugged_in') return '3';
     if (text === 'shell dumpsys power') return 'mWakefulness=Awake\nDisplay Power: state=ON';
     if (text === 'shell date +%s%3N') return String(now);
-    if (text === 'shell pidof com.lynx.explorer') return '3131';
+    if (text === 'shell pidof com.lynx.explorer') return processAlive ? '3131' : '';
     if (args[0] === 'shell' && args[1] === 'log') {
       marker = args.at(-1);
+      return '';
+    }
+    if (text === 'shell am force-stop com.lynx.explorer') {
+      processAlive = false;
       return '';
     }
     if (args[0] === 'shell' && args[1] === 'am' && args.includes('start')) {
       await new Promise((resolve) => setImmediate(resolve));
       getBundle().served++;
       if (args.includes('-W')) {
+        measurementAttempt++;
         launchedAtMs = now;
-        logcat.append([
-          logLine(launchedAtMs - 1, 3131, marker),
-          logLine(
-            launchedAtMs + 5,
-            3131,
-            `__NATIVE_BENCH_STARTUP__ ${JSON.stringify(startup())}`,
-          ),
-          '',
-        ].join('\n'));
+        if (measurementAttempt === 1) {
+          logcat.append([
+            logLine(launchedAtMs - 1, 3131, marker),
+            logLine(
+              launchedAtMs + 5,
+              3131,
+              `__NATIVE_BENCH_STARTUP__ ${JSON.stringify(startup())}`,
+            ),
+            '',
+          ].join('\n'));
+        } else {
+          logcat.append([
+            logLine(launchedAtMs - 2, 3131, 'UNRELATED BEFORE ATTEMPT'),
+            logLine(launchedAtMs - 1, 3131, marker),
+            logLine(launchedAtMs, 3131, 'UNRELATED BEFORE SUMMARY'),
+            logLine(
+              launchedAtMs + 1,
+              3131,
+              'JNI ERROR (app bug): global reference table overflow (max=51200)',
+            ),
+            logLine(launchedAtMs + 2, 3131, 'Last 10 entries'),
+            logLine(launchedAtMs + 3, 3131, 'Summary:'),
+            logLine(
+              launchedAtMs + 4,
+              3131,
+              '30026 of com.lynx.tasm.behavior.PaintingContext$a (30026 unique instances)',
+            ),
+            logLine(launchedAtMs + 5, 3131, 'INTERLEAVED SUMMARY DETAIL'),
+            logLine(
+              launchedAtMs + 6,
+              3131,
+              '20444 of m7.w (20444 unique instances)',
+            ),
+            logLine(launchedAtMs + 7, 3131, '51200 global references (50470 unique instances)'),
+            logLine(launchedAtMs + 8, 3131, 'UNRELATED AFTER SUMMARY'),
+            logLine(
+              launchedAtMs + 9,
+              3131,
+              'Fatal signal 6 (SIGABRT), code -1 (SI_QUEUE)',
+            ),
+            logLine(
+              launchedAtMs + 10,
+              1000,
+              'Process com.lynx.explorer (pid 3131) has died',
+            ),
+            '',
+          ].join('\n'));
+          processAlive = false;
+        }
       } else {
+        processAlive = true;
         logcat.append([
           logLine(now - 1, 3131, marker),
           logLine(now, 3131, 'DevTool disabled. Transitioning to ATTACHED.'),
@@ -646,22 +735,28 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   const leaseReceipt = parseNativeLeaseReceipt({
     serial, issueId: 'octane-888', expiredAt: now + 600_000,
   }, { serial, now });
+  const capacityInputs = {
+    runtimePolicy: NATIVE_CAPACITY_POLICY,
+    receipt: inputReceipt,
+    preflight: {
+      bundleBytes: preflightBytes,
+      relativePath: inputReceipt.preflight.bundle,
+      sha256: preflightSha,
+    },
+  };
+  const campaignIdentity = {
+    campaignId: 'capacity-campaign',
+    matrixContractSha256: inputReceipt.contract.sha256,
+    inputReceiptSha256: inputReceipt.sha256,
+    leaseReceipt,
+  };
+  logcat.close = async () => {
+    logcatCloses++;
+    throw new Error('injected logcat close failure');
+  };
   const adapter = await createCapacityAdapter({
-    capacityInputs: {
-      runtimePolicy: NATIVE_CAPACITY_POLICY,
-      receipt: inputReceipt,
-      preflight: {
-        bundleBytes: preflightBytes,
-        relativePath: inputReceipt.preflight.bundle,
-        sha256: preflightSha,
-      },
-    },
-    campaignIdentity: {
-      campaignId: 'capacity-campaign',
-      matrixContractSha256: inputReceipt.contract.sha256,
-      inputReceiptSha256: inputReceipt.sha256,
-      leaseReceipt,
-    },
+    capacityInputs,
+    campaignIdentity,
     capacityRuntime: {
       env: { LYNX_SANDBOX_SERIAL: serial, LYNX_SANDBOX_PORT: '8765' },
       adb,
@@ -674,7 +769,12 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
       },
       startBundleServer: async (_port, getter) => {
         getBundle = getter;
-        return { close(callback) { callback(); } };
+        return {
+          close(callback) {
+            serverCloses++;
+            callback();
+          },
+        };
       },
     },
   });
@@ -698,24 +798,83 @@ test('sandbox capacity mode completes through direct ADB logs without initializi
   );
   assert.equal(adapter.machine.devtoolPreflights[0].valid, true);
   assert.equal(logcatStarts, 1);
-  assert.equal(commands.filter((args) => args.join(' ') === 'shell date +%s%3N').length, 1);
   assert.equal(commands.some((args) => args[0] === 'logcat' && args.includes('-d')), false);
+  const capacityFailure = await adapter.runCapacityProbe({
+    id: 'octane-native-diagnostic', framework: 'octane',
+  }, {
+    suite: 'native-capacity',
+    fixtureRole: 'eager-capacity-probe',
+    scale: 1_000,
+    rep: 1,
+    bundleBytes: capacityBytes,
+    bundleSha256: capacitySha,
+    contractSha256: inputReceipt.contract.sha256,
+  });
+  assert.equal(capacityFailure.dnf, true);
+  assert.equal(capacityFailure.failure.category, 'capacity/android-art-global-ref-table');
+  assert.equal(capacityFailure.failure.loadToCrashMs, 10);
+  assert.match(capacityFailure.failure.evidence.summary, /INTERLEAVED SUMMARY DETAIL/);
+  assert.doesNotMatch(capacityFailure.failure.evidence.summary, /UNRELATED BEFORE SUMMARY/);
+  assert.doesNotMatch(capacityFailure.failure.evidence.summary, /UNRELATED AFTER SUMMARY/);
+  assert.equal(commands.filter((args) => args.join(' ') === 'shell date +%s%3N').length, 2);
   await adapter.dispose();
+  await adapter.dispose();
+  assert.equal(logcatCloses, 1);
+  assert.equal(serverCloses, 1);
+  assert.equal(commands.filter((args) => args.join(' ') === 'reverse --remove tcp:8765').length, 1);
+
+  let failedInitLogcatCloses = 0;
+  let failedInitServerCloses = 0;
+  await assert.rejects(() => createCapacityAdapter({
+    capacityInputs,
+    campaignIdentity,
+    capacityRuntime: {
+      env: { LYNX_SANDBOX_SERIAL: serial, LYNX_SANDBOX_PORT: '8765' },
+      adb,
+      now: () => now,
+      startLogcat: async () => ({
+        reset() {},
+        drain() { return ''; },
+        async close() {
+          failedInitLogcatCloses++;
+          throw new Error('injected failed-init logcat close');
+        },
+      }),
+      startBundleServer: async (_port, getter) => {
+        getBundle = getter;
+        return {
+          close(callback) {
+            failedInitServerCloses++;
+            callback();
+          },
+        };
+      },
+    },
+  }), /missing snapshot/);
+  assert.equal(failedInitLogcatCloses, 1);
+  assert.equal(failedInitServerCloses, 1);
+  assert.equal(commands.filter((args) => args.join(' ') === 'reverse --remove tcp:8765').length, 2);
 });
 
-test('capacity log capture exposes deltas while retaining the complete finalized attempt', () => {
+test('capacity log capture drains each chunk exactly once and resets phase evidence', () => {
   const capture = createCapacityLogBuffer();
   capture.append('1.000 1 1 I Lynx : marker\nSummary:\n');
-  let cursor = 0;
-  const first = capture.readFrom(cursor);
-  cursor = first.cursor;
-  assert.equal(first.text, '1.000 1 1 I Lynx : marker\nSummary:\n');
+  assert.equal(capture.drain(), '1.000 1 1 I Lynx : marker\nSummary:\n');
+  assert.equal(capture.drain(), '');
   capture.append('30026 of com.lynx.tasm.behavior.PaintingContext$a (30026 unique instances)\n');
-  const second = capture.readFrom(cursor);
-  assert.match(second.text, /30026 of com\.lynx/);
-  assert.match(capture.snapshot(), /Summary:\n30026 of com\.lynx/);
+  assert.match(capture.snapshot(), /30026 of com\.lynx/);
   capture.reset();
   assert.equal(capture.snapshot(), '');
+  assert.equal(capture.drain(), '');
+
+  const bounded = createCapacityLogBuffer({ maxBufferedChars: 8 });
+  bounded.append('1234');
+  bounded.append('567890');
+  assert.equal(bounded.drain(), '34567890');
+  assert.throws(
+    () => createCapacityLogBuffer({ maxBufferedChars: 0 }),
+    /limit must be a positive integer/,
+  );
 });
 
 test('without an adapter the harness still explains itself instead of proxying', async () => {
