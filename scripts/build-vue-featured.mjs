@@ -2,81 +2,145 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const checkout = path.resolve(process.argv[2] ?? process.env.VUE_LYNX_BUILD ?? '');
-if (!checkout || !fs.existsSync(path.join(checkout, 'packages/benchmark'))) {
-  throw new Error('usage: node scripts/build-vue-featured.mjs <vue-lynx-checkout>');
+import {
+  parseVueFeaturedRows,
+  vueFeaturedBuildPlan,
+  vueFeaturedSupportsAutoRows,
+} from './vue-featured-plan.mjs';
+import { assertContainedPath } from '../packages/runner/src/path-safety.mjs';
+import {
+  createVueArtifactAssertions,
+  vueArtifactAssertionsBytes,
+} from '../packages/runner/src/vue-artifact-assertions.mjs';
+import {
+  prepareVueFeaturedBuildTools,
+  writeVueFeaturedBuildMetadata,
+} from '../packages/runner/src/vue-build-tools.mjs';
+
+const argv = process.argv.slice(2);
+const lab = argv.includes('--lab');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function option(name) {
+  const index = argv.findIndex((arg) => arg === `--${name}` || arg.startsWith(`--${name}=`));
+  if (index < 0) return null;
+  const arg = argv[index];
+  if (arg.includes('=')) return arg.slice(arg.indexOf('=') + 1);
+  return argv[index + 1] && !argv[index + 1].startsWith('--') ? argv[index + 1] : null;
 }
 
-const rowsMatrix = [0, 1000, 10000, 30000];
+const checkoutArg = lab && process.argv[2]?.startsWith('--') ? null : process.argv[2];
+const checkout = path.resolve(checkoutArg ?? process.env.VUE_LYNX_BUILD ?? '');
+if (!checkout || !fs.existsSync(path.join(checkout, 'packages/benchmark'))) {
+  throw new Error(
+    'usage: node scripts/build-vue-featured.mjs <vue-lynx-checkout> '
+    + '[--lab --variant vapor|ifr --rows 0,1k,10k,30k --out <dir>]',
+  );
+}
+
+const variant = lab ? option('variant') : null;
+const rowsMatrix = lab
+  ? parseVueFeaturedRows(option('rows') ?? '0,1k,10k,30k')
+  : [0, 1000, 10000, 30000];
+if (lab && rowsMatrix.some((rows) => rows !== 0) && !vueFeaturedSupportsAutoRows(checkout)) {
+  throw new Error(
+    `${checkout}: packages/benchmark has no autoRows build support; `
+    + 'this checkout can only build --rows 0',
+  );
+}
+const buildPlan = vueFeaturedBuildPlan({ lab, variant, rows: rowsMatrix });
+const preparedBuilds = prepareVueFeaturedBuildTools(checkout, buildPlan);
 const benchmark = path.join(checkout, 'packages/benchmark');
 const vueLynx = path.join(checkout, 'packages/vue-lynx');
-const out = path.join(checkout, 'bench-out');
+const out = lab
+  ? path.resolve(option('out') ?? '')
+  : path.join(checkout, 'bench-out');
+if (lab && !option('out')) throw new Error('--lab requires --out <dir>');
+if (lab) {
+  assertContainedPath(root, out, { requiredTopLevel: '.tmp', label: '--lab --out' });
+}
 
 function run(file, args, cwd, env = {}) {
+  const childEnv = { ...process.env, NODE_ENV: 'production', ...env };
+  delete childEnv.BENCH_ENABLE_IFR;
+  delete childEnv.BENCH_ENABLE_ET;
+  if (!Object.hasOwn(env, 'BENCH_CELL')) delete childEnv.BENCH_CELL;
   execFileSync(file, args, {
     cwd,
     stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'production', ...env },
+    env: childEnv,
   });
 }
 
 function buildPackage(dir, tool, args) {
-  run(path.join(vueLynx, 'node_modules/.bin', tool), args, path.join(vueLynx, dir));
+  run(path.join(checkout, 'node_modules/.bin', tool), args, path.join(vueLynx, dir));
 }
 
-function ensureSourceSelfLink() {
-  const nodeModules = path.join(vueLynx, 'plugin/node_modules');
-  const link = path.join(nodeModules, 'vue-lynx');
-  fs.mkdirSync(nodeModules, { recursive: true });
-  if (!fs.existsSync(link)) fs.symlinkSync('../..', link, 'dir');
-}
-
-function generateVapor() {
+function assertGeneratedVapor() {
   const vdomPath = path.join(benchmark, 'apps/ui-vdom/src/App.vue');
   const vaporPath = path.join(benchmark, 'apps/ui-vapor/src/App.vue');
   const marker = '<!-- BENCH_MODE_SCRIPT --><script setup lang="ts">';
   const source = fs.readFileSync(vdomPath, 'utf8');
   if (!source.startsWith(marker)) throw new Error('ui-vdom App.vue lost BENCH_MODE_SCRIPT marker');
-  fs.writeFileSync(
-    vaporPath,
-    `<!-- GENERATED from apps/ui-vdom/src/App.vue — do not edit -->\n${source.replace(marker, '<script setup vapor lang="ts">')}`,
-  );
-}
-
-function stage(id, app, rows) {
-  const source = path.join(benchmark, `apps/${app}/dist`);
-  const target = path.join(out, id, `rows-${rows}`);
-  fs.rmSync(target, { recursive: true, force: true });
-  fs.mkdirSync(target, { recursive: true });
-  for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
-    fs.copyFileSync(path.join(source, file), path.join(target, file));
+  const expected =
+    `<!-- GENERATED from apps/ui-vdom/src/App.vue — do not edit -->\n`
+    + source.replace(marker, '<script setup vapor lang="ts">');
+  if (fs.readFileSync(vaporPath, 'utf8') !== expected) {
+    throw new Error('ui-vapor App.vue is stale; regenerate it in the source checkout');
   }
 }
 
-function buildApp({ id, app, rows, ifr = false, elementTemplates = false }) {
-  const cwd = path.join(benchmark, `apps/${app}`);
-  fs.rmSync(path.join(cwd, 'dist'), { recursive: true, force: true });
-  run(path.join(benchmark, 'node_modules/.bin/rspeedy'), ['build'], cwd, {
-    BENCH_AUTOROWS: String(rows),
-    BENCH_ENABLE_IFR: ifr ? '1' : '0',
-    BENCH_ENABLE_ET: elementTemplates ? '1' : '0',
-  });
-  stage(id, app, rows);
+function stage(configuration, source) {
+  const { id, rows } = configuration;
+  const target = path.join(out, id, `rows-${rows}`);
+  fs.rmSync(target, { recursive: true, force: true });
+  fs.mkdirSync(target, { recursive: true });
+  const bundleFiles = Object.fromEntries(
+    ['main.web.bundle', 'main.lynx.bundle'].map((name) => {
+      const staged = path.join(target, name);
+      fs.copyFileSync(path.join(source, name), staged);
+      return [name, staged];
+    }),
+  );
+  const {
+    mode, rows: expectedRows, ifr, et,
+  } = configuration;
+  const assertions = createVueArtifactAssertions(
+    { mode, rows: expectedRows, ifr, et },
+    bundleFiles,
+  );
+  fs.writeFileSync(
+    path.join(target, 'artifact-assertions.json'),
+    vueArtifactAssertionsBytes(assertions),
+  );
 }
 
-ensureSourceSelfLink();
+function buildApp(configuration, tool) {
+  const {
+    app, benchCell, outputDir, rows,
+  } = configuration;
+  const cwd = path.join(benchmark, `apps/${app}`);
+  const source = path.join(cwd, outputDir);
+  fs.rmSync(path.join(cwd, 'node_modules/.cache'), { recursive: true, force: true });
+  fs.rmSync(source, { recursive: true, force: true });
+  run(process.execPath, [tool.absoluteBinaryPath, 'build'], cwd, {
+    BENCH_AUTOROWS: String(rows),
+    ...(benchCell ? { BENCH_CELL: benchCell } : {}),
+  });
+  stage(configuration, source);
+}
+
 buildPackage('internal', 'tsc', ['-p', 'tsconfig.build.json']);
 for (const dir of ['runtime', 'main-thread', 'plugin']) buildPackage(dir, 'rslib', ['build']);
-generateVapor();
-fs.rmSync(out, { recursive: true, force: true });
+assertGeneratedVapor();
 
-for (const rows of rowsMatrix) {
-  buildApp({ id: 'react', app: 'ui-react', rows });
-  buildApp({ id: 'vue-vdom', app: 'ui-vdom', rows });
-  buildApp({ id: 'vue-vdom-ifr-et', app: 'ui-vdom', rows, ifr: true, elementTemplates: true });
-  buildApp({ id: 'vue-vapor', app: 'ui-vapor', rows });
-  buildApp({ id: 'vue-vapor-ifr', app: 'ui-vapor', rows, ifr: true });
+for (const { cell, tool } of preparedBuilds) buildApp(cell, tool);
+writeVueFeaturedBuildMetadata(out, preparedBuilds);
+
+if (lab) {
+  console.log(`[build-vue-featured:lab] ${buildPlan.length} cells (${buildPlan[0].id}) → ${out}`);
+} else {
+  console.log(`[build-vue-featured] 20 cells → ${out}`);
 }
-
-console.log(`[build-vue-featured] 20 cells → ${out}`);
