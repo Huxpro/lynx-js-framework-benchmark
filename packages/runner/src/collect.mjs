@@ -32,6 +32,7 @@ import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
+import { NATIVE_TABLE_SETTLEMENT_CONTRACT } from './native-inputs.mjs';
 import {
   assertPipelineCoverage,
   classifyPipelineCoverage,
@@ -498,6 +499,41 @@ function samplingProblems(run, record) {
   return problems;
 }
 
+const LEGACY_NATIVE_ACK_SETTLEMENT =
+  'legacy-explicit-transport-ack-then-two-native-frames';
+
+function classifyNativeSettlement(record) {
+  if (record.harness !== 'native'
+    || record.suite !== 'table'
+    || record.metric !== 'latency'
+    || observationValues(record).length === 0) return null;
+  if (typeof record.settlementContract === 'string' && record.settlementContract.length > 0) {
+    return {
+      contract: record.settlementContract,
+      compatible: record.settlementContract === NATIVE_TABLE_SETTLEMENT_CONTRACT,
+      ...(record.settlementContract === NATIVE_TABLE_SETTLEMENT_CONTRACT ? {} : {
+        reason: 'native-settlement-contract-not-rank-calibrated',
+      }),
+    };
+  }
+  const details = Array.isArray(record.detailSamples)
+    ? record.detailSamples.filter((detail) => detail != null)
+    : record.detail == null ? [] : [record.detail];
+  const acknowledgements = details.map((detail) => detail?.transportEvidence?.acknowledged)
+    .filter((acknowledged) => typeof acknowledged === 'boolean');
+  if (acknowledgements.includes(true)) {
+    return {
+      contract: LEGACY_NATIVE_ACK_SETTLEMENT,
+      compatible: false,
+      reason: 'native-latency-includes-framework-specific-transport-ack',
+    };
+  }
+  return {
+    contract: 'legacy-input-handler-to-second-native-frame-no-explicit-ack',
+    compatible: true,
+  };
+}
+
 function classifyComparability(run, records) {
   const cohort = run.meta.receipt?.comparabilityCohort ?? null;
   return records.map((record) => {
@@ -505,6 +541,7 @@ function classifyComparability(run, records) {
     const pipeline = pipelineWorkClassification(records, record);
     const storm = stormContractClassification(records, record);
     const problems = samplingProblems(run, record);
+    const nativeSettlement = classifyNativeSettlement(record);
     const unthrottledWorkerCpu = record.harness === 'web'
       && record.metric === 'btsCpu'
       && record.cpuThrottle > 1
@@ -541,6 +578,14 @@ function classifyComparability(run, records) {
     if (invalidatedRun || unverifiedProcessThrottle || unthrottledWorkerCpu || problems.length) {
       // Source-integrity failures and measurement invalidation take
       // precedence over any derived work classification.
+    } else if (nativeSettlement?.compatible === false) {
+      comparabilityStatus = 'incompatible-controls';
+      comparabilityReasons.push(nativeSettlement.reason);
+    } else if (nativeSettlement?.contract === NATIVE_TABLE_SETTLEMENT_CONTRACT) {
+      // The Native campaign receipt and exact renderer-observed settlement
+      // contract are its prospective comparability evidence. It does not use
+      // the Web-only comparabilityCohort receipt.
+      comparabilityStatus = 'comparable';
     } else if (storm?.status === 'invalid') {
       comparabilityStatus = 'incompatible-controls';
       comparabilityReasons.push(storm.reason);
@@ -574,7 +619,8 @@ function classifyComparability(run, records) {
       && comparabilityStatus !== 'invalid-measurement'
       && comparabilityStatus !== 'incompatible-controls'
       && comparabilityStatus !== 'contract-failed';
-    const descriptiveEligible = comparabilityStatus === 'contract-failed';
+    const descriptiveEligible = comparabilityStatus === 'contract-failed'
+      || nativeSettlement?.compatible === false;
     if (comparabilityStatus === null && cohort === null) {
       return { ...record, comparabilityStatus: 'legacy-unverified' };
     }
@@ -585,6 +631,7 @@ function classifyComparability(run, records) {
       ...(cohort ? { comparabilityCohort: cohort } : {}),
       rankingEligible,
       ...(descriptiveEligible ? { descriptiveEligible: true } : {}),
+      ...(nativeSettlement ? { settlementContract: nativeSettlement.contract } : {}),
       ...(work ? { workClassification: work } : {}),
       ...(pipeline ? { pipelineControl: pipeline } : {}),
       ...(storm ? { stormControl: storm } : {}),
@@ -1411,6 +1458,10 @@ const historyRecord = (run, file, record, comparisonKind, cohortId) => {
     rankEligible: isRankingEligible(record) && (transport?.comparable ?? true),
     ...(record.descriptiveEligible ? { descriptiveEligible: true } : {}),
     ...(record.comparabilityStatus ? { comparabilityStatus: record.comparabilityStatus } : {}),
+    ...(record.comparabilityReasons?.length
+      ? { comparabilityReasons: record.comparabilityReasons } : {}),
+    ...(record.settlementContract != null
+      ? { settlementContract: record.settlementContract } : {}),
     ...(transport ? { transport } : {}),
     ...exactObservationHistoryFields(record),
   };

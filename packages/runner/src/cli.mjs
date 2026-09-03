@@ -360,10 +360,11 @@ async function cmdRun(args) {
     });
     const records = mergeNativeRecords(priorRecords, native.records, matrixContract);
     assertNativeInputsUnchanged(inputs);
-    if (native.stoppedForLeaseExpiry) {
+    if (native.stoppedForCheckpoint) {
       persist({ records: native.records, machine: native.machine }, { complete: false });
       console.log(
-        `[run:native] lease-expiry checkpoint ${records.length}/${matrixContract.expectedCellCount} `
+        `[run:native] ${native.checkpointReason} checkpoint `
+        + `${records.length}/${matrixContract.expectedCellCount} `
         + `records → ${path.relative(root, outPath)}`,
       );
       return;

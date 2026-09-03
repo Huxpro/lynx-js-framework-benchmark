@@ -221,7 +221,7 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
     const entryDir = path.join(root, 'entries/react');
     const distDir = path.join(entryDir, 'dist');
     fs.mkdirSync(path.join(distDir, 'rows-0'), { recursive: true });
-    const bundle = Buffer.from('lynx-native-bench-v2 lynx-native-startup-v1');
+    const bundle = Buffer.from('lynx-native-bench-v3 lynx-native-startup-v1');
     const bundlePath = path.join(distDir, 'rows-0/main.lynx.bundle');
     fs.writeFileSync(bundlePath, bundle);
     const bundleSha = crypto.createHash('sha256').update(bundle).digest('hex');

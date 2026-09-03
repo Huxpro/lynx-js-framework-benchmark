@@ -34,6 +34,37 @@ export const NATIVE_TRANSPORT_CONTAINMENT_REVISION = Object.freeze({
   ]),
 });
 
+export const NATIVE_DOM_TEXT_DECODING_REVISION = Object.freeze({
+  reason: 'native-dom-raw-text-decoding',
+  baseCampaignId: '16ad084f83eee859',
+  baseInputReceiptSha256: '43622183f3d6808c266a979bb950f682e75c4169aff9a3b348e793c3a2eb01da',
+  baseRecordCount: 6,
+  baseLeaseCount: 2,
+  baseLastLeaseIssueId: 'lynx-benchmark-native-v13-20260903-lease7',
+  requiredCurrentSources: Object.freeze({}),
+  allowedChangedSources: Object.freeze([
+    'packages/runner/adapters/lynx-sandbox-android.mjs',
+    'packages/runner/src/native-resume.mjs',
+  ]),
+});
+
+export const NATIVE_PRESTATE_SCOPE_REVISION = Object.freeze({
+  reason: 'native-prestate-failure-scope',
+  baseCampaignId: 'a643285c69e91be9',
+  baseInputReceiptSha256: 'a549a5298b2d5360cd17929e5ec592e9de28379cc2ea678b50ad37678888cd11',
+  baseRecordCount: 48,
+  baseLeaseCount: 5,
+  baseLastLeaseIssueId: 'lynx-benchmark-native-v16-20260903-lease18',
+  requiredCurrentSources: Object.freeze({
+    'packages/runner/adapters/lynx-sandbox-android.mjs':
+      '5490c59c52b47e6940493c7ac44bd964c1d23e8e04c6ea109ee84578492dbe19',
+  }),
+  allowedChangedSources: Object.freeze([
+    'packages/runner/adapters/lynx-sandbox-android.mjs',
+    'packages/runner/src/native-resume.mjs',
+  ]),
+});
+
 const campaignMethodInvariant = (campaign) => {
   const { id: _id, inputReceiptSha256: _inputReceiptSha256, ...invariant } = campaign;
   return invariant;
@@ -139,7 +170,7 @@ export function validateNativeResumeCheckpoint(run, {
   leaseReceipt,
   methodRevisionReason = null,
   methodRevisionInputReceiptSha256 = null,
-  methodRevisionApproval = NATIVE_TRANSPORT_CONTAINMENT_REVISION,
+  methodRevisionApproval = null,
 }) {
   if ((run?.schemaVersion !== SCHEMA_VERSION
     && !LEGACY_SCHEMA_VERSIONS.includes(run?.schemaVersion)) || run.meta?.checkpoint !== true) {
@@ -167,10 +198,16 @@ export function validateNativeResumeCheckpoint(run, {
     if (methodRevisionChain != null) {
       throw new Error('Native resume active method revision does not match current runner sources.');
     }
+    const approval = methodRevisionApproval
+      ?? (run.meta.campaign.id === NATIVE_PRESTATE_SCOPE_REVISION.baseCampaignId
+        ? NATIVE_PRESTATE_SCOPE_REVISION
+        : run.meta.campaign.id === NATIVE_DOM_TEXT_DECODING_REVISION.baseCampaignId
+          ? NATIVE_DOM_TEXT_DECODING_REVISION
+          : NATIVE_TRANSPORT_CONTAINMENT_REVISION);
     assertApprovedMethodRevision(run, campaign, inputReceipt, {
       reason: methodRevisionReason,
       inputReceiptSha256: methodRevisionInputReceiptSha256,
-    }, methodRevisionApproval);
+    }, approval);
     methodRevisionChain = createNativeMethodRevisionChain(run.meta.inputReceipt);
     methodRevisionChain = appendNativeMethodRevision(
       methodRevisionChain,

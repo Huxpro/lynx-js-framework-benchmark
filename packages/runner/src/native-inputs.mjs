@@ -10,8 +10,18 @@ import {
 import { repoRoot } from './entries.mjs';
 
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
-export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
+export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v3';
+export const NATIVE_COMPATIBLE_TABLE_PROTOCOLS = Object.freeze([
+  NATIVE_TABLE_PROTOCOL,
+  'lynx-native-bench-v2',
+]);
 export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
+export const NATIVE_TABLE_BOUNDARY =
+  'native-input-handler-to-native-dom-predicate-plus-two-native-frames';
+export const NATIVE_DRIVER_TABLE_BOUNDARY =
+  'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames';
+export const NATIVE_TABLE_SETTLEMENT_CONTRACT =
+  'input-handler-to-native-dom-predicate-plus-two-frames';
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -78,12 +88,17 @@ export function snapshotNativeInputs({
         );
       }
       const protocols = {
-        table: bytes.includes(Buffer.from(NATIVE_TABLE_PROTOCOL)),
+        table: NATIVE_COMPATIBLE_TABLE_PROTOCOLS.some((protocol) =>
+          bytes.includes(Buffer.from(protocol))),
+        tableVersion: NATIVE_COMPATIBLE_TABLE_PROTOCOLS.find((protocol) =>
+          bytes.includes(Buffer.from(protocol))) ?? null,
         startup: bytes.includes(Buffer.from(NATIVE_STARTUP_PROTOCOL)),
       };
       if (requireProtocols && suites.includes('table') && rows === 0) {
         if (!protocols.table) {
-          throw new Error(`${entry.id}: rows-0 Native bundle lacks ${NATIVE_TABLE_PROTOCOL}.`);
+          throw new Error(
+            `${entry.id}: rows-0 Native bundle lacks a compatible table producer protocol.`,
+          );
         }
         if (!protocols.startup) {
           throw new Error(`${entry.id}: rows-0 Native bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);

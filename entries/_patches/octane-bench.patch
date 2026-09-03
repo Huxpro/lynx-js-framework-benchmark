@@ -1,5 +1,5 @@
 diff --git a/benchmarks/lynx-table/app/src/App.lynx.tsrx b/benchmarks/lynx-table/app/src/App.lynx.tsrx
-index 519715429..8785dad7b 100644
+index 519715429..b7ed468c5 100644
 --- a/benchmarks/lynx-table/app/src/App.lynx.tsrx
 +++ b/benchmarks/lynx-table/app/src/App.lynx.tsrx
 @@ -30,3 +30,4 @@ function countRowRender(): void {
@@ -10,17 +10,13 @@ index 519715429..8785dad7b 100644
 +// cycle instead of batching. Lynx for Web provides MessageChannel; the Native
 +// Engine does not, so Native falls back to its timer task queue. Mirrors the
 +// Vue and React apps.
-@@ -36,10 +37,130 @@ const STORM_SELECT_TICKS = 30;
+@@ -36,6 +37,71 @@ const STORM_SELECT_TICKS = 30;
 -const _stormChannel = new MessageChannel();
 -let _stormPending: (() => void) | null = null;
 -_stormChannel.port1.onmessage = () => {
 -	const cb = _stormPending;
 -	_stormPending = null;
 -	if (cb) cb();
--};
--function nextMacrotask(cb: () => void) {
--	_stormPending = cb;
--	_stormChannel.port2.postMessage(0);
 +interface BenchmarkSnapshot {
 +	readonly rowCount: number;
 +	readonly firstId: number | null;
@@ -38,22 +34,22 @@ index 519715429..8785dad7b 100644
 +}
 +
 +interface NativeBenchmarkResult {
-+	readonly protocol: 'lynx-native-bench-v2';
++	readonly protocol: 'lynx-native-bench-v3';
 +	readonly name: string;
 +	readonly source: 'native-tap' | 'devtool-driver';
-+	readonly boundary: | 'native-input-handler-to-second-native-frame'
-+	| 'native-devtool-driver-handler-to-second-native-frame';
++	readonly boundary:
++		| 'native-input-handler-to-native-dom-predicate-plus-two-native-frames'
++		| 'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames';
++	readonly settlementContract: 'input-handler-to-native-dom-predicate-plus-two-frames';
++	readonly producerReceiptKind: 'action-plus-two-native-frames';
 +	readonly startMs: number;
-+	readonly commitAckMs: number;
 +	readonly firstFrameMs: number;
 +	readonly endMs: number;
 +	readonly latencyMs: number;
 +	readonly renderEvidence: { kind: 'native-animation-frame'; frames: 2 };
 +	readonly transportEvidence: {
-+		readonly kind: 'octane-root.flushTransport';
-+		readonly acknowledged: true;
-+		readonly ackMs: number;
-+		readonly tickAcknowledgements?: number;
++		readonly kind: 'excluded-from-latency';
++		readonly acknowledged: false;
 +	};
 +	readonly stormEvidence?: StormEvidence;
 +	readonly preState: BenchmarkSnapshot;
@@ -64,6 +60,7 @@ index 519715429..8785dad7b 100644
 +	typeof globalThis & {
 +		__LYNX_BENCH_FLUSH__?: () => Promise<void>;
 +		__LYNX_BENCH_SNAPSHOT__?: () => BenchmarkSnapshot;
++		__LYNX_BENCH_REQUEST_FINAL_FRAMES__?: (token: string) => void;
 +		__LYNX_BENCH_ERROR__?: string;
 +	};
 +
@@ -83,21 +80,38 @@ index 519715429..8785dad7b 100644
 +	return new Promise((resolve) => lynx.requestAnimationFrame(() => resolve(Date.now())));
 +}
 +
++(globalThis as BenchmarkGlobal).__LYNX_BENCH_REQUEST_FINAL_FRAMES__ = (token) => {
++	lynx.requestAnimationFrame(() => {
++		const firstFrameMs = Date.now();
++		lynx.requestAnimationFrame(() => console.log(
++			'__NATIVE_BENCH_FINAL_FRAMES__',
++			JSON.stringify({ token, firstFrameMs, endMs: Date.now() }),
++		));
++	});
+@@ -43,3 +109,7 @@ _stormChannel.port1.onmessage = () => {
+-function nextMacrotask(cb: () => void) {
+-	_stormPending = cb;
+-	_stormChannel.port2.postMessage(0);
++
 +function reportNativeFailure(error: unknown): never {
 +	const message =
 +		error instanceof Error ? error.stack ?? error.message : String(error);
 +	(globalThis as BenchmarkGlobal).__LYNX_BENCH_ERROR__ = message;
 +	console.log('__NATIVE_BENCH_ERROR__', message);
 +	throw error;
-+}
-+
+@@ -48,6 +118,58 @@ function nextMacrotask(cb: () => void) {
+-function runStorm(ticks: number, step: (t: number) => void) {
+-	let t = 0;
+-	const tick = () => {
+-		t += 1;
+-		step(t);
+-		if (t < ticks) nextMacrotask(tick);
 +function measureNative(
 +	name: string,
 +	action: () => void | Promise<void | StormEvidence>,
 +	source: NativeBenchmarkResult['source'],
 +): Promise<NativeBenchmarkResult | undefined> {
 +	const benchmark = globalThis as BenchmarkGlobal;
-+	const flush = benchmark.__LYNX_BENCH_FLUSH__;
 +	const preState = benchmark.__LYNX_BENCH_SNAPSHOT__?.() ?? emptySnapshot();
 +	const startMs = Date.now();
 +	let actionResult: void | Promise<void | StormEvidence>;
@@ -107,36 +121,25 @@ index 519715429..8785dad7b 100644
 +		return Promise.reject(error).catch(reportNativeFailure);
 +	}
 +	return Promise.resolve(actionResult).then((stormEvidence) => {
-+		if (flush === undefined) return undefined;
-+		return flush().then(() => ({ stormEvidence }));
-+	}).then((actionEvidence) => {
-+		if (!actionEvidence) return undefined;
-+		const commitAckMs = Date.now();
 +		return nextNativeFrame().then(
 +			(firstFrameMs) => nextNativeFrame().then((endMs) => {
-+				const stormEvidence = actionEvidence.stormEvidence;
 +				const result: NativeBenchmarkResult = {
-+					protocol: 'lynx-native-bench-v2',
++					protocol: 'lynx-native-bench-v3',
 +					name,
 +					source,
 +					boundary: source === 'native-tap'
-+						? 'native-input-handler-to-second-native-frame'
-+						: 'native-devtool-driver-handler-to-second-native-frame',
++						? 'native-input-handler-to-native-dom-predicate-plus-two-native-frames'
++						: 'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames',
++					settlementContract: 'input-handler-to-native-dom-predicate-plus-two-frames',
++					producerReceiptKind: 'action-plus-two-native-frames',
 +					startMs,
-+					commitAckMs,
 +					firstFrameMs,
 +					endMs,
 +					latencyMs: endMs - startMs,
 +					renderEvidence: { kind: 'native-animation-frame', frames: 2 },
 +					transportEvidence: {
-+						kind: 'octane-root.flushTransport',
-+						acknowledged: true,
-+						ackMs: commitAckMs,
-+						...(stormEvidence === undefined
-+							? {}
-+							: {
-+									tickAcknowledgements: stormEvidence.renderBarriers,
-+								}),
++						kind: 'excluded-from-latency',
++						acknowledged: false,
 +					},
 +					...(stormEvidence === undefined ? {} : { stormEvidence }),
 +					preState,
@@ -151,13 +154,8 @@ index 519715429..8785dad7b 100644
 +
 +function measureNativeTap(name: string, action: () => void | Promise<void | StormEvidence>): void {
 +	void measureNative(name, action, 'native-tap');
-@@ -48,6 +169,8 @@ function nextMacrotask(cb: () => void) {
--function runStorm(ticks: number, step: (t: number) => void) {
--	let t = 0;
--	const tick = () => {
--		t += 1;
--		step(t);
--		if (t < ticks) nextMacrotask(tick);
++}
++
 +const _stormChannel =
 +	typeof MessageChannel === 'function' ? new MessageChannel() : null;
 +let _stormPending: (() => void) | null = null;
@@ -166,7 +164,7 @@ index 519715429..8785dad7b 100644
 +		const cb = _stormPending;
 +		_stormPending = null;
 +		if (cb) cb();
-@@ -55 +178,27 @@ function runStorm(ticks: number, step: (t: number) => void) {
+@@ -55 +177,27 @@ function runStorm(ticks: number, step: (t: number) => void) {
 -	nextMacrotask(tick);
 +}
 +
@@ -195,12 +193,12 @@ index 519715429..8785dad7b 100644
 +		return { expectedTicks: ticks, completedTicks: tick, renderBarriers };
 +	});
 +	return runNext();
-@@ -138,2 +287,2 @@ export function App() @{
+@@ -138,2 +286,2 @@ export function App() @{
 -	// Storm drivers read ids off a ref so the module-scope tick loop never
 -	// captures a stale rows binding (same shape as the React app).
-+	// Storm drivers and post-ACK predicates read refs so an async measurement
-+	// never observes the render closure from before the acknowledged commit.
-@@ -141,0 +291,16 @@ export function App() @{
++	// Storm drivers and post-frame receipts read refs so an async measurement
++	// never observes the render closure captured before the action.
+@@ -141,0 +290,16 @@ export function App() @{
 +	const rowsRef = useRef<RowData[]>(rows);
 +	rowsRef.current = rows;
 +	const selectedRef = useRef<number | undefined>(selected);
@@ -217,23 +215,23 @@ index 519715429..8785dad7b 100644
 +			selectedId: selectedRef.current ?? null,
 +		};
 +	};
-@@ -143,2 +308,2 @@ export function App() @{
+@@ -143,2 +307,2 @@ export function App() @{
 -	const stormUpdate = useCallback(() => {
 -		runStorm(
 +	const runUpdateStorm = useCallback(
 +		() => runStorm(
-@@ -149,2 +314,3 @@ export function App() @{
+@@ -149,2 +313,3 @@ export function App() @{
 -		);
 -	}, []);
 +		),
 +		[],
 +	);
-@@ -152,2 +318,2 @@ export function App() @{
+@@ -152,2 +317,2 @@ export function App() @{
 -	const stormSelect = useCallback(() => {
 -		runStorm(STORM_SELECT_TICKS, (t) => {
 +	const runSelectStorm = useCallback(
 +		() => runStorm(STORM_SELECT_TICKS, (t) => {
-@@ -156,2 +322,68 @@ export function App() @{
+@@ -156,2 +321,68 @@ export function App() @{
 -		});
 -	}, []);
 +		}),
@@ -304,37 +302,37 @@ index 519715429..8785dad7b 100644
 +			}
 +		},
 +	};
-@@ -162 +394 @@ export function App() @{
+@@ -162 +393 @@ export function App() @{
 -			<view class="btn" bindtap={run}>
 +			<view class="btn" bindtap={() => measureNativeTap('create', run)}>
-@@ -165 +397 @@ export function App() @{
+@@ -165 +396 @@ export function App() @{
 -			<view class="btn" bindtap={run3k}>
 +			<view class="btn" bindtap={() => measureNativeTap('create', run3k)}>
-@@ -168 +400 @@ export function App() @{
+@@ -168 +399 @@ export function App() @{
 -			<view class="btn" bindtap={run5k}>
 +			<view class="btn" bindtap={() => measureNativeTap('create', run5k)}>
-@@ -171 +403 @@ export function App() @{
+@@ -171 +402 @@ export function App() @{
 -			<view class="btn" bindtap={runLots}>
 +			<view class="btn" bindtap={() => measureNativeTap('create', runLots)}>
-@@ -174 +406 @@ export function App() @{
+@@ -174 +405 @@ export function App() @{
 -			<view class="btn" bindtap={run20k}>
 +			<view class="btn" bindtap={() => measureNativeTap('create', run20k)}>
-@@ -177 +409 @@ export function App() @{
+@@ -177 +408 @@ export function App() @{
 -			<view class="btn" bindtap={run30k}>
 +			<view class="btn" bindtap={() => measureNativeTap('create', run30k)}>
-@@ -180 +412 @@ export function App() @{
+@@ -180 +411 @@ export function App() @{
 -			<view class="btn" bindtap={add}>
 +			<view class="btn" bindtap={() => measureNativeTap('append1k', add)}>
-@@ -183 +415 @@ export function App() @{
+@@ -183 +414 @@ export function App() @{
 -			<view class="btn" bindtap={update}>
 +			<view class="btn" bindtap={() => measureNativeTap('update10th', update)}>
-@@ -186 +418 @@ export function App() @{
+@@ -186 +417 @@ export function App() @{
 -			<view class="btn" bindtap={swapRows}>
 +			<view class="btn" bindtap={() => measureNativeTap('swap', swapRows)}>
-@@ -189 +421 @@ export function App() @{
+@@ -189 +420 @@ export function App() @{
 -			<view class="btn" bindtap={clear}>
 +			<view class="btn" bindtap={() => measureNativeTap('clear', clear)}>
-@@ -201 +433,6 @@ export function App() @{
+@@ -201 +432,6 @@ export function App() @{
 -				<Row row={row} isSelected={selected === row.id} onSelect={select} onRemove={remove} />
 +				<Row
 +					row={row}

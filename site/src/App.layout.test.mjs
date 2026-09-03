@@ -131,6 +131,15 @@ test('at-a-glance equations expose pointer, keyboard, and pinned row tracing', (
   assert.match(heatGridSource, /event\.key === 'Escape'/);
 });
 
+test('at-a-glance never turns descriptive-only observations into ratios or baselines', () => {
+  assert.match(heatGridSource, /rankableMedian\(recs\.get\(id\)\)/);
+  assert.match(heatGridSource, /record\?\.rankingEligible === false/);
+  assert.match(heatGridSource, /className="null incomparable"/);
+  assert.match(heatGridSource, /'Not comparable: this observation uses a different settlement boundary/);
+  assert.match(heatGridSource, /disabled=\{!baselineIds\.has\(e\.id\)\}/);
+  assert.doesNotMatch(heatGridSource, /row\.recs\.get\(activeMode\)\?\.median/);
+});
+
 test('Scale leads with one scale-comparable interaction composite instead of misusing the upstream mixed-scale score', () => {
   const composite = source.indexOf('<InteractionScaleComposite');
   const costSpace = source.indexOf('<CostSpace', composite);

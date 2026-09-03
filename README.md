@@ -73,10 +73,15 @@ client and surfaces as `No response found`. The adapter starts a clean Explorer,
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
 the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
-Every Native-eligible featured entry uses real Native touch input. Octane samples
-begin in the background handler, wait for the renderer's correlated transport acknowledgement,
-then wait two Native frames; the recorded post-ACK state is checked against the semantic workload
-predicate. A DevTool driver exists only as an explicitly labelled diagnostic mode and is never the
+Every Native-eligible featured entry uses real Native touch input and the versioned
+`input-handler-to-native-dom-predicate-plus-two-frames` settlement contract. The instrumented
+input handler supplies only the device-clock start receipt; the shared Sandbox adapter then
+observes the workload-specific Native element-tree predicate and ends after two further Native
+frames. Ranked table latency never waits for a framework-specific transport/commit
+acknowledgement. Legacy Octane v2 samples that
+did wait for `root.flushTransport()` remain visible as absolute descriptive evidence, but are
+marked not comparable and cannot enter a ratio, baseline, score, or ranking. A DevTool driver
+exists only as an explicitly labelled diagnostic mode and is never the
 default benchmark path. A strict producer payload failure is retained as an evidenced
 `producer-protocol-invalid` DNF for that cell; its evidence explicitly records validation as
 `attempted: true, passed: false`, never invents a timing value, and never aborts unrelated cells.
@@ -164,7 +169,7 @@ reproducible instead of being lost with the process. Each cell names the lease t
 and every receipt remains in the ordered chain. Split checkpoints combine only when one receipt
 chain is an exact prefix of the other; same-serial forks remain archive-only. Known transport exhaustion and producer-protocol
 failures are retained as structured DNF evidence; unknown adapter/programming errors still abort.
-Each checkpoint carries a `native-featured-instrumented-matrix-v3` coverage ledger. It distinguishes measured,
+Each checkpoint carries a `native-featured-instrumented-matrix-v4` coverage ledger. It distinguishes measured,
 measured-with-DNF, DNF, capability-proven unsupported, unscheduled, incompatible cohort, and
 display/derivation defects. A completed campaign may contain measured, DNF, or proven unsupported
 cells, but never an unscheduled or invalid cell. Bundles are served from immutable byte snapshots;

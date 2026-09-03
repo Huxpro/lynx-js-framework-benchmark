@@ -14,6 +14,7 @@
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-dom OCTANE_DOM_BUILD=<checkout> node scripts/vendor-entries.mjs
+//        VENDOR_ONLY=octane VENDOR_FLAVORS=lynx OCTANE_BUILD=<checkout> node scripts/vendor-entries.mjs
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -36,6 +37,10 @@ const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
 const wants = (id) => ONLY.size === 0 || ONLY.has(id);
+const FLAVORS = new Set((process.env.VENDOR_FLAVORS ?? 'web,lynx').split(',').filter(Boolean));
+if ([...FLAVORS].some((flavor) => !['web', 'lynx'].includes(flavor)) || FLAVORS.size === 0) {
+  throw new Error('VENDOR_FLAVORS must contain web, lynx, or both.');
+}
 
 // Presentation metadata is source configuration, colocated with the manifest
 // generator so re-vendoring cannot silently reset legend order or chart colors.
@@ -88,17 +93,21 @@ function vendor({
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
-  fs.rmSync(dist, { recursive: true, force: true });
+  if (FLAVORS.size === 2) fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
   const checks = {};
   for (const { rows, from } of cells) {
     const destDir = path.join(dist, `rows-${rows}`);
     fs.mkdirSync(destDir, { recursive: true });
     for (const f of ['main.web.bundle', 'main.lynx.bundle']) {
+      const flavor = f === 'main.web.bundle' ? 'web' : 'lynx';
       const src = path.join(from, f);
-      if (!fs.existsSync(src)) continue;
       const dest = path.join(destDir, f);
-      fs.copyFileSync(src, dest);
+      if (FLAVORS.has(flavor)) {
+        if (!fs.existsSync(src)) continue;
+        fs.copyFileSync(src, dest);
+      }
+      if (!fs.existsSync(dest)) continue;
       checks[`rows-${rows}/${f}`] = sha256(dest);
     }
     if (!fs.existsSync(path.join(destDir, 'main.web.bundle'))) {

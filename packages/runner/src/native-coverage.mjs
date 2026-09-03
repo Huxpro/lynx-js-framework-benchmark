@@ -2,8 +2,12 @@ import crypto from 'node:crypto';
 
 import { STARTUP_CASES, tableCasesForHarness } from '@lynx-bench/shared/workloads';
 import { entryIsFeaturedForHarness } from './entries.mjs';
+import {
+  NATIVE_TABLE_BOUNDARY,
+  NATIVE_TABLE_SETTLEMENT_CONTRACT,
+} from './native-inputs.mjs';
 
-export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-instrumented-matrix-v3';
+export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-instrumented-matrix-v4';
 export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 23;
 export const NATIVE_FEATURED_MATRIX_CELL_COUNT = 138;
 
@@ -50,7 +54,8 @@ export function buildNativeMatrixContract(entries) {
           scale,
           metric: 'latency',
           unit: 'ms',
-          boundary: 'native-input-handler-to-second-native-frame',
+          boundary: NATIVE_TABLE_BOUNDARY,
+          settlementContract: NATIVE_TABLE_SETTLEMENT_CONTRACT,
         });
       }
     }
@@ -131,6 +136,7 @@ function compactRecord(record) {
     dnfCount: record.dnfCount ?? 0,
     median: record.median ?? null,
     boundary: record.boundary,
+    settlementContract: record.settlementContract ?? null,
     unit: record.unit,
     runFile: record.runFile ?? null,
     machineId: record.machineId ?? null,
@@ -166,9 +172,12 @@ export function classifyNativeCoverage({
       if (countError != null) {
         status = 'invalid-incomparable';
         reason = countError;
-      } else if (record.boundary !== expected.boundary || record.unit !== expected.unit) {
+      } else if (record.boundary !== expected.boundary
+        || record.unit !== expected.unit
+        || (expected.settlementContract != null
+          && record.settlementContract !== expected.settlementContract)) {
         status = 'invalid-incomparable';
-        reason = 'metric boundary or unit does not match the contract';
+        reason = 'metric boundary, unit, or settlement contract does not match the contract';
       } else if (publishedMatches.length !== 1) {
         status = 'display-derivation-bug';
         reason = publishedMatches.length === 0

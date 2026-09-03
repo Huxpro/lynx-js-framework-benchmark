@@ -11,15 +11,24 @@ had a documented weakness, the fix is noted.
   (shadow-piercing walk; ≤1 frame quantization). Ops are driven by real Chromium input
   (`page.mouse.click`) on geometry the in-page driver reports — never synthetic framework
   events.
-- **Native interactive latency** = the entry's Native input handler → its second
-  `lynx.requestAnimationFrame`. The entry emits a `__NATIVE_BENCH_RESULT__` payload through the
-  Runtime console, so both endpoints and the duration use the device clock; host ADB/CDP latency
-  is outside the sample. The Sandbox adapter subscribes before dispatching real Native touch input
-  for every Native-eligible featured entry. This is an instrumented/gray-box timing boundary, not
-  a framework-unmodified black-box claim: React, Vue, and Octane benchmark apps all implement the
-  same result-producer contract. Octane's benchmark-only patch is confined to the table app and
-  uses the public `root.flushTransport()` acknowledgement; it does not modify Octane core or add
-  JSON serialization to the render transport. JSON is used once only to emit each final result.
+- **Native interactive latency** = the entry's Native input handler → the first externally
+  observed Native element-tree state that satisfies the shared workload predicate → two further
+  `lynx.requestAnimationFrame` callbacks. The entry emits a `__NATIVE_BENCH_RESULT__` producer
+  receipt carrying the input-handler `startMs` through the Runtime console; the Sandbox adapter, already subscribed before real
+  Native touch input, polls the rendered Native tree and requests the final two frames. Both timing
+  endpoints and the duration use the device clock. DevTool polling can only delay observation, so
+  its fixed cadence is recorded as bounded endpoint quantization rather than subtracted. This is an
+  instrumented input timestamp around a black-box renderer observation, not a
+  framework-unmodified black-box claim. React/Vue's prior v2 producers already supplied the
+  action/start receipt; the rebuilt v3 producers expose the shared final-frame barrier. Octane v3
+  removes its former private ACK gate and supplies the same receipt.
+  The adapter normalizes all three to the explicit
+  `input-handler-to-native-dom-predicate-plus-two-frames` record field. Framework-specific commit/transport
+  acknowledgements are forbidden from this ranked latency interval. Octane's benchmark-only patch remains confined to the table
+  app and does not modify Octane core or serialize render payloads; JSON is used once to emit the
+  final observation. The superseded v2 Octane observations waited for `root.flushTransport()`
+  before their two frames. The collector retains those absolute samples as descriptive evidence,
+  labels them not comparable, and excludes them from every ratio, baseline, score, and ranking.
 - **Web startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
@@ -377,7 +386,7 @@ an absolute-time revision A/B.
 | Post-fix device anchor | Matching Web observation | Rank/shape verdict |
 | --- | --- | --- |
 | Two create→clear→re-create sequences at 1k each emit 2 MTS→BTS messages and exactly 1 ACK per commit. Create uses compact-v1 with 7,000 acknowledged hosts; encoded ContextProxy totals are 182 B for create and 222 B for clear. | The post-fix Web create commit is likewise constant-size instead of the former 17.4 MB / 23,799-message storm. | **Transport shape agrees.** Native ContextProxy payload bytes and Web RPC-envelope bytes have different boundaries, so this is a post-fix shape anchor, not a ranking anchor. |
-| Native clear@1k produces valid state/frame receipts, but Hux and upstream wait for an Octane transport ACK while ReactLynx exposes no equivalent ACK. Upstream's create→clear preparation path also DNF'd, requiring an eager-1k clear probe instead. | Web-interp reports a stable Octane-family clear gap under one shared DOM predicate and transport boundary. | **Not rank-calibratable.** The Native producer receipts are not settlement-equivalent, so this round neither validates nor falsifies the Web clear ratio. It defines the fidelity boundary and grants no device prediction stake. |
+| The superseded Native v2 clear@1k receipts waited for an Octane transport ACK while ReactLynx exposed no equivalent ACK. Upstream's create→clear preparation path also DNF'd, requiring an eager-1k clear probe instead. | Web-interp reports a stable Octane-family clear gap under one shared DOM predicate and transport boundary. | **Not rank-calibratable.** These immutable v2 receipts remain descriptive-only. Native v3 removes the framework-specific ACK from ranked table latency instead of relabelling the old samples. |
 
 Within Web itself, turning off compiled JavaScript changes the winning entry in 5 of the 16 shared
 latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Comparing normal JIT with
@@ -419,8 +428,9 @@ appear in the site regime facet or public rankings.
   (wire cost, thread split, scaling shape), not native absolute performance.
 - `harness: "native"` — real Native Engine execution on an Android 10 ByteDance aries_10
   Lynx Sandbox device through LynxExplorer and `@byted/agent-lynx`. The boundary is
-  `native-input-handler-to-second-native-frame`; startup normally uses Native pipeline
+  `native-input-handler-to-native-dom-predicate-plus-two-native-frames` with settlement contract
+  `input-handler-to-native-dom-predicate-plus-two-frames`; startup normally uses Native pipeline
   performance entries. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
   `--jitless`, jsdom, or extrapolated value is published as Native.
-- All featured Octane entries are explicitly Web-only. Historical Octane Native observations remain
-  appendix evidence and never enter the current Native cohort or ranking.
+- Upstream Octane is Native-eligible under the v3 table producer. Its separately named startup ACK
+  metrics remain Native-only descriptive boundaries and are never treated as pipeline FCP.
