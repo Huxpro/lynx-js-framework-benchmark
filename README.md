@@ -78,11 +78,14 @@ Every Native-eligible featured entry uses real Native touch input and the versio
 input handler supplies only the device-clock start receipt; the shared Sandbox adapter then
 observes the workload-specific Native element-tree predicate and ends after two further Native
 frames. Ranked table latency never waits for a framework-specific transport/commit
-acknowledgement. Legacy Octane v2 samples that
+acknowledgement. The Hux Octane benchmark producer marks its transport acknowledgement
+`excluded-from-latency`, matching React and Vue's ranked endpoint. Legacy Octane v2 samples that
 did wait for `root.flushTransport()` remain visible as absolute descriptive evidence, but are
 marked not comparable and cannot enter a ratio, baseline, score, or ranking. A DevTool driver
-exists only as an explicitly labelled diagnostic mode and is never the
-default benchmark path. A strict producer payload failure is retained as an evidenced
+exists only for unmeasured Octane prestate preparation; ranked actions still begin at the input
+handler and finish at the externally observed Native tree. This is an instrumented black-box
+renderer observation, not a framework-unmodified claim. A strict producer payload failure is
+retained as an evidenced
 `producer-protocol-invalid` DNF for that cell; its evidence explicitly records validation as
 `attempted: true, passed: false`, never invents a timing value, and never aborts unrelated cells.
 Release the Sandbox lease after the command completes.
@@ -192,7 +195,7 @@ Cases: the krausest superset (`create` 1k/3k/5k/10k/20k/30k, `replace`, `append1
 `update10th`, standard preselected-row `select`, `swap`, `remove`, standard `clear@1k`
 plus `clear@10k`) + shared-driver Web storms (50 update / 30 select pointer ticks,
 both every-tick and final-state policies) at 1k/10k + the separately versioned Native matrix +
-startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
+startup at 0/1k/10k/30k pre-rendered rows. Hux Octane Native exposes isolated transport-ACK and
 post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these
 are never ranked as FCP. See
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the measurement rules and

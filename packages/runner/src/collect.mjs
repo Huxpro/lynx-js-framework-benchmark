@@ -142,7 +142,10 @@ export function derivePipelineResidualRecords(records) {
       const metric = pipelineTimeMetric(segment);
       const matches = siblings.filter((candidate) => candidate.metric === metric);
       if (matches.length !== 1) {
-        throw new Error(`pipeline operation requires exactly one ${metric} source record`);
+        throw new Error(
+          `pipeline operation ${operationCellKey(operation)} requires exactly one `
+          + `${metric} source record; found ${matches.length}`,
+        );
       }
       return matches[0];
     });
@@ -926,14 +929,15 @@ const entryIdentityMatchesManifest = (run, record, entryById) => {
     || webBundleReceiptMatchesManifest(run, record, entry);
 };
 
-const isPublishableRecord = (run, record) => !(
-  record.harness === 'native'
-  && record.entry === 'octane'
-  && (
-    run.meta.machine?.octaneTriggerMode === 'driver'
-    || record.boundary === 'native-devtool-driver-handler-to-second-native-frame'
-  )
-);
+const isPublishableRecord = (run, record) => {
+  const octaneEntry = record.entry === 'octane' || record.entry === 'octane-hux';
+  const driverBoundary = String(record.boundary ?? '')
+    .startsWith('native-devtool-driver-handler-to-');
+  return !(
+    record.harness === 'native'
+    && (driverBoundary || (octaneEntry && run.meta.machine?.octaneTriggerMode === 'driver'))
+  );
+};
 
 const nativeCohortIdentity = (run, environment) => {
   const campaign = run.meta.campaign;
@@ -1776,7 +1780,7 @@ const buildHistory = ({
         && isPublishableRecord(candidate.run, item));
       const entryIds = new Set(candidateRecords.map((record) =>
         publicHistoryEntry(candidate.run, record)).filter((entry) => nativeFeaturedIds.has(entry)));
-      if (!entryIds.has('octane')) continue;
+      if (!entryIds.has('octane') && !entryIds.has('octane-hux')) continue;
       const activeRecordIndexes = [];
       for (const record of candidateRecords) {
         const entry = publicHistoryEntry(candidate.run, record);
@@ -1883,11 +1887,12 @@ const buildHistory = ({
     id: 'current-main',
     generatedAt: current.generatedAt,
     label: 'Current · merged upstream',
-    description: 'Current manifests are upstream Octane 9779569e and Huxpro/new-lynx e9f1fb14. '
-      + 'Every Web regime publishes both identities: the earlier Hux source commit is accepted only '
-      + 'because its complete Web bundle receipt is byte-identical to e9f1fb14. Regimes remain separate '
-      + 'from each other and from Native. Complete pipeline and storm campaigns attach as descriptive '
-      + 'exact evidence and never enter the weighted matrix.',
+    description: 'Current manifests are upstream Octane 9779569e (Web only) and '
+      + 'Huxpro/new-lynx 8a30448d (Web + Native). The refreshed default Web regime publishes both '
+      + 'identities; older alternate-regime evidence remains eligible only for entries whose bundle '
+      + 'receipt is byte-identical to the current manifest. Regimes remain separate from each other and '
+      + 'from Native. Complete pipeline and storm campaigns attach as descriptive exact evidence and '
+      + 'never enter the weighted matrix.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     pipelineCoverage: current.pipelineCoverage,

@@ -10,7 +10,11 @@ import test from 'node:test';
 
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
+  nativeDescribedText,
   isNativeTransientTransportFailure,
+  nativeDescendantWithClass,
+  nativeInnerText,
+  nativeNodeHasClass,
   nativeStartupPayloadIsComplete,
   nativeTransportFailureDnf,
 } from '../adapters/lynx-sandbox-android.mjs';
@@ -386,6 +390,10 @@ test('transport classification is narrow and preserves producer and integrity fa
   );
   assert.equal(isNativeTransientTransportFailure(runtimeFailure), true);
   assert.equal(
+    isNativeTransientTransportFailure(new Error('timeout waiting for Native timing create.')),
+    true,
+  );
+  assert.equal(
     isNativeTransientTransportFailure(new Error('CDP Runtime.evaluate failed: application error')),
     false,
   );
@@ -400,6 +408,59 @@ test('transport classification is narrow and preserves producer and integrity fa
   assert.equal(nativeTransportFailureDnf(new Error('programming error'), {
     suite: 'table', entry: { id: 'fake' }, kase: { name: 'create' }, scale: 1000,
   }), null);
+});
+
+test('Native DOM text prefers populated raw values over an empty compatibility field', () => {
+  assert.equal(nativeInnerText({
+    innerText: '',
+    rawTextValues: [{ text: '1001' }],
+  }), '1001');
+  assert.equal(nativeInnerText({
+    innerText: '',
+    rawTextValues: [{ text: '1' }, { text: 'selected row' }],
+  }), '1 selected row');
+  assert.equal(nativeInnerText({
+    result: { innerText: '', rawTextValues: [{ text: '1001' }] },
+  }), '1001');
+  assert.equal(nativeInnerText({ innerText: 'fallback' }), 'fallback');
+});
+
+test('Native selected-row inspection resolves the id text inside the external row subtree', () => {
+  const described = {
+    compress: false,
+    node: {
+      nodeId: 117,
+      attributes: ['class', 'row danger'],
+      children: [{
+        nodeId: 118,
+        attributes: ['class', 'col-id'],
+        children: [{ nodeId: 119, attributes: ['text', '6'] }],
+      }, {
+        nodeId: 120,
+        attributes: ['class', 'col-label'],
+      }],
+    },
+  };
+  assert.equal(nativeDescendantWithClass(described, 'col-id'), 118);
+  assert.equal(nativeDescendantWithClass(described, 'missing'), null);
+  assert.equal(nativeNodeHasClass(described.node, 'row'), true);
+  assert.equal(nativeNodeHasClass(described.node, 'danger'), true);
+  assert.equal(nativeNodeHasClass(described.node, 'rows'), false);
+});
+
+test('Native text inspection reads the rendered text attribute exposed by describeNode', () => {
+  assert.equal(nativeDescribedText({
+    node: {
+      nodeId: 8038,
+      nodeName: 'TEXT',
+      localName: 'text',
+      attributes: ['vue-ref-14090', '1', 'text', '1001', 'class', 'col-id'],
+      children: [],
+    },
+  }), '1001');
+  assert.equal(nativeDescribedText({
+    node: { children: [{ nodeValue: 'nested text' }] },
+  }), 'nested text');
 });
 
 test('startup polling ignores an in-flight producer receipt until its second frame', () => {

@@ -186,6 +186,59 @@ function timingName(kase) {
   return kase.name === 'replace' ? 'create' : kase.name;
 }
 
+export function nativeInnerText(result) {
+  const rawTextValues = Array.isArray(result?.rawTextValues)
+    ? result.rawTextValues
+    : Array.isArray(result?.result?.rawTextValues)
+      ? result.result.rawTextValues
+      : null;
+  const rawText = rawTextValues
+    ? rawTextValues.map((value) => value?.text ?? '').join(' ').trim()
+    : '';
+  if (rawText) return rawText;
+  const innerText = result?.innerText ?? result?.result?.innerText;
+  return typeof innerText === 'string' ? innerText : null;
+}
+
+export function nativeDescendantWithClass(result, className) {
+  const root = result?.node ?? result?.result?.node;
+  if (root == null || typeof root !== 'object') return null;
+  const pending = [root];
+  while (pending.length > 0) {
+    const node = pending.shift();
+    if (nativeNodeHasClass(node, className)) return node.nodeId ?? null;
+    if (Array.isArray(node?.children)) pending.push(...node.children);
+  }
+  return null;
+}
+
+export function nativeNodeHasClass(node, className) {
+  const attributes = Array.isArray(node?.attributes) ? node.attributes : [];
+  for (let index = 0; index + 1 < attributes.length; index += 2) {
+    if (attributes[index] !== 'class') continue;
+    if (String(attributes[index + 1]).split(/\s+/).includes(className)) return true;
+  }
+  return false;
+}
+
+export function nativeDescribedText(result) {
+  const root = result?.node ?? result?.result?.node;
+  if (root == null || typeof root !== 'object') return null;
+  const pending = [root];
+  while (pending.length > 0) {
+    const node = pending.shift();
+    const attributes = Array.isArray(node?.attributes) ? node.attributes : [];
+    for (let index = 0; index + 1 < attributes.length; index += 2) {
+      if (attributes[index] !== 'text') continue;
+      const text = String(attributes[index + 1]);
+      if (text.trim()) return text;
+    }
+    if (typeof node?.nodeValue === 'string' && node.nodeValue.trim()) return node.nodeValue;
+    if (Array.isArray(node?.children)) pending.push(...node.children);
+  }
+  return null;
+}
+
 export function nativePostStateMatches(kase, scale, before, snapshot, {
   allowAnySelection = false,
 } = {}) {
@@ -246,6 +299,8 @@ function expectedStormTicks(name) {
   return null;
 }
 
+const isOctaneEntryId = (entryId) => entryId === 'octane' || entryId === 'octane-hux';
+
 function validateNativeTablePayloadUnchecked(payload, {
   entryId,
   expectedName,
@@ -255,7 +310,7 @@ function validateNativeTablePayloadUnchecked(payload, {
 } = {}) {
   assertObject(payload, 'Native table payload');
   const legacyTwoFrameProducer = payload.protocol === 'lynx-native-bench-v2'
-    && entryId !== 'octane';
+    && !isOctaneEntryId(entryId);
   if (payload.protocol !== NATIVE_TABLE_PROTOCOL && !legacyTwoFrameProducer) {
     throw new Error(
       `Native table payload protocol ${JSON.stringify(payload.protocol)} is not compatible with ${NATIVE_COMPATIBLE_TABLE_PROTOCOLS.join(', ')}.`,
@@ -323,7 +378,9 @@ function validateNativeTablePayloadUnchecked(payload, {
     }
   }
   const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
-  const expectedTransportKind = entryId === 'octane' ? 'excluded-from-latency' : 'not-exposed';
+  const expectedTransportKind = isOctaneEntryId(entryId)
+    ? 'excluded-from-latency'
+    : 'not-exposed';
   if (transport.kind !== expectedTransportKind || transport.acknowledged !== false) {
     throw new Error(
       'Native table payload must exclude framework-specific transport acknowledgements from latency.',
@@ -361,7 +418,7 @@ function validateNativeStartupPayloadUnchecked(payload, {
       `Native startup payload rowCount ${postState.rowCount} does not match rows-${expectedRows}.`,
     );
   }
-  if (entryId === 'octane') {
+  if (isOctaneEntryId(entryId)) {
     assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
     if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
       throw new Error('Octane startup transport acknowledgement is outside the render interval.');
@@ -400,7 +457,7 @@ export function nativeStartupPayloadIsComplete(payload) {
     && Number.isFinite(payload.secondFrameMs);
 }
 
-const startupMetricContracts = (entryId) => entryId === 'octane'
+const startupMetricContracts = (entryId) => isOctaneEntryId(entryId)
   ? [
       {
         name: 'octaneCommitAck',
@@ -456,6 +513,7 @@ export function isNativeTransientTransportFailure(error) {
     || message.includes('CDP Input.')
     || message.includes('Native session did not appear')
     || message.includes('Lynx Explorer did not reconnect on sandbox')
+    || message.includes('timeout waiting for Native timing ')
     || message.includes('timeout waiting for the Octane Native background root');
 }
 
@@ -473,7 +531,7 @@ export function nativeTransportFailureDnf(
     scale: suite === 'startup' ? rows : scale,
     phase: suite,
     stage,
-    triggerMode: entryId === 'octane' ? OCTANE_TRIGGER_MODE : 'tap',
+    triggerMode: isOctaneEntryId(entryId) ? OCTANE_TRIGGER_MODE : 'tap',
     message: String(error),
     capabilityScope: 'cell',
     evidence: {
@@ -828,13 +886,23 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     return typeof result.result?.value === 'string' ? JSON.parse(result.result.value) : null;
   }
 
-  async function octaneTimeoutEvidence() {
+  async function octaneTimeoutEvidence(scale) {
     const evidence = {
       backgroundSnapshot: null,
       mainLabelNodeCount: null,
       timingEvents: timingEvents.slice(),
       errors: [],
     };
+    // Serializing a tree above 1k nodes can close Explorer's DebugRouter and
+    // hide the original workload timeout behind a second transport timeout.
+    // The cell already retains its producer receipt; keep the large-tree
+    // timeout evidence bounded and preserve the original failure category.
+    if (scale >= 1000) {
+      return {
+        ...evidence,
+        debuggerProbePolicy: 'skipped-debugrouter-large-tree-limit',
+      };
+    }
     try {
       evidence.backgroundSnapshot = await octaneSnapshot();
     } catch (error) {
@@ -877,12 +945,29 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   async function nodeInnerText(nodeId, timeoutMs = DEFAULT_TIMEOUT_MS) {
     if (!nodeId) return null;
     const result = await cdp('DOM.innerText', { nodeId }, timeoutMs);
-    const innerText = result.innerText ?? result.result?.innerText;
-    if (typeof innerText === 'string') return innerText;
-    if (Array.isArray(result.rawTextValues)) {
-      return result.rawTextValues.map((value) => value.text ?? '').join('');
+    return nativeInnerText(result);
+  }
+
+  async function nodeOrDescendantInnerText(nodeId, timeoutMs = DEFAULT_TIMEOUT_MS) {
+    const directText = await nodeInnerText(nodeId, timeoutMs);
+    if (directText?.trim()) return directText;
+    if (!nodeId) return directText;
+    const described = await cdp('DOM.describeNode', {
+      nodeId, depth: -1, pierce: true,
+    }, timeoutMs);
+    const describedText = nativeDescribedText(described);
+    if (describedText?.trim()) return describedText;
+    const root = described?.node ?? described?.result?.node;
+    const pending = Array.isArray(root?.children) ? [...root.children] : [];
+    while (pending.length > 0) {
+      const candidate = pending.shift();
+      if (candidate?.nodeId) {
+        const candidateText = await nodeInnerText(candidate.nodeId, timeoutMs);
+        if (candidateText?.trim()) return candidateText;
+      }
+      if (Array.isArray(candidate?.children)) pending.push(...candidate.children);
     }
-    return null;
+    return directText;
   }
 
   async function pointForNode(nodeId) {
@@ -1180,20 +1265,26 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
 
     if (kase.name === 'replace') {
       const idNodes = await search('col-id', timeoutMs);
-      const firstIdText = await nodeInnerText(idNodes[0], timeoutMs);
+      const firstIdText = await nodeOrDescendantInnerText(idNodes[0], timeoutMs);
       evidence.expectedFirstId = snapshot.firstId;
       evidence.observedFirstId = Number(firstIdText);
       evidence.passed = evidence.observedFirstId === snapshot.firstId
         && snapshot.firstId !== before?.firstId;
     } else if (kase.name === 'update10th') {
       const labelNodes = await search('col-label', timeoutMs);
-      const firstLabel = await nodeInnerText(labelNodes[0], timeoutMs);
+      const firstLabel = await nodeOrDescendantInnerText(labelNodes[0], timeoutMs);
       evidence.expectedFirstLabel = snapshot.firstLabel;
       evidence.observedFirstLabel = firstLabel;
       evidence.passed = firstLabel === snapshot.firstLabel && firstLabel?.endsWith(' !!!');
     } else if (kase.name === 'select' || kase.name === 'selectStorm') {
       const selectedNodes = await search('danger', timeoutMs);
-      const selectedText = await nodeInnerText(selectedNodes[0], timeoutMs);
+      const described = selectedNodes[0] == null
+        ? null
+        : await cdp('DOM.describeNode', {
+          nodeId: selectedNodes[0], depth: -1, pierce: true,
+        }, timeoutMs);
+      const selectedIdNode = nativeDescendantWithClass(described, 'col-id');
+      const selectedText = await nodeOrDescendantInnerText(selectedIdNode, timeoutMs);
       const observedSelectedId = Number(/^\s*(\d+)/.exec(selectedText ?? '')?.[1]);
       evidence.expectedSelectedId = snapshot.selectedId;
       evidence.observedSelectedId = Number.isFinite(observedSelectedId)
@@ -1201,20 +1292,46 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         : null;
       evidence.passed = evidence.observedSelectedId === snapshot.selectedId;
     } else if (kase.name === 'swap') {
-      const idNodes = await search('col-id', timeoutMs);
+      // DOM.performSearch returns a flat match set in creation order, not
+      // necessarily the current Native sibling order after keyed moves. Read
+      // the `.rows` container's direct children instead; that is the rendered
+      // Native order whose correctness the workload is meant to validate.
+      const rowContainerNodes = await search('.rows', timeoutMs);
+      const rowContainers = await Promise.all(rowContainerNodes.map((nodeId) =>
+        cdp('DOM.describeNode', { nodeId, depth: 1, pierce: true }, timeoutMs)));
+      const rowContainer = rowContainers
+        .map((description) => description?.node ?? description?.result?.node)
+        .find((node) => nativeNodeHasClass(node, 'rows')
+          && Array.isArray(node.children)
+          && node.children.length === expectedRowCount);
+      const rowNodes = rowContainer?.children ?? [];
+      const [secondRow, row998] = await Promise.all([
+        rowNodes[1]?.nodeId == null
+          ? null
+          : cdp('DOM.describeNode', {
+            nodeId: rowNodes[1].nodeId, depth: -1, pierce: true,
+          }, timeoutMs),
+        rowNodes[998]?.nodeId == null
+          ? null
+          : cdp('DOM.describeNode', {
+            nodeId: rowNodes[998].nodeId, depth: -1, pierce: true,
+          }, timeoutMs),
+      ]);
       const [secondText, row998Text] = await Promise.all([
-        nodeInnerText(idNodes[1], timeoutMs),
-        nodeInnerText(idNodes[998], timeoutMs),
+        nodeOrDescendantInnerText(nativeDescendantWithClass(secondRow, 'col-id'), timeoutMs),
+        nodeOrDescendantInnerText(nativeDescendantWithClass(row998, 'col-id'), timeoutMs),
       ]);
       evidence.expectedSecondId = snapshot.secondId;
       evidence.expectedRow998Id = snapshot.row998Id;
+      evidence.observedRowContainerCount = rowContainerNodes.length;
+      evidence.observedRowNodeCount = rowNodes.length;
       evidence.observedSecondId = Number(secondText);
       evidence.observedRow998Id = Number(row998Text);
       evidence.passed = evidence.observedSecondId === snapshot.secondId
         && evidence.observedRow998Id === snapshot.row998Id;
     } else if (kase.name === 'updateStorm') {
       const labelNodes = await search('col-label', timeoutMs);
-      const firstLabel = await nodeInnerText(labelNodes[0], timeoutMs);
+      const firstLabel = await nodeOrDescendantInnerText(labelNodes[0], timeoutMs);
       evidence.expectedFirstLabel = snapshot.firstLabel;
       evidence.observedFirstLabel = firstLabel;
       evidence.passed = firstLabel === snapshot.firstLabel;
@@ -1305,11 +1422,12 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     const expectedName = options.expectedName ?? timingName(kase);
     const receipt = await waitForTiming(
       expectedName,
-      remainingMs(deadline, `Native timing receipt ${expectedName}`),
+      Math.min(15_000, remainingMs(deadline, `Native timing receipt ${expectedName}`)),
     );
-    const expectedSource = isCurrentOctane() && OCTANE_TRIGGER_MODE === 'driver'
-      ? 'devtool-driver'
-      : 'native-tap';
+    const expectedSource = options.expectedSource
+      ?? (isCurrentOctane() && OCTANE_TRIGGER_MODE === 'driver'
+        ? 'devtool-driver'
+        : 'native-tap');
     validateNativeTablePayload(receipt, {
       entryId: currentEntryId,
       expectedName,
@@ -1347,10 +1465,16 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   }
 
   async function createRows(scale, timeoutMs = LONG_WORKLOAD_TIMEOUT_MS) {
-    const trigger = isCurrentOctane() && OCTANE_TRIGGER_MODE === 'driver'
+    const trigger = isCurrentOctane()
       ? () => evaluateOctaneDriver('create', scale)
       : () => tapText(CREATE_BUTTON[scale]);
-    const observed = await measuredTap({ name: 'create' }, scale, trigger, timeoutMs);
+    const observed = await measuredTap(
+      { name: 'create' },
+      scale,
+      trigger,
+      timeoutMs,
+      isCurrentOctane() ? { expectedSource: 'devtool-driver' } : {},
+    );
     assertPostState({ name: 'create' }, scale, observed);
   }
 
@@ -1636,7 +1760,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         }
         if (kase.pre === 'rows+preselect') {
           phase = 'preselect';
-          const preselect = isCurrentOctane() && OCTANE_TRIGGER_MODE === 'driver'
+          const preselect = isCurrentOctane()
             ? () => evaluateOctaneDriver('select', 5)
             : () => tapCell('col-label', 5);
           const preselected = await measuredTap(
@@ -1644,7 +1768,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
             scale,
             preselect,
             DEFAULT_TIMEOUT_MS,
-            { expectedName: 'select', allowAnySelection: true },
+            {
+              expectedName: 'select',
+              allowAnySelection: true,
+              ...(isCurrentOctane() ? { expectedSource: 'devtool-driver' } : {}),
+            },
           );
           assertPostState(
             { name: 'select' },
@@ -1681,8 +1809,13 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           lastObserved = producerDnf;
           return;
         }
+        // Timing receipts arrive through the DevTool console stream. A timeout
+        // waiting for that receipt is a transport failure, not proof that the
+        // workload's prestate or semantics are unsupported. Let the harness
+        // retry/reconnect and, if exhausted, checkpoint only this exact cell.
+        if (isNativeTransientTransportFailure(error)) throw error;
         if (String(error).includes('timeout')) {
-          const evidence = isCurrentOctane() ? await octaneTimeoutEvidence() : null;
+          const evidence = isCurrentOctane() ? await octaneTimeoutEvidence(scale) : null;
           const timeoutMs = timeoutForTable(kase);
           const failure = {
             category: 'timeout',
@@ -1768,6 +1901,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           log(`  [sandbox] ${currentEntryId} startup@${currentRows} DNF: ${error.message}`);
           return producerDnf;
         }
+        if (isNativeTransientTransportFailure(error)) throw error;
         const message = String(error);
         if (message.includes('No response found')) throw error;
         if (message.includes('timeout')) {

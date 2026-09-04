@@ -1,0 +1,725 @@
+diff --git a/benchmarks/lynx-table/app/src/App.lynx.tsrx b/benchmarks/lynx-table/app/src/App.lynx.tsrx
+index 519715429..d31db6bd5 100644
+--- a/benchmarks/lynx-table/app/src/App.lynx.tsrx
++++ b/benchmarks/lynx-table/app/src/App.lynx.tsrx
+@@ -30,3 +30,4 @@ function countRowRender(): void {
+-// Each tick runs in its own macrotask (MessageChannel avoids the nested
+-// setTimeout 4ms clamp) so every mutation goes through a full render cycle
+-// instead of batching. Mirrors the Vue and React apps.
++// Each tick runs in its own task so every mutation goes through a full render
++// cycle instead of batching. Lynx for Web provides MessageChannel; the Native
++// Engine does not, so Native falls back to its timer task queue. Mirrors the
++// Vue and React apps.
+@@ -36,6 +37,71 @@ const STORM_SELECT_TICKS = 30;
+-const _stormChannel = new MessageChannel();
+-let _stormPending: (() => void) | null = null;
+-_stormChannel.port1.onmessage = () => {
+-	const cb = _stormPending;
+-	_stormPending = null;
+-	if (cb) cb();
++interface BenchmarkSnapshot {
++	readonly rowCount: number;
++	readonly firstId: number | null;
++	readonly secondId: number | null;
++	readonly thirdId: number | null;
++	readonly row998Id: number | null;
++	readonly firstLabel: string | null;
++	readonly selectedId: number | null;
++}
++
++interface StormEvidence {
++	readonly expectedTicks: number;
++	readonly completedTicks: number;
++	readonly renderBarriers: number;
++}
++
++interface NativeBenchmarkResult {
++	readonly protocol: 'lynx-native-bench-v3';
++	readonly name: string;
++	readonly source: 'native-tap' | 'devtool-driver';
++	readonly boundary:
++		| 'native-input-handler-to-native-dom-predicate-plus-two-native-frames'
++		| 'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames';
++	readonly settlementContract: 'input-handler-to-native-dom-predicate-plus-two-frames';
++	readonly producerReceiptKind: 'action-plus-two-native-frames';
++	readonly startMs: number;
++	readonly firstFrameMs: number;
++	readonly endMs: number;
++	readonly latencyMs: number;
++	readonly renderEvidence: { kind: 'native-animation-frame'; frames: 2 };
++	readonly transportEvidence: {
++		readonly kind: 'excluded-from-latency';
++		readonly acknowledged: false;
++	};
++	readonly stormEvidence?: StormEvidence;
++	readonly preState: BenchmarkSnapshot;
++	readonly postState: BenchmarkSnapshot;
++}
++
++type BenchmarkGlobal =
++	typeof globalThis & {
++		__LYNX_BENCH_FLUSH__?: () => Promise<void>;
++		__LYNX_BENCH_SNAPSHOT__?: () => BenchmarkSnapshot;
++		__LYNX_BENCH_REQUEST_FINAL_FRAMES__?: (token: string) => void;
++		__LYNX_BENCH_ERROR__?: string;
++	};
++
++function emptySnapshot(): BenchmarkSnapshot {
++	return {
++		rowCount: 0,
++		firstId: null,
++		secondId: null,
++		thirdId: null,
++		row998Id: null,
++		firstLabel: null,
++		selectedId: null,
++	};
++}
++
++function nextNativeFrame(): Promise<number> {
++	return new Promise((resolve) => lynx.requestAnimationFrame(() => resolve(Date.now())));
++}
++
++(globalThis as BenchmarkGlobal).__LYNX_BENCH_REQUEST_FINAL_FRAMES__ = (token) => {
++	lynx.requestAnimationFrame(() => {
++		const firstFrameMs = Date.now();
++		lynx.requestAnimationFrame(() => console.log(
++			'__NATIVE_BENCH_FINAL_FRAMES__',
++			JSON.stringify({ token, firstFrameMs, endMs: Date.now() }),
++		));
++	});
+@@ -43,3 +109,7 @@ _stormChannel.port1.onmessage = () => {
+-function nextMacrotask(cb: () => void) {
+-	_stormPending = cb;
+-	_stormChannel.port2.postMessage(0);
++
++function reportNativeFailure(error: unknown): never {
++	const message =
++		error instanceof Error ? error.stack ?? error.message : String(error);
++	(globalThis as BenchmarkGlobal).__LYNX_BENCH_ERROR__ = message;
++	console.log('__NATIVE_BENCH_ERROR__', message);
++	throw error;
+@@ -48,6 +118,61 @@ function nextMacrotask(cb: () => void) {
+-function runStorm(ticks: number, step: (t: number) => void) {
+-	let t = 0;
+-	const tick = () => {
+-		t += 1;
+-		step(t);
+-		if (t < ticks) nextMacrotask(tick);
++function measureNative(
++	name: string,
++	action: () => void | Promise<void | StormEvidence>,
++	source: NativeBenchmarkResult['source'],
++): Promise<NativeBenchmarkResult | undefined> {
++	const benchmark = globalThis as BenchmarkGlobal;
++	const preState = benchmark.__LYNX_BENCH_SNAPSHOT__?.() ?? emptySnapshot();
++	const startMs = Date.now();
++	let actionResult: void | Promise<void | StormEvidence>;
++	try {
++		actionResult = action();
++	} catch (error) {
++		return Promise.reject(error).catch(reportNativeFailure);
++	}
++	return Promise.resolve(actionResult).then((stormEvidence) => {
++		return nextNativeFrame().then(
++			(firstFrameMs) => nextNativeFrame().then((endMs) => {
++				const result: NativeBenchmarkResult = {
++					protocol: 'lynx-native-bench-v3',
++					name,
++					source,
++					boundary: source === 'native-tap'
++						? 'native-input-handler-to-native-dom-predicate-plus-two-native-frames'
++						: 'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames',
++					settlementContract: 'input-handler-to-native-dom-predicate-plus-two-frames',
++					producerReceiptKind: 'action-plus-two-native-frames',
++					startMs,
++					firstFrameMs,
++					endMs,
++					latencyMs: endMs - startMs,
++					renderEvidence: { kind: 'native-animation-frame', frames: 2 },
++					transportEvidence: {
++						kind: 'excluded-from-latency',
++						acknowledged: false,
++					},
++					...(stormEvidence === undefined ? {} : { stormEvidence }),
++					preState,
++					postState: benchmark.__LYNX_BENCH_SNAPSHOT__?.() ?? emptySnapshot(),
++				};
++				console.log('__NATIVE_BENCH_RESULT__', JSON.stringify(result));
++				return result;
++			}),
++		);
++	}).catch(reportNativeFailure);
++}
++
++function measureNativeTap(name: string, action: () => void | Promise<void | StormEvidence>): void {
++	void measureNative(name, action, 'native-tap');
++}
++
++const NativeMessageChannel = (
++	globalThis as typeof globalThis & { MessageChannel?: typeof MessageChannel }
++).MessageChannel;
++const _stormChannel =
++	typeof NativeMessageChannel === 'function' ? new NativeMessageChannel() : null;
++let _stormPending: (() => void) | null = null;
++if (_stormChannel) {
++	_stormChannel.port1.onmessage = () => {
++		const cb = _stormPending;
++		_stormPending = null;
++		if (cb) cb();
+@@ -55 +180,27 @@ function runStorm(ticks: number, step: (t: number) => void) {
+-	nextMacrotask(tick);
++}
++
++function nextMacrotask(): Promise<void> {
++	return new Promise((resolve) => {
++		if (!_stormChannel) {
++			setTimeout(resolve, 0);
++			return;
++		}
++		_stormPending = resolve;
++		_stormChannel.port2.postMessage(0);
++	});
++}
++
++function runStorm(ticks: number, step: (t: number) => void): Promise<StormEvidence> {
++	let tick = 0;
++	let renderBarriers = 0;
++	const runNext = (): Promise<StormEvidence> => nextMacrotask().then(() => {
++		tick++;
++		step(tick);
++		return (globalThis as BenchmarkGlobal).__LYNX_BENCH_FLUSH__?.().then(() => {
++			renderBarriers++;
++		});
++	}).then(() => {
++		if (tick < ticks) return runNext();
++		return { expectedTicks: ticks, completedTicks: tick, renderBarriers };
++	});
++	return runNext();
+@@ -138,2 +289,2 @@ export function App() @{
+-	// Storm drivers read ids off a ref so the module-scope tick loop never
+-	// captures a stale rows binding (same shape as the React app).
++	// Storm drivers and post-frame receipts read refs so an async measurement
++	// never observes the render closure captured before the action.
+@@ -141,0 +293,16 @@ export function App() @{
++	const rowsRef = useRef<RowData[]>(rows);
++	rowsRef.current = rows;
++	const selectedRef = useRef<number | undefined>(selected);
++	selectedRef.current = selected;
++	(globalThis as BenchmarkGlobal).__LYNX_BENCH_SNAPSHOT__ = () => {
++		const current = rowsRef.current;
++		return {
++			rowCount: current.length,
++			firstId: current[0]?.id ?? null,
++			secondId: current[1]?.id ?? null,
++			thirdId: current[2]?.id ?? null,
++			row998Id: current[998]?.id ?? null,
++			firstLabel: current[0]?.label ?? null,
++			selectedId: selectedRef.current ?? null,
++		};
++	};
+@@ -143,2 +310,2 @@ export function App() @{
+-	const stormUpdate = useCallback(() => {
+-		runStorm(
++	const runUpdateStorm = useCallback(
++		() => runStorm(
+@@ -149,2 +316,3 @@ export function App() @{
+-		);
+-	}, []);
++		),
++		[],
++	);
+@@ -152,2 +320,2 @@ export function App() @{
+-	const stormSelect = useCallback(() => {
+-		runStorm(STORM_SELECT_TICKS, (t) => {
++	const runSelectStorm = useCallback(
++		() => runStorm(STORM_SELECT_TICKS, (t) => {
+@@ -156,2 +324,68 @@ export function App() @{
+-		});
+-	}, []);
++		}),
++		[],
++	);
++	const stormUpdate = useCallback(() => {
++		measureNativeTap('updateStorm', runUpdateStorm);
++	}, [runUpdateStorm]);
++	const stormSelect = useCallback(() => {
++		measureNativeTap('selectStorm', runSelectStorm);
++	}, [runSelectStorm]);
++
++	(globalThis as
++		typeof globalThis & {
++			__LYNX_BENCH_DRIVER__?: { drive(name: string, argument?: number): unknown };
++		}).__LYNX_BENCH_DRIVER__ = {
++		drive(name, argument) {
++			switch (name) {
++				case 'probe':
++					return {
++						ready: true,
++						snapshot: (globalThis as BenchmarkGlobal).__LYNX_BENCH_SNAPSHOT__?.(),
++					};
++				case 'snapshot':
++					return (globalThis as BenchmarkGlobal).__LYNX_BENCH_SNAPSHOT__?.();
++				case 'create': {
++					const action =
++						argument === 1000
++							? run
++							: argument === 3000
++								? run3k
++								: argument === 5000
++									? run5k
++									: argument === 10000
++										? runLots
++										: argument === 20000
++											? run20k
++											: argument === 30000
++												? run30k
++												: null;
++					if (action === null) throw new Error(`Unsupported create scale ${argument}.`);
++					return measureNative('create', action, 'devtool-driver');
++				}
++				case 'append1k':
++					return measureNative('append1k', add, 'devtool-driver');
++				case 'update10th':
++					return measureNative('update10th', update, 'devtool-driver');
++				case 'select': {
++					const id = rowsRef.current[argument ?? -1]?.id;
++					if (id === undefined) throw new Error(`Missing select row ${argument}.`);
++					return measureNative('select', () => select(id), 'devtool-driver');
++				}
++				case 'swap':
++					return measureNative('swap', swapRows, 'devtool-driver');
++				case 'remove': {
++					const id = rowsRef.current[argument ?? -1]?.id;
++					if (id === undefined) throw new Error(`Missing remove row ${argument}.`);
++					return measureNative('remove', () => remove(id), 'devtool-driver');
++				}
++				case 'clear':
++					return measureNative('clear', clear, 'devtool-driver');
++				case 'updateStorm':
++					return measureNative('updateStorm', runUpdateStorm, 'devtool-driver');
++				case 'selectStorm':
++					return measureNative('selectStorm', runSelectStorm, 'devtool-driver');
++				default:
++					throw new Error(`Unsupported benchmark operation ${name}.`);
++			}
++		},
++	};
+@@ -162 +396 @@ export function App() @{
+-			<view class="btn" bindtap={run}>
++			<view class="btn" bindtap={() => measureNativeTap('create', run)}>
+@@ -165 +399 @@ export function App() @{
+-			<view class="btn" bindtap={run3k}>
++			<view class="btn" bindtap={() => measureNativeTap('create', run3k)}>
+@@ -168 +402 @@ export function App() @{
+-			<view class="btn" bindtap={run5k}>
++			<view class="btn" bindtap={() => measureNativeTap('create', run5k)}>
+@@ -171 +405 @@ export function App() @{
+-			<view class="btn" bindtap={runLots}>
++			<view class="btn" bindtap={() => measureNativeTap('create', runLots)}>
+@@ -174 +408 @@ export function App() @{
+-			<view class="btn" bindtap={run20k}>
++			<view class="btn" bindtap={() => measureNativeTap('create', run20k)}>
+@@ -177 +411 @@ export function App() @{
+-			<view class="btn" bindtap={run30k}>
++			<view class="btn" bindtap={() => measureNativeTap('create', run30k)}>
+@@ -180 +414 @@ export function App() @{
+-			<view class="btn" bindtap={add}>
++			<view class="btn" bindtap={() => measureNativeTap('append1k', add)}>
+@@ -183 +417 @@ export function App() @{
+-			<view class="btn" bindtap={update}>
++			<view class="btn" bindtap={() => measureNativeTap('update10th', update)}>
+@@ -186 +420 @@ export function App() @{
+-			<view class="btn" bindtap={swapRows}>
++			<view class="btn" bindtap={() => measureNativeTap('swap', swapRows)}>
+@@ -189 +423 @@ export function App() @{
+-			<view class="btn" bindtap={clear}>
++			<view class="btn" bindtap={() => measureNativeTap('clear', clear)}>
+@@ -201 +435,6 @@ export function App() @{
+-				<Row row={row} isSelected={selected === row.id} onSelect={select} onRemove={remove} />
++				<Row
++					row={row}
++					isSelected={selected === row.id}
++					onSelect={(id) => measureNativeTap('select', () => select(id))}
++					onRemove={(id) => measureNativeTap('remove', () => remove(id))}
++				/>
+diff --git a/benchmarks/lynx-table/app/src/block-program.ts b/benchmarks/lynx-table/app/src/block-program.ts
+index a8599c849..18254fd43 100644
+--- a/benchmarks/lynx-table/app/src/block-program.ts
++++ b/benchmarks/lynx-table/app/src/block-program.ts
+@@ -163,0 +164,115 @@ function rowValues(row: RowData, selected: number | undefined): readonly string[
++interface BenchmarkSnapshot {
++	readonly rowCount: number;
++	readonly firstId: number | null;
++	readonly secondId: number | null;
++	readonly thirdId: number | null;
++	readonly row998Id: number | null;
++	readonly firstLabel: string | null;
++	readonly selectedId: number | null;
++}
++
++interface StormEvidence {
++	readonly expectedTicks: number;
++	readonly completedTicks: number;
++	readonly renderBarriers: number;
++}
++
++interface NativeBenchmarkResult {
++	readonly protocol: 'lynx-native-bench-v3';
++	readonly name: string;
++	readonly source: 'native-tap' | 'devtool-driver';
++	readonly boundary:
++		| 'native-input-handler-to-native-dom-predicate-plus-two-native-frames'
++		| 'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames';
++	readonly settlementContract: 'input-handler-to-native-dom-predicate-plus-two-frames';
++	readonly producerReceiptKind: 'action-plus-two-native-frames';
++	readonly startMs: number;
++	readonly firstFrameMs: number;
++	readonly endMs: number;
++	readonly latencyMs: number;
++	readonly renderEvidence: { kind: 'native-animation-frame'; frames: 2 };
++	readonly transportEvidence: {
++		readonly kind: 'excluded-from-latency';
++		readonly acknowledged: false;
++	};
++	readonly stormEvidence?: StormEvidence;
++	readonly preState: BenchmarkSnapshot;
++	readonly postState: BenchmarkSnapshot;
++}
++
++type BenchmarkGlobal = typeof globalThis & {
++	__LYNX_BENCH_DRIVER__?: { drive(name: string, argument?: number): unknown };
++	__LYNX_BENCH_SNAPSHOT__?: () => BenchmarkSnapshot;
++	__LYNX_BENCH_ERROR__?: string;
++};
++
++function emptySnapshot(): BenchmarkSnapshot {
++	return {
++		rowCount: 0,
++		firstId: null,
++		secondId: null,
++		thirdId: null,
++		row998Id: null,
++		firstLabel: null,
++		selectedId: null,
++	};
++}
++
++function nextNativeFrame(): Promise<number> {
++	return new Promise((resolve) => lynx.requestAnimationFrame(() => resolve(Date.now())));
++}
++
++function reportNativeFailure(error: unknown): never {
++	const message = error instanceof Error ? error.stack ?? error.message : String(error);
++	(globalThis as BenchmarkGlobal).__LYNX_BENCH_ERROR__ = message;
++	console.log('__NATIVE_BENCH_ERROR__', message);
++	throw error;
++}
++
++function measureNative(
++	name: string,
++	action: () => void | Promise<void | StormEvidence>,
++	source: NativeBenchmarkResult['source'],
++): Promise<NativeBenchmarkResult | undefined> {
++	const benchmark = globalThis as BenchmarkGlobal;
++	const preState = benchmark.__LYNX_BENCH_SNAPSHOT__?.() ?? emptySnapshot();
++	const startMs = Date.now();
++	let actionResult: void | Promise<void | StormEvidence>;
++	try {
++		actionResult = action();
++	} catch (error) {
++		return Promise.reject(error).catch(reportNativeFailure);
++	}
++	return Promise.resolve(actionResult).then((stormEvidence) =>
++		nextNativeFrame().then((firstFrameMs) =>
++			nextNativeFrame().then((endMs) => {
++				const result: NativeBenchmarkResult = {
++					protocol: 'lynx-native-bench-v3',
++					name,
++					source,
++					boundary: source === 'native-tap'
++						? 'native-input-handler-to-native-dom-predicate-plus-two-native-frames'
++						: 'native-devtool-driver-handler-to-native-dom-predicate-plus-two-native-frames',
++					settlementContract: 'input-handler-to-native-dom-predicate-plus-two-frames',
++					producerReceiptKind: 'action-plus-two-native-frames',
++					startMs,
++					firstFrameMs,
++					endMs,
++					latencyMs: endMs - startMs,
++					renderEvidence: { kind: 'native-animation-frame', frames: 2 },
++					transportEvidence: { kind: 'excluded-from-latency', acknowledged: false },
++					...(stormEvidence === undefined ? {} : { stormEvidence }),
++					preState,
++					postState: benchmark.__LYNX_BENCH_SNAPSHOT__?.() ?? emptySnapshot(),
++				};
++				console.log('__NATIVE_BENCH_RESULT__', JSON.stringify(result));
++				return result;
++			}),
++		),
++	).catch(reportNativeFailure);
++}
++
++function measureNativeTap(name: string, action: () => void | Promise<void | StormEvidence>): void {
++	void measureNative(name, action, 'native-tap');
++}
++
+@@ -166 +281,2 @@ function rowValues(row: RowData, selected: number | undefined): readonly string[
+-// instead of batching. A MessageChannel avoids the nested setTimeout 4ms clamp.
++// instead of batching. Native Lynx has no MessageChannel, so it falls back to
++// the timer queue just like the component benchmark producer.
+@@ -170 +286,5 @@ const STORM_SELECT_TICKS = 30;
+-const stormChannel = new MessageChannel();
++const NativeMessageChannel = (
++	globalThis as typeof globalThis & { MessageChannel?: typeof MessageChannel }
++).MessageChannel;
++const stormChannel =
++	typeof NativeMessageChannel === 'function' ? new NativeMessageChannel() : null;
+@@ -172,5 +292,7 @@ let stormPending: (() => void) | null = null;
+-stormChannel.port1.onmessage = () => {
+-	const callback = stormPending;
+-	stormPending = null;
+-	if (callback) callback();
+-};
++if (stormChannel) {
++	stormChannel.port1.onmessage = () => {
++		const callback = stormPending;
++		stormPending = null;
++		if (callback) callback();
++	};
++}
+@@ -178 +300,12 @@ stormChannel.port1.onmessage = () => {
+-function runStorm(ticks: number, step: (tick: number) => void): void {
++function nextMacrotask(): Promise<void> {
++	return new Promise((resolve) => {
++		if (stormChannel === null) {
++			setTimeout(resolve, 0);
++			return;
++		}
++		stormPending = resolve;
++		stormChannel.port2.postMessage(0);
++	});
++}
++
++function runStorm(ticks: number, step: (tick: number) => Promise<unknown>): Promise<StormEvidence> {
+@@ -180 +313,2 @@ function runStorm(ticks: number, step: (tick: number) => void): void {
+-	const next = () => {
++	let renderBarriers = 0;
++	const next = (): Promise<StormEvidence> => nextMacrotask().then(() => {
+@@ -182,8 +316,7 @@ function runStorm(ticks: number, step: (tick: number) => void): void {
+-		step(tick);
+-		if (tick < ticks) {
+-			stormPending = next;
+-			stormChannel.port2.postMessage(0);
+-		}
+-	};
+-	stormPending = next;
+-	stormChannel.port2.postMessage(0);
++		return step(tick);
++	}).then(() => {
++		renderBarriers += 1;
++		if (tick < ticks) return next();
++		return { expectedTicks: ticks, completedTicks: tick, renderBarriers };
++	});
++	return next();
+@@ -236 +369,4 @@ function bindNewRows(state: TableState): void {
+-		state.context.root.bindListeners(block, [() => select(state, id), () => remove(state, id)]);
++		state.context.root.bindListeners(block, [
++			() => measureNativeTap('select', () => select(state, id)),
++			() => measureNativeTap('remove', () => remove(state, id)),
++		]);
+@@ -355,2 +491,2 @@ function clear(state: TableState): void {
+-function updateStorm(state: TableState): void {
+-	runStorm(STORM_UPDATE_TICKS, (tick) => {
++function updateStorm(state: TableState): Promise<StormEvidence> {
++	return runStorm(STORM_UPDATE_TICKS, (tick) => {
+@@ -373,0 +510 @@ function updateStorm(state: TableState): void {
++		return state.committing;
+@@ -377 +514 @@ function updateStorm(state: TableState): void {
+-function selectStorm(state: TableState): void {
++function selectStorm(state: TableState): Promise<StormEvidence> {
+@@ -379,2 +516,6 @@ function selectStorm(state: TableState): void {
+-	if (ids.length === 0) return;
+-	runStorm(STORM_SELECT_TICKS, (tick) => {
++	if (ids.length === 0) return Promise.resolve({
++		expectedTicks: STORM_SELECT_TICKS,
++		completedTicks: 0,
++		renderBarriers: 0,
++	});
++	return runStorm(STORM_SELECT_TICKS, (tick) => {
+@@ -381,0 +523 @@ function selectStorm(state: TableState): void {
++		return state.committing;
+@@ -404,0 +547,48 @@ function tableProgram(): LynxBlockProgram<Record<string, never>> {
++			const snapshot = (): BenchmarkSnapshot => ({
++				rowCount: table.rows.length,
++				firstId: table.rows[0]?.id ?? null,
++				secondId: table.rows[1]?.id ?? null,
++				thirdId: table.rows[2]?.id ?? null,
++				row998Id: table.rows[998]?.id ?? null,
++				firstLabel: table.rows[0]?.label ?? null,
++				selectedId: table.selected ?? null,
++			});
++			const benchmark = globalThis as BenchmarkGlobal;
++			benchmark.__LYNX_BENCH_SNAPSHOT__ = snapshot;
++			benchmark.__LYNX_BENCH_DRIVER__ = {
++				drive(name, argument) {
++					switch (name) {
++						case 'probe': return { ready: true, snapshot: snapshot() };
++						case 'snapshot': return snapshot();
++						case 'create':
++							if (![1000, 3000, 5000, 10000, 20000, 30000].includes(argument ?? -1)) {
++								throw new Error(`Unsupported create scale ${argument}.`);
++							}
++							return measureNative('create', () => create(table, argument!), 'devtool-driver');
++						case 'append1k':
++							return measureNative('append1k', () => append(table), 'devtool-driver');
++						case 'update10th':
++							return measureNative('update10th', () => updateTenth(table), 'devtool-driver');
++						case 'select': {
++							const id = table.rows[argument ?? -1]?.id;
++							if (id === undefined) throw new Error(`Missing select row ${argument}.`);
++							return measureNative('select', () => select(table, id), 'devtool-driver');
++						}
++						case 'swap':
++							return measureNative('swap', () => swap(table), 'devtool-driver');
++						case 'remove': {
++							const id = table.rows[argument ?? -1]?.id;
++							if (id === undefined) throw new Error(`Missing remove row ${argument}.`);
++							return measureNative('remove', () => remove(table, id), 'devtool-driver');
++						}
++						case 'clear':
++							return measureNative('clear', () => clear(table), 'devtool-driver');
++						case 'updateStorm':
++							return measureNative('updateStorm', () => updateStorm(table), 'devtool-driver');
++						case 'selectStorm':
++							return measureNative('selectStorm', () => selectStorm(table), 'devtool-driver');
++						default:
++							throw new Error(`Unsupported benchmark operation ${name}.`);
++					}
++				},
++			};
+@@ -406,12 +596,12 @@ function tableProgram(): LynxBlockProgram<Record<string, never>> {
+-				() => create(table, 1000),
+-				() => create(table, 3000),
+-				() => create(table, 5000),
+-				() => create(table, 10000),
+-				() => create(table, 20000),
+-				() => create(table, 30000),
+-				() => append(table),
+-				() => updateTenth(table),
+-				() => swap(table),
+-				() => clear(table),
+-				() => updateStorm(table),
+-				() => selectStorm(table),
++				() => measureNativeTap('create', () => create(table, 1000)),
++				() => measureNativeTap('create', () => create(table, 3000)),
++				() => measureNativeTap('create', () => create(table, 5000)),
++				() => measureNativeTap('create', () => create(table, 10000)),
++				() => measureNativeTap('create', () => create(table, 20000)),
++				() => measureNativeTap('create', () => create(table, 30000)),
++				() => measureNativeTap('append1k', () => append(table)),
++				() => measureNativeTap('update10th', () => updateTenth(table)),
++				() => measureNativeTap('swap', () => swap(table)),
++				() => measureNativeTap('clear', () => clear(table)),
++				() => measureNativeTap('updateStorm', () => updateStorm(table)),
++				() => measureNativeTap('selectStorm', () => selectStorm(table)),
+diff --git a/benchmarks/lynx-table/app/src/index.ts b/benchmarks/lynx-table/app/src/index.ts
+index 0aee54033..f6dd0fadc 100644
+--- a/benchmarks/lynx-table/app/src/index.ts
++++ b/benchmarks/lynx-table/app/src/index.ts
+@@ -6,0 +7,57 @@ import './app.css';
++interface BenchmarkSnapshot {
++	rowCount: number;
++	firstId: number | null;
++	secondId: number | null;
++	thirdId: number | null;
++	row998Id: number | null;
++	firstLabel: string | null;
++	selectedId: number | null;
++}
++
++interface StartupObservation {
++	protocol: 'lynx-native-startup-v1';
++	moduleStartMs: number;
++	commitAckMs?: number;
++	firstFrameMs?: number;
++	secondFrameMs?: number;
++	renderEvidence: { kind: 'native-animation-frame'; frames: 2 };
++	transportEvidence?: {
++		kind: 'octane-root.render';
++		acknowledged: true;
++		ackMs: number;
++	};
++	postState?: BenchmarkSnapshot;
++}
++
++const benchmarkGlobal = globalThis as typeof globalThis & {
++	__LYNX_BENCH_COMMITTED__?: boolean;
++	__LYNX_BENCH_ERROR__?: string;
++	__LYNX_BENCH_FLUSH__?: () => Promise<void>;
++	__LYNX_BENCH_STARTUP__?: StartupObservation;
++	__LYNX_BENCH_SNAPSHOT__?: () => BenchmarkSnapshot;
++};
++const startup: StartupObservation = {
++	protocol: 'lynx-native-startup-v1',
++	moduleStartMs: Date.now(),
++	renderEvidence: { kind: 'native-animation-frame', frames: 2 },
++};
++benchmarkGlobal.__LYNX_BENCH_COMMITTED__ = false;
++benchmarkGlobal.__LYNX_BENCH_FLUSH__ = () => root.flushTransport();
++benchmarkGlobal.__LYNX_BENCH_STARTUP__ = startup;
++
++// The Sandbox QuickJS build predates ES2020 Promise.allSettled, while Hux's
++// block-background commit queue uses it to preserve both fulfillment and
++// rejection ordering. Supply the standard behavior at the app boundary; the
++// framework source and its scheduling algorithm remain unchanged.
++const promiseWithAllSettled = Promise as PromiseConstructor & {
++	allSettled?: (values: readonly PromiseLike<unknown>[]) => Promise<unknown[]>;
++};
++if (typeof promiseWithAllSettled.allSettled !== 'function') {
++	promiseWithAllSettled.allSettled = (values) => Promise.all(values.map((value) =>
++		Promise.resolve(value).then(
++			(result) => ({ status: 'fulfilled' as const, value: result }),
++			(reason) => ({ status: 'rejected' as const, reason }),
++		),
++	));
++}
++
+@@ -22 +79 @@ declare const __BENCH_BLOCK_MODE__: string;
+-void root.render(
++const renderResult = root.render(
+@@ -24,0 +82,35 @@ void root.render(
++if (renderResult !== null && typeof renderResult === 'object' && 'then' in renderResult) {
++	void renderResult.then(
++		() => {
++			benchmarkGlobal.__LYNX_BENCH_COMMITTED__ = true;
++			startup.commitAckMs = Date.now();
++			startup.transportEvidence = {
++				kind: 'octane-root.render',
++				acknowledged: true,
++				ackMs: startup.commitAckMs,
++			};
++			lynx.requestAnimationFrame(() => {
++				startup.firstFrameMs = Date.now();
++				lynx.requestAnimationFrame(() => {
++					startup.secondFrameMs = Date.now();
++					startup.postState = benchmarkGlobal.__LYNX_BENCH_SNAPSHOT__?.() ?? {
++						rowCount: 0,
++						firstId: null,
++						secondId: null,
++						thirdId: null,
++						row998Id: null,
++						firstLabel: null,
++						selectedId: null,
++					};
++					console.log('__NATIVE_BENCH_STARTUP__', JSON.stringify(startup));
++				});
++			});
++		},
++		(error: unknown) => {
++			const message = error instanceof Error ? error.message : String(error);
++			const stack = error instanceof Error ? error.stack : undefined;
++			benchmarkGlobal.__LYNX_BENCH_ERROR__ =
++				stack === undefined || stack.includes(message) ? (stack ?? message) : `${message}\n${stack}`;
++		},
++	);
++}

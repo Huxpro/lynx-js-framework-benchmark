@@ -99,7 +99,7 @@ const CHECKPOINT_ZH: Record<string, { label: string; description: string }> = {
   },
   'current-main': {
     label: '当前 · 已合并上游',
-    description: '当前清单是上游 Octane 9779569e 与 Huxpro/new-lynx e9f1fb14。每个 Web 执行分栏都同时发布两者；较早的 Hux 源码提交仅因其完整 Web bundle 回执与 e9f1fb14 逐字节一致而获得资格。各执行分栏及 Native 互不混合；完整 pipeline 与 storm campaign 仅作为描述性精确证据，不进入加权矩阵。',
+    description: '当前清单是上游 Octane 9779569e（仅 Web）与 Huxpro/new-lynx 8a30448d（Web + Native）。刷新后的默认 Web 执行分栏同时发布两者；旧的其他执行分栏仅保留 bundle 回执与当前清单逐字节一致的 entry。各执行分栏及 Native 互不混合；完整 pipeline 与 storm campaign 仅作为描述性精确证据，不进入加权矩阵。',
   },
 };
 

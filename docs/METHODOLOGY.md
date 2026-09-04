@@ -14,21 +14,19 @@ had a documented weakness, the fix is noted.
 - **Native interactive latency** = the entry's Native input handler → the first externally
   observed Native element-tree state that satisfies the shared workload predicate → two further
   `lynx.requestAnimationFrame` callbacks. The entry emits a `__NATIVE_BENCH_RESULT__` producer
-  receipt carrying the input-handler `startMs` through the Runtime console; the Sandbox adapter, already subscribed before real
-  Native touch input, polls the rendered Native tree and requests the final two frames. Both timing
-  endpoints and the duration use the device clock. DevTool polling can only delay observation, so
-  its fixed cadence is recorded as bounded endpoint quantization rather than subtracted. This is an
-  instrumented input timestamp around a black-box renderer observation, not a
-  framework-unmodified black-box claim. React/Vue's prior v2 producers already supplied the
-  action/start receipt; the rebuilt v3 producers expose the shared final-frame barrier. Octane v3
-  removes its former private ACK gate and supplies the same receipt.
-  The adapter normalizes all three to the explicit
-  `input-handler-to-native-dom-predicate-plus-two-frames` record field. Framework-specific commit/transport
-  acknowledgements are forbidden from this ranked latency interval. Octane's benchmark-only patch remains confined to the table
-  app and does not modify Octane core or serialize render payloads; JSON is used once to emit the
-  final observation. The superseded v2 Octane observations waited for `root.flushTransport()`
-  before their two frames. The collector retains those absolute samples as descriptive evidence,
-  labels them not comparable, and excludes them from every ratio, baseline, score, and ranking.
+  receipt carrying the input-handler `startMs` through the Runtime console; the Sandbox adapter,
+  already subscribed before real Native touch input, polls the rendered Native tree and requests
+  the final two frames. Both timing endpoints and the duration use the device clock. DevTool polling
+  can only delay observation, so its fixed cadence is recorded as bounded endpoint quantization
+  rather than subtracted. This is an instrumented input timestamp around a black-box renderer
+  observation, not a framework-unmodified black-box claim. React, Vue, and Hux Octane expose the
+  same v3 action/start receipt and final-frame hook. The adapter normalizes them to the explicit
+  `input-handler-to-native-dom-predicate-plus-two-frames` record field. Framework-specific
+  commit/transport acknowledgements are forbidden from this ranked latency interval. Octane's
+  benchmark-only patch remains confined to the table app and does not modify Octane core. Its
+  transport evidence is explicitly `excluded-from-latency`. The superseded v2 Octane observations
+  waited for `root.flushTransport()` before their two frames; the collector retains them only as
+  descriptive evidence and excludes them from every ratio, baseline, score, and ranking.
 - **Web startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
@@ -48,14 +46,14 @@ had a documented weakness, the fix is noted.
   capture is native's binary-template decode vs web's JSON decode — that difference belongs
   to `harness: "native"`, which the schema already isolates.
 - **Native startup** = Lynx pipeline `openTime` → `totalFcp.duration` from
-  `Performance.getAllPerformanceEntries`, after enabling the Explorer
-  `enable_perf_metrics` switch. A versioned producer receipt must also prove the requested row
-  state after two Native frames; a producer frame timestamp alone is never called FCP.
-  `pipelineEnd - openTime` is retained as settled only when both sources validate.
-  Octane's custom renderer does not expose the same pipeline boundary in this Explorer build, so
-  its startup cells use two explicitly separate, non-cross-ranked boundaries: open request →
-  `root.flushTransport()` acknowledgement (`octaneCommitAck`) and open request → the second Native
-  frame after that acknowledgement (`octaneSecondFrame`). These are not labelled FCP or settled.
+  `Performance.getAllPerformanceEntries`, after enabling the Explorer `enable_perf_metrics`
+  switch. A versioned producer receipt must also prove the requested row state after two Native
+  frames; a producer frame timestamp alone is never called FCP. `pipelineEnd - openTime` is
+  retained as settled only when both sources validate. Hux Octane's custom renderer does not expose
+  the same pipeline boundary in this Explorer build, so its startup cells use two explicitly
+  separate, non-cross-ranked boundaries: open request → transport commit acknowledgement
+  (`octaneCommitAck`) and open request → the second Native frame after that acknowledgement
+  (`octaneSecondFrame`). These are not labelled FCP or settled.
 - Old app-authored update/select storms remain archived experiments. Featured Web storms use a
   separate shared `/storm` driver: 50 standard update-every-tenth pointer ticks (10%-column width)
   or 30 alternating standard selection ticks (one-row width), at a declared 8ms interval. Both
@@ -374,7 +372,7 @@ revision A/B.
 
 | Device anchor | Matching historical page-CDP observation | Rank/shape verdict |
 | --- | --- | --- |
-| Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is the one cross-framework rank anchor shared by both instruments. |
+| Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is a directional historical ordering anchor, not a current cross-framework startup rank. |
 | Round 1 program versus template at 1k: program 12,717 ms versus template 14,354 ms; after the round-2 ledger fix, program 657 ms versus template 2,149 ms. | Hux Octane startup@1k is 1,588.1 ms versus upstream Octane 1,485.2 ms. | **Ordering disagrees.** The Web probe does not reproduce the Native compiled-program advantage. |
 | Formal Native ReactLynx startup grows from 63.8 ms at 0 rows to 1,434.1 ms at 1k, then is DNF at 10k and 30k. The device rounds also hit the ART/PaintingContext capacity boundary at eager 10k. | ReactLynx grows from 110.2 ms to 923.5 ms at 1k but completes at 8,706.4 ms / 25,934.3 ms for 10k / 30k. Every featured Web entry completes both large scales. | **Only the increasing direction agrees; the scaling shape and capacity cliff do not.** Compiled Wasm plus browser host objects cannot expose the Native JNI global-reference ceiling. |
 | Round-2 `mountProgram` bookkeeping falls from 8,565 ms to 4 ms after the ledger fix. | No Web record has a boundary equivalent to Native `mountProgram`. | **Not rank-calibratable.** It remains a Native-only internal anchor and is not imputed into Web. |
@@ -432,5 +430,6 @@ appear in the site regime facet or public rankings.
   `input-handler-to-native-dom-predicate-plus-two-frames`; startup normally uses Native pipeline
   performance entries. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
   `--jitless`, jsdom, or extrapolated value is published as Native.
-- Upstream Octane is Native-eligible under the v3 table producer. Its separately named startup ACK
-  metrics remain Native-only descriptive boundaries and are never treated as pipeline FCP.
+- Hux Octane is Native-eligible under the v3 table producer. Upstream Octane is Web-only in the
+  current featured cohort. Hux's separately named startup ACK metrics remain Native-only
+  descriptive boundaries and are never treated as pipeline FCP.

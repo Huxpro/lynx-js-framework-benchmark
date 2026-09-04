@@ -194,14 +194,50 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir) {
     console.log(`[vendor] ${id} skipped (set OCTANE_NEW_BUILD to a block-core build)`);
     return;
   }
-  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  const sourceGit = gitInfo(buildDir);
+  let patchName = null;
+  if (sourceGit.dirty) {
+    const allowed = new Set([
+      'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+      'benchmarks/lynx-table/app/src/block-program.ts',
+      'benchmarks/lynx-table/app/src/index.ts',
+    ]);
+    const changed = execFileSync(
+      'git',
+      ['diff', '--name-only', '--diff-filter=ACMRTUXB', 'HEAD', '--', 'packages', 'benchmarks'],
+      { cwd: buildDir },
+    ).toString().trim().split('\n').filter(Boolean);
+    const untracked = execFileSync(
+      'git',
+      ['ls-files', '--others', '--exclude-standard', '--', 'packages', 'benchmarks'],
+      { cwd: buildDir },
+    ).toString().trim().split('\n').filter(Boolean);
+    const disallowed = [
+      ...changed.filter((file) => !allowed.has(file)),
+      ...untracked,
+    ];
+    if (changed.length === 0 || disallowed.length > 0) {
+      throw new Error(
+        `${id}: only the benchmark Native producer may be patched; disallowed paths: ${disallowed.join(', ') || '(none)'}`,
+      );
+    }
+    patchName = `${id}-bench.patch`;
+    fs.writeFileSync(
+      path.join(patchesDir, patchName),
+      execFileSync(
+        'git',
+        ['diff', '--no-color', '--unified=0', 'HEAD', '--', ...allowed],
+        { cwd: buildDir },
+      ).toString(),
+    );
+  }
   const version = JSON.parse(
     fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
   ).version;
   vendor({
     id,
     tier: 'featured',
-    harnesses: ['web'],
+    harnesses: ['web', 'native'],
     label,
     framework: 'octane',
     frameworkVersion: version,
@@ -212,7 +248,8 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir) {
     source: {
       url: 'https://github.com/Huxpro/octane',
       commit: sourceGit.commit,
-      dirty: false,
+      dirty: sourceGit.dirty,
+      patchName,
       builtAt: sourceDate(buildDir),
       buildEnv: { BENCH_CORE: 'block', BENCH_BLOCK_MODE: 'scoped' },
     },
@@ -371,7 +408,7 @@ const octaneVersion = wants('octane')
 vendor({
   id: 'octane',
   tier: 'featured',
-  harnesses: ['web', 'native'],
+  harnesses: ['web'],
   label: 'Octane',
   framework: 'octane',
   frameworkVersion: octaneVersion,

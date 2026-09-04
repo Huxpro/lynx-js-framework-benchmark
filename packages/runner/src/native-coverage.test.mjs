@@ -26,9 +26,9 @@ import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './nat
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
 
 const ENTRIES = [
-  { id: 'octane', framework: 'octane', harnesses: ['web', 'native'] },
+  { id: 'octane', framework: 'octane', harnesses: ['web'] },
   { id: 'octane-pr-791', framework: 'octane', harnesses: ['web'] },
-  { id: 'octane-hux', framework: 'octane', harnesses: ['web'] },
+  { id: 'octane-hux', framework: 'octane', harnesses: ['web', 'native'] },
   { id: 'octane-hux1', framework: 'octane', tier: 'archive' },
   { id: 'react', framework: 'reactlynx' },
   { id: 'vue-vapor', framework: 'vue-lynx' },
@@ -63,7 +63,8 @@ test('featured Native contract is exactly six eligible entries by 23 cells', () 
   assert.equal(contract.expectedCellCount, NATIVE_FEATURED_MATRIX_CELL_COUNT);
   assert.equal(contract.cells.length, 138);
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 6);
-  assert.equal(contract.entryIds.includes('octane-hux'), false);
+  assert.equal(contract.entryIds.includes('octane'), false);
+  assert.equal(contract.entryIds.includes('octane-hux'), true);
   assert.equal(contract.entryIds.includes('octane-hux1'), false);
   for (const entry of ENTRIES.filter((candidate) =>
     (candidate.tier ?? 'featured') === 'featured'

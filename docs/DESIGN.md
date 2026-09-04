@@ -233,9 +233,10 @@ now runs real Native Engine bundles:
   full transport, reconnect, lifecycle, render, timeout, thermal, and retry policy is versioned
   and included in campaign and machine identity. Explorer client discovery is repeated
   after every restart because DebugRouter may reassign the client port/ID.
-  Current upstream Octane carries an auditable benchmark-only Native producer patch. It exposes
-  `flushTransport()` acknowledgements, post-state snapshots, and the same two-frame observation
-  boundary without modifying Octane's core transport implementation;
+  Hux Octane carries an auditable benchmark-only Native producer patch. It exposes action receipts,
+  post-state snapshots, and the same two-frame observation hook without modifying Octane's core
+  transport implementation. The adapter excludes its transport acknowledgement from ranked table
+  latency and externally verifies the same Native element-tree predicate used for React and Vue;
 - `packages/runner/src/harness-native.mjs` owns the framework-neutral adapter contract,
   workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
@@ -261,9 +262,9 @@ when one ordered receipt chain is an exact prefix of the other. Same-serial fork
 the published cohort identity and evidence use the longer chain's digest. Incomplete checkpoints
 from older, non-resumable campaign protocols remain raw diagnostic files and are omitted from the
 derived dataset entirely.
-Octane's custom renderer does not expose the common Performance pipeline boundary in the tested
+Hux Octane's custom renderer does not expose the common Performance pipeline boundary in the tested
 Explorer build. Its startup cells therefore publish `octaneCommitAck` and `octaneSecondFrame`
-instead of relabeling those observations as `fcp` or `settled`; the entry-specific boundaries stay
+instead of relabelling those observations as `fcp` or `settled`; the entry-specific boundaries stay
 explicit and are not cross-ranked against the React/Vue startup metrics.
 
 ## Runs, incremental collection, calibration
