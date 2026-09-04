@@ -658,6 +658,61 @@ test('legacy Native runs remain archive-only and are selected separately per ent
   }
 });
 
+test('legacy Native latency that includes a framework transport ACK is descriptive only', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-native-settlement-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'web.json', {
+      machineId: 'web', score: 100, entries: ['octane'],
+      entryCommits: { octane: 'octane-new' },
+    });
+    const ackRecord = {
+      ...nativeRecord('octane'),
+      samples: [20_818],
+      detailSamples: [{
+        startMs: 1_000,
+        commitAckMs: 21_790,
+        firstFrameMs: 21_802,
+        endMs: 21_818,
+        transportEvidence: {
+          kind: 'octane-root.flushTransport', acknowledged: true, ackMs: 21_790,
+        },
+      }],
+    };
+    fs.writeFileSync(path.join(root, 'results/runs/native-legacy-ack.json'), JSON.stringify({
+      schemaVersion: 2,
+      meta: {
+        generatedAt: '2026-01-03T00:00:00Z',
+        machine: machine('device-a'),
+        calibration: null,
+        entryCommits: { octane: 'octane-new' },
+      },
+      records: [ackRecord],
+    }));
+    const entries = nativeEntries(['octane']);
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['octane']),
+      entries,
+    });
+    const archived = out.records.find((candidate) =>
+      candidate.runFile === 'native-legacy-ack.json');
+    assert.equal(archived.comparabilityStatus, 'incompatible-controls');
+    assert.deepEqual(archived.comparabilityReasons, [
+      'native-latency-includes-framework-specific-transport-ack',
+    ]);
+    assert.equal(archived.settlementContract,
+      'legacy-explicit-transport-ack-then-two-native-frames');
+    assert.equal(archived.rankingEligible, false);
+    assert.equal(archived.descriptiveEligible, true);
+    assert.equal(out.comparisonRecords.includes(archived), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('collector combines split checkpoints only inside one exact Native campaign identity', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -723,6 +778,10 @@ test('collector combines split checkpoints only inside one exact Native campaign
       [firstLease.deviceLeaseId, secondLease.deviceLeaseId],
     );
     assert.deepEqual(new Set(native.map((candidate) => candidate.suite)), new Set(['table', 'startup']));
+    const nativeTable = native.filter((candidate) => candidate.suite === 'table');
+    assert.equal(nativeTable.every((candidate) =>
+      candidate.comparabilityStatus === 'comparable'
+      && candidate.rankingEligible === true), true);
     assert.equal(native.some((candidate) => candidate.runFile === 'native-driver-diagnostic.json'), false);
     assert.equal(native.some((candidate) => candidate.runFile === 'native-wrong-receipt.json'), false);
     assert.deepEqual(out.nativeCoverage.summary, { measured: 23 });
@@ -1580,21 +1639,29 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(bundleScale.length, 144);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
   // The invalidated pre-verifier process-cgroup source remains archive-only.
-  // The replacement run contributes one verified 108-record matrix for every
-  // current comparison entry. The older Hux source commit is admissible here
-  // because its complete Web bundle receipt is byte-identical to the manifest.
+  // The replacement run contributes one verified 108-record matrix for each
+  // entry whose current Web bundle receipt is still byte-identical. The Hux
+  // bundle changed in this refresh, so its older process-cgroup lane fails
+  // closed instead of being relabeled as current evidence.
   const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
     '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
-  assert.equal(verifiedProcessRun.length, 756);
+  assert.equal(verifiedProcessRun.length, 648);
   assert.deepEqual(
     [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
-    ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom',
-      'vue-vdom-ifr-et'],
+    ['octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
   );
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  assert.equal(retainedRecords.length, 5175);
+  // Native contributes the exact six-entry × 23-cell instrumented-v4 matrix;
+  // the prior five-entry/115-cell cohort is archive-only after the contract
+  // transition.
+  const retainedNative = retainedRecords.filter((record) => record.harness === 'native');
+  assert.equal(retainedNative.length, 138);
+  assert.equal(out.nativeCoverage.version, 'native-featured-instrumented-matrix-v4');
+  assert.ok(retainedNative.every((record) => record.runFile ===
+    '2026-09-04T05-14-55-lynx-native-android-aries_10-10-devtool-direct-recycle5-4d4a3fda487c-6a1cbbe81834-native-native-complete-hux-native-order-v46-2026-09-04.json'));
+  assert.equal(retainedRecords.length, 5022);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1615,9 +1682,10 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(currentWeb.entryIds.includes('octane'), true);
   assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
-  assert.equal(currentWeb.sourceRunFiles.includes(
-    '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
-  ), true);
+  assert.deepEqual(currentWeb.sourceRunFiles, [
+    '2026-09-04T08-13-29-65160668d8d9-full-web-hux-clean-v4-2026-09-04.json',
+    '2026-09-04T08-50-14-65160668d8d9-extended-create-scales-web-hux-clean-v5-2026-09-04.json',
+  ]);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
   ), false);
@@ -1638,6 +1706,8 @@ test('history audits every run but publishes only complete source-defined featur
     .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
   const stormOperations = currentRecords.filter((record) =>
     record.suite === 'storm' && record.metric === 'operationTime');
+  // The clean refreshed JIT run keeps every entry within the declared
+  // issue-schedule tolerance, so both policies retain all 14 operation cells.
   assert.equal(stormOperations.length, 28);
   assert.equal(stormOperations.filter((record) =>
     record.commitPolicy === 'final-state'
@@ -1651,28 +1721,31 @@ test('history audits every run but publishes only complete source-defined featur
     && record.descriptiveEligible
     && record.comparabilityStatus === 'contract-failed'
     && record.dnfCount === 0).length, 14);
+  // The refreshed current cohort uses the default three storm repetitions and
+  // retains each raw operation observation plus its matching detail receipt.
   assert.equal(stormOperations.every((record) =>
-    record.samples.length === 1 && record.detailSamples.length === 1), true);
+    record.samples.length === 3 && record.detailSamples.length === 3), true);
   assert.equal(currentRecords.filter((record) =>
     record.suite === 'storm' && record.metric !== 'operationTime')
-    .every((record) => record.samples.length === 1 && record.detailSamples == null), true);
+    .every((record) => record.samples.length === 3 && record.detailSamples == null), true);
   const materializedStormOperations = out.comparisonRecords.filter((record) =>
     record.suite === 'storm' && record.metric === 'operationTime');
   assert.equal(materializedStormOperations.length, 56);
   for (const environment of ['lynx-for-web', 'lynx-for-web-interp']) {
     const environmentOperations = materializedStormOperations.filter((record) =>
       record.environment === environment);
-    assert.equal(environmentOperations.length, 28);
+    const expectedPolicyCells = 14;
+    assert.equal(environmentOperations.length, expectedPolicyCells * 2);
     assert.equal(environmentOperations.filter((record) =>
       record.commitPolicy === 'final-state'
       && record.rankingEligible
       && record.comparabilityStatus === 'comparable'
-      && record.dnfCount === 0).length, 14);
+      && record.dnfCount === 0).length, expectedPolicyCells);
     assert.equal(environmentOperations.filter((record) =>
       record.commitPolicy === 'every-tick'
       && !record.rankingEligible
       && record.comparabilityStatus === 'contract-failed'
-      && record.dnfCount === 0).length, 14);
+      && record.dnfCount === 0).length, expectedPolicyCells);
   }
   assert.equal(out.history.sources.some((source) =>
     source.entryIds.includes('octane-pr-791')), true);
@@ -1684,8 +1757,9 @@ test('history audits every run but publishes only complete source-defined featur
     ...DATASET_CHECKPOINT_SPECS.map((checkpoint) => checkpoint.id),
     'current-main',
   ]);
+  const checkpointLabels = out.history.checkpoints.map((checkpoint) => checkpoint.label);
   assert.deepEqual(
-    out.history.checkpoints.map((checkpoint) => checkpoint.label),
+    checkpointLabels.filter((label) => !label.startsWith('Native · ')),
     [
       'Aug 8 · React/Vue reference',
       'Aug 10 · slow Octane joins',
@@ -1693,6 +1767,15 @@ test('history audits every run but publishes only complete source-defined featur
       'Aug 15 · Octane converges',
       'Aug 22 · Octane (Hux) joins',
       'Current · merged upstream',
+    ],
+  );
+  const nativeCheckpoint = out.history.checkpoints.find((checkpoint) =>
+    checkpoint.label.startsWith('Native · '));
+  assert.ok(nativeCheckpoint);
+  assert.deepEqual(
+    checkpointLabels.filter((label) => label.startsWith('Native · ')),
+    [
+      `Native · ${nativeCheckpoint.generatedAt}`,
     ],
   );
   assert.equal(out.history.checkpoints.every((checkpoint) =>
@@ -1750,15 +1833,41 @@ test('history audits every run but publishes only complete source-defined featur
     const records = checkpoint.activeRecordIndexes.map((index) => out.history.records[index]);
     for (const cohort of checkpoint.harnesses) {
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
-        && record.environment === cohort.environment
-        && record.rankEligible);
-      const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
+        && record.environment === cohort.environment);
+      const crossEntryRecords = cohort.harness === 'native'
+        ? cohortRecords.filter((record) => record.suite !== 'startup')
+        : cohortRecords.filter((record) => !['pipeline', 'storm'].includes(record.suite));
+      if (cohort.harness === 'web') {
+        assert.ok(cohortRecords.filter((record) => ['pipeline', 'storm'].includes(record.suite))
+          .every((record) => record.rankEligible === false));
+      }
+      const cellKeys = cohort.entryIds.map((entryId) => new Set(crossEntryRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [
           record.suite, record.environment, record.workload, record.scale,
           record.metric, record.boundary, record.unit,
         ].join('|'))));
       for (const cells of cellKeys.slice(1)) assert.deepEqual(cells, cellKeys[0]);
+      const rankableCellKeys = cohort.entryIds.map((entryId) => new Set(crossEntryRecords
+        .filter((record) => record.entry === entryId && record.rankEligible)
+        .map((record) => [
+          record.suite, record.environment, record.workload, record.scale,
+          record.metric, record.boundary, record.unit,
+        ].join('|'))));
+      assert.ok(rankableCellKeys.every((cells) =>
+        [...cells].every((cell) => cellKeys[0].has(cell))));
+      if (cohort.rankEligible) {
+        assert.ok([...rankableCellKeys[0]].some((cell) =>
+          rankableCellKeys.slice(1).every((cells) => cells.has(cell))));
+      }
+      if (cohort.harness === 'native') {
+        const startupRecords = cohortRecords.filter((record) => record.suite === 'startup');
+        if (startupRecords.length > 0) {
+          for (const entryId of cohort.entryIds) {
+            assert.equal(startupRecords.filter((record) => record.entry === entryId).length, 8);
+          }
+        }
+      }
     }
   }
 
@@ -1854,7 +1963,7 @@ test('history audits every run but publishes only complete source-defined featur
 
   const native = out.history.checkpoints.find((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
-      '2026-08-17T23-25-11-lynx-native-android-aries_10-10-devtool-direct-recycle5-9dd16c73a8b1-34a7cf1707b5-native-native-matrix-backfill-v2-r1-20260817.json',
+      '2026-09-04T05-14-55-lynx-native-android-aries_10-10-devtool-direct-recycle5-4d4a3fda487c-6a1cbbe81834-native-native-complete-hux-native-order-v46-2026-09-04.json',
     )));
   assert.ok(native);
   const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');

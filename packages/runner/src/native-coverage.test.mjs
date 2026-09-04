@@ -28,7 +28,8 @@ import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } fr
 const ENTRIES = [
   { id: 'octane', framework: 'octane', harnesses: ['web'] },
   { id: 'octane-pr-791', framework: 'octane', harnesses: ['web'] },
-  { id: 'octane-hux', framework: 'octane', harnesses: ['web'] },
+  { id: 'octane-hux', framework: 'octane', harnesses: ['web', 'native'] },
+  { id: 'octane-hux1', framework: 'octane', tier: 'archive' },
   { id: 'react', framework: 'reactlynx' },
   { id: 'vue-vapor', framework: 'vue-lynx' },
   { id: 'vue-vapor-ifr', framework: 'vue-lynx' },
@@ -57,14 +58,17 @@ function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   };
 }
 
-test('featured Native contract is exactly five black-box eligible entries by 23 cells', () => {
+test('featured Native contract is exactly six eligible entries by 23 cells', () => {
   const contract = buildNativeMatrixContract([...ENTRIES].reverse());
   assert.equal(contract.expectedCellCount, NATIVE_FEATURED_MATRIX_CELL_COUNT);
-  assert.equal(contract.cells.length, 115);
-  assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 5);
-  assert.equal(contract.entryIds.includes('octane-hux'), false);
-  for (const entry of ENTRIES.filter((candidate) => candidate.harnesses?.includes('web') !== true
-    || candidate.harnesses.includes('native'))) {
+  assert.equal(contract.cells.length, 138);
+  assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 6);
+  assert.equal(contract.entryIds.includes('octane'), false);
+  assert.equal(contract.entryIds.includes('octane-hux'), true);
+  assert.equal(contract.entryIds.includes('octane-hux1'), false);
+  for (const entry of ENTRIES.filter((candidate) =>
+    (candidate.tier ?? 'featured') === 'featured'
+    && (candidate.harnesses == null || candidate.harnesses.includes('native')))) {
     const cells = contract.cells.filter((cell) => cell.entry === entry.id);
     assert.equal(cells.length, NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
     assert.equal(cells.filter((cell) => cell.suite === 'table').length, 15);
@@ -87,14 +91,14 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
   assert.equal(coverage.cells[0].status, 'display-derivation-bug');
   assert.equal(coverage.cells[1].status, 'dnf');
   assert.equal(coverage.cells[2].status, 'unsupported');
-  assert.equal(coverage.summary.unscheduled, 112);
+  assert.equal(coverage.summary.unscheduled, 135);
   assert.throws(() => assertNativeCoverage(coverage), /incomplete or invalid/);
 
   const complete = classifyNativeCoverage({
     entries: ENTRIES,
     sourceRecords: contract.cells.map((cell) => recordFor(cell)),
   });
-  assert.deepEqual(complete.summary, { measured: 115 });
+  assert.deepEqual(complete.summary, { measured: 138 });
   assert.doesNotThrow(() => assertNativeCoverage(complete));
 });
 
@@ -218,7 +222,7 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
     const entryDir = path.join(root, 'entries/react');
     const distDir = path.join(entryDir, 'dist');
     fs.mkdirSync(path.join(distDir, 'rows-0'), { recursive: true });
-    const bundle = Buffer.from('lynx-native-bench-v2 lynx-native-startup-v1');
+    const bundle = Buffer.from('lynx-native-bench-v3 lynx-native-startup-v1');
     const bundlePath = path.join(distDir, 'rows-0/main.lynx.bundle');
     fs.writeFileSync(bundlePath, bundle);
     const bundleSha = crypto.createHash('sha256').update(bundle).digest('hex');

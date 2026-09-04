@@ -26,3 +26,29 @@ test('result serialization redacts DevTool client IDs at every nesting level', (
     safe: 'No response found without a client identifier',
   });
 });
+
+test('result serialization redacts sandbox serials from failure messages', () => {
+  const message = 'Lynx Explorer did not reconnect on sandbox device.example.net:30602.';
+  assert.equal(
+    redactResultString(`Error: ${message}`),
+    'Error: Lynx Explorer did not reconnect on sandbox [redacted].',
+  );
+
+  const serialized = stringifyResult({ failures: [{ message }] });
+  assert.equal(serialized.includes('device.example.net'), false);
+  assert.deepEqual(JSON.parse(serialized), {
+    failures: [{ message: 'Lynx Explorer did not reconnect on sandbox [redacted].' }],
+  });
+});
+
+test('result serialization redacts sandbox serials embedded in lease receipt argv', () => {
+  const receipt = '{"issueId":"benchmark-1","expiredAt":123,"acquired":"device.example.net:30602"}';
+  const serialized = stringifyResult({ argv: ['--lease-receipt', receipt] });
+  assert.equal(serialized.includes('device.example.net'), false);
+  assert.deepEqual(JSON.parse(serialized), {
+    argv: [
+      '--lease-receipt',
+      '{"issueId":"benchmark-1","expiredAt":123,"acquired":"[redacted]"}',
+    ],
+  });
+});

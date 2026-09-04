@@ -46,22 +46,29 @@ import { pathToFileURL } from 'node:url';
 import { summarize } from '@lynx-bench/shared/stats';
 import { makeRecord } from '@lynx-bench/shared/schema';
 
-import { nativeBundleSnapshot } from './native-inputs.mjs';
+import {
+  NATIVE_TABLE_BOUNDARY,
+  NATIVE_TABLE_SETTLEMENT_CONTRACT,
+  nativeBundleSnapshot,
+} from './native-inputs.mjs';
 import { NATIVE_SANDBOX_POLICY } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES } from './run-matrix.mjs';
 import { nativeStartupMetricContracts } from './native-coverage.mjs';
 
 export const NATIVE_BOUNDARIES = {
-  latency: 'native-input-handler-to-second-native-frame',
+  latency: NATIVE_TABLE_BOUNDARY,
   fcp: 'native-open-to-fcp',
   settled: 'native-open-to-pipeline-end',
 };
 
 export class NativeLeaseExpiryStop extends Error {
-  constructor(records) {
-    super('Native campaign stopped safely before lease expiry.');
+  constructor(records, reason = 'lease-expiry') {
+    super(reason === 'lease-expiry'
+      ? 'Native campaign stopped safely before lease expiry.'
+      : 'Native campaign checkpointed after an exhausted transport failure.');
     this.name = 'NativeLeaseExpiryStop';
     this.records = records;
+    this.reason = reason;
   }
 }
 
@@ -157,8 +164,10 @@ export async function runNativeMatrix({
           const detailSamples = [];
           const extras = new Map();
           let latencyBoundary = null;
+          let settlementContract = null;
           let dnfCount = 0;
           const failures = [];
+          let checkpointAfterCell = false;
           for (let rep = 0; rep < reps; rep++) {
             if (adapter.isTableUnsupported?.(entry, kase, scale)) {
               dnfCount++;
@@ -191,6 +200,7 @@ export async function runNativeMatrix({
             if (observed?.dnf) {
               dnfCount++;
               if (observed.failure != null) failures.push({ rep, ...observed.failure });
+              checkpointAfterCell ||= observed.checkpointAfterCell === true;
               continue;
             }
             if (typeof observed?.latencyMs !== 'number') {
@@ -203,6 +213,15 @@ export async function runNativeMatrix({
               throw new Error(`native adapter changed the latency boundary within ${kase.name}@${scale}.`);
             }
             latencyBoundary = observedBoundary;
+            const observedSettlement = observed.settlementContract
+              ?? observed.detail?.settlementContract
+              ?? NATIVE_TABLE_SETTLEMENT_CONTRACT;
+            if (settlementContract !== null && settlementContract !== observedSettlement) {
+              throw new Error(
+                `native adapter changed the settlement contract within ${kase.name}@${scale}.`,
+              );
+            }
+            settlementContract = observedSettlement;
             for (const [name, extra] of Object.entries(observed.metrics ?? {})) {
               if (!extras.has(name)) extras.set(name, { unit: extra.unit, boundary: extra.boundary, values: [] });
               extras.get(name).values.push(extra.value);
@@ -218,6 +237,7 @@ export async function runNativeMatrix({
             scale,
             metric: 'latency',
             boundary: latencyBoundary ?? NATIVE_BOUNDARIES.latency,
+            settlementContract: settlementContract ?? NATIVE_TABLE_SETTLEMENT_CONTRACT,
             unit: 'ms',
             stat,
             samples,
@@ -246,6 +266,9 @@ export async function runNativeMatrix({
           }
           log(`  ${entry.id} ${kase.name}@${scale}: ${stat ? `${stat.median.toFixed(1)}ms (n=${stat.n})` : 'no samples'}${dnfCount ? ` dnf=${dnfCount}` : ''}`);
           await onProgress(records);
+          if (checkpointAfterCell) {
+            throw new NativeLeaseExpiryStop(records, 'transport-failure');
+          }
         }
       }
     }
@@ -265,6 +288,7 @@ export async function runNativeMatrix({
         const expectedMetricNames = new Set(expectedMetrics.map(({ metric }) => metric));
         let dnfCount = 0;
         const failures = [];
+        let checkpointAfterCell = false;
         const addContract = (name, unit, boundary) => {
           if (!observations.has(name)) observations.set(name, { unit, boundary, values: [], details: [] });
         };
@@ -314,6 +338,7 @@ export async function runNativeMatrix({
           if (observed?.dnf) {
             dnfCount++;
             if (observed.failure != null) failures.push({ rep, ...observed.failure });
+            checkpointAfterCell ||= observed.checkpointAfterCell === true;
             for (const contract of observed.metricContracts ?? []) {
               addContract(contract.name, contract.unit, contract.boundary);
             }
@@ -375,6 +400,9 @@ export async function runNativeMatrix({
           }));
         }
         await onProgress(records);
+        if (checkpointAfterCell) {
+          throw new NativeLeaseExpiryStop(records, 'transport-failure');
+        }
       }
     }
   }
@@ -400,19 +428,21 @@ export async function runNativeHarness(options = undefined) {
       machine: adapter.machine ?? null,
     });
     let records;
-    let stoppedForLeaseExpiry = false;
+    let checkpointReason = null;
     try {
       records = await runNativeMatrix({ ...options, adapter, onProgress });
     } catch (error) {
       if (!(error instanceof NativeLeaseExpiryStop)) throw error;
       records = error.records;
-      stoppedForLeaseExpiry = true;
+      checkpointReason = error.reason;
     }
     return {
       records,
       environment: adapter.environment,
       machine: adapter.machine ?? null,
-      stoppedForLeaseExpiry,
+      checkpointReason,
+      stoppedForLeaseExpiry: checkpointReason === 'lease-expiry',
+      stoppedForCheckpoint: checkpointReason !== null,
     };
   } finally {
     await adapter.dispose();

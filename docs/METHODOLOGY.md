@@ -11,12 +11,22 @@ had a documented weakness, the fix is noted.
   (shadow-piercing walk; ≤1 frame quantization). Ops are driven by real Chromium input
   (`page.mouse.click`) on geometry the in-page driver reports — never synthetic framework
   events.
-- **Native interactive latency** = the entry's Native input handler → its second
-  `lynx.requestAnimationFrame`. The entry emits a `__NATIVE_BENCH_RESULT__` payload through the
-  Runtime console, so both endpoints and the duration use the device clock; host ADB/CDP latency
-  is outside the sample. The Sandbox adapter subscribes before dispatching real Native touch input
-  for every Native-eligible featured entry. Featured Octane entries are Web-only: the benchmark
-  does not patch Octane's runtime or app to expose a private completion protocol.
+- **Native interactive latency** = the entry's Native input handler → the first externally
+  observed Native element-tree state that satisfies the shared workload predicate → two further
+  `lynx.requestAnimationFrame` callbacks. The entry emits a `__NATIVE_BENCH_RESULT__` producer
+  receipt carrying the input-handler `startMs` through the Runtime console; the Sandbox adapter,
+  already subscribed before real Native touch input, polls the rendered Native tree and requests
+  the final two frames. Both timing endpoints and the duration use the device clock. DevTool polling
+  can only delay observation, so its fixed cadence is recorded as bounded endpoint quantization
+  rather than subtracted. This is an instrumented input timestamp around a black-box renderer
+  observation, not a framework-unmodified black-box claim. React, Vue, and Hux Octane expose the
+  same v3 action/start receipt and final-frame hook. The adapter normalizes them to the explicit
+  `input-handler-to-native-dom-predicate-plus-two-frames` record field. Framework-specific
+  commit/transport acknowledgements are forbidden from this ranked latency interval. Octane's
+  benchmark-only patch remains confined to the table app and does not modify Octane core. Its
+  transport evidence is explicitly `excluded-from-latency`. The superseded v2 Octane observations
+  waited for `root.flushTransport()` before their two frames; the collector retains them only as
+  descriptive evidence and excludes them from every ratio, baseline, score, and ranking.
 - **Web startup** = `lynx-view` attach → first frame with ≥5 table-content elements (`fcp`), and
   → content-count quiesce for 400ms (`settled`). Startup scale uses bundle variants whose
   first screen pre-renders N rows (build-time `__BENCH_AUTOROWS__`, seeded data), so
@@ -36,13 +46,14 @@ had a documented weakness, the fix is noted.
   capture is native's binary-template decode vs web's JSON decode — that difference belongs
   to `harness: "native"`, which the schema already isolates.
 - **Native startup** = Lynx pipeline `openTime` → `totalFcp.duration` from
-  `Performance.getAllPerformanceEntries`, after enabling the Explorer
-  `enable_perf_metrics` switch. A versioned producer receipt must also prove the requested row
-  state after two Native frames; a producer frame timestamp alone is never called FCP.
-  `pipelineEnd - openTime` is retained as settled only when both sources validate.
-  Octane's custom renderer does not expose the same pipeline boundary in this Explorer build, so
-  **no featured Native Octane metric is reported**. Archived private-protocol observations remain
-  evidence, but cannot fill the current black-box matrix.
+  `Performance.getAllPerformanceEntries`, after enabling the Explorer `enable_perf_metrics`
+  switch. A versioned producer receipt must also prove the requested row state after two Native
+  frames; a producer frame timestamp alone is never called FCP. `pipelineEnd - openTime` is
+  retained as settled only when both sources validate. Hux Octane's custom renderer does not expose
+  the same pipeline boundary in this Explorer build, so its startup cells use two explicitly
+  separate, non-cross-ranked boundaries: open request → transport commit acknowledgement
+  (`octaneCommitAck`) and open request → the second Native frame after that acknowledgement
+  (`octaneSecondFrame`). These are not labelled FCP or settled.
 - Old app-authored update/select storms remain archived experiments. Featured Web storms use a
   separate shared `/storm` driver: 50 standard update-every-tenth pointer ticks (10%-column width)
   or 30 alternating standard selection ticks (one-row width), at a declared 8ms interval. Both
@@ -262,7 +273,7 @@ metric rather than silently changing the upstream interaction formula.
   approximating render work) run in the same headless browser. Higher = faster machine.
 - Web default comparisons use records from one physical run. Native checkpoints combine only when
   they share the exact stable physical-device cohort, environment, harness configuration, campaign,
-  115-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
+  138-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
   checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
   its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
   prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made
@@ -361,7 +372,7 @@ revision A/B.
 
 | Device anchor | Matching historical page-CDP observation | Rank/shape verdict |
 | --- | --- | --- |
-| Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is the one cross-framework rank anchor shared by both instruments. |
+| Round 1 eager 1k: ReactLynx FCP (1,264 ms) precedes the Octane program (12,789 ms). | ReactLynx startup@1k (923.5 ms) precedes Hux Octane (1,588.1 ms). | **Ordering agrees.** This is a directional historical ordering anchor, not a current cross-framework startup rank. |
 | Round 1 program versus template at 1k: program 12,717 ms versus template 14,354 ms; after the round-2 ledger fix, program 657 ms versus template 2,149 ms. | Hux Octane startup@1k is 1,588.1 ms versus upstream Octane 1,485.2 ms. | **Ordering disagrees.** The Web probe does not reproduce the Native compiled-program advantage. |
 | Formal Native ReactLynx startup grows from 63.8 ms at 0 rows to 1,434.1 ms at 1k, then is DNF at 10k and 30k. The device rounds also hit the ART/PaintingContext capacity boundary at eager 10k. | ReactLynx grows from 110.2 ms to 923.5 ms at 1k but completes at 8,706.4 ms / 25,934.3 ms for 10k / 30k. Every featured Web entry completes both large scales. | **Only the increasing direction agrees; the scaling shape and capacity cliff do not.** Compiled Wasm plus browser host objects cannot expose the Native JNI global-reference ceiling. |
 | Round-2 `mountProgram` bookkeeping falls from 8,565 ms to 4 ms after the ledger fix. | No Web record has a boundary equivalent to Native `mountProgram`. | **Not rank-calibratable.** It remains a Native-only internal anchor and is not imputed into Web. |
@@ -373,7 +384,7 @@ an absolute-time revision A/B.
 | Post-fix device anchor | Matching Web observation | Rank/shape verdict |
 | --- | --- | --- |
 | Two create→clear→re-create sequences at 1k each emit 2 MTS→BTS messages and exactly 1 ACK per commit. Create uses compact-v1 with 7,000 acknowledged hosts; encoded ContextProxy totals are 182 B for create and 222 B for clear. | The post-fix Web create commit is likewise constant-size instead of the former 17.4 MB / 23,799-message storm. | **Transport shape agrees.** Native ContextProxy payload bytes and Web RPC-envelope bytes have different boundaries, so this is a post-fix shape anchor, not a ranking anchor. |
-| Native clear@1k produces valid state/frame receipts, but Hux and upstream wait for an Octane transport ACK while ReactLynx exposes no equivalent ACK. Upstream's create→clear preparation path also DNF'd, requiring an eager-1k clear probe instead. | Web-interp reports a stable Octane-family clear gap under one shared DOM predicate and transport boundary. | **Not rank-calibratable.** The Native producer receipts are not settlement-equivalent, so this round neither validates nor falsifies the Web clear ratio. It defines the fidelity boundary and grants no device prediction stake. |
+| The superseded Native v2 clear@1k receipts waited for an Octane transport ACK while ReactLynx exposed no equivalent ACK. Upstream's create→clear preparation path also DNF'd, requiring an eager-1k clear probe instead. | Web-interp reports a stable Octane-family clear gap under one shared DOM predicate and transport boundary. | **Not rank-calibratable.** These immutable v2 receipts remain descriptive-only. Native v3 removes the framework-specific ACK from ranked table latency instead of relabelling the old samples. |
 
 Within Web itself, turning off compiled JavaScript changes the winning entry in 5 of the 16 shared
 latency/FCP cells and reverses 63 of 336 pairwise entry orderings (18.8%). Comparing normal JIT with
@@ -415,8 +426,10 @@ appear in the site regime facet or public rankings.
   (wire cost, thread split, scaling shape), not native absolute performance.
 - `harness: "native"` — real Native Engine execution on an Android 10 ByteDance aries_10
   Lynx Sandbox device through LynxExplorer and `@byted/agent-lynx`. The boundary is
-  `native-input-handler-to-second-native-frame`; startup normally uses Native pipeline
+  `native-input-handler-to-native-dom-predicate-plus-two-native-frames` with settlement contract
+  `input-handler-to-native-dom-predicate-plus-two-frames`; startup normally uses Native pipeline
   performance entries. Unsupported input/session paths and timeouts are explicit DNF. No Web, node
   `--jitless`, jsdom, or extrapolated value is published as Native.
-- All featured Octane entries are explicitly Web-only. Historical Octane Native observations remain
-  appendix evidence and never enter the current Native cohort or ranking.
+- Hux Octane is Native-eligible under the v3 table producer. Upstream Octane is Web-only in the
+  current featured cohort. Hux's separately named startup ACK metrics remain Native-only
+  descriptive boundaries and are never treated as pipeline FCP.

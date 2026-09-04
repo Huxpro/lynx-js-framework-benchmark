@@ -60,8 +60,8 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all seven Native-eligible
-featured entries, 27 table cells per entry, and two startup metrics at 0/1k/10k/30k (245 contract cells total; five
+Native has no partial publish mode: omitting entry/case/scale flags runs all six Native-eligible
+featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (138 contract cells total; five
 table and three startup repetitions). Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
@@ -73,11 +73,19 @@ client and surfaces as `No response found`. The adapter starts a clean Explorer,
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
 the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
-Every featured entry, including upstream Octane, uses real Native touch input. Octane samples
-begin in the background handler, wait for the renderer's correlated transport acknowledgement,
-then wait two Native frames; the recorded post-ACK state is checked against the semantic workload
-predicate. A DevTool driver exists only as an explicitly labelled diagnostic mode and is never the
-default benchmark path. A strict producer payload failure is retained as an evidenced
+Every Native-eligible featured entry uses real Native touch input and the versioned
+`input-handler-to-native-dom-predicate-plus-two-frames` settlement contract. The instrumented
+input handler supplies only the device-clock start receipt; the shared Sandbox adapter then
+observes the workload-specific Native element-tree predicate and ends after two further Native
+frames. Ranked table latency never waits for a framework-specific transport/commit
+acknowledgement. The Hux Octane benchmark producer marks its transport acknowledgement
+`excluded-from-latency`, matching React and Vue's ranked endpoint. Legacy Octane v2 samples that
+did wait for `root.flushTransport()` remain visible as absolute descriptive evidence, but are
+marked not comparable and cannot enter a ratio, baseline, score, or ranking. A DevTool driver
+exists only for unmeasured Octane prestate preparation; ranked actions still begin at the input
+handler and finish at the externally observed Native tree. This is an instrumented black-box
+renderer observation, not a framework-unmodified claim. A strict producer payload failure is
+retained as an evidenced
 `producer-protocol-invalid` DNF for that cell; its evidence explicitly records validation as
 `attempted: true, passed: false`, never invents a timing value, and never aborts unrelated cells.
 Release the Sandbox lease after the command completes.
@@ -115,7 +123,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 115-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign, 138-cell matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -164,7 +172,7 @@ reproducible instead of being lost with the process. Each cell names the lease t
 and every receipt remains in the ordered chain. Split checkpoints combine only when one receipt
 chain is an exact prefix of the other; same-serial forks remain archive-only. Known transport exhaustion and producer-protocol
 failures are retained as structured DNF evidence; unknown adapter/programming errors still abort.
-Each checkpoint carries a `native-featured-black-box-matrix-v2` coverage ledger. It distinguishes measured,
+Each checkpoint carries a `native-featured-instrumented-matrix-v4` coverage ledger. It distinguishes measured,
 measured-with-DNF, DNF, capability-proven unsupported, unscheduled, incompatible cohort, and
 display/derivation defects. A completed campaign may contain measured, DNF, or proven unsupported
 cells, but never an unscheduled or invalid cell. Bundles are served from immutable byte snapshots;
@@ -187,7 +195,7 @@ Cases: the krausest superset (`create` 1k/3k/5k/10k/20k/30k, `replace`, `append1
 `update10th`, standard preselected-row `select`, `swap`, `remove`, standard `clear@1k`
 plus `clear@10k`) + shared-driver Web storms (50 update / 30 select pointer ticks,
 both every-tick and final-state policies) at 1k/10k + the separately versioned Native matrix +
-startup at 0/1k/10k/30k pre-rendered rows. Octane Native exposes isolated transport-ACK and
+startup at 0/1k/10k/30k pre-rendered rows. Hux Octane Native exposes isolated transport-ACK and
 post-ACK-frame startup metrics because its custom renderer publishes no pipeline FCP entry; these
 are never ranked as FCP. See
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for the measurement rules and

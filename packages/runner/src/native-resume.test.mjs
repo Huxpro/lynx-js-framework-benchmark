@@ -17,6 +17,11 @@ import {
 import { runNativeHarness, runNativeMatrix } from './harness-native.mjs';
 import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
 import {
+  NATIVE_TABLE_BOUNDARY,
+  NATIVE_TABLE_PROTOCOL,
+  NATIVE_TABLE_SETTLEMENT_CONTRACT,
+} from './native-inputs.mjs';
+import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   appendNativeMethodRevision,
   appendNativeLeaseReceipt,
@@ -325,28 +330,35 @@ test('resume skips an atomic startup transport-DNF pair without duplicates or pa
   const entry = { id: 'react', framework: 'reactlynx' };
   const matrixContract = buildNativeMatrixContract([entry]);
   const firstProgress = [];
-  const first = await runNativeMatrix({
-    adapter: {
-      environment: 'native-test',
-      async loadBundle() {
-        throw new Error(
-          'CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable',
-        );
+  let stopped;
+  try {
+    await runNativeMatrix({
+      adapter: {
+        environment: 'native-test',
+        async loadBundle() {
+          throw new Error(
+            'CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable',
+          );
+        },
+        async collectStartup() { throw new Error('collectStartup must not run'); },
+        async recoverTransient() { return true; },
+        async classifyFailure(error, context) {
+          return nativeTransportFailureDnf(error, context, { transientRecoveries: [] });
+        },
       },
-      async collectStartup() { throw new Error('collectStartup must not run'); },
-      async recoverTransient() { return true; },
-      async classifyFailure(error, context) {
-        return nativeTransportFailureDnf(error, context, { transientRecoveries: [] });
-      },
-    },
-    entries: [entry],
-    cases: [],
-    suites: ['startup'],
-    startupScales: [0],
-    startupReps: 1,
-    bundleSnapshots: snapshots(entry.id),
-    onProgress: async (records) => firstProgress.push(structuredClone(records)),
-  });
+      entries: [entry],
+      cases: [],
+      suites: ['startup'],
+      startupScales: [0],
+      startupReps: 1,
+      bundleSnapshots: snapshots(entry.id),
+      onProgress: async (records) => firstProgress.push(structuredClone(records)),
+    });
+  } catch (error) {
+    stopped = error;
+  }
+  assert.equal(stopped?.reason, 'transport-failure');
+  const first = stopped.records;
   assert.deepEqual(firstProgress.map((records) => records.length), [2]);
   assert.deepEqual(first.map((record) => record.metric), ['fcp', 'settled']);
 
@@ -406,4 +418,43 @@ test('strict producer validation failures become cell-local evidenced DNF', () =
     if (suite === 'startup') assert.deepEqual(dnf.metricContracts.map(({ name }) => name), ['fcp', 'settled']);
     else assert.equal(dnf.metricContracts, undefined);
   }
+});
+
+test('Native table v3 rejects transport ACKs from the ranked latency boundary', () => {
+  const state = {
+    rowCount: 0,
+    firstId: null,
+    secondId: null,
+    thirdId: null,
+    row998Id: null,
+    firstLabel: null,
+    selectedId: null,
+  };
+  const payload = {
+    protocol: NATIVE_TABLE_PROTOCOL,
+    name: 'create',
+    source: 'native-tap',
+    boundary: NATIVE_TABLE_BOUNDARY,
+    settlementContract: NATIVE_TABLE_SETTLEMENT_CONTRACT,
+    startMs: 100,
+    firstFrameMs: 112,
+    endMs: 128,
+    latencyMs: 28,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    settlementEvidence: { kind: 'native-dom-workload-predicate', passed: true },
+    transportEvidence: { kind: 'excluded-from-latency', acknowledged: false },
+    preState: state,
+    postState: { ...state, rowCount: 1000, firstId: 1 },
+  };
+  assert.equal(validateNativeTablePayload(payload, {
+    entryId: 'octane', expectedName: 'create', expectedSource: 'native-tap',
+  }), payload);
+  assert.throws(() => validateNativeTablePayload({
+    ...payload,
+    transportEvidence: {
+      kind: 'octane-root.flushTransport', acknowledged: true, ackMs: 20_000,
+    },
+  }, {
+    entryId: 'octane', expectedName: 'create', expectedSource: 'native-tap',
+  }), /exclude framework-specific transport acknowledgements/);
 });

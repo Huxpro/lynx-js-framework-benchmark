@@ -95,7 +95,10 @@ export function NativeObservations({ theme }: { theme: 'light' | 'dark' }) {
                   {shortLabel(observation.entryId)}
                 </div>
                 <div className="observation-boundary">
-                  {text('Real Native tap → renderer ACK → second Native frame', '真实 Native 点击 → renderer ACK → 第二个 Native 帧')}
+                  {text(
+                    'Real Native input → versioned archived boundary (see record)',
+                    '真实 Native 输入 → 已版本化的归档边界（以记录为准）',
+                  )}
                 </div>
               </div>
                 <div className="observation-stamp">{text('archive only', '仅归档')}</div>

@@ -46,11 +46,16 @@ for (const id of ids) {
   }
   if (!manifest.provenance?.commit) fail(`${id}: provenance.commit missing`);
   if (manifest.tier === 'featured' && manifest.framework === 'octane') {
-    if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
-      fail(`${id}: featured Octane entries must use an unpatched source checkout`);
-    }
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
-      fail(`${id}: featured Octane entries must be explicitly Web-only`);
+    if (id === 'octane') {
+      if (
+        manifest.provenance.patched !== true
+        || manifest.provenance.patchFile !== 'entries/_patches/octane-bench.patch'
+      ) {
+        fail(`${id}: current upstream entry must record its benchmark-only Native producer patch`);
+      }
+      if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+        fail(`${id}: current upstream entry must be explicitly Web-only`);
+      }
     }
   }
   if (id === 'octane-hux') {
@@ -67,8 +72,14 @@ for (const id of ids) {
     if (manifest.webLab != null || manifest.nativeLab != null || manifest.ranking != null) {
       fail(`${id}: Hux new-lynx entry must not use Lab contracts`);
     }
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
-      fail(`${id}: Hux new-lynx entry must be explicitly Web-only`);
+    if (
+      manifest.provenance.patched !== true
+      || manifest.provenance.patchFile !== 'entries/_patches/octane-hux-bench.patch'
+    ) {
+      fail(`${id}: Hux new-lynx entry must record its benchmark-only Native producer patch`);
+    }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
+      fail(`${id}: Hux new-lynx entry must explicitly support Web and Native`);
     }
   }
   if (id === 'octane-hux1' || id === 'octane-hux2') {

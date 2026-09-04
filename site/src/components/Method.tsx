@@ -14,7 +14,7 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
       && candidate.throttleScope === regime.throttleScope)));
   const boundary = harness === 'web'
     ? text('Interaction: in-page pointerdown → first frame whose composed-DOM predicate passes. Startup: view attach → first frame with benchmark content; this is a workload-defined content boundary, not cold browser-navigation FCP.', '交互：页面内 pointerdown → composed DOM 条件首次通过的帧。启动：view attach → 首个包含 benchmark 内容的帧；这是 workload 定义的内容边界，不是浏览器冷导航 FCP。')
-    : text('Interaction: real device input handler → second Native animation frame. Startup: pipeline open → producer FCP; renderer-only ACK/frame metrics stay separately named.', '交互：真实设备输入处理器 → 第二个 Native 动画帧。启动：pipeline open → producer FCP；仅渲染器的 ACK/帧指标会独立命名。');
+    : text('Interaction: real device input handler → externally observed Native element-tree workload predicate → two further Native animation frames; framework-specific transport ACKs are excluded. Startup: pipeline open → producer FCP; renderer-only ACK/frame metrics stay separately named.', '交互：真实设备输入处理器 → 外部观察到 Native 元素树满足 workload 条件 → 再经过两个 Native 动画帧；框架特有的 transport ACK 不计入。启动：pipeline open → producer FCP；仅渲染器的 ACK/帧指标会独立命名。');
   const generatedAt = date(snapshot.generatedAt, {
     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
@@ -50,8 +50,8 @@ export function MeasurementReceipt({ harness }: { harness: string }) {
           <h3>{text('Fairness controls', '公平性控制')}</h3>
           <p>
             {text(
-              'Identical table contract and seeded rows; medians are derived from raw repetitions. Web and Native stay separate comparison domains.',
-              '使用相同的表格合约和固定种子行；中位数由原始重复测量派生。Web 与 Native 始终是独立的比较域。',
+              'Identical table, settlement, and seeded-row contracts; medians are derived from raw repetitions. Boundary-mismatched legacy observations remain absolute evidence only. Web and Native stay separate comparison domains.',
+              '使用相同的表格、完成边界和固定种子行合约；中位数由原始重复测量派生。边界不一致的旧观测只保留绝对值证据。Web 与 Native 始终是独立的比较域。',
             )}
           </p>
         </section>

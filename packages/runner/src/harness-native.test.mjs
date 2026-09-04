@@ -10,7 +10,12 @@ import test from 'node:test';
 
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
+  nativeDescribedText,
   isNativeTransientTransportFailure,
+  nativeDescendantWithClass,
+  nativeInnerText,
+  nativeNodeHasClass,
+  nativeStartupPayloadIsComplete,
   nativeTransportFailureDnf,
 } from '../adapters/lynx-sandbox-android.mjs';
 
@@ -23,10 +28,15 @@ import {
   resolveConnectorPackageTrees,
 } from './connector-receipt.mjs';
 import {
+  NativeLeaseExpiryStop,
   loadNativeAdapter,
   runNativeHarness,
   runNativeMatrix,
 } from './harness-native.mjs';
+import {
+  NATIVE_TABLE_BOUNDARY,
+  NATIVE_TABLE_SETTLEMENT_CONTRACT,
+} from './native-inputs.mjs';
 
 const CASES = [
   { name: 'create', scales: [1000, 10000] },
@@ -86,6 +96,16 @@ function mockAdapter(script) {
   };
 }
 
+async function captureRejection(action, predicate) {
+  try {
+    await action();
+  } catch (error) {
+    assert.equal(predicate(error), true);
+    return error;
+  }
+  assert.fail('Missing expected rejection.');
+}
+
 test('native matrix emits schema-shaped native records with DNF accounting', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-harness-'));
   const { entry, snapshots } = fakeEntry(dir);
@@ -132,7 +152,8 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   );
   assert.equal(create1k.harness, 'native');
   assert.equal(create1k.environment, 'lynx-native-mock-sim');
-  assert.equal(create1k.boundary, 'native-input-handler-to-second-native-frame');
+  assert.equal(create1k.boundary, NATIVE_TABLE_BOUNDARY);
+  assert.equal(create1k.settlementContract, NATIVE_TABLE_SETTLEMENT_CONTRACT);
   assert.equal(create1k.n, 2);
   assert.equal(create1k.dnfCount, 1);
   for (const key of COMPARABILITY_KEYS) assert.ok(key in create1k, key);
@@ -163,7 +184,7 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   assert.equal(progress.at(-1), records.length);
 });
 
-test('known exhausted transport failures become evidenced DNF instead of discarding prior cells', async () => {
+test('known exhausted transport failures persist the exact DNF cell then checkpoint', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-transport-dnf-'));
   const { entry, snapshots } = fakeEntry(dir);
   const adapter = mockAdapter({ calls: [], collect: [], startup: [] });
@@ -172,6 +193,7 @@ test('known exhausted transport failures become evidenced DNF instead of discard
   };
   adapter.classifyFailure = async (error, context) => ({
     dnf: true,
+    checkpointAfterCell: true,
     failure: {
       category: 'transport-retries-exhausted',
       workload: context.kase.name,
@@ -179,16 +201,18 @@ test('known exhausted transport failures become evidenced DNF instead of discard
     },
   });
   const checkpoints = [];
-  const records = await runNativeMatrix({
-    adapter,
-    entries: [entry],
-    cases: [{ name: 'create', scales: [1000] }],
-    suites: ['table'],
-    scales: [1000],
-    reps: 2,
-    bundleSnapshots: snapshots,
-    onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
-  });
+  const stopped = await captureRejection(() => runNativeMatrix({
+      adapter,
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000] }],
+      suites: ['table'],
+      scales: [1000],
+      reps: 2,
+      bundleSnapshots: snapshots,
+      onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
+    }), (error) => error instanceof NativeLeaseExpiryStop
+      && error.reason === 'transport-failure');
+  const records = stopped.records;
   assert.equal(records.length, 1);
   assert.equal(records[0].n, 0);
   assert.equal(records[0].dnfCount, 2);
@@ -199,7 +223,7 @@ test('known exhausted transport failures become evidenced DNF instead of discard
   assert.equal(checkpoints[0][0].dnfCount, 2);
 });
 
-test('table loadBundle transport exhaustion maps to the first pending cell and the next cell runs', async () => {
+test('table loadBundle transport exhaustion maps to the first pending cell and checkpoints', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-table-load-transport-'));
   const { entry, snapshots } = fakeEntry(dir);
   const calls = [];
@@ -226,18 +250,20 @@ test('table loadBundle transport exhaustion maps to the first pending cell and t
       });
     },
   };
-  const records = await runNativeMatrix({
-    adapter,
-    entries: [entry],
-    cases: [{ name: 'create', scales: [1000, 3000, 5000] }],
-    suites: ['table'],
-    scales: [1000, 3000, 5000],
-    reps: 1,
-    bundleSnapshots: snapshots,
-    existingCellKeys: new Set(['fake|table|create|1000|latency']),
-  });
+  const stopped = await captureRejection(() => runNativeMatrix({
+      adapter,
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000, 3000, 5000] }],
+      suites: ['table'],
+      scales: [1000, 3000, 5000],
+      reps: 1,
+      bundleSnapshots: snapshots,
+      existingCellKeys: new Set(['fake|table|create|1000|latency']),
+    }), (error) => error instanceof NativeLeaseExpiryStop
+      && error.reason === 'transport-failure');
+  const records = stopped.records;
 
-  assert.deepEqual(records.map((record) => record.scale), [3000, 5000]);
+  assert.deepEqual(records.map((record) => record.scale), [3000]);
   const failed = records[0];
   assert.equal(failed.entry, 'fake');
   assert.equal(failed.workload, 'create');
@@ -250,14 +276,13 @@ test('table loadBundle transport exhaustion maps to the first pending cell and t
   assert.equal(failed.failures[0].capabilityScope, 'cell');
   assert.equal(failed.failures[0].evidence.failureStage, 'loadBundle');
   assert.equal(failed.failures[0].evidence.transientRecoveries.length, 2);
-  assert.equal(records[1].median, 9);
   assert.deepEqual(
     calls.filter(([method]) => method === 'driveCase'),
-    [['driveCase', 'create', 5000]],
+    [],
   );
 });
 
-test('startup loadBundle transport exhaustion checkpoints a DNF pair and the next scale runs', async () => {
+test('startup loadBundle transport exhaustion checkpoints an atomic DNF pair', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-load-transport-'));
   const { entry, snapshots } = fakeEntry(dir);
   const calls = [];
@@ -284,18 +309,20 @@ test('startup loadBundle transport exhaustion checkpoints a DNF pair and the nex
       });
     },
   };
-  const records = await runNativeMatrix({
-    adapter,
-    entries: [entry],
-    cases: [],
-    suites: ['startup'],
-    startupScales: [0, 1000],
-    startupReps: 1,
-    bundleSnapshots: snapshots,
-    onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
-  });
+  const stopped = await captureRejection(() => runNativeMatrix({
+      adapter,
+      entries: [entry],
+      cases: [],
+      suites: ['startup'],
+      startupScales: [0, 1000],
+      startupReps: 1,
+      bundleSnapshots: snapshots,
+      onProgress: async (partial) => checkpoints.push(structuredClone(partial)),
+    }), (error) => error instanceof NativeLeaseExpiryStop
+      && error.reason === 'transport-failure');
+  const records = stopped.records;
 
-  assert.deepEqual(checkpoints.map((checkpoint) => checkpoint.length), [2, 4]);
+  assert.deepEqual(checkpoints.map((checkpoint) => checkpoint.length), [2]);
   const failedPair = records.filter((record) => record.scale === 0);
   assert.deepEqual(failedPair.map((record) => record.metric), ['fcp', 'settled']);
   for (const record of failedPair) {
@@ -309,12 +336,8 @@ test('startup loadBundle transport exhaustion checkpoints a DNF pair and the nex
     assert.equal(record.failures[0].capabilityScope, 'cell');
   }
   assert.deepEqual(
-    records.filter((record) => record.scale === 1000).map((record) => record.median),
-    [17, 23],
-  );
-  assert.deepEqual(
     calls.filter(([method]) => method === 'loadBundle').map(([, rows]) => rows),
-    [0, 0, 0, 1000],
+    [0, 0, 0],
   );
 });
 
@@ -367,6 +390,10 @@ test('transport classification is narrow and preserves producer and integrity fa
   );
   assert.equal(isNativeTransientTransportFailure(runtimeFailure), true);
   assert.equal(
+    isNativeTransientTransportFailure(new Error('timeout waiting for Native timing create.')),
+    true,
+  );
+  assert.equal(
     isNativeTransientTransportFailure(new Error('CDP Runtime.evaluate failed: application error')),
     false,
   );
@@ -381,6 +408,73 @@ test('transport classification is narrow and preserves producer and integrity fa
   assert.equal(nativeTransportFailureDnf(new Error('programming error'), {
     suite: 'table', entry: { id: 'fake' }, kase: { name: 'create' }, scale: 1000,
   }), null);
+});
+
+test('Native DOM text prefers populated raw values over an empty compatibility field', () => {
+  assert.equal(nativeInnerText({
+    innerText: '',
+    rawTextValues: [{ text: '1001' }],
+  }), '1001');
+  assert.equal(nativeInnerText({
+    innerText: '',
+    rawTextValues: [{ text: '1' }, { text: 'selected row' }],
+  }), '1 selected row');
+  assert.equal(nativeInnerText({
+    result: { innerText: '', rawTextValues: [{ text: '1001' }] },
+  }), '1001');
+  assert.equal(nativeInnerText({ innerText: 'fallback' }), 'fallback');
+});
+
+test('Native selected-row inspection resolves the id text inside the external row subtree', () => {
+  const described = {
+    compress: false,
+    node: {
+      nodeId: 117,
+      attributes: ['class', 'row danger'],
+      children: [{
+        nodeId: 118,
+        attributes: ['class', 'col-id'],
+        children: [{ nodeId: 119, attributes: ['text', '6'] }],
+      }, {
+        nodeId: 120,
+        attributes: ['class', 'col-label'],
+      }],
+    },
+  };
+  assert.equal(nativeDescendantWithClass(described, 'col-id'), 118);
+  assert.equal(nativeDescendantWithClass(described, 'missing'), null);
+  assert.equal(nativeNodeHasClass(described.node, 'row'), true);
+  assert.equal(nativeNodeHasClass(described.node, 'danger'), true);
+  assert.equal(nativeNodeHasClass(described.node, 'rows'), false);
+});
+
+test('Native text inspection reads the rendered text attribute exposed by describeNode', () => {
+  assert.equal(nativeDescribedText({
+    node: {
+      nodeId: 8038,
+      nodeName: 'TEXT',
+      localName: 'text',
+      attributes: ['vue-ref-14090', '1', 'text', '1001', 'class', 'col-id'],
+      children: [],
+    },
+  }), '1001');
+  assert.equal(nativeDescribedText({
+    node: { children: [{ nodeValue: 'nested text' }] },
+  }), 'nested text');
+});
+
+test('startup polling ignores an in-flight producer receipt until its second frame', () => {
+  assert.equal(nativeStartupPayloadIsComplete(null), false);
+  assert.equal(nativeStartupPayloadIsComplete({
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: 1,
+  }), false);
+  assert.equal(nativeStartupPayloadIsComplete({
+    protocol: 'lynx-native-startup-v1',
+    moduleStartMs: 1,
+    firstFrameMs: 2,
+    secondFrameMs: 3,
+  }), true);
 });
 
 test('startup failures remain per-cell and still emit every expected metric and scale', async () => {
@@ -455,13 +549,26 @@ test('a startup timeout at scale 0 does not suppress later startup scales', asyn
   );
 });
 
-test('startup producers use one framework-neutral metric contract', async () => {
+test('startup producers use the entry-specific published metric contract', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-contract-'));
   const { entry, snapshots } = fakeEntry(dir, { id: 'octane', framework: 'octane' });
   const adapter = mockAdapter({
     calls: [],
     collect: [],
-    startup: [{ fcpMs: 1, settledMs: 2 }],
+    startup: [{
+      metrics: {
+        octaneCommitAck: {
+          value: 1,
+          unit: 'ms',
+          boundary: 'native-open-request-to-octane-transport-ack',
+        },
+        octaneSecondFrame: {
+          value: 2,
+          unit: 'ms',
+          boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
+        },
+      },
+    }],
   });
   const records = await runNativeMatrix({
     adapter,
@@ -472,7 +579,7 @@ test('startup producers use one framework-neutral metric contract', async () => 
     startupReps: 1,
     bundleSnapshots: snapshots,
   });
-  assert.deepEqual(records.map(({ metric }) => metric), ['fcp', 'settled']);
+  assert.deepEqual(records.map(({ metric }) => metric), ['octaneCommitAck', 'octaneSecondFrame']);
 });
 
 test('adapter modules are validated against the documented contract', async () => {

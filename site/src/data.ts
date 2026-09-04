@@ -76,6 +76,7 @@ export interface BenchRecord {
   comparisonKind: 'same-run' | 'same-machine' | 'same-machine-regime' | 'isolated-observation' | 'calibrated-estimate' | 'historical' | 'historical-replay' | 'archive' | 'derived-static';
   comparabilityStatus?: 'comparable' | 'legacy-unverified' | 'legacy-complete-work' | 'incompatible-sampling' | 'incompatible-controls' | 'incomplete-work' | 'unverified-work' | 'contract-failed';
   comparabilityReasons?: string[];
+  settlementContract?: string | null;
   comparabilityCohort?: string | null;
   rankingEligible?: boolean;
   descriptiveEligible?: boolean;
@@ -739,6 +740,13 @@ export const fmtMs = (v: number | null): string => {
   if (v >= 10) return `${v.toFixed(1)}ms`;
   return `${v.toFixed(2)}ms`;
 };
+
+export const rankableMedian = (record: BenchRecord | null | undefined): number | null =>
+  record?.rankingEligible === false
+    || !Number.isFinite(record?.median)
+    || !(record?.median != null && record.median > 0)
+    ? null
+    : record.median;
 
 export const fmtBytes = (v: number | null): string => {
   if (v == null) return '—';

@@ -4,7 +4,15 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useBenchmarkData } from '../data-context';
-import { BenchRecord, ENTRIES, entryColor, fmtX, shortLabel } from '../data';
+import {
+  BenchRecord,
+  ENTRIES,
+  entryColor,
+  fmtMs,
+  fmtX,
+  rankableMedian,
+  shortLabel,
+} from '../data';
 import { completeEntryScores, rebaseEntryScores } from '../derive.mjs';
 import { useTooltip } from '../hooks';
 import { useI18n } from '../i18n';
@@ -53,26 +61,28 @@ export function HeatGrid({
   const [previewScore, setPreviewScore] = useState<string | null>(null);
   const [pinnedScore, setPinnedScore] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const activeMode = mode === 'fastest' || selected.has(mode) ? mode : 'fastest';
   const activeScore = previewScore ?? pinnedScore;
   const { setTip, onMove, place, tipNode } = useTooltip();
-  useEffect(() => {
-    if (mode !== 'fastest' && !selected.has(mode)) setMode('fastest');
-  }, [mode, selected]);
-
   const grid = useMemo(() => {
     return rows.map((spec) => {
       const recs = new Map<string, BenchRecord>();
       for (const r of select({
         suite: spec.suite, harness, workload: spec.workload, scale: spec.scale, metric: spec.metric,
       })) recs.set(r.entry, r);
-      const values = ids.map((id) => recs.get(id)?.median ?? null);
+      const values = ids.map((id) => rankableMedian(recs.get(id)));
       const present = values.filter((v): v is number => v != null && v > 0);
       const fastest = present.length ? Math.min(...present) : null;
       const fastestId = fastest != null ? ids[values.indexOf(fastest)] : null;
       return { spec, values, fastest, fastestId, recs };
     });
   }, [rows, harness, ids.join(','), select]);
+
+  const baselineIds = useMemo(() => new Set(ids.filter((_id, index) =>
+    grid.some((row) => row.values[index] != null))), [grid, ids.join(',')]);
+  const activeMode = mode === 'fastest' || baselineIds.has(mode) ? mode : 'fastest';
+  useEffect(() => {
+    if (mode !== 'fastest' && !baselineIds.has(mode)) setMode('fastest');
+  }, [baselineIds, mode]);
 
   const interactionScoreRows = useMemo(() => {
     const byKey = new Map(grid.map((row) => [scoreInputKey(row.spec), row]));
@@ -171,7 +181,15 @@ export function HeatGrid({
         <div className="seg" role="group" aria-label={text('Baseline', '基线')}>
           <button aria-pressed={activeMode === 'fastest'} onClick={() => setMode('fastest')}>{text('vs fastest', '对比最快项')}</button>
           {ENTRIES.filter((e) => selected.has(e.id)).map((e) => (
-            <button key={e.id} aria-pressed={activeMode === e.id} onClick={() => setMode(e.id)}>
+            <button
+              key={e.id}
+              aria-pressed={activeMode === e.id}
+              disabled={!baselineIds.has(e.id)}
+              onClick={() => setMode(e.id)}
+              title={!baselineIds.has(e.id)
+                ? text('No rank-compatible observations', '没有可用于排名的同边界观测')
+                : undefined}
+            >
               {text('vs', '对比')} {shortLabel(e.id)}
             </button>
           ))}
@@ -207,7 +225,45 @@ export function HeatGrid({
                 <th className="rowhead">{row.spec.label}</th>
                 {ids.map((id, i) => {
                   const v = row.values[i];
-                  const base = activeMode === 'fastest' ? row.fastest : row.recs.get(activeMode)?.median ?? null;
+                  const record = row.recs.get(id);
+                  const base = activeMode === 'fastest'
+                    ? row.fastest
+                    : row.values[ids.indexOf(activeMode)] ?? null;
+                  if (record?.rankingEligible === false && record.median != null) {
+                    const reason = record.comparabilityReasons?.join(', ')
+                      ?? record.comparabilityStatus
+                      ?? 'incompatible measurement boundary';
+                    return (
+                      <td
+                        key={id}
+                        className="null incomparable"
+                        aria-label={text(
+                          `not comparable; absolute median ${fmtMs(record.median)}`,
+                          `不可比；绝对中位数 ${fmtMs(record.median)}`,
+                        )}
+                        onMouseEnter={(event) => {
+                          setTip({
+                            head: `${shortLabel(id)} · ${row.spec.label}`,
+                            lines: [
+                              text(
+                                'Not comparable: this observation uses a different settlement boundary and is excluded from ratios and scores.',
+                                '不可比：该观测使用不同的完成边界，已排除在倍率与综合分之外。',
+                              ),
+                              text(
+                                `absolute median ${fmtMs(record.median)}, n=${record.n}`,
+                                `绝对中位数 ${fmtMs(record.median)}，n=${record.n}`,
+                              ),
+                              reason,
+                            ],
+                          });
+                          onMove(event);
+                        }}
+                        onMouseLeave={() => setTip(null)}
+                      >
+                        {text('N/C', '不可比')}
+                      </td>
+                    );
+                  }
                   if (v == null || base == null || base <= 0) {
                     return <td key={id} className="null" aria-label={text('no data', '无数据')}>—</td>;
                   }

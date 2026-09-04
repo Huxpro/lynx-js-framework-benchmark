@@ -14,6 +14,7 @@
 // Usage: node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-hux2 OCTANE_HUX2_BUILD=<checkout> node scripts/vendor-entries.mjs
 //        VENDOR_ONLY=octane-dom OCTANE_DOM_BUILD=<checkout> node scripts/vendor-entries.mjs
+//        VENDOR_ONLY=octane VENDOR_FLAVORS=lynx OCTANE_BUILD=<checkout> node scripts/vendor-entries.mjs
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -36,6 +37,10 @@ const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
 const AUTOROWS = [0, 1000, 10000, 30000];
 const ONLY = new Set((process.env.VENDOR_ONLY ?? '').split(',').filter(Boolean));
 const wants = (id) => ONLY.size === 0 || ONLY.has(id);
+const FLAVORS = new Set((process.env.VENDOR_FLAVORS ?? 'web,lynx').split(',').filter(Boolean));
+if ([...FLAVORS].some((flavor) => !['web', 'lynx'].includes(flavor)) || FLAVORS.size === 0) {
+  throw new Error('VENDOR_FLAVORS must contain web, lynx, or both.');
+}
 
 // Presentation metadata is source configuration, colocated with the manifest
 // generator so re-vendoring cannot silently reset legend order or chart colors.
@@ -88,17 +93,21 @@ function vendor({
   if (!wants(id)) return;
   const dir = path.join(root, 'entries', id);
   const dist = path.join(dir, 'dist');
-  fs.rmSync(dist, { recursive: true, force: true });
+  if (FLAVORS.size === 2) fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
   const checks = {};
   for (const { rows, from } of cells) {
     const destDir = path.join(dist, `rows-${rows}`);
     fs.mkdirSync(destDir, { recursive: true });
     for (const f of ['main.web.bundle', 'main.lynx.bundle']) {
+      const flavor = f === 'main.web.bundle' ? 'web' : 'lynx';
       const src = path.join(from, f);
-      if (!fs.existsSync(src)) continue;
       const dest = path.join(destDir, f);
-      fs.copyFileSync(src, dest);
+      if (FLAVORS.has(flavor)) {
+        if (!fs.existsSync(src)) continue;
+        fs.copyFileSync(src, dest);
+      }
+      if (!fs.existsSync(dest)) continue;
       checks[`rows-${rows}/${f}`] = sha256(dest);
     }
     if (!fs.existsSync(path.join(destDir, 'main.web.bundle'))) {
@@ -185,14 +194,50 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir) {
     console.log(`[vendor] ${id} skipped (set OCTANE_NEW_BUILD to a block-core build)`);
     return;
   }
-  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  const sourceGit = gitInfo(buildDir);
+  let patchName = null;
+  if (sourceGit.dirty) {
+    const allowed = new Set([
+      'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+      'benchmarks/lynx-table/app/src/block-program.ts',
+      'benchmarks/lynx-table/app/src/index.ts',
+    ]);
+    const changed = execFileSync(
+      'git',
+      ['diff', '--name-only', '--diff-filter=ACMRTUXB', 'HEAD', '--', 'packages', 'benchmarks'],
+      { cwd: buildDir },
+    ).toString().trim().split('\n').filter(Boolean);
+    const untracked = execFileSync(
+      'git',
+      ['ls-files', '--others', '--exclude-standard', '--', 'packages', 'benchmarks'],
+      { cwd: buildDir },
+    ).toString().trim().split('\n').filter(Boolean);
+    const disallowed = [
+      ...changed.filter((file) => !allowed.has(file)),
+      ...untracked,
+    ];
+    if (changed.length === 0 || disallowed.length > 0) {
+      throw new Error(
+        `${id}: only the benchmark Native producer may be patched; disallowed paths: ${disallowed.join(', ') || '(none)'}`,
+      );
+    }
+    patchName = `${id}-bench.patch`;
+    fs.writeFileSync(
+      path.join(patchesDir, patchName),
+      execFileSync(
+        'git',
+        ['diff', '--no-color', '--unified=0', 'HEAD', '--', ...allowed],
+        { cwd: buildDir },
+      ).toString(),
+    );
+  }
   const version = JSON.parse(
     fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
   ).version;
   vendor({
     id,
     tier: 'featured',
-    harnesses: ['web'],
+    harnesses: ['web', 'native'],
     label,
     framework: 'octane',
     frameworkVersion: version,
@@ -203,7 +248,8 @@ function vendorNewLynxBlockSnapshot(id, label, buildDir) {
     source: {
       url: 'https://github.com/Huxpro/octane',
       commit: sourceGit.commit,
-      dirty: false,
+      dirty: sourceGit.dirty,
+      patchName,
       builtAt: sourceDate(buildDir),
       buildEnv: { BENCH_CORE: 'block', BENCH_BLOCK_MODE: 'scoped' },
     },
@@ -232,9 +278,27 @@ if (vueGit?.dirty) {
 }
 const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
 if (octaneGit?.dirty) {
-  throw new Error(
-    'octane: Octane entries must be built from a clean checkout; benchmark and runtime patches are not allowed',
-  );
+  const allowed = new Set([
+    'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+    'benchmarks/lynx-table/app/src/index.ts',
+  ]);
+  const changed = execFileSync(
+    'git',
+    ['diff', '--name-only', '--diff-filter=ACMRTUXB', 'HEAD', '--', 'packages', 'benchmarks'],
+    { cwd: OCTANE_BUILD },
+  ).toString().trim().split('\n').filter(Boolean);
+  const disallowed = changed.filter((file) => !allowed.has(file));
+  if (changed.length === 0 || disallowed.length > 0) {
+    throw new Error(
+      `octane: only the benchmark Native producer may be patched; disallowed paths: ${disallowed.join(', ') || '(none)'}`,
+    );
+  }
+  const patch = execFileSync(
+    'git',
+    ['diff', '--no-color', '--unified=0', '--', ...allowed],
+    { cwd: OCTANE_BUILD },
+  ).toString();
+  fs.writeFileSync(path.join(patchesDir, 'octane-bench.patch'), patch);
 }
 
 const vueSource = vueGit === null ? null : {
@@ -248,6 +312,7 @@ const octaneSource = octaneGit === null ? null : {
   url: 'https://github.com/octanejs/octane',
   commit: octaneGit.commit,
   dirty: octaneGit.dirty,
+  patchName: 'octane-bench.patch',
   builtAt: sourceDate(OCTANE_BUILD),
 };
 
@@ -347,7 +412,7 @@ vendor({
   label: 'Octane',
   framework: 'octane',
   frameworkVersion: octaneVersion,
-  config: '.tsrx, keyed @for; latest upstream main',
+  config: '.tsrx, keyed @for; latest upstream main + benchmark-only Native producer',
   historyChannel: 'upstream HEAD at measurement time',
   tags: ['optimized'],
   color: '#ff415a',

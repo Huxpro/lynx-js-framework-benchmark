@@ -1,16 +1,34 @@
 import crypto from 'node:crypto';
 
 import { STARTUP_CASES, tableCasesForHarness } from '@lynx-bench/shared/workloads';
-import { entrySupportsHarness } from './entries.mjs';
+import { entryIsFeaturedForHarness } from './entries.mjs';
+import {
+  NATIVE_TABLE_BOUNDARY,
+  NATIVE_TABLE_SETTLEMENT_CONTRACT,
+} from './native-inputs.mjs';
 
-export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-black-box-matrix-v2';
+export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-instrumented-matrix-v4';
 export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 23;
-export const NATIVE_FEATURED_MATRIX_CELL_COUNT = 115;
+export const NATIVE_FEATURED_MATRIX_CELL_COUNT = 138;
 
 const STARTUP_SCALES = [...STARTUP_CASES[0].scales];
 const NATIVE_TABLE_CASES = tableCasesForHarness('native');
 
-export function nativeStartupMetricContracts() {
+export function nativeStartupMetricContracts(entry) {
+  if (entry?.framework === 'octane') {
+    return [
+      {
+        metric: 'octaneCommitAck',
+        unit: 'ms',
+        boundary: 'native-open-request-to-octane-transport-ack',
+      },
+      {
+        metric: 'octaneSecondFrame',
+        unit: 'ms',
+        boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
+      },
+    ];
+  }
   return [
     { metric: 'fcp', unit: 'ms', boundary: 'native-open-to-fcp' },
     { metric: 'settled', unit: 'ms', boundary: 'native-open-to-pipeline-end' },
@@ -23,8 +41,7 @@ export function nativeCellKey(cell) {
 
 export function buildNativeMatrixContract(entries) {
   const featured = entries
-    .filter((entry) => (entry.tier ?? 'featured') !== 'lab'
-      && entrySupportsHarness(entry, 'native'))
+    .filter((entry) => entryIsFeaturedForHarness(entry, 'native'))
     .sort((a, b) => a.id.localeCompare(b.id));
   const cells = [];
   for (const entry of featured) {
@@ -37,7 +54,8 @@ export function buildNativeMatrixContract(entries) {
           scale,
           metric: 'latency',
           unit: 'ms',
-          boundary: 'native-input-handler-to-second-native-frame',
+          boundary: NATIVE_TABLE_BOUNDARY,
+          settlementContract: NATIVE_TABLE_SETTLEMENT_CONTRACT,
         });
       }
     }
@@ -118,6 +136,7 @@ function compactRecord(record) {
     dnfCount: record.dnfCount ?? 0,
     median: record.median ?? null,
     boundary: record.boundary,
+    settlementContract: record.settlementContract ?? null,
     unit: record.unit,
     runFile: record.runFile ?? null,
     machineId: record.machineId ?? null,
@@ -153,9 +172,12 @@ export function classifyNativeCoverage({
       if (countError != null) {
         status = 'invalid-incomparable';
         reason = countError;
-      } else if (record.boundary !== expected.boundary || record.unit !== expected.unit) {
+      } else if (record.boundary !== expected.boundary
+        || record.unit !== expected.unit
+        || (expected.settlementContract != null
+          && record.settlementContract !== expected.settlementContract)) {
         status = 'invalid-incomparable';
-        reason = 'metric boundary or unit does not match the contract';
+        reason = 'metric boundary, unit, or settlement contract does not match the contract';
       } else if (publishedMatches.length !== 1) {
         status = 'display-derivation-bug';
         reason = publishedMatches.length === 0
