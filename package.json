@@ -17,6 +17,7 @@
     "build": "pnpm -r --filter './entries/*' build",
     "bench": "node packages/runner/src/cli.mjs",
     "bench:qualify:m0": "node scripts/qualify-m0-runs.mjs",
+    "bench:preflight:m0:web": "node scripts/preflight-m0-web.mjs",
     "test": "node --test packages/runner/src/*.test.mjs scripts/*.test.mjs site/src/*.test.mjs",
     "site:dev": "pnpm --filter site dev",
     "site:build": "pnpm --filter site build"

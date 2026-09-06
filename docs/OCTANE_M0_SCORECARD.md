@@ -98,7 +98,11 @@ complete DNF-free source samples for every repetition and frozen cell.
 
 1. Vendor and verify newly named comparator bundles without overwriting old
    artifacts.
-2. Run the shared correctness and engagement preflight.
+2. Run the shared correctness and engagement preflight. The Web correctness
+   receipt is produced with `pnpm bench:preflight:m0:web --entry <ids>
+   --output results/audits/<receipt>.json`; it uses real pointer input and
+   records row/text, survivor-identity, host-census, recreate, and dispose
+   evidence from one shared black-box sequence.
 3. Measure the M0 fork and latest upstream in one production AB/BA window.
 4. Integrate applicable upstream changes in a separate Octane PR.
 5. Rebuild and repeat the identical window; do not compare a pre-sync run with a
