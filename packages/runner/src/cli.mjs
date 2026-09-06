@@ -3,7 +3,7 @@
 //
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
 //                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
-//                  [--reps N] [--quick] [--label x]
+//                  [--reps N] [--quick] [--label x] [--session-id id]
 //                  [--harness web|native]
 //                  [--jit jit|interp] [--cpu-throttle N]
 //                  [--throttle-scope none|process-cgroup]
@@ -116,6 +116,10 @@ async function cmdRun(args) {
       '--jit, --cpu-throttle, and --throttle-scope are Web-only; Native cohort policy is unchanged.',
     );
   }
+  const sessionId = args['session-id'] == null ? null : args['session-id'];
+  if (sessionId !== null && (typeof sessionId !== 'string' || sessionId.trim().length === 0)) {
+    throw new Error('--session-id requires a non-empty value.');
+  }
 
   let entries = discoverEntries({ only: list(args.entry) });
   entries = selectEntriesForHarness(entries, harness, { explicit: args.entry != null });
@@ -218,6 +222,8 @@ async function cmdRun(args) {
       inputReceiptSha256: inputs.receipt.sha256,
       connectorPackageTreesSha256: connectorPackageTrees.sha256,
       resolvedMatrix,
+      entryOrder: entries.map((entry) => entry.id),
+      ...(sessionId == null ? {} : { sessionId }),
       runtimePolicy: NATIVE_SANDBOX_POLICY,
       leaseExpirySafety,
     };
@@ -319,6 +325,8 @@ async function cmdRun(args) {
           harness: 'native',
           adapter: path.resolve(args.adapter),
           argv: process.argv.slice(2),
+          entryOrder: entries.map((entry) => entry.id),
+          ...(sessionId == null ? {} : { sessionId }),
           checkpoint: true,
           checkpointComplete: complete,
           deviceCohort,
@@ -458,6 +466,8 @@ async function cmdRun(args) {
     execution: {
       harness: 'web', browser: preflight.browser, jsRegime: jit, jsFlags, cpuThrottle,
       throttleScope,
+      entryOrder: entries.map((entry) => entry.id),
+      ...(sessionId == null ? {} : { sessionId }),
       ...(preflight.processQuotaPercent == null
         ? {}
         : { processQuotaPercent: preflight.processQuotaPercent }),
@@ -503,6 +513,8 @@ async function cmdRun(args) {
       chromium: executablePath,
       browser: { name: 'chromium', version: browserVersion, executablePath },
       environment: { jsRegime: jit, jsFlags, cpuThrottle, throttleScope },
+      entryOrder: entries.map((entry) => entry.id),
+      ...(sessionId == null ? {} : { sessionId }),
       ...(flagVerification == null ? {} : { flagVerification }),
       ...(preflight.processThrottleVerification == null
         ? {}
