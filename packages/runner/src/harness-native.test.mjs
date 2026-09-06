@@ -455,13 +455,26 @@ test('a startup timeout at scale 0 does not suppress later startup scales', asyn
   );
 });
 
-test('startup producers use one framework-neutral metric contract', async () => {
+test('Octane startup producers use the renderer acknowledgement metric contract', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-contract-'));
   const { entry, snapshots } = fakeEntry(dir, { id: 'octane', framework: 'octane' });
   const adapter = mockAdapter({
     calls: [],
     collect: [],
-    startup: [{ fcpMs: 1, settledMs: 2 }],
+    startup: [{
+      metrics: {
+        octaneCommitAck: {
+          value: 1,
+          unit: 'ms',
+          boundary: 'native-open-request-to-octane-transport-ack',
+        },
+        octaneSecondFrame: {
+          value: 2,
+          unit: 'ms',
+          boundary: 'native-open-request-to-second-frame-after-octane-transport-ack',
+        },
+      },
+    }],
   });
   const records = await runNativeMatrix({
     adapter,
@@ -472,7 +485,10 @@ test('startup producers use one framework-neutral metric contract', async () => 
     startupReps: 1,
     bundleSnapshots: snapshots,
   });
-  assert.deepEqual(records.map(({ metric }) => metric), ['fcp', 'settled']);
+  assert.deepEqual(records.map(({ metric }) => metric), [
+    'octaneCommitAck',
+    'octaneSecondFrame',
+  ]);
 });
 
 test('adapter modules are validated against the documented contract', async () => {

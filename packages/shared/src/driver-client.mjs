@@ -109,6 +109,7 @@ export const DRIVER_CLIENT_JS = `(() => {
     }
     return null;
   };
+  x.buttonLabels = () => findByClass('btn-text').map((el) => el.textContent);
   x.cellRect = (rowIndex, cls) => {
     const r = rowEls()[rowIndex];
     const cell = r && cellOf(r, cls);

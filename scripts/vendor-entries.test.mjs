@@ -11,13 +11,15 @@ function git(cwd, ...args) {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 }
 
-test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-new-lynx-block-'));
+test('Hux vendor publishes the reviewed #269 + #272 composite for Web and Native', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-hux-composite-'));
   const repo = path.join(dir, 'benchmark');
   const build = path.join(dir, 'octane');
+  const webBuild = path.join(dir, 'octane-web');
   try {
     fs.mkdirSync(path.join(repo, 'scripts'), { recursive: true });
     fs.copyFileSync(sourceScript, path.join(repo, 'scripts/vendor-entries.mjs'));
+    fs.mkdirSync(path.join(repo, 'entries/_patches'), { recursive: true });
     fs.mkdirSync(path.join(build, 'packages/octane'), { recursive: true });
     fs.writeFileSync(
       path.join(build, 'packages/octane/package.json'),
@@ -27,26 +29,44 @@ test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity'
       const output = path.join(
         build,
         'benchmarks/lynx-table/app',
-        rows === 0 ? 'dist-block' : `dist-block-rows${rows}`,
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
       );
       fs.mkdirSync(output, { recursive: true });
-      fs.writeFileSync(path.join(output, 'main.web.bundle'), `block-web-${rows}`);
-      fs.writeFileSync(path.join(output, 'main.lynx.bundle'), `block-lynx-${rows}`);
+      fs.writeFileSync(path.join(output, 'main.web.bundle'), `universal-web-${rows}`);
+      fs.writeFileSync(path.join(output, 'main.lynx.bundle'), `universal-lynx-${rows}`);
     }
     git(build, 'init', '-b', 'new-lynx');
     git(build, 'config', 'user.name', 'Vendor Test');
     git(build, 'config', 'user.email', 'vendor@example.test');
     git(build, 'add', '.');
-    git(build, 'commit', '-m', 'block snapshot');
-    const patchedSource = path.join(
-      build,
-      'benchmarks/lynx-table/app/src/block-program.ts',
-    );
-    fs.mkdirSync(path.dirname(patchedSource), { recursive: true });
-    fs.writeFileSync(patchedSource, 'baseline\n');
+    const appSource = path.join(build, 'benchmarks/lynx-table/app/src');
+    fs.mkdirSync(appSource, { recursive: true });
+    fs.writeFileSync(path.join(appSource, 'App.lynx.tsrx'), 'baseline app\n');
+    fs.writeFileSync(path.join(appSource, 'index.ts'), 'baseline index\n');
     git(build, 'add', '.');
-    git(build, 'commit', '-m', 'block source');
+    git(build, 'commit', '-m', 'base snapshot');
+    git(build, 'checkout', '-b', 'pr-269');
+    fs.writeFileSync(path.join(build, 'pr-269'), 'compiled create\n');
+    git(build, 'add', '.');
+    git(build, 'commit', '-m', 'PR 269');
+    const pr269 = git(build, 'rev-parse', 'HEAD');
+    git(build, 'checkout', '-b', 'pr-272', 'new-lynx');
+    fs.writeFileSync(path.join(build, 'pr-272'), 'FCP\n');
+    git(build, 'add', '.');
+    git(build, 'commit', '-m', 'PR 272');
+    const pr272 = git(build, 'rev-parse', 'HEAD');
+    git(build, 'merge', '--no-ff', 'pr-269', '-m', 'composite');
     const commit = git(build, 'rev-parse', 'HEAD');
+    execFileSync('git', ['clone', build, webBuild], { encoding: 'utf8' });
+    fs.writeFileSync(path.join(appSource, 'App.lynx.tsrx'), 'instrumented app\n');
+    fs.writeFileSync(path.join(appSource, 'index.ts'), 'instrumented index\n');
+    const instrumentation = git(build, '-c', 'color.ui=false', 'diff', '--binary', '--',
+      'benchmarks/lynx-table/app/src/App.lynx.tsrx',
+      'benchmarks/lynx-table/app/src/index.ts');
+    fs.writeFileSync(
+      path.join(repo, 'entries/_patches/octane-hux-native-bench.patch'),
+      `${instrumentation}\n`,
+    );
     const vendored = spawnSync(
       process.execPath,
       [path.join(repo, 'scripts/vendor-entries.mjs')],
@@ -55,7 +75,10 @@ test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity'
         env: {
           ...process.env,
           VENDOR_ONLY: 'octane-hux',
-          OCTANE_NEW_BUILD: build,
+          OCTANE_HUX_BUILD: build,
+          OCTANE_HUX_WEB_BUILD: webBuild,
+          OCTANE_HUX_PR_269_SHA: pr269,
+          OCTANE_HUX_PR_272_SHA: pr272,
         },
         encoding: 'utf8',
       },
@@ -68,16 +91,23 @@ test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity'
     assert.equal(manifest.id, 'octane-hux');
     assert.equal(manifest.label, 'Octane (Hux)');
     assert.equal(manifest.tier, 'featured');
-    assert.deepEqual(manifest.harnesses, ['web']);
+    assert.deepEqual(manifest.harnesses, ['web', 'native']);
     assert.equal(manifest.provenance.commit, commit);
-    assert.equal(manifest.provenance.ref, 'new-lynx');
-    assert.equal(manifest.provenance.patched, false);
-    assert.equal(manifest.provenance.patchFile, null);
-    assert.deepEqual(manifest.provenance.buildEnv, {
-      BENCH_CORE: 'block',
-      BENCH_BLOCK_MODE: 'scoped',
+    assert.equal(manifest.provenance.ref, 'composite:pull/269/head+pull/272/head');
+    assert.equal(manifest.provenance.patched, true);
+    assert.equal(manifest.provenance.patchFile, 'entries/_patches/octane-hux-native-bench.patch');
+    assert.deepEqual(manifest.provenance.inputCommits, {
+      'pull/269/head': pr269,
+      'pull/272/head': pr272,
     });
-    assert.match(manifest.provenance.buildCommand, /BENCH_CORE=block/);
+    assert.deepEqual(manifest.provenance.buildEnv, {
+      BENCH_CORE: 'universal',
+      WEB_SOURCE: 'clean-composite',
+      NATIVE_SOURCE: 'reviewed-instrumentation-patch',
+      NATIVE_TABLE_PROTOCOL: 'lynx-native-bench-v2',
+      NATIVE_STARTUP_PROTOCOL: 'lynx-native-startup-v1',
+    });
+    assert.match(manifest.provenance.buildCommand, /#269\+#272-composite/);
     assert.equal(Object.keys(manifest.provenance.sha256).length, 8);
     assert.equal(manifest.webLab, undefined);
     assert.equal(manifest.nativeLab, undefined);
@@ -91,13 +121,16 @@ test('new-lynx vendor publishes the clean featured Web-only Octane Hux identity'
         env: {
           ...process.env,
           VENDOR_ONLY: 'octane-hux',
-          OCTANE_NEW_BUILD: build,
+          OCTANE_HUX_BUILD: build,
+          OCTANE_HUX_WEB_BUILD: webBuild,
+          OCTANE_HUX_PR_269_SHA: pr269,
+          OCTANE_HUX_PR_272_SHA: pr272,
         },
         encoding: 'utf8',
       },
     );
     assert.notEqual(dirty.status, 0);
-    assert.match(dirty.stderr, /must be built from a clean checkout/);
+    assert.match(dirty.stderr, /differs outside the two reviewed instrumentation files/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

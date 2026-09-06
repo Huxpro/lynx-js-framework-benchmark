@@ -1831,12 +1831,13 @@ const buildHistory = ({
   checkpoints.push({
     id: 'current-main',
     generatedAt: current.generatedAt,
-    label: 'Current · merged upstream',
-    description: 'Current manifests are upstream Octane 9779569e and Huxpro/new-lynx e9f1fb14. '
-      + 'Every Web regime publishes both identities: the earlier Hux source commit is accepted only '
-      + 'because its complete Web bundle receipt is byte-identical to e9f1fb14. Regimes remain separate '
-      + 'from each other and from Native. Complete pipeline and storm campaigns attach as descriptive '
-      + 'exact evidence and never enter the weighted matrix.',
+    label: 'Current · compiled-create + FCP',
+    description: 'Current manifests are upstream Octane 9779569e and the Hux #269 b166e43f + '
+      + '#272 66ff34a3 composite. The complete seven-entry Web campaign uses clean composite bundles; '
+      + 'the six-entry Native campaign uses checksum-verified benchmark-app instrumentation and retains '
+      + 'all 138 measured or DNF cells. Web regimes remain separate from each other and from Native. '
+      + 'Complete pipeline and storm campaigns attach as descriptive exact evidence and never enter the '
+      + 'weighted matrix.',
     current: true,
     nativeCoverage: current.nativeCoverage,
     pipelineCoverage: current.pipelineCoverage,

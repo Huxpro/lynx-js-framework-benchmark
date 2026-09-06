@@ -1,46 +1,61 @@
-# Dated `new-lynx` block-core campaign
+# Hux compiled-create + FCP composite campaign
 
-This campaign publishes one immutable `Huxpro/octane:new-lynx` HEAD as a normal featured entry,
-for example `octane-new-2026-08-22` / `Octane (new-2026-08-22)`. It is not a Lab estimate or a
-single-entry Lab observation: its Web numbers enter rankings only through one complete physical
-run containing every featured entry.
+This campaign publishes one immutable composite of `Huxpro/octane` PR heads as the featured
+`octane-hux` entry:
+
+- `pull/269/head`: compiled create / mount-program execution;
+- `pull/272/head`: FCP and create-prop stack head, including PRs #270 and #271.
+
+The manifest records both full input SHAs and the local merge commit. The composite is a dated
+PR-head attempt, not an inference about either branch independently.
 
 ## Freeze and build
 
-1. Resolve `refs/heads/new-lynx` from the remote and record its full SHA.
-2. Check out that SHA detached.
-3. Require a clean checkout. Benchmark app and framework-runtime patches are forbidden.
-4. Build the scoped-write Block core for every auto-row bundle:
+1. Fetch both PR refs and create a two-parent merge commit on top of `new-lynx`.
+2. Keep one clean checkout of that composite for Web artifacts.
+3. In a second checkout, apply only the reviewed Native benchmark-app patch at
+   `entries/_patches/octane-hux-native-bench.patch`.
+4. Build universal-core bundles at every auto-row scale in both checkouts:
 
    ```sh
-   BENCH_CORE=block node scripts/build-octane-upstream.mjs <clean-new-lynx-checkout>
+   node scripts/build-octane-upstream.mjs <clean-composite-checkout>
+   node scripts/build-octane-upstream.mjs <native-instrumented-composite-checkout>
    ```
 
-The upstream build script passes `BENCH_CORE=block` to
-`pluginOctane({ core: 'block' })` and emits `dist-block[-rowsN]`. The vendor reads only those
-directories and records `BENCH_CORE=block` plus `BENCH_BLOCK_MODE=scoped` in the manifest receipt;
-universal-core `dist[-rowsN]` output cannot satisfy this entry.
+The vendor requires both PR SHAs as direct parents in both checkouts. It requires the Web checkout
+to be clean, rejects any Native-checkout dirty source outside the two instrumentation files, and
+byte-compares that working diff with the checked-in patch. `main.web.bundle` is copied from the
+clean composite and `main.lynx.bundle` from the reviewed instrumentation checkout. The resulting
+manifest records this split, `BENCH_CORE=universal`, both Native producer protocol versions, every
+bundle hash, and both input commits.
 
 Vendor and verify:
 
 ```sh
-VENDOR_ONLY=octane-new-2026-08-22 \
-  OCTANE_NEW_BUILD=<clean-new-lynx-checkout> \
+VENDOR_ONLY=octane-hux \
+  OCTANE_HUX_BUILD=<native-instrumented-composite-checkout> \
+  OCTANE_HUX_WEB_BUILD=<clean-composite-checkout> \
   node scripts/vendor-entries.mjs
 node scripts/verify-entries.mjs
 ```
 
-## Web campaign
+## Web and Native campaigns
 
-Run every featured entry together with the formal repetition counts:
+Run the full featured matrix without entry, case, or scale filters:
 
 ```sh
-pnpm bench run --harness web \
-  --entry react,octane,octane-new-2026-08-22,vue-vdom,vue-vdom-ifr-et,vue-vapor,vue-vapor-ifr \
-  --label octane-new-2026-08-22-block-web
+pnpm bench run --harness web --label octane-hux-compiled-create-fcp-web
+
+LYNX_SANDBOX_SERIAL='<leased-adb-serial>' \
+LYNX_SANDBOX_LEASE_RECEIPT='<official-receipt>' \
+pnpm bench run --harness native \
+  --adapter packages/runner/adapters/lynx-sandbox-android.mjs \
+  --label octane-hux-compiled-create-fcp-native
 ```
 
-The collector admits this run only if it covers one complete, balanced featured matrix from that
-source run. A future featured entry does not retroactively invalidate an older complete cohort.
-Storm experiments are excluded until all entries share one black-box scheduling contract. The
-snapshot is explicitly Web-only; Native is not inferred from the Web result.
+The Web collector requires one complete balanced featured cohort. Native schedules six eligible
+entries and 138 contract cells. For `octane-hux`, a real Native touch starts the table boundary;
+startup and table payloads use device-clock renderer acknowledgements and second-frame evidence.
+DNF remains explicit and is never replaced with an inferred timing. The 2026-09-01 execution and
+its outcomes are summarized in
+[`docs/OCTANE_HUX_COMPILED_CREATE_FCP_RUN.md`](./OCTANE_HUX_COMPILED_CREATE_FCP_RUN.md).
