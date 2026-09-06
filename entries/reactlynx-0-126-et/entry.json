@@ -1,0 +1,154 @@
+{
+  "id": "reactlynx-0-126-et",
+  "label": "ReactLynx 0.126 +ET",
+  "framework": "reactlynx",
+  "frameworkVersion": "0.126.0",
+  "config": "React Compiler; explicit experimental Element Template on",
+  "tags": [
+    "roadmap-m0",
+    "explicit-optimized",
+    "element-template"
+  ],
+  "tier": "featured",
+  "harnesses": [
+    "native"
+  ],
+  "unsupportedHarnessReasons": {
+    "web": "ReactLynx Element Template requires __CreateTypedElementTemplate, which Lynx for Web 0.22.1 does not expose"
+  },
+  "color": "#165aa8",
+  "presentation": {
+    "order": 11,
+    "colorLight": "#165aa8",
+    "colorDark": "#78b4f3"
+  },
+  "kind": "vendored",
+  "roadmap": {
+    "issue": 282,
+    "milestone": "M0",
+    "campaign": "octane-roadmap-m0-v1",
+    "role": "reactlynx",
+    "configuration": "explicit-optimized"
+  },
+  "capabilities": {
+    "production": true,
+    "sourcePatches": false,
+    "reactCompiler": true,
+    "experimentalUseElementTemplate": true,
+    "lynxForWeb": false,
+    "lynxForWebReason": "typed-element-template-papi-unavailable"
+  },
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "pull/393/head",
+    "commit": "db60b3d32c4253400d0ae3b259ebf522ffdf859d",
+    "mergedInto": "8b8b81d374fdd680b664ead86c3ea240ba47c7eb",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_PROFILE=m0 BENCH_ROWS=0,1000,2000,3000,5000,10000 node scripts/build-vue-featured.mjs <vue-lynx-checkout>",
+    "builtAt": "2026-09-06T23:00:35+00:00",
+    "receipts": {
+      "sourceCommit": "db60b3d32c4253400d0ae3b259ebf522ffdf859d",
+      "sourcePatch": {
+        "present": false,
+        "path": null,
+        "sha256": null
+      },
+      "dependencyLock": {
+        "path": "pnpm-lock.yaml",
+        "sha256": "f0d650e212f6cbc376bd421aa4b14c41fe4dbade772c2934744e7f39c34713f8"
+      },
+      "engineAndToolchain": {
+        "node": "v22.22.2",
+        "pnpm": "10.28.2",
+        "rspeedy": "Rspeedy v0.17.1 (Rsbuild v2.2.3, Rspack v2.2.2)\n\n0.17.1",
+        "platform": "linux",
+        "architecture": "x64",
+        "nodeEnv": "production",
+        "buildDriver": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "scripts/build-octane-upstream.mjs",
+            "scripts/build-vue-featured.mjs",
+            "scripts/m0-artifact-contract.mjs",
+            "scripts/vendor-m0-entries.mjs"
+          ],
+          "sha256": "f622a1d6d541bf9505525f0393caa921cc9d0dcdd1f682c43f1c26e45d083a99"
+        }
+      },
+      "configurationCapabilities": {
+        "production": true,
+        "sourcePatches": false,
+        "reactCompiler": true,
+        "experimentalUseElementTemplate": true,
+        "lynxForWeb": false,
+        "lynxForWebReason": "typed-element-template-papi-unavailable"
+      },
+      "workloadContract": {
+        "algorithm": "sha256-runner-source-v1",
+        "runner": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "packages/runner/src/browser.mjs",
+            "packages/runner/src/entries.mjs",
+            "packages/runner/src/harness-native.mjs",
+            "packages/runner/src/harness-web.mjs",
+            "packages/runner/src/native-protocol.mjs",
+            "packages/runner/src/preflight.mjs",
+            "packages/runner/src/run-matrix.mjs",
+            "packages/shared/src/scorecard.mjs",
+            "packages/shared/src/workloads.mjs"
+          ],
+          "sha256": "f90f15a8e799840f3b0e09672dee26234c95ee96a562a1ccea5a41b35ee30746"
+        },
+        "source": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "packages/benchmark/apps/ui-react/lynx.config.ts",
+            "packages/benchmark/apps/ui-react/package.json",
+            "packages/benchmark/apps/ui-react/src/App.css",
+            "packages/benchmark/apps/ui-react/src/App.tsx",
+            "packages/benchmark/apps/ui-react/src/data.ts",
+            "packages/benchmark/apps/ui-react/src/index.tsx",
+            "packages/benchmark/package.json",
+            "packages/vue-lynx/package.json"
+          ],
+          "sha256": "dec205e0dd4bd0628783ae1549045305dd75cc506b28359e36693483ac1a7725"
+        },
+        "sha256": "d2320c68545f0ab8e3d29981e7d4f2b8d56016570e898165fd0f6e877d20e2ec"
+      },
+      "bundleSha256": {
+        "rows-0/main.web.bundle": "812fdffac23f431e77f4037ad00e4ff41ba0d9719864c470ab1d1aa68269ec5b",
+        "rows-0/main.lynx.bundle": "662ecfe663f886cff0ecc49576d07af5338b019a4fa4e0001d6e610e287d0ebc",
+        "rows-1000/main.web.bundle": "7add71a6e0f04d007650373b64cfbb81bd2d5bcc70a5956e0b61560f8fbb24ea",
+        "rows-1000/main.lynx.bundle": "4cf0f9cd8592cd92c6500c88b685a3000dafb17ebc920a2145848116fe204233",
+        "rows-2000/main.web.bundle": "ffa794997ec24c6097cdb953624c9569a1c6f96f545e85cc5a76cdbaf70b673c",
+        "rows-2000/main.lynx.bundle": "72168e4cf4f36f1872e015835ea0e33e864e222f67ce2ff96b6e45c879fc9dc7",
+        "rows-3000/main.web.bundle": "e1aa776d7bdc201b6b7db2d2fb5a525b56d4e304ab8ad2d208cdf31f9db3120b",
+        "rows-3000/main.lynx.bundle": "9f4c51c53e6ebf2dc1e2b8ef8ae373dd0ce2edebf5a151e89214a955c1d75700",
+        "rows-5000/main.web.bundle": "2d57ce41a13e6feb6efd730f388a95db2d81845e18733856f3dab6d3cc88b2d8",
+        "rows-5000/main.lynx.bundle": "f4a37beff74fbf4c5cecf49197d679549130f9f55ce0143fee003db34c525039",
+        "rows-10000/main.web.bundle": "3d4e6b98ac42fccf8302b8b44dcd7d00d73feb116c49313b23f3d594a7ca9ae3",
+        "rows-10000/main.lynx.bundle": "6b5ba3a6db489ae0f656bf65688e5b8e46d25c1e4608ca97efd7a4f30e6dbb7e"
+      }
+    },
+    "sha256": {
+      "rows-0/main.web.bundle": "812fdffac23f431e77f4037ad00e4ff41ba0d9719864c470ab1d1aa68269ec5b",
+      "rows-0/main.lynx.bundle": "662ecfe663f886cff0ecc49576d07af5338b019a4fa4e0001d6e610e287d0ebc",
+      "rows-1000/main.web.bundle": "7add71a6e0f04d007650373b64cfbb81bd2d5bcc70a5956e0b61560f8fbb24ea",
+      "rows-1000/main.lynx.bundle": "4cf0f9cd8592cd92c6500c88b685a3000dafb17ebc920a2145848116fe204233",
+      "rows-2000/main.web.bundle": "ffa794997ec24c6097cdb953624c9569a1c6f96f545e85cc5a76cdbaf70b673c",
+      "rows-2000/main.lynx.bundle": "72168e4cf4f36f1872e015835ea0e33e864e222f67ce2ff96b6e45c879fc9dc7",
+      "rows-3000/main.web.bundle": "e1aa776d7bdc201b6b7db2d2fb5a525b56d4e304ab8ad2d208cdf31f9db3120b",
+      "rows-3000/main.lynx.bundle": "9f4c51c53e6ebf2dc1e2b8ef8ae373dd0ce2edebf5a151e89214a955c1d75700",
+      "rows-5000/main.web.bundle": "2d57ce41a13e6feb6efd730f388a95db2d81845e18733856f3dab6d3cc88b2d8",
+      "rows-5000/main.lynx.bundle": "f4a37beff74fbf4c5cecf49197d679549130f9f55ce0143fee003db34c525039",
+      "rows-10000/main.web.bundle": "3d4e6b98ac42fccf8302b8b44dcd7d00d73feb116c49313b23f3d594a7ca9ae3",
+      "rows-10000/main.lynx.bundle": "6b5ba3a6db489ae0f656bf65688e5b8e46d25c1e4608ca97efd7a4f30e6dbb7e"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

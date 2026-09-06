@@ -23,7 +23,12 @@ import {
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
-import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
+import {
+  discoverEntries,
+  entrySupportsHarness,
+  repoRoot,
+  selectEntriesForHarness,
+} from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
 import { runNativeHarness } from './harness-native.mjs';
 import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
@@ -113,6 +118,7 @@ async function cmdRun(args) {
   }
 
   let entries = discoverEntries({ only: list(args.entry) });
+  entries = selectEntriesForHarness(entries, harness, { explicit: args.entry != null });
   if (harness === 'native' && args.entry == null) {
     entries = entries.filter((entry) => (entry.tier ?? 'featured') === 'featured'
       && entrySupportsHarness(entry, 'native'));

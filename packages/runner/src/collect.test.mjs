@@ -1569,15 +1569,19 @@ test('history keeps a complete past entry set without requiring future featured 
 test('history audits every run but publishes only complete source-defined featured matrices', () => {
   const root = repoRoot();
   const out = collectRuns({ root, log: () => {} });
-  assert.equal(out.listCoverage.expectedCellCount, 56);
-  assert.deepEqual(out.listCoverage.summary, { unsupported: 56 });
+  assert.equal(out.listCoverage.expectedCellCount, 120);
+  assert.deepEqual(out.listCoverage.summary, { unsupported: 120 });
   assert.ok(out.listCoverage.cells.every((cell) =>
     cell.fixture.kind === 'entry-manifest'
     && cell.fixture.declared === false
     && cell.reason === 'list-fixture-not-declared'));
   assert.equal(out.comparisonRecords.some((record) => record.suite === 'list'), false);
   const bundleScale = out.comparisonRecords.filter((record) => record.suite === 'bundle-scale');
-  assert.equal(bundleScale.length, 144);
+  // M0 adds two raw/gzip artifact records per retained startup scale for
+  // Octane/ReactLynx and the same pair plus two MTS records for each Vue
+  // comparator. The diagnostic-only 2k/3k/5k bundles remain receipts rather
+  // than comparison records.
+  assert.equal(bundleScale.length, 264);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
   // The invalidated pre-verifier process-cgroup source remains archive-only.
   // The replacement run contributes one verified 108-record matrix for each
@@ -1593,7 +1597,13 @@ test('history audits every run but publishes only complete source-defined featur
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  assert.equal(retainedRecords.length, 4826);
+  // Adding the eight M0 identities intentionally makes the legacy six-entry
+  // Native campaign incomplete for the current featured cohort. Its isolated
+  // observations remain auditable in nativeObservationRecords, but none may
+  // leak into the publishable comparison until a complete M0 campaign exists.
+  assert.equal(retainedRecords.length, 3560);
+  assert.equal(retainedRecords.some((record) => record.harness === 'native'), false);
+  assert.equal(out.nativeObservationRecords.length, 198);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1604,7 +1614,7 @@ test('history audits every run but publishes only complete source-defined featur
     out.sources.runFiles,
   );
   assert.equal(out.history.checkpoints.at(-1).id, 'current-main');
-  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 56);
+  assert.equal(out.history.checkpoints.at(-1).listCoverage.expectedCellCount, 120);
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
@@ -1635,7 +1645,7 @@ test('history audits every run but publishes only complete source-defined featur
     file.includes('2026-08-26T11-5') && file.includes('issue-30-')), false);
   const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
     .map((index) => out.history.records[index]);
-  assert.equal(currentRecords.filter((record) => record.suite === 'bundle-scale').length, 144);
+  assert.equal(currentRecords.filter((record) => record.suite === 'bundle-scale').length, 160);
   assert.ok(currentRecords.filter((record) => record.suite === 'bundle-scale')
     .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
   const stormOperations = currentRecords.filter((record) =>
@@ -1772,10 +1782,13 @@ test('history audits every run but publishes only complete source-defined featur
     record.suite === 'pipeline' && record.metric === 'operationTime');
   const materializedPipeline = out.comparisonRecords.filter((record) =>
     record.suite === 'pipeline');
-  assert.equal(currentCheckpoint.pipelineCoverage.expectedCellCount, 84);
+  // Fourteen Web-capable featured entries own twelve pipeline cells each;
+  // ReactLynx ET is Native-only because Lynx for Web lacks its typed PAPI. The
+  // existing seven-entry observation cannot be promoted across that boundary.
+  assert.equal(currentCheckpoint.pipelineCoverage.expectedCellCount, 168);
   assert.equal([0, 84].includes(pipelineOperations.length), true);
   if (pipelineOperations.length === 0) {
-    assert.deepEqual(currentCheckpoint.pipelineCoverage.summary, { unscheduled: 84 });
+    assert.deepEqual(currentCheckpoint.pipelineCoverage.summary, { unscheduled: 168 });
   } else {
     assert.deepEqual(
       [...new Set(pipelineOperations.map((record) => record.entry))].sort(),
@@ -1860,10 +1873,17 @@ test('history audits every run but publishes only complete source-defined featur
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       currentNativeFile,
     )));
-  assert.ok(native);
-  const nativeCohort = native.harnesses.find((cohort) => cohort.harness === 'native');
-  assert.equal(nativeCohort.rankEligible, true);
-  assert.equal(nativeCohort.sourceRunFiles.length, 1);
+  assert.equal(native, undefined);
+  const currentNativeSource = out.history.sources.find((source) =>
+    source.runFile === currentNativeFile);
+  assert.ok(currentNativeSource);
+  assert.equal(currentNativeSource.rankEligible, false);
+  assert.equal(
+    currentNativeSource.reason,
+    'native run; evaluated with its exact machine/environment cohort',
+  );
+  assert.equal(out.nativeObservations.some((observation) =>
+    observation.sourceRunFile === currentNativeFile), true);
   assert.equal(out.history.checkpoints.some((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',

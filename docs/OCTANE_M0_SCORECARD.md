@@ -44,9 +44,11 @@ There is no cross-suite global score.
   published by this benchmark: create 1k, replace 1k, update every tenth 1k,
   select 1k, swap 1k, remove 1k, create 10k, append 1k to 1k, and clear 1k.
 - Startup is a separate equal-weight geometric mean of FCP at 0, 1k, and 10k.
-- Diagnostic startup scales are 0/1k/10k; diagnostic bulk scales are
-  1k/2k/3k/5k/10k. Capacity failure at 10k is retained as DNF; it does not
-  rewrite the frozen scorecard.
+- Diagnostic startup scales are 0/1k/10k. The 1k/2k/3k/5k/10k diagnostic
+  bulk ladder is the production `BENCH_AUTOROWS` mount-create path, so it does
+  not depend on a framework app exposing a non-standard 2k button. It is a
+  capacity/attribution ladder, not an extra interaction-score cell. Capacity
+  failure at 10k is retained as DNF; it does not rewrite the frozen scorecard.
 - Ready, cold first hit, and steady interaction p95 are independent
   non-inferiority gates, split into cold and warm groups.
 - Peak, settled, and after-clear memory are independent gates. Cleanup repeats
