@@ -13,6 +13,7 @@ import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
 } from '@lynx-bench/shared/workloads';
+import { ROADMAP_SCORECARD } from '@lynx-bench/shared/scorecard';
 
 import { repoRoot } from './entries.mjs';
 
@@ -114,6 +115,8 @@ export function workloadReceipt(root = repoRoot()) {
     'packages/shared/src/page-instrument.mjs',
     'packages/shared/src/pipeline.mjs',
     'packages/shared/src/list-workloads.mjs',
+    'packages/shared/src/scorecard.mjs',
+    'packages/shared/src/qualification.mjs',
     'packages/runner/src/pipeline-attribution.mjs',
     'packages/runner/src/list-coverage.mjs',
     'packages/runner/src/list-derivation.mjs',
@@ -125,6 +128,7 @@ export function workloadReceipt(root = repoRoot()) {
   return {
     files: hashes,
     sha256: sha256(JSON.stringify(hashes)),
+    roadmapScorecardVersion: ROADMAP_SCORECARD.version,
     stormTicks: { updateStorm: STORM_UPDATE_TICKS, selectStorm: STORM_SELECT_TICKS },
     stormContract: {
       version: STORM_CONTRACT_VERSION,

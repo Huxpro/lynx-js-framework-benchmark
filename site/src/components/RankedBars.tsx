@@ -29,7 +29,7 @@ export interface ScoreModeSpec {
   key: string;
   label: string;
   ops: readonly OpSpec[];
-  scoreWeights?: Record<string, number>;
+  scoreWeights?: Readonly<Record<string, number>>;
   summaryLabel: string;
   caption: string;
   equation: {

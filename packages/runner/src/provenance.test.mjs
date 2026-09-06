@@ -21,6 +21,8 @@ test('run receipt binds Git state, runtime integrity, workload files, bundles, a
     fs.writeFileSync(path.join(root, 'packages/shared/src/page-instrument.mjs'), 'predicate-v1\n');
     fs.writeFileSync(path.join(root, 'packages/shared/src/pipeline.mjs'), 'segments-v1\n');
     fs.writeFileSync(path.join(root, 'packages/shared/src/list-workloads.mjs'), 'list-contract-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/shared/src/scorecard.mjs'), 'scorecard-v1\n');
+    fs.writeFileSync(path.join(root, 'packages/shared/src/qualification.mjs'), 'qualification-v1\n');
     fs.writeFileSync(path.join(root, 'packages/runner/src/pipeline-attribution.mjs'), 'records-v1\n');
     fs.writeFileSync(path.join(root, 'packages/runner/src/list-coverage.mjs'), 'list-coverage-v1\n');
     fs.writeFileSync(path.join(root, 'packages/runner/src/list-derivation.mjs'), 'list-derived-v1\n');
@@ -69,6 +71,7 @@ packages:
       { name: 'playwright-core', version: '1.62.1', integrity: 'sha512-playwright' },
     ]);
     assert.match(clean.entryBundles.example['rows-0/main.web.bundle'], /^[0-9a-f]{64}$/);
+    assert.equal(clean.workload.roadmapScorecardVersion, 1);
     assert.deepEqual(clean.sampling.repetitions, { table: 7, storm: 3, startup: 5 });
     assert.equal(clean.sampling.outliers, 'none-removed');
     assert.match(clean.comparabilityCohort, /^sha256:[0-9a-f]{64}$/);
