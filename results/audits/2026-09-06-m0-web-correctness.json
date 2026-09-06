@@ -1,0 +1,1387 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-06T23:50:50.665Z",
+  "harness": "web",
+  "machine": {
+    "id": "65160668d8d9",
+    "hostname": "n251-227-236",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+    "cores": 32,
+    "memGB": 67,
+    "node": "v22.22.2"
+  },
+  "browser": {
+    "name": "chromium",
+    "version": "151.0.7922.34",
+    "executablePath": "/home/xuan.huang/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome"
+  },
+  "receipt": {
+    "repository": {
+      "commit": "ff7c19c2bcd999e89d01694f80cdf5d7b2d313f5",
+      "dirty": false,
+      "diffSha256": null
+    },
+    "runtime": {
+      "lockfile": "pnpm-lock.yaml",
+      "lockfileSha256": "0a3c203095f8d43350d15db005b02a825fff187883f9af2d34b9ddae3b1d3758",
+      "packages": [
+        {
+          "name": "@lynx-js/web-core",
+          "version": "0.22.1",
+          "integrity": "sha512-B5XLDjPTU+aO6fq6ylHt7mf3rYxcQAuKHSD86ifoWweO3WI2io6xUSPjnY+MThp8xCihu+NocpmGTi/puRDHxw=="
+        },
+        {
+          "name": "@lynx-js/web-elements",
+          "version": "0.12.5",
+          "integrity": "sha512-plNOkiI/AvdSqTmsN8jDBtll3SOqfrnLUuqicn3DrMUT7tizUhX6569dLNae8dk9KQqnS1pukUK9d/P/Nw9edg=="
+        },
+        {
+          "name": "@lynx-js/web-elements",
+          "version": "0.8.11",
+          "integrity": "sha512-iLI+HMbtVRu/TxT6TQ+pxa3Mz9xdoKCRnXN1n/u0AxoXy0FsL4yBVgElieRX2T9st9/flvb/CXfezIb0BFmg1Q=="
+        },
+        {
+          "name": "@lynx-js/web-worker-rpc",
+          "version": "0.22.1",
+          "integrity": "sha512-nvC0axgTFJbpc8QcXbMVEG4EQcF3GCfdoDTmSAIE0J6bOOfvx2hK1ztG6MpRERU5dzMSfaHn425QpbPrume9QQ=="
+        },
+        {
+          "name": "playwright-core",
+          "version": "1.62.1",
+          "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw=="
+        }
+      ]
+    },
+    "workload": {
+      "files": {
+        "packages/shared/src/workloads.mjs": "0eef1e168c2d12c4f503d0835d1baacc3222760a352e9811fe2db1cd9ecc55a1",
+        "packages/shared/src/driver-client.mjs": "276c1b2f57e05f381cb6e42defd589be16cef538bc83e420dd932f3bcbff109e",
+        "packages/shared/src/page-instrument.mjs": "1bba567b77eb113c9b271c26e763635dbe80e03fab6f7315293f69fae819a14a",
+        "packages/shared/src/pipeline.mjs": "9b5dcd542a819e1a3b1045e0b3a013ed610905148990fc990e128ab3e59c99ee",
+        "packages/shared/src/list-workloads.mjs": "999de1fb4babc1b47bd6609df11aa70b741b6a66b952ea1224b60b9eeb686098",
+        "packages/shared/src/scorecard.mjs": "4f53ca39e32d2dbc931fe8a9caaee80de9534de6f964644eb8f42ab1d31bb5d2",
+        "packages/shared/src/qualification.mjs": "029397b12e6de6945ff058d6d6bc4c75f00966667eececc76399ad16149fe85a",
+        "packages/runner/src/pipeline-attribution.mjs": "7e7f0dad092caecf0bf54910e8250be7c07c1ad70bd283b9d06a66e26138297d",
+        "packages/runner/src/list-coverage.mjs": "04f39314b52aa031ec71a9e6a5c38e23e104ae26e2b9dfcf4112186200271dc6",
+        "packages/runner/src/list-derivation.mjs": "4a76e883e3894c9f91fd41b5fcef9e70434d5705b930d8b95e39c72cd721d395",
+        "packages/runner/src/storm-contract.mjs": "a94ce589a5d07ee1515ce8634ab9ed495312a20c78d345bcf21718904443bc62"
+      },
+      "sha256": "4d2750252cf7958520613d368adf6f54ec5ac82e820b4c1cd0d480de4457f709",
+      "roadmapScorecardVersion": 1,
+      "stormTicks": {
+        "updateStorm": 50,
+        "selectStorm": 30
+      },
+      "stormContract": {
+        "version": 1,
+        "cases": [
+          {
+            "name": "updateStorm",
+            "commitPolicy": "every-tick",
+            "ticks": 50,
+            "tickIntervalMs": 8,
+            "scheduleToleranceMs": 50,
+            "mutationWidth": {
+              "kind": "row-stride",
+              "stride": 10,
+              "field": "label"
+            },
+            "observation": {
+              "kind": "label-suffix",
+              "rowIndex": 0,
+              "suffix": " !!!"
+            },
+            "action": {
+              "kind": "button",
+              "label": "Update every 10th row"
+            }
+          },
+          {
+            "name": "updateStorm",
+            "commitPolicy": "final-state",
+            "ticks": 50,
+            "tickIntervalMs": 8,
+            "scheduleToleranceMs": 50,
+            "mutationWidth": {
+              "kind": "row-stride",
+              "stride": 10,
+              "field": "label"
+            },
+            "observation": {
+              "kind": "label-suffix",
+              "rowIndex": 0,
+              "suffix": " !!!"
+            },
+            "action": {
+              "kind": "button",
+              "label": "Update every 10th row"
+            }
+          },
+          {
+            "name": "selectStorm",
+            "commitPolicy": "every-tick",
+            "ticks": 30,
+            "tickIntervalMs": 8,
+            "scheduleToleranceMs": 50,
+            "mutationWidth": {
+              "kind": "single-row-selection"
+            },
+            "observation": {
+              "kind": "alternating-selection",
+              "rowIndices": [
+                1,
+                2
+              ]
+            },
+            "action": {
+              "kind": "alternating-cells",
+              "rowIndices": [
+                1,
+                2
+              ],
+              "cls": "col-label"
+            }
+          },
+          {
+            "name": "selectStorm",
+            "commitPolicy": "final-state",
+            "ticks": 30,
+            "tickIntervalMs": 8,
+            "scheduleToleranceMs": 50,
+            "mutationWidth": {
+              "kind": "single-row-selection"
+            },
+            "observation": {
+              "kind": "alternating-selection",
+              "rowIndices": [
+                1,
+                2
+              ]
+            },
+            "action": {
+              "kind": "alternating-cells",
+              "rowIndices": [
+                1,
+                2
+              ],
+              "cls": "col-label"
+            }
+          }
+        ]
+      }
+    },
+    "entryBundles": {
+      "octane-m0-current": {
+        "rows-0/main.lynx.bundle": "a06754481efcc2c71834d4a3b95c8417dd08fe9e2438f6989e2516b4c727b28a",
+        "rows-0/main.web.bundle": "6e66e054d484ed5bf2dce3b4c597b08f3c713b990f7e4210b5919e796fdcda3b",
+        "rows-1000/main.lynx.bundle": "d94ec31ccf8711b71766aba70587f4a625d417b5a53c2289c5d6f73c77b2dcb2",
+        "rows-1000/main.web.bundle": "4ff6282a297f10ede850bebfa7a6b1ccbc69796a9445d80a2718278638209f79",
+        "rows-10000/main.lynx.bundle": "4ffa196f1645b709939515a8ba6520b5415746c445488205fc7c55df2a95c6bd",
+        "rows-10000/main.web.bundle": "d541eeaf804da7f27df15103d94b36d41f8270b56f67073d2c49d514e4f2650a",
+        "rows-2000/main.lynx.bundle": "0967273322aec62a2d66184dd3ca840271a4db1fc1a6be9ecc9eeb475ee46fd0",
+        "rows-2000/main.web.bundle": "185490df6b672c9b72e8a396c85f05cb4b7d392b0c547a981d4c02e2a7decdbe",
+        "rows-3000/main.lynx.bundle": "301037979937dc71d94fe12d4036128c15fb088746834496f7f3eab50c4fa5bc",
+        "rows-3000/main.web.bundle": "5470f544408125220f89ecdc95d75c39d0f407022aacb99c6b58ed1819f13c64",
+        "rows-5000/main.lynx.bundle": "03fe965aca864d90e3e098d162720e695256693e419d3db0922f52ad6bb8271a",
+        "rows-5000/main.web.bundle": "8bcb04456d0391fa9d2161ad2271dd080d91f252cbd72ff1dc5f91aa6b5edfd1"
+      },
+      "octane-m0-upstream": {
+        "rows-0/main.lynx.bundle": "152caf1c3faf36321c3df3fbd1e4c53f53ad2b6ea4b4fc0a3fe8c36e6c0ab989",
+        "rows-0/main.web.bundle": "8a6c19f9294454a339a4b9ac443ac92f4ff027f4780410d9774dbef7afdde207",
+        "rows-1000/main.lynx.bundle": "93de6d886d9b381e5c965d24ff5ac2d3fbe35d2dc0ceb68c896f8773a8756152",
+        "rows-1000/main.web.bundle": "57409ffa9a224e3cee992a646e31b52799b1cae582534a22a9d3626828c4e3f9",
+        "rows-10000/main.lynx.bundle": "a0eb07516e0046d3d75500a748d2e3ad4bab21da44c121af0199e659617c9de2",
+        "rows-10000/main.web.bundle": "964be78c2e653ab8e5c01a0245480da72fab00e80d9c5d9d47b7e433356ce12b",
+        "rows-2000/main.lynx.bundle": "d6e115374a65d3c2a4f7090417d3c065a22f410ddd7be29afb4440226e853ff8",
+        "rows-2000/main.web.bundle": "15294cafa454d50eff0cca08fc085ee20299dbe99274624408b4615475eb5195",
+        "rows-3000/main.lynx.bundle": "4bf268519e675ef1ef01cdfbf78d68f2929e465a349e9416fd49544688594256",
+        "rows-3000/main.web.bundle": "4a6eba3a640e2649c87bffee20fe4a570902dac2a1b0c14109cf06b9c0b2f78f",
+        "rows-5000/main.lynx.bundle": "0ba20201ce9e7f76fbdd4df30d4aca069a7f34e9b8ed8cee601870b9e391be3d",
+        "rows-5000/main.web.bundle": "6a71e80bb87c58372024037c4a593076c755ee5dae84816a0fe2d15edea4a226"
+      },
+      "reactlynx-0-126-default": {
+        "rows-0/main.lynx.bundle": "25af53ba93ccf2818906d52e443921cf7a3c92e74a022220d7ae94729dcc90d0",
+        "rows-0/main.web.bundle": "6d7a33a1d17e5f46ac17185e831ba37f9792d5440b8616b98597c86bc4c032b4",
+        "rows-1000/main.lynx.bundle": "75825e64e271a56a673d0418da9ac868e20c6647fdd1f8be3361ef5447f6686e",
+        "rows-1000/main.web.bundle": "aa1185471c2020886aca62191f1b3bb9bcb1169a2fcfd5bba647e3ea0b227ed4",
+        "rows-10000/main.lynx.bundle": "ef87d0cdd05fca4b68762ea9ead3732470f10b04e417fc4ffb50998003fb4bb5",
+        "rows-10000/main.web.bundle": "355cbfa5fc5f5e26355bd0251ccd1a7e7fce5824aae22169cdf1d454963babdf",
+        "rows-2000/main.lynx.bundle": "de0af2b980d855cc9a525716476f7d0e45693065a5b4fb28e3599d4b3ae29e0b",
+        "rows-2000/main.web.bundle": "12f4f45704ab480b2d82dfa66d94537a1626e636cdcf39a18c41695b10c28f0c",
+        "rows-3000/main.lynx.bundle": "8ea499a7f57761610cc0f66478de0264689fad4bb6872326ca1ceb7cf9b82a55",
+        "rows-3000/main.web.bundle": "f5ee0ee2012e6e59b2b9b77ad5cad3c573e06740bb51e073992ebaff9b583184",
+        "rows-5000/main.lynx.bundle": "4794efef62d760fc197f93baa79e1dbae1e26851e569b211cbec33dbb4d9bad2",
+        "rows-5000/main.web.bundle": "b966523e909342b93cff08be50a4f4c115047c44306c5ec351a9f852ee4f571a"
+      },
+      "vue-lynx-0-5-vdom-default": {
+        "rows-0/main.lynx.bundle": "54ac4d46ab6a06c19cf83b3e184b9f9f31c4431b8a1905d26380574341a80a4c",
+        "rows-0/main.web.bundle": "44791620eb27b9262078cbf64221c3fa21fd8b9c4802e13025fdb0b0125dea3a",
+        "rows-1000/main.lynx.bundle": "e6778bc1922b5b597f8f3ccef76c24c2a5ffd638766a988193cf50d4e41b22e0",
+        "rows-1000/main.web.bundle": "b14f0dfad09e4c5e79676aab987df4584f2ea9805e16987a205231379ac13398",
+        "rows-10000/main.lynx.bundle": "7a13f237edb8e6c5fd5c1bb35b538cedc436105b87286cb1968b8925405a65af",
+        "rows-10000/main.web.bundle": "40194676b66ab2790a358ce2f3530e8a6d60e207d529a4a9eae930784c63bedd",
+        "rows-2000/main.lynx.bundle": "bbdc8fd13750d1db082d802023189af1a5d6ad38642977ec926c1be8cf6ad4a8",
+        "rows-2000/main.web.bundle": "85bffaca0d3cded97567ebe5bb876d1553ac0cfa8b2b810e60e36f590d7d5828",
+        "rows-3000/main.lynx.bundle": "f4b3eaf123df5d889d5e2405a8a9707b8630969bd492c076ce0141f90954d578",
+        "rows-3000/main.web.bundle": "21cddc014c4ef898487231be5694cba6ff62ee098cce7742d89b5d5c9159fe46",
+        "rows-5000/main.lynx.bundle": "2034ffbeb74c4db4617d375a0f9871644336cf77cdec9739d5049cf892d9916a",
+        "rows-5000/main.web.bundle": "95cba0e7f2229e0207dc662995cac6022005ad4e6d425162a5ab83195bd920d3"
+      },
+      "vue-lynx-0-5-vdom-ifr-et": {
+        "rows-0/main.lynx.bundle": "372a25bc6e906d54e93e35ba3abd630e3ce7e253f670277b056d2b75f66e139b",
+        "rows-0/main.web.bundle": "887cd2803a5e068686d09f56059b69530759ee5ac53b9dad4844e3c768dbb566",
+        "rows-1000/main.lynx.bundle": "567aa2b61444a69c870f29abdace4a1f62550a431370face7dc317757b036419",
+        "rows-1000/main.web.bundle": "5fa44a4398885c0d13d1ee3efe7637319be2e23c999b172c1e72ed3ee888ed11",
+        "rows-10000/main.lynx.bundle": "1ef8c2e6b77123e1e218fa6c2069e35586e963479c083dbef3dca468dd3b3132",
+        "rows-10000/main.web.bundle": "cb97a133f6a6a58007db103eb33017096fb99c9445eaca28b31feb1b079789ab",
+        "rows-2000/main.lynx.bundle": "f1fae08cdfea58053225011d92d461cc5111f2b144b6d771d11efd7310886b18",
+        "rows-2000/main.web.bundle": "55d2ed3021bfadcd0947f2cfea9a42983d36b9f33c093559170123a93fb945dd",
+        "rows-3000/main.lynx.bundle": "7f6fc554ee4cff30104c023e7ac312875f2da3b866aa1ec88dceb27d67f7b5a3",
+        "rows-3000/main.web.bundle": "c8a01f1580f70d203bfed33047ea55de2964a0bbc9266d1237d81fe18c1be1d1",
+        "rows-5000/main.lynx.bundle": "806b3d027656bf9d83be6a9566a931dbe5f06893509d5eb26d5faf10e19fd4e4",
+        "rows-5000/main.web.bundle": "e08f2760cdad1157c3a5064d4a1e8e6518839bb7729ba4cc668f20a37d05c316"
+      },
+      "vue-lynx-0-5-vapor-default": {
+        "rows-0/main.lynx.bundle": "db9132bfea440fa6865a75e9401506a31fc7aa343951e71af38303b74649a00e",
+        "rows-0/main.web.bundle": "42ac76655e2afb609bad5a77e829ec17de98429e7297af522045eb2b7251a03e",
+        "rows-1000/main.lynx.bundle": "e4d5cbb8692ca73b4c7d3072549fbb8adbeb0f57bcbd50ce75f16b9c38bf5177",
+        "rows-1000/main.web.bundle": "703f3a44ae6262fabbcc1af88c44654d4bea668d37b0f576a9983a0715c68506",
+        "rows-10000/main.lynx.bundle": "7163f94dca0de036a66a401d68c563647e981257818188355a7cad1451d61dad",
+        "rows-10000/main.web.bundle": "a83e72f9e1456db261b3088e34c25ccfb88e47d5926f60afa1f21703246f05eb",
+        "rows-2000/main.lynx.bundle": "b4e17a88282b26a934ba6f3ac87bcc8abf7d586982405ed9eeefc7483960c99e",
+        "rows-2000/main.web.bundle": "c6e77a9b77c4679363add5c96a28994021f3dde4cbfc9a5bca04a748c77fcd1d",
+        "rows-3000/main.lynx.bundle": "134eee8852e0b4e4c0f8b66a8e5afa92dfa3da4ead38715e1dcc077fb09e327f",
+        "rows-3000/main.web.bundle": "8eee4922f528a4f0c3a5685c5a8f90a4076db7b51c51284a67c15e390394c584",
+        "rows-5000/main.lynx.bundle": "647bc190004f16a1c1f61bc4249f3f99f6aa62229e8643ad72b44af55d699c71",
+        "rows-5000/main.web.bundle": "41280c1128c4263afb7c7fe20d44c0b2926721082d2d331cbd7e6994a2fdf66f"
+      },
+      "vue-lynx-0-5-vapor-ifr": {
+        "rows-0/main.lynx.bundle": "4c796fbafff7d50c92880486777bccb1a5576332dacae74b46b3d60611d0e046",
+        "rows-0/main.web.bundle": "1a57cdaaa6cdfadc0dad1eed1d5195bef89bbd05179cfe49100ee5a2b634e837",
+        "rows-1000/main.lynx.bundle": "5e084284c01e4887f8a70f86bd389b82a47b417fe0cdcdc03c93bd7f217db280",
+        "rows-1000/main.web.bundle": "df9d7dbbd611d213bc7b84a9701829b1eee31759f7d6af6c1b853d44e6c08ebd",
+        "rows-10000/main.lynx.bundle": "7df21d07be430fb888e97df6174f733839225cc42d9dbb2d72b8608a7f188b3c",
+        "rows-10000/main.web.bundle": "3bf3312dbfad27f1bf8b1632a8a0419281b8833c9ffbeef83c814d5e6ac45058",
+        "rows-2000/main.lynx.bundle": "9b06627d64cf03a5762e33bcceaae82057c4a0e6f8418754d4ed9164e1f3fcb0",
+        "rows-2000/main.web.bundle": "9b1b9ab85e6dca156da29811c6bca0e0c3991d9247f3425459e98ddf395f0632",
+        "rows-3000/main.lynx.bundle": "04d97802eda33b23f2f3391967cb653d6f0ddfd5ecac86afb274c270d8b198ad",
+        "rows-3000/main.web.bundle": "fe68f21fde6470648a2bd25dff9785ebee0463d63935bd0677f86b07ec41f909",
+        "rows-5000/main.lynx.bundle": "0d4aa9c2d68936323bb96eb67f99cfc16b927b7a2b202f6a05f10693d86279d8",
+        "rows-5000/main.web.bundle": "7c5c8a723e3a8e68cbc3f0e1db887ff352043bf6740632b6b93eacf3b646df0e"
+      }
+    }
+  },
+  "assertions": [
+    "startup-adoption",
+    "real-pointer-input",
+    "row-count-and-text",
+    "survivor-identity",
+    "host-structure-census",
+    "dispose"
+  ],
+  "entries": [
+    {
+      "entry": "octane-m0-current",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 15073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "raw-text": 2000,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 15073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "raw-text": 2000,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    },
+    {
+      "entry": "octane-m0-upstream",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 16086,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "raw-text": 3013,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 16086,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "raw-text": 3013,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    },
+    {
+      "entry": "reactlynx-0-126-default",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 15073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "raw-text": 2000,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 15073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "raw-text": 2000,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    },
+    {
+      "entry": "vue-lynx-0-5-vdom-default",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 13073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 13073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    },
+    {
+      "entry": "vue-lynx-0-5-vdom-ifr-et",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 13074,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "lynx-wrapper": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 13074,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "lynx-wrapper": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    },
+    {
+      "entry": "vue-lynx-0-5-vapor-default",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 13073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 13073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    },
+    {
+      "entry": "vue-lynx-0-5-vapor-ifr",
+      "bundle": "rows-0/main.web.bundle",
+      "checks": [
+        {
+          "stage": "startup-adoption",
+          "readyText": "Benchmark on Lynx",
+          "rowCount": 0
+        },
+        {
+          "stage": "create",
+          "rowCount": 1000,
+          "firstId": "1",
+          "firstLabel": "large white cookie",
+          "input": "playwright-native-pointer",
+          "hostCensus": {
+            "total": 13073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "select",
+          "selectedIndex": 1,
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "update10th",
+          "labelBefore": "large white cookie",
+          "labelAfter": "large white cookie !!!",
+          "identities": [
+            {
+              "key": "initial-0",
+              "index": 0,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "initial-1",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "swap",
+          "labels": {
+            "before1": "important orange cookie",
+            "before998": "helpful red pizza"
+          },
+          "identities": [
+            {
+              "key": "swap-998",
+              "index": 1,
+              "expected": true,
+              "actual": true
+            },
+            {
+              "key": "swap-1",
+              "index": 998,
+              "expected": true,
+              "actual": true
+            }
+          ]
+        },
+        {
+          "stage": "remove",
+          "rowCount": 999,
+          "identity": {
+            "key": "remove-survivor",
+            "index": 2,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "clear",
+          "rowCount": 0
+        },
+        {
+          "stage": "recreate",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "initial-0",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "replace",
+          "rowCount": 1000,
+          "oldIdentityReplaced": {
+            "key": "replace-old",
+            "index": 0,
+            "expected": false,
+            "actual": false
+          }
+        },
+        {
+          "stage": "append1k",
+          "rowCount": 2000,
+          "identity": {
+            "key": "append-survivor",
+            "index": 0,
+            "expected": true,
+            "actual": true
+          }
+        },
+        {
+          "stage": "final-recreate",
+          "hostCensus": {
+            "total": 13073,
+            "byTag": {
+              "div": 3014,
+              "iframe": 1,
+              "link": 1,
+              "lynx-view": 1,
+              "slot": 6026,
+              "style": 2,
+              "x-text": 3013,
+              "x-view": 1015
+            },
+            "rows": 1000
+          }
+        },
+        {
+          "stage": "dispose",
+          "viewDisconnected": true,
+          "pageClosed": true
+        }
+      ]
+    }
+  ],
+  "pass": true
+}
