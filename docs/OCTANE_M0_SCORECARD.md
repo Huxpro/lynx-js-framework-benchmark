@@ -82,6 +82,18 @@ DNF cells fail completeness without reweighting the survivors.
 It rejects duplicate session identities, unbalanced order, an incomplete cell,
 a non-positive observation, or too few pairs before producing a verdict.
 
+Formal raw runs are qualified directly, never through `latest.json` or stored
+aggregate fields:
+
+```bash
+pnpm bench:qualify:m0 --candidate <candidate-id> --comparator <comparator-id> \
+  results/runs/<session-01>.json ... results/runs/<session-10>.json
+```
+
+The ingest gate also requires a clean runner checkout, one exact machine and
+comparability cohort, consistent source commits, auditable two-arm order, and
+complete DNF-free source samples for every repetition and frozen cell.
+
 ## Execution sequence
 
 1. Vendor and verify newly named comparator bundles without overwriting old
