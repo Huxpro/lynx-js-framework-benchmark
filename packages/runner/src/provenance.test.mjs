@@ -58,7 +58,12 @@ packages:
       reps: 7,
       stormReps: 3,
       startupReps: 5,
-      execution: { harness: 'web', browser: { version: 'Chromium 1' } },
+      execution: {
+        harness: 'web',
+        browser: { version: 'Chromium 1' },
+        entryOrder: ['example'],
+        sessionId: 'ab-01',
+      },
     };
     const clean = runReceipt(options);
     assert.equal(clean.repository.dirty, false);
@@ -74,7 +79,29 @@ packages:
     assert.equal(clean.workload.roadmapScorecardVersion, 1);
     assert.deepEqual(clean.sampling.repetitions, { table: 7, storm: 3, startup: 5 });
     assert.equal(clean.sampling.outliers, 'none-removed');
+    assert.deepEqual(clean.execution.entryOrder, ['example']);
+    assert.equal(clean.execution.sessionId, 'ab-01');
     assert.match(clean.comparabilityCohort, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(
+      runReceipt({
+        ...options,
+        execution: { ...options.execution, entryOrder: ['other', 'example'], sessionId: 'ba-02' },
+      }).comparabilityCohort,
+      clean.comparabilityCohort,
+      'AB/BA scheduling and unique session identity must not split a comparable cohort',
+    );
+    assert.notEqual(
+      runReceipt({
+        ...options,
+        execution: {
+          ...options.execution,
+          browser: { version: 'Chromium 2' },
+          sessionId: 'ab-03',
+        },
+      }).comparabilityCohort,
+      clean.comparabilityCohort,
+      'substantive execution dimensions must still split cohorts',
+    );
     assert.notEqual(
       runReceipt({ ...options, reps: 8 }).comparabilityCohort,
       clean.comparabilityCohort,

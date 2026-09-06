@@ -22,12 +22,20 @@ export function discoverEntries({ only = null, root = repoRoot() } = {}) {
     if (manifest.id !== id) {
       throw new Error(`entry ${id}: manifest id mismatch (${manifest.id})`);
     }
-    if (only && !only.includes(id)) continue;
     out.push({
       ...manifest,
       dir: path.join(entriesDir, id),
       distDir: path.join(entriesDir, id, 'dist'),
     });
+  }
+  if (only != null) {
+    if (new Set(only).size !== only.length) {
+      throw new Error(`entry selection contains duplicates: ${only.join(', ')}`);
+    }
+    const byId = new Map(out.map((entry) => [entry.id, entry]));
+    const missing = only.filter((id) => !byId.has(id));
+    if (missing.length > 0) throw new Error(`unknown entry selection: ${missing.join(', ')}`);
+    return only.map((id) => byId.get(id));
   }
   return out;
 }

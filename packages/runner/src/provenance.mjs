@@ -192,11 +192,15 @@ export function runReceipt({
   const runtime = runtimeReceipt(root);
   const workload = workloadReceipt(root);
   const sampling = samplingPolicy({ reps, stormReps, startupReps });
+  // Session identity and AB/BA schedule are audit dimensions, not environment
+  // dimensions. Keeping them in `execution` proves what actually ran, while
+  // excluding them here lets independently scheduled pairs share one cohort.
+  const { sessionId: _sessionId, entryOrder: _entryOrder, ...comparisonExecution } = execution;
   const cohortDimensions = {
     repository,
     runtime,
     workload,
-    execution,
+    execution: comparisonExecution,
     sampling,
   };
   return {
