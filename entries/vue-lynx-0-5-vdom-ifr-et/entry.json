@@ -1,0 +1,148 @@
+{
+  "id": "vue-lynx-0-5-vdom-ifr-et",
+  "label": "Vue Lynx 0.5 VDOM +IFR +ET",
+  "framework": "vue-lynx",
+  "frameworkVersion": "Vue 3.6.0-beta.17 / vue-lynx 0.5.1",
+  "config": "VDOM; explicit IFR and Element Templates on",
+  "tags": [
+    "roadmap-m0",
+    "explicit-optimized",
+    "ifr",
+    "element-template"
+  ],
+  "tier": "featured",
+  "harnesses": [
+    "web",
+    "native"
+  ],
+  "color": "#b7791f",
+  "presentation": {
+    "order": 15,
+    "colorLight": "#b7791f",
+    "colorDark": "#eda100"
+  },
+  "kind": "vendored",
+  "roadmap": {
+    "issue": 282,
+    "milestone": "M0",
+    "campaign": "octane-roadmap-m0-v1",
+    "role": "vue-vdom",
+    "configuration": "explicit-optimized"
+  },
+  "capabilities": {
+    "production": true,
+    "sourcePatches": false,
+    "rendering": "vdom",
+    "enableIFR": true,
+    "enableElementTemplates": true
+  },
+  "provenance": {
+    "source": "https://github.com/Huxpro/vue-lynx",
+    "ref": "pull/393/head",
+    "commit": "db60b3d32c4253400d0ae3b259ebf522ffdf859d",
+    "mergedInto": "8b8b81d374fdd680b664ead86c3ea240ba47c7eb",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "BENCH_PROFILE=m0 BENCH_ROWS=0,1000,2000,3000,5000,10000 node scripts/build-vue-featured.mjs <vue-lynx-checkout>",
+    "builtAt": "2026-09-06T23:00:35+00:00",
+    "receipts": {
+      "sourceCommit": "db60b3d32c4253400d0ae3b259ebf522ffdf859d",
+      "sourcePatch": {
+        "present": false,
+        "path": null,
+        "sha256": null
+      },
+      "dependencyLock": {
+        "path": "pnpm-lock.yaml",
+        "sha256": "f0d650e212f6cbc376bd421aa4b14c41fe4dbade772c2934744e7f39c34713f8"
+      },
+      "engineAndToolchain": {
+        "node": "v22.22.2",
+        "pnpm": "10.28.2",
+        "rspeedy": "Rspeedy v0.13.5 (Rsbuild v1.7.3, Rspack v1.7.8)\n\n0.13.5",
+        "platform": "linux",
+        "architecture": "x64",
+        "nodeEnv": "production",
+        "buildDriver": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "scripts/build-octane-upstream.mjs",
+            "scripts/build-vue-featured.mjs",
+            "scripts/m0-artifact-contract.mjs",
+            "scripts/vendor-m0-entries.mjs"
+          ],
+          "sha256": "f622a1d6d541bf9505525f0393caa921cc9d0dcdd1f682c43f1c26e45d083a99"
+        }
+      },
+      "configurationCapabilities": {
+        "production": true,
+        "sourcePatches": false,
+        "rendering": "vdom",
+        "enableIFR": true,
+        "enableElementTemplates": true
+      },
+      "workloadContract": {
+        "algorithm": "sha256-runner-source-v1",
+        "runner": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "packages/runner/src/browser.mjs",
+            "packages/runner/src/entries.mjs",
+            "packages/runner/src/harness-native.mjs",
+            "packages/runner/src/harness-web.mjs",
+            "packages/runner/src/native-protocol.mjs",
+            "packages/runner/src/preflight.mjs",
+            "packages/runner/src/run-matrix.mjs",
+            "packages/shared/src/scorecard.mjs",
+            "packages/shared/src/workloads.mjs"
+          ],
+          "sha256": "f90f15a8e799840f3b0e09672dee26234c95ee96a562a1ccea5a41b35ee30746"
+        },
+        "source": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "packages/benchmark/apps/ui-vdom/lynx.config.ts",
+            "packages/benchmark/apps/ui-vdom/src/App.vue",
+            "packages/benchmark/apps/ui-vdom/src/index.ts",
+            "packages/benchmark/package.json",
+            "packages/vue-lynx/package.json"
+          ],
+          "sha256": "41f18108cf6776ab32a2f073985c43af023695656e883f5317da6c75af646ac8"
+        },
+        "sha256": "47ed6e35c004f7b108a31b444301951d4eaf4371499127dee0c6a0ef913451c6"
+      },
+      "bundleSha256": {
+        "rows-0/main.web.bundle": "887cd2803a5e068686d09f56059b69530759ee5ac53b9dad4844e3c768dbb566",
+        "rows-0/main.lynx.bundle": "372a25bc6e906d54e93e35ba3abd630e3ce7e253f670277b056d2b75f66e139b",
+        "rows-1000/main.web.bundle": "5fa44a4398885c0d13d1ee3efe7637319be2e23c999b172c1e72ed3ee888ed11",
+        "rows-1000/main.lynx.bundle": "567aa2b61444a69c870f29abdace4a1f62550a431370face7dc317757b036419",
+        "rows-2000/main.web.bundle": "55d2ed3021bfadcd0947f2cfea9a42983d36b9f33c093559170123a93fb945dd",
+        "rows-2000/main.lynx.bundle": "f1fae08cdfea58053225011d92d461cc5111f2b144b6d771d11efd7310886b18",
+        "rows-3000/main.web.bundle": "c8a01f1580f70d203bfed33047ea55de2964a0bbc9266d1237d81fe18c1be1d1",
+        "rows-3000/main.lynx.bundle": "7f6fc554ee4cff30104c023e7ac312875f2da3b866aa1ec88dceb27d67f7b5a3",
+        "rows-5000/main.web.bundle": "e08f2760cdad1157c3a5064d4a1e8e6518839bb7729ba4cc668f20a37d05c316",
+        "rows-5000/main.lynx.bundle": "806b3d027656bf9d83be6a9566a931dbe5f06893509d5eb26d5faf10e19fd4e4",
+        "rows-10000/main.web.bundle": "cb97a133f6a6a58007db103eb33017096fb99c9445eaca28b31feb1b079789ab",
+        "rows-10000/main.lynx.bundle": "1ef8c2e6b77123e1e218fa6c2069e35586e963479c083dbef3dca468dd3b3132"
+      }
+    },
+    "sha256": {
+      "rows-0/main.web.bundle": "887cd2803a5e068686d09f56059b69530759ee5ac53b9dad4844e3c768dbb566",
+      "rows-0/main.lynx.bundle": "372a25bc6e906d54e93e35ba3abd630e3ce7e253f670277b056d2b75f66e139b",
+      "rows-1000/main.web.bundle": "5fa44a4398885c0d13d1ee3efe7637319be2e23c999b172c1e72ed3ee888ed11",
+      "rows-1000/main.lynx.bundle": "567aa2b61444a69c870f29abdace4a1f62550a431370face7dc317757b036419",
+      "rows-2000/main.web.bundle": "55d2ed3021bfadcd0947f2cfea9a42983d36b9f33c093559170123a93fb945dd",
+      "rows-2000/main.lynx.bundle": "f1fae08cdfea58053225011d92d461cc5111f2b144b6d771d11efd7310886b18",
+      "rows-3000/main.web.bundle": "c8a01f1580f70d203bfed33047ea55de2964a0bbc9266d1237d81fe18c1be1d1",
+      "rows-3000/main.lynx.bundle": "7f6fc554ee4cff30104c023e7ac312875f2da3b866aa1ec88dceb27d67f7b5a3",
+      "rows-5000/main.web.bundle": "e08f2760cdad1157c3a5064d4a1e8e6518839bb7729ba4cc668f20a37d05c316",
+      "rows-5000/main.lynx.bundle": "806b3d027656bf9d83be6a9566a931dbe5f06893509d5eb26d5faf10e19fd4e4",
+      "rows-10000/main.web.bundle": "cb97a133f6a6a58007db103eb33017096fb99c9445eaca28b31feb1b079789ab",
+      "rows-10000/main.lynx.bundle": "1ef8c2e6b77123e1e218fa6c2069e35586e963479c083dbef3dca468dd3b3132"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  }
+}

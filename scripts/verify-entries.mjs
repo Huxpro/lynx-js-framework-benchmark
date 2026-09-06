@@ -5,12 +5,45 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  hashFiles,
+  M0_BUILD_DRIVER_FILES,
+  M0_CAMPAIGN,
+  M0_ENTRY_IDS,
+  M0_PINNED_SOURCES,
+  M0_ROWS,
+  M0_RUNNER_CONTRACT_FILES,
+} from './m0-artifact-contract.mjs';
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
 
 const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tier', 'color', 'presentation', 'kind', 'provenance', 'bundles'];
 const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
+const M0_IDS = new Set(M0_ENTRY_IDS);
+const M0_ROLES = {
+  'octane-m0-current': 'm0-current-fork',
+  'octane-m0-upstream': 'latest-upstream',
+  'reactlynx-0-126-default': 'reactlynx',
+  'reactlynx-0-126-et': 'reactlynx',
+  'vue-lynx-0-5-vdom-default': 'vue-vdom',
+  'vue-lynx-0-5-vdom-ifr-et': 'vue-vdom',
+  'vue-lynx-0-5-vapor-default': 'vue-vapor',
+  'vue-lynx-0-5-vapor-ifr': 'vue-vapor',
+};
+const M0_CONFIGURATIONS = {
+  'octane-m0-current': 'production-default',
+  'octane-m0-upstream': 'production-default',
+  'reactlynx-0-126-default': 'production-default',
+  'reactlynx-0-126-et': 'explicit-optimized',
+  'vue-lynx-0-5-vdom-default': 'production-default',
+  'vue-lynx-0-5-vdom-ifr-et': 'explicit-optimized',
+  'vue-lynx-0-5-vapor-default': 'production-default',
+  'vue-lynx-0-5-vapor-ifr': 'explicit-optimized',
+};
+const M0_RUNNER_RECEIPT = hashFiles(root, M0_RUNNER_CONTRACT_FILES);
+const M0_BUILD_DRIVER_RECEIPT = hashFiles(root, M0_BUILD_DRIVER_FILES);
 
 let failures = 0;
 const fail = (msg) => {
@@ -21,6 +54,9 @@ const fail = (msg) => {
 const ids = fs.readdirSync(entriesDir).filter((d) =>
   fs.existsSync(path.join(entriesDir, d, 'entry.json')));
 if (ids.length === 0) fail('no entries found');
+for (const id of M0_ENTRY_IDS) {
+  if (!ids.includes(id)) fail(`missing frozen M0 identity ${id}`);
+}
 
 for (const id of ids) {
   const dir = path.join(entriesDir, id);
@@ -37,6 +73,21 @@ for (const id of ids) {
     || new Set(manifest.harnesses).size !== manifest.harnesses.length
     || manifest.harnesses.some((harness) => !HARNESSES.has(harness))
   )) fail(`${id}: invalid harnesses ${JSON.stringify(manifest.harnesses)}`);
+  if (manifest.unsupportedHarnessReasons != null) {
+    if (typeof manifest.unsupportedHarnessReasons !== 'object'
+      || Array.isArray(manifest.unsupportedHarnessReasons)) {
+      fail(`${id}: unsupportedHarnessReasons must be an object`);
+    } else {
+      for (const [harness, reason] of Object.entries(manifest.unsupportedHarnessReasons)) {
+        if (!HARNESSES.has(harness)
+          || manifest.harnesses?.includes(harness)
+          || typeof reason !== 'string'
+          || reason.length === 0) {
+          fail(`${id}: invalid unsupported ${harness} harness reason`);
+        }
+      }
+    }
+  }
   if (!/^#[\da-f]{6}$/i.test(manifest.color ?? '')) fail(`${id}: invalid color "${manifest.color}"`);
   if (!Number.isFinite(manifest.presentation?.order)) fail(`${id}: invalid presentation.order`);
   for (const key of ['colorLight', 'colorDark']) {
@@ -49,8 +100,94 @@ for (const id of ids) {
     if (manifest.provenance.patched !== false || manifest.provenance.patchFile != null) {
       fail(`${id}: featured Octane entries must use an unpatched source checkout`);
     }
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
-      fail(`${id}: featured Octane entries must be explicitly Web-only`);
+    const expectedHarnesses = M0_IDS.has(id) ? ['web', 'native'] : ['web'];
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
+      fail(`${id}: featured Octane entry must declare ${expectedHarnesses.join(' + ')}`);
+    }
+  }
+  if (M0_IDS.has(id)) {
+    const pin = id.startsWith('octane-')
+      ? M0_PINNED_SOURCES[id]
+      : M0_PINNED_SOURCES.comparators;
+    const roadmap = manifest.roadmap;
+    const receipts = manifest.provenance?.receipts;
+    if (manifest.tier !== 'featured') fail(`${id}: M0 identity must be featured`);
+    const expectedHarnesses = id === 'reactlynx-0-126-et'
+      ? ['native']
+      : ['web', 'native'];
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
+      fail(`${id}: M0 identity has the wrong executable harness set`);
+    }
+    if (id === 'reactlynx-0-126-et'
+      && (manifest.unsupportedHarnessReasons?.web == null
+        || manifest.capabilities?.lynxForWeb !== false
+        || manifest.capabilities?.lynxForWebReason !== 'typed-element-template-papi-unavailable')) {
+      fail(`${id}: ReactLynx ET must retain its observed Lynx-for-Web capability failure`);
+    }
+    if (roadmap?.issue !== 282 || roadmap?.milestone !== 'M0'
+      || roadmap?.campaign !== M0_CAMPAIGN) {
+      fail(`${id}: invalid M0 roadmap identity`);
+    }
+    if (roadmap?.role !== M0_ROLES[id]) fail(`${id}: invalid M0 role ${roadmap?.role}`);
+    if (roadmap?.configuration !== M0_CONFIGURATIONS[id]) {
+      fail(`${id}: invalid M0 configuration ${roadmap?.configuration}`);
+    }
+    if (manifest.provenance?.source !== pin.source
+      || manifest.provenance?.ref !== pin.ref
+      || manifest.provenance?.commit !== pin.commit) {
+      fail(`${id}: source identity differs from the frozen M0 pin`);
+    }
+    if (pin.mergedInto != null && manifest.provenance?.mergedInto !== pin.mergedInto) {
+      fail(`${id}: comparator merge provenance differs from the frozen M0 pin`);
+    }
+    if (manifest.provenance?.patched !== false || manifest.provenance?.patchFile !== null
+      || receipts?.sourcePatch?.present !== false
+      || receipts?.sourcePatch?.path !== null
+      || receipts?.sourcePatch?.sha256 !== null) {
+      fail(`${id}: M0 identity must come from an unpatched checkout`);
+    }
+    if (receipts?.sourceCommit !== pin.commit) fail(`${id}: source-commit receipt mismatch`);
+    if (!/^[\da-f]{64}$/.test(receipts?.dependencyLock?.sha256 ?? '')) {
+      fail(`${id}: dependency-lock receipt is missing`);
+    }
+    if (receipts?.dependencyLock?.path !== 'pnpm-lock.yaml') {
+      fail(`${id}: dependency-lock receipt path must be pnpm-lock.yaml`);
+    }
+    const toolchain = receipts?.engineAndToolchain;
+    if (!/^v\d+\./.test(toolchain?.node ?? '')
+      || !/^\d+\.\d+\.\d+/.test(toolchain?.pnpm ?? '')
+      || !/Rspeedy v\d+\./.test(toolchain?.rspeedy ?? '')
+      || toolchain?.nodeEnv !== 'production'
+      || toolchain?.buildDriver?.sha256 !== M0_BUILD_DRIVER_RECEIPT.sha256
+      || JSON.stringify(toolchain?.buildDriver?.files)
+        !== JSON.stringify(M0_BUILD_DRIVER_RECEIPT.files)) {
+      fail(`${id}: engine-and-toolchain receipt is incomplete`);
+    }
+    if (JSON.stringify(receipts?.configurationCapabilities)
+      !== JSON.stringify(manifest.capabilities)) {
+      fail(`${id}: configuration-capabilities receipt mismatch`);
+    }
+    const workload = receipts?.workloadContract;
+    if (workload?.runner?.sha256 !== M0_RUNNER_RECEIPT.sha256
+      || JSON.stringify(workload?.runner?.files) !== JSON.stringify(M0_RUNNER_RECEIPT.files)
+      || !/^[\da-f]{64}$/.test(workload?.source?.sha256 ?? '')
+      || !/^[\da-f]{64}$/.test(workload?.sha256 ?? '')) {
+      fail(`${id}: workload-contract receipt is incomplete or stale`);
+    }
+    const expectedBundles = Object.fromEntries(M0_ROWS.flatMap((rows) => [
+      [`rows-${rows}/main.web.bundle`, manifest.provenance?.sha256?.[`rows-${rows}/main.web.bundle`]],
+      [`rows-${rows}/main.lynx.bundle`, manifest.provenance?.sha256?.[`rows-${rows}/main.lynx.bundle`]],
+    ]));
+    if (Object.keys(manifest.provenance?.sha256 ?? {}).length !== M0_ROWS.length * 2
+      || Object.values(expectedBundles).some((value) => !/^[\da-f]{64}$/.test(value ?? ''))
+      || JSON.stringify(receipts?.bundleSha256) !== JSON.stringify(manifest.provenance?.sha256)) {
+      fail(`${id}: frozen M0 row matrix or bundle-sha256 receipt is incomplete`);
+    }
+    for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
+      const hashes = M0_ROWS.map((rows) => manifest.provenance.sha256[`rows-${rows}/${bundle}`]);
+      if (new Set(hashes).size !== M0_ROWS.length) {
+        fail(`${id}: ${bundle} does not encode every startup scale`);
+      }
     }
   }
   if (id === 'octane-hux') {
@@ -121,6 +258,38 @@ for (const id of ids) {
   }
   const web = path.join(dir, manifest.bundles?.web ?? '');
   if (!fs.existsSync(web)) fail(`${id}: bundles.web missing (${manifest.bundles?.web})`);
+}
+
+for (const [defaultId, optimizedId] of [
+  ['reactlynx-0-126-default', 'reactlynx-0-126-et'],
+  ['vue-lynx-0-5-vdom-default', 'vue-lynx-0-5-vdom-ifr-et'],
+  ['vue-lynx-0-5-vapor-default', 'vue-lynx-0-5-vapor-ifr'],
+]) {
+  const readManifest = (id) => JSON.parse(
+    fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'),
+  );
+  const baseline = readManifest(defaultId).provenance.sha256;
+  const optimized = readManifest(optimizedId).provenance.sha256;
+  for (const rows of M0_ROWS) {
+    for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
+      const key = `rows-${rows}/${bundle}`;
+      if (baseline[key] === optimized[key]) {
+        fail(`${defaultId}/${optimizedId}: ${key} does not distinguish the configuration`);
+      }
+    }
+  }
+}
+
+const currentOctaneToolchain = JSON.parse(
+  fs.readFileSync(path.join(entriesDir, 'octane-m0-current/entry.json'), 'utf8'),
+).provenance.receipts.engineAndToolchain;
+const upstreamOctaneToolchain = JSON.parse(
+  fs.readFileSync(path.join(entriesDir, 'octane-m0-upstream/entry.json'), 'utf8'),
+).provenance.receipts.engineAndToolchain;
+for (const key of ['node', 'pnpm', 'rspeedy', 'platform', 'architecture', 'nodeEnv']) {
+  if (currentOctaneToolchain[key] !== upstreamOctaneToolchain[key]) {
+    fail(`M0 fork/upstream toolchain mismatch for ${key}`);
+  }
 }
 
 if (failures) {

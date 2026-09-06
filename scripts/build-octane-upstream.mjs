@@ -15,7 +15,23 @@ const coreSuffix = core === 'block'
   ? (blockMode === 'reconcile' ? '-block-reconcile' : '-block')
   : '';
 
-for (const rows of [0, 1000, 10000, 30000]) {
+function rowsFromEnvironment() {
+  const raw = process.env.BENCH_ROWS;
+  if (raw == null || raw === '') return [0, 1000, 10000, 30000];
+  const rows = raw.split(',').map((value) => Number(value));
+  if (
+    rows.length === 0
+    || rows.some((value) => !Number.isSafeInteger(value) || value < 0)
+    || new Set(rows).size !== rows.length
+  ) {
+    throw new Error(`BENCH_ROWS must be a unique comma-separated list of non-negative integers, received ${JSON.stringify(raw)}`);
+  }
+  return rows;
+}
+
+const rowsMatrix = rowsFromEnvironment();
+
+for (const rows of rowsMatrix) {
   execFileSync(process.execPath, [buildScript], {
     cwd: checkout,
     stdio: 'inherit',
@@ -34,4 +50,4 @@ for (const rows of [0, 1000, 10000, 30000]) {
   }
 }
 
-console.log(`[build-octane-upstream] ${core}/${blockMode} rows 0/1k/10k/30k complete`);
+console.log(`[build-octane-upstream] ${core}/${blockMode} rows ${rowsMatrix.join('/')} complete`);

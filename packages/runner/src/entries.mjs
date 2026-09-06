@@ -36,6 +36,17 @@ export function entrySupportsHarness(entry, harness) {
   return entry?.harnesses == null || entry.harnesses.includes(harness);
 }
 
+export function selectEntriesForHarness(entries, harness, { explicit = false } = {}) {
+  const unsupported = entries.filter((entry) => !entrySupportsHarness(entry, harness));
+  if (explicit && unsupported.length > 0) {
+    throw new Error(unsupported.map((entry) => {
+      const reason = entry.unsupportedHarnessReasons?.[harness] ?? 'not declared by the entry';
+      return `${entry.id} does not support the ${harness} harness: ${reason}`;
+    }).join('\n'));
+  }
+  return entries.filter((entry) => entrySupportsHarness(entry, harness));
+}
+
 /** Bundle path for a given autoRows scale; null when that variant is absent. */
 export function bundleFor(entry, { rows = 0, flavor = 'web' } = {}) {
   const rel = path.join(`rows-${rows}`, `main.${flavor}.bundle`);
