@@ -7,6 +7,10 @@ const threadsSource = fs.readFileSync(new URL('./components/Threads.tsx', import
 const rankedBarsSource = fs.readFileSync(new URL('./components/RankedBars.tsx', import.meta.url), 'utf8');
 const scaleCompositeSource = fs.readFileSync(new URL('./components/InteractionScaleComposite.tsx', import.meta.url), 'utf8');
 const interactionScoreSource = fs.readFileSync(new URL('./interaction-score.ts', import.meta.url), 'utf8');
+const scorecardSource = fs.readFileSync(
+  new URL('../../packages/shared/src/scorecard.mjs', import.meta.url),
+  'utf8',
+);
 const heatGridSource = fs.readFileSync(new URL('./components/HeatGrid.tsx', import.meta.url), 'utf8');
 const costSpaceSource = fs.readFileSync(new URL('./components/CostSpace.tsx', import.meta.url), 'utf8');
 const methodSource = fs.readFileSync(new URL('./components/Method.tsx', import.meta.url), 'utf8');
@@ -87,8 +91,9 @@ test('interaction workloads share one module with three formula modes and one de
   assert.match(source, /label: text\('js-framework weighted', 'js-framework 加权'\)/);
   assert.match(source, /label: text\('equal · 1k', '等权 · 1k'\)/);
   assert.match(source, /label: text\('equal · 10k', '等权 · 10k'\)/);
-  assert.match(interactionScoreSource, /select@1000/);
-  assert.match(interactionScoreSource, /clear@1000/);
+  assert.match(interactionScoreSource, /@lynx-bench\/shared\/scorecard/);
+  assert.match(scorecardSource, /select@1000/);
+  assert.match(scorecardSource, /clear@1000/);
   assert.match(source, /scoreModes=\{interactionModes\}/);
   assert.doesNotMatch(source, /title="js-framework weighted score"/);
   assert.doesNotMatch(source, /title="interaction latency @(?:1|10)k"/);
