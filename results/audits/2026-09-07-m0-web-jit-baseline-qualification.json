@@ -1,0 +1,214 @@
+{
+  "scorecardVersion": 1,
+  "candidate": "octane-m0-current",
+  "comparator": "octane-m0-upstream",
+  "harness": "web",
+  "machine": {
+    "id": "65160668d8d9",
+    "hostname": "n251-227-236",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+    "cores": 32,
+    "memGB": 67,
+    "node": "v22.22.2"
+  },
+  "comparabilityCohort": "sha256:db51a1d24f7c7686815409e65f85d61d9a14fdbe3800d51a548adf44b03198c6",
+  "entryCommits": {
+    "candidate": "e82160fc0e663f52848e2181d83c6203d633bc86",
+    "comparator": "184631809c8eb61f5bbf15fa23b2470c1d38eea6"
+  },
+  "sessions": [
+    {
+      "session": "m0-web-jit-baseline-p01-ab",
+      "order": "AB"
+    },
+    {
+      "session": "m0-web-jit-baseline-p02-ba",
+      "order": "BA"
+    },
+    {
+      "session": "m0-web-jit-baseline-p03-ab",
+      "order": "AB"
+    },
+    {
+      "session": "m0-web-jit-baseline-p04-ba",
+      "order": "BA"
+    },
+    {
+      "session": "m0-web-jit-baseline-p05-ab",
+      "order": "AB"
+    },
+    {
+      "session": "m0-web-jit-baseline-p06-ba",
+      "order": "BA"
+    },
+    {
+      "session": "m0-web-jit-baseline-p07-ab",
+      "order": "AB"
+    },
+    {
+      "session": "m0-web-jit-baseline-p08-ba",
+      "order": "BA"
+    },
+    {
+      "session": "m0-web-jit-baseline-p09-ab",
+      "order": "AB"
+    },
+    {
+      "session": "m0-web-jit-baseline-p10-ba",
+      "order": "BA"
+    }
+  ],
+  "suites": {
+    "interaction": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.9574722274300449,
+        "lower": 0.940624359555751,
+        "upper": 0.974370866776681,
+        "strictWin": true,
+        "engineeringTarget": false
+      },
+      "cells": {
+        "create@1000": {
+          "point": 0.9915249157889674,
+          "lower": 0.9809262103431957,
+          "upper": 1.0026204308797153,
+          "nonInferior": true
+        },
+        "replace@1000": {
+          "point": 0.8854658997949124,
+          "lower": 0.8722351472454358,
+          "upper": 0.8999697686712369,
+          "nonInferior": true
+        },
+        "update10th@1000": {
+          "point": 1.0438319454562832,
+          "lower": 0.9572677026696526,
+          "upper": 1.1314240118648242,
+          "nonInferior": false
+        },
+        "select@1000": {
+          "point": 0.8747243048378035,
+          "lower": 0.7708110166052736,
+          "upper": 0.9992080349261402,
+          "nonInferior": true
+        },
+        "swap@1000": {
+          "point": 1.053028494177672,
+          "lower": 0.9346480842126321,
+          "upper": 1.1762529488215858,
+          "nonInferior": false
+        },
+        "remove@1000": {
+          "point": 1.0589314411045272,
+          "lower": 0.97745133682259,
+          "upper": 1.2033095202378477,
+          "nonInferior": false
+        },
+        "create@10000": {
+          "point": 0.9680466536256045,
+          "lower": 0.9579134221380935,
+          "upper": 0.9807210518868614,
+          "nonInferior": true
+        },
+        "append1k@1000": {
+          "point": 0.8170767725816759,
+          "lower": 0.8064665075717242,
+          "upper": 0.8283794597644275,
+          "nonInferior": true
+        },
+        "clear@1000": {
+          "point": 0.9699614505413837,
+          "lower": 0.9288765814332041,
+          "upper": 1.0155133788884696,
+          "nonInferior": true
+        }
+      },
+      "pass": false
+    },
+    "startup": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.9692324462311754,
+        "lower": 0.9580117837826243,
+        "upper": 0.9811085528933524,
+        "strictWin": true,
+        "engineeringTarget": false
+      },
+      "cells": {
+        "fcp@0": {
+          "point": 1.0457441998942423,
+          "lower": 1.0179831402385884,
+          "upper": 1.0701260405250563,
+          "nonInferior": false
+        },
+        "fcp@1000": {
+          "point": 0.95398924716712,
+          "lower": 0.938466717356096,
+          "upper": 0.9708442442011976,
+          "nonInferior": true
+        },
+        "fcp@10000": {
+          "point": 0.9126723397712543,
+          "lower": 0.8929022434970545,
+          "upper": 0.9283417870857721,
+          "nonInferior": true
+        }
+      },
+      "pass": false
+    }
+  },
+  "pass": false,
+  "sourceRuns": [
+    {
+      "file": "results/runs/2026-09-07T00-04-09-65160668d8d9-m0-web-jit-baseline-p01-ab.json",
+      "sha256": "eabd06d8bf4dec9fc4b66c17c3ac2c7cec3624e84bd279423dcb6c02e2eeef0b"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-12-08-65160668d8d9-m0-web-jit-baseline-p02-ba.json",
+      "sha256": "10d7f3087d7caa756504676bf343ba613eed2b8877eacbdaf9ee19f4c85593c9"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-20-06-65160668d8d9-m0-web-jit-baseline-p03-ab.json",
+      "sha256": "3b2c938595791efa7ed66496ccfe108098881789569115bda12915781f47b456"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-28-06-65160668d8d9-m0-web-jit-baseline-p04-ba.json",
+      "sha256": "7240250579a3957c92399e4ad631bdb20e53bb67a7e8c5386560cbb8e8e81060"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-36-04-65160668d8d9-m0-web-jit-baseline-p05-ab.json",
+      "sha256": "62a3b01f6dbecf865896c085549d31fac10b152556ebac65384f054a72e6985a"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-44-02-65160668d8d9-m0-web-jit-baseline-p06-ba.json",
+      "sha256": "7d2c188816540ec0748efefc40dc674bc3e1e6e8c90c7f864194464aed306cd1"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-52-03-65160668d8d9-m0-web-jit-baseline-p07-ab.json",
+      "sha256": "5828f23f20d5d869dcc96e3fef43bec6ab1568820bc889e69cab007817d76e82"
+    },
+    {
+      "file": "results/runs/2026-09-07T00-59-58-65160668d8d9-m0-web-jit-baseline-p08-ba.json",
+      "sha256": "5ecb1b7db90fe37d545ec34e0a96d32ad8debe35400de4d462f3f3e35216ca53"
+    },
+    {
+      "file": "results/runs/2026-09-07T01-07-55-65160668d8d9-m0-web-jit-baseline-p09-ab.json",
+      "sha256": "40b5aabdfac36e6718179b4f5ecc5bc21f513c073a6cf88fe58a618bd3d6348c"
+    },
+    {
+      "file": "results/runs/2026-09-07T01-15-53-65160668d8d9-m0-web-jit-baseline-p10-ba.json",
+      "sha256": "08e2ae6d8f75ace6472c72c0837aa6b9fa4f5a77c5ddb3789c506dce572f001c"
+    }
+  ]
+}
