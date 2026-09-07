@@ -22,10 +22,6 @@ importers:
       playwright-core:
         specifier: ^1.55.0
         version: 1.62.1
-    devDependencies:
-      '@byted/agent-lynx':
-        specifier: ^0.14.11
-        version: 0.14.11
 
   packages/shared: {}
 
@@ -144,63 +140,6 @@ packages:
   '@babel/types@7.29.8':
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
-
-  '@byted-lynx/bdc-client@0.4.5':
-    resolution: {integrity: sha512-MyGJOxQ89/hrIj+RBttkIoyPWuB7detgn5XiZRR4H5VoTWpl9Scqbvwcr6kO6gAEQ9L4xBIQLoGAd4Qds42nrQ==}
-    engines: {node: '>=18.19'}
-    peerDependencies:
-      kerberos: ^2.0.0
-    peerDependenciesMeta:
-      kerberos:
-        optional: true
-
-  '@byted-lynx/devtool-connector@0.15.4':
-    resolution: {integrity: sha512-cJVjvyRtyzEn4JncVKCZSPbabn13aqC8qSd2vft+MGl0dbV0lmuReQ37U0UcGmpv8hFwshO/K/a2116NmL9eUg==}
-    engines: {node: '>=18.19'}
-    hasBin: true
-    peerDependencies:
-      kerberos: ^2.0.0
-    peerDependenciesMeta:
-      kerberos:
-        optional: true
-
-  '@byted-lynx/skill-lynx-devtool@0.14.11':
-    resolution: {integrity: sha512-JcuANC6TLo9kK5VnDdh0Y3JcXPXOc06peLVDEhdaJAuv3bxEpzu1nnA5Q5KIEs/2S/WSltONkOYO9JFLe3R1sg==}
-    engines: {node: '>=18'}
-    hasBin: true
-
-  '@byted-lynx/skill-lynx-global-memory-status@0.1.1':
-    resolution: {integrity: sha512-GMF2T/7in1Z1+b1w/DIOB55cjMtjp8fAVC8dcqk46tA8Ceqq5pMRWvTSFgKw+yKDwOTDvZvK7NKFVm2xVayf4w==}
-    engines: {node: '>=18'}
-
-  '@byted-lynx/skill-lynx-js-heap-snapshot-analysis@0.1.1':
-    resolution: {integrity: sha512-eiLWQJTqydYxp5QURK0X3BOLhXNnqgcjT8GtqhqoRCWESn8d2mme3dd/PUYDyzgOrKQE2uwJUc4r1VnQ0PeFtg==}
-    engines: {node: '>=18'}
-
-  '@byted-lynx/skill-lynx-recorder-fixture@0.1.0':
-    resolution: {integrity: sha512-uAT/bbItzEF2urWxReiFwThwh9d3/DY/UAZErjtvkVNoe5NXEFEDqBmwP77mwRtz3jbsSEoSledok/zhv7P6tw==}
-    engines: {node: '>=18'}
-
-  '@byted-lynx/skill-lynx-recorder@0.1.0':
-    resolution: {integrity: sha512-28Degtd+YrhuxsEpqKlRVqulYbwgSVGcgnHE++kNyF/5cSVK2QkWwIKa2V43XLULM7eLhUS/YWXLsz8SvdZqIg==}
-    engines: {node: '>=18'}
-
-  '@byted-lynx/skill-lynx-sandbox@0.1.8':
-    resolution: {integrity: sha512-hVsJDtB43SGdtCtFF487tTF7RdZIjtHpAHadyhe9yDbs8xZDjdvaE76bmK+yT/L8mX7PPy+MXU0bEaSOWyjrLA==}
-    engines: {node: '>=18'}
-
-  '@byted-lynx/skill-lynx-trace-analysis@0.0.21':
-    resolution: {integrity: sha512-Y8QJQpg/+2iVjTN0dlwE/VoTvr/YH/TYzOKGXr2UrY6/6ipKRtNy1D8HbsKFUtlCveVf+hVImcKEX8CO2sjEiw==}
-    engines: {node: '>=18'}
-
-  '@byted-lynx/skill-lynx-trace-record@0.1.0':
-    resolution: {integrity: sha512-L5ICRycqXVCW2/jWy8s0PUkW5H8//w0af+xOhp3/MTMlYu98kDD7xiy2/wZSs+ZhvkQwpqYfceyrMqWogAfouw==}
-    engines: {node: '>=18'}
-
-  '@byted/agent-lynx@0.14.11':
-    resolution: {integrity: sha512-mh/AkaDqWnYrA8Xvy+kD2MzdjQerxlSfahQ3fSB2sHp9NIzy4lvQVbKsgjp/Jzvq+R64g9zQv4UDZO2MirhmRw==}
-    engines: {node: '>=18.19'}
-    hasBin: true
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -373,10 +312,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@lynx-js/trace-processor@0.0.1':
-    resolution: {integrity: sha512-Zyl74cKi+BDggeXroLQG4frbBuiQ0DB0yH0C3pMkUHWv17abWTdJ2mw/H9Cd1QiIr+aQHn1U2SRtsrbkmWMtJw==}
-    engines: {node: '>=18'}
 
   '@lynx-js/web-core@0.22.1':
     resolution: {integrity: sha512-B5XLDjPTU+aO6fq6ylHt7mf3rYxcQAuKHSD86ifoWweO3WI2io6xUSPjnY+MThp8xCihu+NocpmGTi/puRDHxw==}
@@ -804,9 +739,6 @@ packages:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
 
-  immer@10.2.0:
-    resolution: {integrity: sha512-d/+XTN3zfODyjr89gM3mPq1WNX2B8pYsu7eORitdwyA2sBubnTl3laYlBk4sXY5FUa5qTZGBDPJICVbvqzjlbw==}
-
   internmap@2.0.3:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
@@ -1094,43 +1026,6 @@ snapshots:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
 
-  '@byted-lynx/bdc-client@0.4.5': {}
-
-  '@byted-lynx/devtool-connector@0.15.4':
-    dependencies:
-      '@byted-lynx/bdc-client': 0.4.5
-
-  '@byted-lynx/skill-lynx-devtool@0.14.11': {}
-
-  '@byted-lynx/skill-lynx-global-memory-status@0.1.1': {}
-
-  '@byted-lynx/skill-lynx-js-heap-snapshot-analysis@0.1.1': {}
-
-  '@byted-lynx/skill-lynx-recorder-fixture@0.1.0': {}
-
-  '@byted-lynx/skill-lynx-recorder@0.1.0': {}
-
-  '@byted-lynx/skill-lynx-sandbox@0.1.8': {}
-
-  '@byted-lynx/skill-lynx-trace-analysis@0.0.21': {}
-
-  '@byted-lynx/skill-lynx-trace-record@0.1.0': {}
-
-  '@byted/agent-lynx@0.14.11':
-    dependencies:
-      '@byted-lynx/devtool-connector': 0.15.4
-      '@byted-lynx/skill-lynx-devtool': 0.14.11
-      '@byted-lynx/skill-lynx-global-memory-status': 0.1.1
-      '@byted-lynx/skill-lynx-js-heap-snapshot-analysis': 0.1.1
-      '@byted-lynx/skill-lynx-recorder': 0.1.0
-      '@byted-lynx/skill-lynx-recorder-fixture': 0.1.0
-      '@byted-lynx/skill-lynx-sandbox': 0.1.8
-      '@byted-lynx/skill-lynx-trace-analysis': 0.0.21
-      '@byted-lynx/skill-lynx-trace-record': 0.1.0
-      '@lynx-js/trace-processor': 0.0.1
-    transitivePeerDependencies:
-      - kerberos
-
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
 
@@ -1227,10 +1122,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@lynx-js/trace-processor@0.0.1':
-    dependencies:
-      immer: 10.2.0
 
   '@lynx-js/web-core@0.22.1(tslib@2.8.1)':
     dependencies:
@@ -1623,8 +1514,6 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
-
-  immer@10.2.0: {}
 
   internmap@2.0.3: {}
 
