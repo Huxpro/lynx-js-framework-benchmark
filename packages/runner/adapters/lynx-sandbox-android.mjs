@@ -584,8 +584,10 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   let timingEvents = [];
   let startupEvents = [];
   let producerErrors = [];
+  let consoleMarkerEvents = [];
   let lastStartupProbe = null;
   const timingWaiters = new Set();
+  const consoleMarkerWaiters = new Set();
   const unsupportedTableCells = new Map();
   const unsupportedPrestateScales = new Map();
   const unsupportedStartupCells = new Map();
@@ -946,6 +948,30 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     timingWaiters.clear();
   }
 
+  function notifyConsoleMarkerWaiters() {
+    for (const resolve of consoleMarkerWaiters) resolve();
+    consoleMarkerWaiters.clear();
+  }
+
+  async function waitForConsoleMarker(marker, { key = null, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const index = consoleMarkerEvents.findIndex((event) => {
+        const markerIndex = event.args.indexOf(marker);
+        return markerIndex !== -1 && (key === null || event.args[markerIndex + 1] === key);
+      });
+      if (index !== -1) return consoleMarkerEvents.splice(index, 1)[0];
+      await new Promise((resolve) => {
+        consoleMarkerWaiters.add(resolve);
+        setTimeout(() => {
+          consoleMarkerWaiters.delete(resolve);
+          resolve();
+        }, Math.min(250, Math.max(0, deadline - Date.now())));
+      });
+    }
+    throw new Error(`timeout waiting for Native console marker ${marker}.`);
+  }
+
   async function waitForTiming(expectedName, timeoutMs = DEFAULT_TIMEOUT_MS) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
@@ -970,6 +996,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     timingEvents = [];
     startupEvents = [];
     producerErrors = [];
+    consoleMarkerEvents = [];
     const input = new TransformStream();
     const stream = await connectorCall(
       'open-persistent-cdp-channel',
@@ -998,6 +1025,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           }
           if (value.method !== 'Runtime.consoleAPICalled') continue;
           const args = value.params?.args ?? [];
+          consoleMarkerEvents.push({
+            timestamp: value.params?.timestamp ?? null,
+            args: args.map((arg) => arg.value ?? null),
+          });
+          notifyConsoleMarkerWaiters();
           if (process.env.LYNX_SANDBOX_DEBUG_CONSOLE === '1') {
             log(`  [sandbox:console] ${JSON.stringify(value.params)}`);
           }
@@ -1298,6 +1330,37 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   return {
     environment,
     machine,
+
+    async evaluate(expression, {
+      awaitPromise = true,
+      returnByValue = true,
+      timeoutMs = LONG_WORKLOAD_TIMEOUT_MS,
+    } = {}) {
+      const result = await cdp('Runtime.evaluate', {
+        expression,
+        awaitPromise,
+        returnByValue,
+      }, timeoutMs);
+      if (result.exceptionDetails || result.result?.subtype === 'error') {
+        throw new Error(
+          `Native Runtime.evaluate failed: ${JSON.stringify(result.exceptionDetails ?? result.result)}`,
+        );
+      }
+      return returnByValue ? result.result?.value : result;
+    },
+
+    async domSearchCount(query) {
+      const found = await cdp('DOM.performSearch', { query });
+      try {
+        return found.resultCount ?? 0;
+      } finally {
+        if (found.searchId) {
+          await cdp('DOM.discardSearchResults', { searchId: found.searchId }).catch(() => {});
+        }
+      }
+    },
+
+    waitForConsoleMarker,
 
     isTableUnsupported(entry, kase, scale) {
       return unsupportedTableCells.has(`${entry.id}:${kase.name}:${scale}`)
@@ -1617,6 +1680,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       disposed = true;
       await stopConsoleStream();
       notifyTimingWaiters();
+      notifyConsoleMarkerWaiters();
       await new Promise((resolve) => server.close(resolve));
       try {
         adb(serial, 'reverse', '--remove', `tcp:${port}`);
