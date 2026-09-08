@@ -260,9 +260,11 @@ The CLI atomically checkpoints after every cell and stops before lease expiry wi
 `checkpointComplete: false`. `--resume` accepts only an incomplete v2 checkpoint, validates the
 full immutable identity before adapter/device work, appends a strictly later same-serial receipt,
 rejects overlapping cells and partially written startup metric pairs, and schedules only missing
-keys. Every record key maps to the receipt that produced it. The pre-cell stop window is a derived
-worst-cell envelope covering repetitions, thermal gating, page/session and workload timeouts, all
-transport recovery/reconnect attempts, and cleanup; an environment override cannot lower it. The
+keys. Every record key maps to the receipt that produced it. Before each repetition, a derived
+worst-repetition envelope covers thermal gating, page/session and workload timeouts, all transport
+recovery/reconnect attempts, and cleanup; an environment override cannot lower it. A boundary hit
+discards the incomplete cell's samples, so the next lease repeats the full cell and checkpoints
+only its atomic result. The
 collector can join split source checkpoints only under that same stable cohort, with no overlap,
 when one ordered receipt chain is an exact prefix of the other. Same-serial forks are rejected, and
 the published cohort identity and evidence use the longer chain's digest. Incomplete checkpoints

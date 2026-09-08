@@ -274,18 +274,25 @@ export function deriveNativeLeaseExpirySafety(policy, { reps, startupReps }) {
     + policy.longWorkloadTimeoutMs;
   const recoveryEnvelopeMs = Math.max(0, attemptCount - 1)
     * policy.explorerReconnectTimeoutMs;
-  const minimumSafetyMs = repetitions
-    * ((attemptCount * attemptEnvelopeMs) + recoveryEnvelopeMs)
+  // The matrix checkpoints only complete cells, but checks this envelope before
+  // every repetition. If a lease ends between repetitions, samples from that
+  // incomplete cell are discarded and the next lease repeats the whole cell.
+  // Therefore one worst-case repetition—not every repetition in the cell—is
+  // the amount of lease time the runner can safely promise before starting.
+  const minimumSafetyMs = (attemptCount * attemptEnvelopeMs)
+    + recoveryEnvelopeMs
     + policy.leaseCleanupMarginMs;
   const overrideMs = policy.leaseStopSafetyOverrideMs;
   if (overrideMs != null && overrideMs < minimumSafetyMs) {
     throw new Error(
       `LYNX_SANDBOX_LEASE_STOP_SAFETY_MS=${overrideMs} is below the derived minimum `
-      + `${minimumSafetyMs}ms worst-cell envelope.`,
+      + `${minimumSafetyMs}ms worst-repetition envelope.`,
     );
   }
   return Object.freeze({
-    protocol: 'native-lease-expiry-safety-v1',
+    protocol: 'native-lease-expiry-safety-v2',
+    checkpointScope: 'before-every-repetition',
+    incompleteCellPolicy: 'discard-and-repeat',
     repetitions,
     attemptCount,
     thermalGateTimeoutMs: policy.thermalGateTimeoutMs,

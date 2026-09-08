@@ -472,6 +472,51 @@ test('lease-expiry control flow bypasses transport recovery and classification',
   }
 });
 
+test('lease expiry between repetitions discards the incomplete cell', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-lease-stop-between-reps-'));
+  const marker = path.join(dir, 'calls.txt');
+  const adapterPath = path.join(dir, 'adapter.mjs');
+  fs.writeFileSync(adapterPath, `
+    import fs from 'node:fs';
+    const mark = (value) => fs.appendFileSync(${JSON.stringify(marker)}, value + String.fromCharCode(10));
+    export default async () => ({
+      environment: 'native-test', machine: { id: 'test' },
+      loadBundle: async () => mark('load'),
+      driveCase: async () => mark('drive'),
+      collect: async () => { mark('collect'); return { latencyMs: 1 }; },
+      collectStartup: async () => ({}),
+      dispose: async () => mark('dispose'),
+    });
+  `);
+  const entry = { id: 'react', framework: 'reactlynx' };
+  let checks = 0;
+  try {
+    const stopped = await runNativeHarness({
+      adapterPath,
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000] }],
+      suites: ['table'],
+      scales: [1000],
+      reps: 3,
+      shouldStopBeforeRepetition: () => ++checks > 1,
+      bundleSnapshots: new Map([
+        ['react:0', {
+          entryId: 'react', rows: 0, bundlePath: '/unused/0',
+          bundleBytes: Buffer.from('react:0'), bundleSha256: 'unused',
+        }],
+      ]),
+    });
+    assert.equal(stopped.stoppedForLeaseExpiry, true);
+    assert.deepEqual(stopped.records, []);
+    assert.deepEqual(
+      fs.readFileSync(marker, 'utf8').trim().split('\n'),
+      ['load', 'drive', 'collect', 'dispose'],
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('transport classification is narrow and preserves producer and integrity failures', () => {
   const runtimeFailure = new Error(
     'CDP Runtime.enable failed: Error: timeout waiting 30000ms for Runtime.enable',
