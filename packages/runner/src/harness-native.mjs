@@ -30,10 +30,12 @@
 //                               boundary } }` map (native wire stats, engine
 //                               counters) recorded verbatim.
 //   async collectStartup()      startup observations for the last loadBundle:
-//                               `{ fcpMs?, settledMs?, metrics?, detail?, dnf?,
-//                               failure?, metricContracts? }`. Contracts let
-//                               a DNF retain metric identity without fabricating
-//                               a value (for example Octane's isolated ACK metrics).
+//                               `{ fcpMs?, settledMs?, metrics?, metricFailures?,
+//                               detail?, dnf?, failure?, metricContracts? }`.
+//                               `metricFailures` records a DNF for only the named
+//                               metric while retaining other measured values;
+//                               contracts let a whole-cell DNF retain metric
+//                               identity without fabricating a value.
 //   async dispose()             release the device.
 //
 // The harness never fabricates native numbers: without an adapter it explains
@@ -263,10 +265,17 @@ export async function runNativeMatrix({
         const observations = new Map();
         const expectedMetrics = nativeStartupMetricContracts(entry);
         const expectedMetricNames = new Set(expectedMetrics.map(({ metric }) => metric));
-        let dnfCount = 0;
-        const failures = [];
         const addContract = (name, unit, boundary) => {
-          if (!observations.has(name)) observations.set(name, { unit, boundary, values: [], details: [] });
+          if (!observations.has(name)) {
+            observations.set(name, {
+              unit,
+              boundary,
+              values: [],
+              details: [],
+              dnfCount: 0,
+              failures: [],
+            });
+          }
         };
         const addObservation = (name, value, unit, boundary, detail) => {
           if (!Number.isFinite(value)) return;
@@ -278,17 +287,24 @@ export async function runNativeMatrix({
           current.values.push(value);
           current.details.push(detail ?? null);
         };
+        const addFailure = (name, rep, failure) => {
+          const current = observations.get(name);
+          if (current == null) {
+            throw new Error(`${entry.id} startup@${rows} failed unknown metric ${name}.`);
+          }
+          current.dnfCount++;
+          if (failure != null) current.failures.push({ rep, ...failure });
+        };
         for (const contract of expectedMetrics) {
           addContract(contract.metric, contract.unit, contract.boundary);
         }
         for (let rep = 0; rep < startupReps; rep++) {
           if (adapter.isStartupUnsupported?.(entry, rows)) {
-            dnfCount++;
             const failure = adapter.startupUnsupportedReason?.(entry, rows);
-            if (failure != null) failures.push({ rep, ...failure });
             for (const contract of adapter.startupUnsupportedContracts?.(entry, rows) ?? []) {
               addContract(contract.name, contract.unit, contract.boundary);
             }
+            for (const name of expectedMetricNames) addFailure(name, rep, failure);
             continue;
           }
           let observed;
@@ -312,11 +328,10 @@ export async function runNativeMatrix({
             });
           }
           if (observed?.dnf) {
-            dnfCount++;
-            if (observed.failure != null) failures.push({ rep, ...observed.failure });
             for (const contract of observed.metricContracts ?? []) {
               addContract(contract.name, contract.unit, contract.boundary);
             }
+            for (const name of expectedMetricNames) addFailure(name, rep, observed.failure);
             continue;
           }
           const returned = new Map();
@@ -337,20 +352,36 @@ export async function runNativeMatrix({
               boundary: metric.boundary ?? `native-${name}`,
             });
           }
-          const unexpected = [...returned.keys()].filter((name) => !expectedMetricNames.has(name));
-          const absent = [...expectedMetricNames].filter((name) => !returned.has(name));
-          if (unexpected.length > 0 || absent.length > 0) {
+          const metricFailures = new Map(Object.entries(observed?.metricFailures ?? {}));
+          const unexpected = [...new Set([
+            ...returned.keys(),
+            ...metricFailures.keys(),
+          ])].filter((name) => !expectedMetricNames.has(name));
+          const overlap = [...returned.keys()].filter((name) => metricFailures.has(name));
+          const absent = [...expectedMetricNames].filter((name) =>
+            !returned.has(name) && !metricFailures.has(name));
+          if (unexpected.length > 0 || overlap.length > 0 || absent.length > 0) {
             throw new Error(
               `${entry.id} startup@${rows} returned an invalid metric set: `
-              + `missing=${absent.join(',') || 'none'} unexpected=${unexpected.join(',') || 'none'}.`,
+              + `missing=${absent.join(',') || 'none'} `
+              + `duplicate=${overlap.join(',') || 'none'} `
+              + `unexpected=${unexpected.join(',') || 'none'}.`,
             );
           }
           for (const { metric, unit, boundary } of expectedMetrics) {
             const value = returned.get(metric);
-            if (!Number.isFinite(value.value) || value.unit !== unit || value.boundary !== boundary) {
-              throw new Error(`${entry.id} startup@${rows} changed the ${metric} metric contract.`);
+            if (value != null) {
+              if (!Number.isFinite(value.value) || value.unit !== unit || value.boundary !== boundary) {
+                throw new Error(`${entry.id} startup@${rows} changed the ${metric} metric contract.`);
+              }
+              addObservation(metric, value.value, unit, boundary, observed?.detail);
+            } else {
+              const failure = metricFailures.get(metric);
+              if (failure === null || typeof failure !== 'object' || Array.isArray(failure)) {
+                throw new Error(`${entry.id} startup@${rows} returned an invalid ${metric} DNF.`);
+              }
+              addFailure(metric, rep, failure);
             }
-            addObservation(metric, value.value, unit, boundary, observed?.detail);
           }
         }
         for (const [metric, observation] of observations) {
@@ -368,8 +399,8 @@ export async function runNativeMatrix({
             stat,
             samples: observation.values,
             detailSamples: observation.details,
-            dnfCount,
-            failures,
+            dnfCount: observation.dnfCount,
+            failures: observation.failures,
             attemptedCount: startupReps,
             acceptedCount: observation.values.length,
           }));

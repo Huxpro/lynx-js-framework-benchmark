@@ -10,7 +10,11 @@ import {
   STORM_SELECT_TICKS,
   STORM_UPDATE_TICKS,
 } from '@lynx-bench/shared/workloads';
-import { NATIVE_STARTUP_PROTOCOL, NATIVE_TABLE_PROTOCOL } from '../src/native-inputs.mjs';
+import {
+  NATIVE_STARTUP_PROTOCOL,
+  NATIVE_STARTUP_TIMING_FLAG,
+  NATIVE_TABLE_PROTOCOL,
+} from '../src/native-inputs.mjs';
 import {
   NATIVE_SANDBOX_POLICY,
   assertNativeLeaseReceipt,
@@ -301,6 +305,24 @@ export function isNativeStartupPayloadPending(payload, { entryId } = {}) {
   const deferredFields = ['firstFrameMs', 'secondFrameMs', 'postState'];
   if (isOctaneEntryId(entryId)) deferredFields.push('commitAckMs', 'transportEvidence');
   return deferredFields.some((key) => payload[key] === undefined);
+}
+
+export function selectNativeStartupPipelineEntry(entries, { afterOpenTime } = {}) {
+  const pipelines = (entries ?? []).filter((candidate) =>
+    candidate?.entryType === 'pipeline'
+    && Number.isFinite(candidate.pipelineEnd)
+    && (!Number.isFinite(afterOpenTime) || candidate.pipelineEnd >= afterOpenTime));
+  const latest = (candidates) => candidates.reduce((selected, candidate) =>
+    selected == null || candidate.pipelineEnd > selected.pipelineEnd ? candidate : selected, null);
+  return latest(pipelines.filter((candidate) =>
+    candidate.name === 'loadBundle'
+    && candidate.lynxFcp
+    && Number.isFinite(candidate.openTime)))
+    ?? latest(pipelines.filter((candidate) => candidate.identifier === NATIVE_STARTUP_TIMING_FLAG))
+    ?? latest(pipelines.filter((candidate) =>
+      candidate.name === 'loadBundle'
+      && Number.isFinite(candidate.openTime)))
+    ?? null;
 }
 
 function validateNativeTablePayloadUnchecked(payload, {
@@ -1315,21 +1337,18 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         startupPayloadLogged = true;
         log(`  [sandbox:startup-payload] ${JSON.stringify(result)}`);
       }
-      const entry = result.entries?.find((candidate) =>
-        candidate.entryType === 'pipeline'
-        && candidate.name === 'loadBundle'
-        && Number.isFinite(candidate.pipelineEnd));
-      if (entry?.lynxFcp && Number.isFinite(entry.openTime)) {
+      const entry = selectNativeStartupPipelineEntry(result.entries, {
+        afterOpenTime: currentOpenTime,
+      });
+      if (entry != null) {
         const fcpDuration = entry.totalFcp?.duration ?? entry.lynxFcp?.duration;
         if (
-          !Number.isFinite(fcpDuration)
+          (fcpDuration != null && (!Number.isFinite(fcpDuration) || fcpDuration < 0))
           || !Number.isFinite(entry.pipelineEnd)
-          || entry.pipelineEnd < entry.openTime
-          || fcpDuration < 0
         ) {
-          throw new Error('invalid Native loadBundle pipeline payload: ' + JSON.stringify(entry));
+          throw new Error('invalid Native startup pipeline payload: ' + JSON.stringify(entry));
         }
-        pipelineEntry = entry;
+        pipelineEntry = { entry, fcpDuration: fcpDuration ?? null };
       }
       const timingInfo = isCurrentOctane()
         ? null
@@ -1345,6 +1364,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           .filter((candidate) => candidate.entryType === 'pipeline')
           .map((candidate) => ({
             name: candidate.name ?? null,
+            identifier: candidate.identifier ?? null,
             openTime: candidate.openTime ?? null,
             pipelineEnd: candidate.pipelineEnd ?? null,
             hasLynxFcp: Boolean(candidate.lynxFcp),
@@ -1395,9 +1415,23 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           return { kind: 'octane-commit-fallback', openTime, timingInfo, startup };
         }
         if (pipelineEntry != null) {
+          const pipelineOpenTime = Number.isFinite(pipelineEntry.entry.openTime)
+            ? pipelineEntry.entry.openTime
+            : openTime;
+          if (
+            !Number.isFinite(pipelineOpenTime)
+            || pipelineEntry.entry.pipelineEnd < pipelineOpenTime
+          ) {
+            throw new Error(
+              'Native startup pipeline predates the adapter open request: '
+              + JSON.stringify({ openTime: pipelineOpenTime, entry: pipelineEntry.entry }),
+            );
+          }
           return {
             kind: 'pipeline',
-            entry: pipelineEntry,
+            entry: pipelineEntry.entry,
+            fcpDuration: pipelineEntry.fcpDuration,
+            openTime: pipelineOpenTime,
             producer: { openTime, timingInfo, startup },
           };
         }
@@ -1688,16 +1722,31 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         const startupTimeoutMs = timeoutForStartup();
         const observed = await waitForStartup(startupTimeoutMs);
         if (observed.kind === 'pipeline') {
-          const { entry } = observed;
-          return {
-            fcpMs: entry.totalFcp?.duration ?? entry.lynxFcp.duration,
-            settledMs: entry.pipelineEnd - entry.openTime,
+          const { entry, fcpDuration, openTime } = observed;
+          const result = {
+            settledMs: entry.pipelineEnd - openTime,
             detail: {
               kind: observed.kind,
               pipeline: entry,
               producer: observed.producer,
             },
           };
+          if (Number.isFinite(fcpDuration)) result.fcpMs = fcpDuration;
+          else {
+            result.metricFailures = {
+              fcp: {
+                category: 'performance-metric-unavailable',
+                capabilityScope: 'metric',
+                message: 'matched Native startup PipelineEntry exposes no lynxFcp or totalFcp',
+                evidence: {
+                  identifier: entry.identifier ?? null,
+                  pipelineName: entry.name ?? null,
+                  pipelineEnd: entry.pipelineEnd,
+                },
+              },
+            };
+          }
+          return result;
         }
         const { openTime, startup } = observed;
         return {

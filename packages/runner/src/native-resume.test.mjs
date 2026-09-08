@@ -15,6 +15,7 @@ import {
   nativeTransportFailureDnf,
   nativeProducerProtocolDnf,
   requiresOctaneDriverReadiness,
+  selectNativeStartupPipelineEntry,
   validateNativeStartupPayload,
   validateNativeTablePayload,
 } from '../adapters/lynx-sandbox-android.mjs';
@@ -75,6 +76,55 @@ test('startup polling waits for asynchronously completed producer payloads', () 
     postState: { rowCount: 0 },
   }, { entryId: 'octane-hux' }), false);
   assert.equal(isNativeStartupPayloadPending({ protocol: 'bad' }, { entryId: 'react' }), false);
+});
+
+test('startup pipeline selection prefers FCP but accepts the exact public timing flag', () => {
+  const timingFlag = {
+    entryType: 'pipeline',
+    name: 'pipeline',
+    identifier: 'lynx-native-bench-startup',
+    pipelineEnd: 130,
+  };
+  const loadBundle = {
+    entryType: 'pipeline',
+    name: 'loadBundle',
+    openTime: 10,
+    pipelineEnd: 120,
+    lynxFcp: { duration: 80 },
+  };
+  assert.equal(selectNativeStartupPipelineEntry([timingFlag]), timingFlag);
+  assert.equal(
+    selectNativeStartupPipelineEntry([timingFlag, loadBundle]),
+    loadBundle,
+  );
+  assert.equal(selectNativeStartupPipelineEntry([{
+    ...timingFlag,
+    identifier: 'unrelated',
+  }]), null);
+});
+
+test('startup pipeline selection rejects prior loads and selects the latest current entry', () => {
+  const priorFcp = {
+    entryType: 'pipeline',
+    name: 'loadBundle',
+    openTime: 10,
+    pipelineEnd: 90,
+    lynxFcp: { duration: 60 },
+  };
+  const currentFirst = {
+    entryType: 'pipeline',
+    name: 'pipeline',
+    identifier: 'lynx-native-bench-startup',
+    pipelineEnd: 130,
+  };
+  const currentLatest = { ...currentFirst, pipelineEnd: 150 };
+  assert.equal(
+    selectNativeStartupPipelineEntry(
+      [priorFcp, currentLatest, currentFirst],
+      { afterOpenTime: 100 },
+    ),
+    currentLatest,
+  );
 });
 
 test('Native producer runtime errors become cell-local evidenced DNF', () => {
