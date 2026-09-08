@@ -1002,6 +1002,37 @@ test('featured cohort wins over broad Lab run and legacy Octane IDs become calib
   }
 });
 
+test('a sweep preserves archived and successor entry IDs that share a legacy alias', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-alias-collision-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'sweep.json', {
+      machineId: 'sweep',
+      score: 100,
+      entries: ['octane-hux', 'octane-hux2'],
+      entryCommits: {
+        'octane-hux': 'successor-sha',
+        'octane-hux2': 'archived-sha',
+      },
+    });
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['octane-hux', 'octane-hux2']),
+    });
+
+    assert.deepEqual(out.comparison.entryIds, ['octane-hux', 'octane-hux2']);
+    assert.deepEqual(
+      [...new Set(out.comparisonRecords.map(({ entry }) => entry))].sort(),
+      ['octane-hux', 'octane-hux2'],
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('prospective Lab estimates cannot cross comparison cohorts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
@@ -1597,13 +1628,13 @@ test('history audits every run but publishes only complete source-defined featur
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  // Adding the eight M0 identities intentionally makes the legacy six-entry
-  // Native campaign incomplete for the current featured cohort. Its isolated
-  // observations remain auditable in nativeObservationRecords, but none may
-  // leak into the publishable comparison until a complete M0 campaign exists.
+  // The explicit M3 Native tier atomically replaces the legacy global-tier
+  // cohort. Historical observations remain in the source/history audit, but
+  // none may leak into current observations or publishable comparisons until
+  // a complete M3 campaign exists.
   assert.equal(retainedRecords.length, 3560);
   assert.equal(retainedRecords.some((record) => record.harness === 'native'), false);
-  assert.equal(out.nativeObservationRecords.length, 198);
+  assert.equal(out.nativeObservationRecords.length, 0);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1883,7 +1914,7 @@ test('history audits every run but publishes only complete source-defined featur
     'native run; evaluated with its exact machine/environment cohort',
   );
   assert.equal(out.nativeObservations.some((observation) =>
-    observation.sourceRunFile === currentNativeFile), true);
+    observation.sourceRunFile === currentNativeFile), false);
   assert.equal(out.history.checkpoints.some((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',

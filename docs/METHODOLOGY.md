@@ -267,7 +267,7 @@ metric rather than silently changing the upstream interaction formula.
   approximating render work) run in the same headless browser. Higher = faster machine.
 - Web default comparisons use records from one physical run. Native checkpoints combine only when
   they share the exact stable physical-device cohort, environment, harness configuration, campaign,
-  138-cell contract, immutable input receipt, and recursive connector toolchain receipt. Each
+  complete 23-cell-per-entry contract, immutable input receipt, and recursive connector toolchain receipt. Each
   checkpoint carries an ordered chain of structured official lease receipts and maps every cell to
   its producing lease. Split checkpoints combine only if one chain is an exact receipt-for-receipt
   prefix of the other; a same-serial `[A,B]` versus `[A,C]` fork is rejected. A correctness fix made

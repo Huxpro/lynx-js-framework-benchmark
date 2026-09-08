@@ -23,9 +23,9 @@ import {
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
 
+import { featuredEntriesForHarness } from './entry-cohorts.mjs';
 import {
   discoverEntries,
-  entrySupportsHarness,
   repoRoot,
   selectEntriesForHarness,
 } from './entries.mjs';
@@ -124,8 +124,7 @@ async function cmdRun(args) {
   let entries = discoverEntries({ only: list(args.entry) });
   entries = selectEntriesForHarness(entries, harness, { explicit: args.entry != null });
   if (harness === 'native' && args.entry == null) {
-    entries = entries.filter((entry) => (entry.tier ?? 'featured') === 'featured'
-      && entrySupportsHarness(entry, 'native'));
+    entries = featuredEntriesForHarness(entries, 'native');
   }
   if (entries.length === 0) throw new Error('no entries matched');
   const caseNames = list(args.case);
@@ -170,9 +169,7 @@ async function cmdRun(args) {
       startupReps,
     } = resolveNativeRunMatrix(args);
     const root = repoRoot();
-    const featuredIds = discoverEntries()
-      .filter((entry) => (entry.tier ?? 'featured') === 'featured'
-        && entrySupportsHarness(entry, 'native'))
+    const featuredIds = featuredEntriesForHarness(discoverEntries(), 'native')
       .map((entry) => entry.id)
       .sort();
     const selectedIds = entries.map((entry) => entry.id).sort();

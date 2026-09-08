@@ -8,6 +8,8 @@ bytes that cross between them).
 The source/derived boundary is strict: run files retain observations, entry manifests and bundles
 retain build provenance, and every statistic, score, cohort, and visualization is recalculated.
 See [docs/DATA_MODEL.md](./docs/DATA_MODEL.md).
+The current Native artifact and capability freeze is documented in
+[docs/OCTANE_M3_NATIVE_COHORT.md](./docs/OCTANE_M3_NATIVE_COHORT.md).
 
 **Entries today:** ReactLynx · Vue-Lynx VDOM (baseline & +IFR+ET) · Vue-Lynx Vapor (baseline
 & +IFR) · Octane. Adding a framework, a version, or a config is one directory.
@@ -75,10 +77,10 @@ pnpm bench run --harness native \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
-Native has no partial publish mode: omitting entry/case/scale flags runs all six Native-eligible
-featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (138 contract
-cells total; five table and three startup repetitions). Partial probes cannot enter the published
-cohort.
+Native has no partial publish mode: omitting entry/case/scale flags runs the complete current
+per-harness cohort, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (23 cells
+per entry; five table and three startup repetitions). The M3 Lynx 4.1 cohort has eight entries and
+184 contract cells. Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
 LynxExplorer, drives the Native benchmark through Lynx DevTool, and records device-clock timings.
@@ -89,9 +91,10 @@ client and surfaces as `No response found`. The adapter starts a clean Explorer,
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
 the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
-Every Native-eligible featured entry uses real Native touch input. Upstream Octane remains
-Web-only; the provenance-pinned Hux #269 + #272 composite is the sole featured Octane Native
-producer. Its samples begin in the background handler, wait for the renderer's correlated
+Every current Native entry uses real Native touch input. The frozen M3 cohort keeps latest
+upstream Octane unpatched and records any unsupported producer boundary as capability evidence;
+the M3 candidate is the strict Octane Native producer. Its samples begin in the background handler,
+wait for the renderer's correlated
 transport acknowledgement, then wait two Native frames; the recorded post-ACK state is checked
 against the semantic workload predicate. A DevTool driver exists only as an explicitly labelled
 diagnostic mode and is never the default benchmark path. A strict producer payload failure is
@@ -136,7 +139,7 @@ pnpm bench run --harness native \
   --resume results/runs/<incomplete-checkpoint>.json
 ```
 
-Resume validates the exact campaign, 138-cell matrix, immutable input and connector receipts,
+Resume validates the exact campaign and dynamically hashed complete matrix, immutable input and connector receipts,
 hardware/environment, method policy, and stable device cohort before device work. It appends the
 new structured receipt to an ordered lease chain, skips existing unique cell keys, rejects partial
 startup metric pairs and overlaps, and checkpoints atomically after every new cell. Different
@@ -230,9 +233,9 @@ so N-growing code staging becomes observable without inventing historical proven
 - **`native`:** real `main.lynx.bundle` execution in LynxExplorer. The checked-in Sandbox
   adapter uses Lynx DevTool for page/session, input, Runtime console, and Performance domains;
   entry discovery, workload sequencing, retry, and DNF accounting remain in the shared Native
-  harness. Native and Web numbers are never mixed in one chart. The published featured cohort
-  uses ReactLynx, four Vue-Lynx configs, and the provenance-pinned Hux #269 + #272 composite.
-  Upstream/archived Octane and Octane Lab variants are not run on Native.
+  harness. Native and Web numbers are never mixed in one chart. Web uses the global featured
+  cohort. Native uses its explicit per-harness cohort when one is declared; the current M3 lane
+  freezes eight Lynx 4.1 entries, including latest unpatched upstream Octane and the M3 candidate.
 
 ## Adding an entry
 
@@ -246,6 +249,9 @@ Nothing else changes — the runner and site discover entries by scanning `entri
 
 **Tiers.** `"tier": "featured"` entries form the default public view; `"tier": "lab"` entries
 (versions, prior releases, PRs, flag permutations) stay hidden until the site's **⚗ Lab** mode.
+An optional `"tiers": { "native": "featured" }` selects a harness-specific current cohort. Once
+any supported entry declares a tier for that harness, the explicit set atomically replaces the
+global cohort for that harness; this prevents historical entries leaking into a new campaign.
 Historical Lab entries can remain calibration-only instead of being rerun: time fields are shown
 as `≈ calibrated`, while heap/wire/bundle/count fields retain their historical label. Any subset
 is addressable, for example `/?entries=octane,octane-prior,octane-hux1,octane-hux2&lab=1`.
