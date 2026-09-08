@@ -12,6 +12,7 @@ import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
   nativeTransportFailureDnf,
+  resolvePinnedExplorerApk,
 } from '../adapters/lynx-sandbox-android.mjs';
 
 import {
@@ -530,6 +531,73 @@ test('adapter modules are validated against the documented contract', async () =
 test('without an adapter the harness still explains itself instead of proxying', async () => {
   await assert.rejects(() => runNativeHarness(), /no device adapter is wired/);
   await assert.rejects(() => runNativeHarness({}), /no device adapter is wired/);
+});
+
+test('pinned Explorer APK receipt is all-or-nothing and content-addressed', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-explorer-apk-'));
+  try {
+    const apkPath = path.join(dir, 'LynxExplorer-noasan-release.apk');
+    const bytes = Buffer.from('pinned explorer fixture');
+    fs.writeFileSync(apkPath, bytes);
+    const expectedSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+    assert.equal(resolvePinnedExplorerApk({
+      apkPath: null,
+      expectedSha256: null,
+      release: null,
+      sourceUrl: null,
+    }), null);
+    assert.throws(
+      () => resolvePinnedExplorerApk({
+        apkPath,
+        expectedSha256: null,
+        release: null,
+        sourceUrl: null,
+      }),
+      /requires expectedSha256, release, sourceUrl/,
+    );
+    assert.throws(
+      () => resolvePinnedExplorerApk({
+        apkPath,
+        expectedSha256: '0'.repeat(64),
+        release: '4.1.0',
+        sourceUrl: 'https://github.com/lynx-family/lynx/releases/download/4.1.0/LynxExplorer-noasan-release.apk',
+      }),
+      /does not match/,
+    );
+    assert.throws(
+      () => resolvePinnedExplorerApk({
+        apkPath,
+        expectedSha256,
+        release: '4.1.0',
+        sourceUrl: 'https://downloads.example/LynxExplorer.apk?signature=secret',
+      }),
+      /stable HTTPS APK URL/,
+    );
+    const artifact = resolvePinnedExplorerApk({
+      apkPath,
+      expectedSha256,
+      release: '4.1.0',
+      sourceUrl: 'https://github.com/lynx-family/lynx/releases/download/4.1.0/LynxExplorer-noasan-release.apk',
+    });
+    assert.equal(artifact.path, apkPath);
+    assert.deepEqual(artifact.receipt, {
+      protocol: 'pinned-lynx-explorer-apk-v1',
+      release: '4.1.0',
+      sourceUrl: 'https://github.com/lynx-family/lynx/releases/download/4.1.0/LynxExplorer-noasan-release.apk',
+      sha256: expectedSha256,
+      bytes: bytes.length,
+    });
+    const renamedPath = path.join(dir, 'same-bytes.apk');
+    fs.writeFileSync(renamedPath, bytes);
+    assert.deepEqual(resolvePinnedExplorerApk({
+      apkPath: renamedPath,
+      expectedSha256,
+      release: '4.1.0',
+      sourceUrl: 'https://github.com/lynx-family/lynx/releases/download/4.1.0/LynxExplorer-noasan-release.apk',
+    }).receipt, artifact.receipt);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('sandbox adapter imports without the device-only connector installed', async () => {

@@ -295,6 +295,11 @@ metric rather than silently changing the upstream interaction formula.
   immutable input receipt, timeout/render/retry settings, and lifecycle/reconnect/thermal policy;
   the same policy is in the machine identity. These fields are prospective controls/audit metadata, not a post-hoc
   calibration or an outlier filter.
+  Capability-gated SDK lanes install an explicitly pinned Lynx Explorer APK only
+  when its release, official HTTPS source, byte length, and SHA-256 all match.
+  That artifact receipt participates in the machine, device-cohort, harness-config,
+  and environment identities; it is never comparable with the preinstalled lane
+  or another APK digest.
 
 ## Web JavaScript execution regimes
 

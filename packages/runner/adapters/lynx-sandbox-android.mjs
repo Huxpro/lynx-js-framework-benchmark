@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import fs from 'node:fs';
 import http from 'node:http';
+import path from 'node:path';
 import { TransformStream } from 'node:stream/web';
 
 import {
@@ -126,6 +128,77 @@ function readExplorerPackageVersion(serial) {
     versionName: /\bversionName=([^\s]+)/.exec(output)?.[1] ?? null,
     versionCode: Number(/\bversionCode=(\d+)/.exec(output)?.[1] ?? NaN) || null,
   };
+}
+
+export const PINNED_EXPLORER_ARTIFACT_PROTOCOL = 'pinned-lynx-explorer-apk-v1';
+
+export function resolvePinnedExplorerApk({
+  apkPath = process.env.LYNX_EXPLORER_APK,
+  expectedSha256 = process.env.LYNX_EXPLORER_APK_SHA256,
+  release = process.env.LYNX_EXPLORER_RELEASE,
+  sourceUrl = process.env.LYNX_EXPLORER_SOURCE_URL,
+} = {}) {
+  const fields = { apkPath, expectedSha256, release, sourceUrl };
+  if (Object.values(fields).every((value) => value == null || value === '')) return null;
+  const missing = Object.entries(fields)
+    .filter(([, value]) => value == null || value === '')
+    .map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(`pinned Lynx Explorer requires ${missing.join(', ')}.`);
+  }
+  if (!/^[a-f0-9]{64}$/.test(expectedSha256)) {
+    throw new Error('LYNX_EXPLORER_APK_SHA256 must be a lowercase SHA-256 digest.');
+  }
+  if (typeof release !== 'string' || release.trim() !== release || release.length === 0) {
+    throw new Error('LYNX_EXPLORER_RELEASE must be a non-empty trimmed string.');
+  }
+  let source;
+  try {
+    source = new URL(sourceUrl);
+  } catch {
+    throw new Error('LYNX_EXPLORER_SOURCE_URL must be a valid HTTPS URL.');
+  }
+  if (
+    source.protocol !== 'https:'
+    || source.username !== ''
+    || source.password !== ''
+    || source.search !== ''
+    || source.hash !== ''
+    || !source.pathname.endsWith('.apk')
+  ) {
+    throw new Error(
+      'LYNX_EXPLORER_SOURCE_URL must be a stable HTTPS APK URL without credentials, query, or hash.',
+    );
+  }
+  const resolvedPath = path.resolve(apkPath);
+  const stat = fs.statSync(resolvedPath);
+  if (!stat.isFile() || stat.size === 0) {
+    throw new Error(`pinned Lynx Explorer APK must be a non-empty file: ${resolvedPath}`);
+  }
+  const actualSha256 = createHash('sha256').update(fs.readFileSync(resolvedPath)).digest('hex');
+  if (actualSha256 !== expectedSha256) {
+    throw new Error(
+      `pinned Lynx Explorer APK sha256 ${actualSha256} does not match ${expectedSha256}.`,
+    );
+  }
+  return {
+    path: resolvedPath,
+    receipt: {
+      protocol: PINNED_EXPLORER_ARTIFACT_PROTOCOL,
+      release,
+      sourceUrl: source.href,
+      sha256: actualSha256,
+      bytes: stat.size,
+    },
+  };
+}
+
+function installPinnedExplorer(serial, artifact) {
+  if (artifact == null) return;
+  const output = adb(serial, 'install', '-r', artifact.path);
+  if (!/\bSuccess\b/.test(output)) {
+    throw new Error(`failed to install pinned Lynx Explorer APK: ${output}`);
+  }
 }
 
 function startBundleServer(port, getBundle) {
@@ -564,6 +637,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   const connectorPackageTrees = assertRuntimeConnectorPackageTrees(
     campaignIdentity.connectorPackageTrees,
   );
+  const pinnedExplorer = resolvePinnedExplorerApk();
+  installPinnedExplorer(serial, pinnedExplorer);
 
   let activeBundle = null;
   let session = null;
@@ -653,10 +728,14 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   const deviceClock = calibrateDeviceClock(serial);
   const thermalStart = await waitForThermalReady(serial);
   const explorerPackage = readExplorerPackageVersion(serial);
+  const explorerArtifact = pinnedExplorer?.receipt ?? {
+    protocol: 'sandbox-preinstalled-lynx-explorer-v1',
+  };
   const model = String(device.model ?? device.deviceModel ?? 'android').replace(/\s+/g, '-').toLowerCase();
   const osVersion = String(device.osVersion ?? adb(serial, 'shell', 'getprop', 'ro.build.version.release'));
   const environment = `lynx-native-android-${model}-${osVersion}`
-    + `-devtool-${DEVTOOL_TRANSPORT_MODE}-recycle${EXPLORER_RECYCLE_EVERY_PAGES}`;
+    + `-devtool-${DEVTOOL_TRANSPORT_MODE}-recycle${EXPLORER_RECYCLE_EVERY_PAGES}`
+    + (pinnedExplorer == null ? '' : `-explorer-${explorerArtifact.sha256.slice(0, 12)}`);
   const deviceLeaseId = leaseReceipt.deviceLeaseId;
   const harnessConfig = {
     ...NATIVE_SANDBOX_POLICY,
@@ -666,6 +745,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     matrixContractSha256: campaignIdentity.matrixContractSha256,
     inputReceiptSha256: campaignIdentity.inputReceiptSha256,
     connectorPackageTreesSha256: campaignIdentity.connectorPackageTreesSha256,
+    explorerArtifact,
   };
   const harnessConfigId = createHash('sha256')
     .update(JSON.stringify(harnessConfig))
@@ -685,6 +765,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       app: device.App,
       appVersion: device.AppVersion,
       explorerPackage,
+      explorerArtifact,
       debugRouterVersion: device.debugRouterVersion,
       lynxSdkVersion: device.sdkVersion,
     },
@@ -705,6 +786,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     app: device.App,
     appVersion: device.AppVersion,
     explorerPackage,
+    explorerArtifact,
     debugRouterVersion: device.debugRouterVersion,
     lynxSdkVersion: device.sdkVersion,
     connectorPackageTrees,

@@ -60,6 +60,21 @@ pnpm bench run \
   --adapter packages/runner/adapters/lynx-sandbox-android.mjs
 ```
 
+To run a capability-gated SDK lane instead of the Sandbox-preinstalled Explorer,
+pin all four APK provenance fields. The adapter hashes the file before installing
+it and includes the receipt in the machine, cohort, and environment identities:
+
+```bash
+LYNX_EXPLORER_APK='<path-to-LynxExplorer.apk>' \
+LYNX_EXPLORER_APK_SHA256='<lowercase-sha256>' \
+LYNX_EXPLORER_RELEASE='<release-name>' \
+LYNX_EXPLORER_SOURCE_URL='<official-https-release-url>' \
+LYNX_SANDBOX_SERIAL='<leased-adb-serial>' \
+LYNX_SANDBOX_LEASE_RECEIPT='<lease-receipt>' \
+pnpm bench run --harness native \
+  --adapter packages/runner/adapters/lynx-sandbox-android.mjs
+```
+
 Native has no partial publish mode: omitting entry/case/scale flags runs all six Native-eligible
 featured entries, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (138 contract
 cells total; five table and three startup repetitions). Partial probes cannot enter the published
@@ -99,6 +114,9 @@ Android thermal status 0 and battery temperature at or below 40 °C before every
 lifecycle/reconnect/render/thermal/input/timeout/retry settings is hashed into campaign and machine
 identities, preventing
 differently configured runs from joining one Native cohort.
+Pinned Explorer runs additionally include the APK release, official source URL,
+byte length, and SHA-256 receipt. The APK digest is embedded in the environment
+identity so a preinstalled lane and two different SDK artifacts cannot merge.
 `LYNX_SANDBOX_LEASE_RECEIPT` (or `--lease-receipt`) is mandatory. It accepts JSON directly or a
 JSON-file path and must contain the exact acquired `serial`, traceable `issueId`, and lease API
 `expiredAt` epoch milliseconds. The raw serial is checked against `LYNX_SANDBOX_SERIAL` and then
