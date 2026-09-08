@@ -34,7 +34,7 @@ const CASES = [
   { name: 'clear', scales: [10000] },
 ];
 
-function fakeEntry(dir, { id = 'fake', framework = 'reactlynx' } = {}) {
+function fakeEntry(dir, { id = 'fake', framework = 'reactlynx', capabilities } = {}) {
   const snapshots = new Map();
   for (const rows of [0, 1000, 10000, 30000]) {
     const dist = path.join(dir, 'dist', `rows-${rows}`);
@@ -54,12 +54,61 @@ function fakeEntry(dir, { id = 'fake', framework = 'reactlynx' } = {}) {
   const entry = {
     id,
     framework,
+    ...(capabilities === undefined ? {} : { capabilities }),
     provenance: { commit: 'test' },
     dir,
     distDir: path.join(dir, 'dist'),
   };
   return { entry, snapshots };
 }
+
+test('explicit legacy producer capability fills the matrix without loading the device', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-legacy-producer-'));
+  try {
+    const { entry, snapshots } = fakeEntry(dir, {
+      framework: 'octane',
+      capabilities: {
+        nativeTableProtocol: 'legacy-public-source',
+        nativeStartupReceipt: false,
+        sourcePatches: false,
+      },
+    });
+    const script = { calls: [], collect: [], startup: [] };
+    const progress = [];
+    const records = await runNativeMatrix({
+      adapter: mockAdapter(script),
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000] }],
+      scales: [1000],
+      reps: 2,
+      startupScales: [0],
+      startupReps: 1,
+      bundleSnapshots: snapshots,
+      onProgress: async (partial) => progress.push(partial.length),
+    });
+
+    assert.equal(records.length, 3);
+    assert.deepEqual(progress, [1, 3]);
+    assert.deepEqual(script.calls, []);
+    for (const record of records) {
+      assert.equal(record.n, 0);
+      assert.equal(record.samples.length, 0);
+      assert.ok(record.dnfCount > 0);
+      assert.equal(record.failures.length, record.dnfCount);
+      for (const failure of record.failures) {
+        assert.equal(failure.category, 'producer-protocol-unavailable');
+        assert.equal(failure.capabilityScope, 'entry');
+        assert.equal(failure.evidence.capabilityProven, true);
+        assert.equal(failure.evidence.sourcePatches, false);
+        assert.equal(failure.evidence.sourceCommit, 'test');
+      }
+    }
+    assert.equal(records[0].failures[0].evidence.expectedProtocol, 'lynx-native-bench-v2');
+    assert.equal(records[1].failures[0].evidence.expectedProtocol, 'lynx-native-startup-v1');
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 function mockAdapter(script) {
   return {

@@ -101,7 +101,9 @@ function isProvenUnsupported(record) {
   return record.failures.every((failure) => {
     const category = String(failure.category ?? '');
     return category.startsWith('unsupported-')
-      || category === 'producer-protocol-unavailable'
+      || (category === 'producer-protocol-unavailable'
+        && failure.capabilityScope === 'entry'
+        && failure.evidence?.capabilityProven === true)
       || (category === 'performance-pipeline-unavailable'
         && failure.capabilityScope === 'entry'
         && failure.evidence?.capabilityProven === true);
