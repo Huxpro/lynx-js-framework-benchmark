@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
+import { featuredEntriesForHarness } from './entry-cohorts.mjs';
 import { discoverEntries, selectEntriesForHarness } from './entries.mjs';
 
 test('explicit entry discovery preserves AB/BA order and rejects ambiguous selections', () => {
@@ -52,5 +53,39 @@ test('harness selection skips implicit unsupported entries and explains explicit
   assert.deepEqual(
     selectEntriesForHarness(entries, 'native', { explicit: true }).map(({ id }) => id),
     ['both', 'native-only'],
+  );
+});
+
+test('explicit per-harness tiers replace only that harness current cohort', () => {
+  const entries = [
+    { id: 'm0-candidate', tier: 'featured', harnesses: ['web', 'native'] },
+    { id: 'm0-comparator', tier: 'featured', harnesses: ['web', 'native'] },
+    {
+      id: 'm3-candidate',
+      tier: 'archive',
+      tiers: { native: 'featured' },
+      harnesses: ['web', 'native'],
+    },
+    {
+      id: 'm3-comparator',
+      tier: 'archive',
+      tiers: { native: 'featured' },
+      harnesses: ['native'],
+    },
+    {
+      id: 'm3-diagnostic',
+      tier: 'archive',
+      tiers: { native: 'lab' },
+      harnesses: ['native'],
+    },
+  ];
+
+  assert.deepEqual(
+    featuredEntriesForHarness(entries, 'web').map(({ id }) => id),
+    ['m0-candidate', 'm0-comparator'],
+  );
+  assert.deepEqual(
+    featuredEntriesForHarness(entries, 'native').map(({ id }) => id),
+    ['m3-candidate', 'm3-comparator'],
   );
 });

@@ -30,7 +30,8 @@ import {
 
 import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
-import { discoverEntries, entrySupportsHarness, repoRoot } from './entries.mjs';
+import { featuredEntriesForHarness } from './entry-cohorts.mjs';
+import { discoverEntries, repoRoot } from './entries.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
 import {
   assertPipelineCoverage,
@@ -1832,10 +1833,11 @@ const buildHistory = ({
     id: 'current-main',
     generatedAt: current.generatedAt,
     label: 'Current · compiled-create + FCP',
-    description: 'Current manifests are upstream Octane 9779569e and the Hux #269 b166e43f + '
-      + '#272 66ff34a3 composite. The complete seven-entry Web campaign uses clean composite bundles; '
-      + 'the six-entry Native campaign uses checksum-verified benchmark-app instrumentation and retains '
-      + 'all 138 measured or DNF cells. Web regimes remain separate from each other and from Native. '
+    description: 'Current manifests retain exact source and bundle identities. The complete Web '
+      + 'campaign uses its global featured cohort; Native uses the independent current per-harness '
+      + `cohort (${current.nativeCoverage.entryIds.length} entries / `
+      + `${current.nativeCoverage.expectedCellCount} measured, DNF, unsupported, or unscheduled cells). `
+      + 'Web regimes remain separate from each other and from Native. '
       + 'Complete pipeline and storm campaigns attach as descriptive exact evidence and never enter the '
       + 'weighted matrix.',
     current: true,
@@ -1951,8 +1953,9 @@ export function collectRuns({
   const entryById = new Map(currentEntries.map((entry) => [entry.id, entry]));
   const staticByEntry = new Map(currentEntries.map((entry) => [entry.id, bundleRecords(entry)]));
   const featuredIds = new Set([...resolvedTiers].filter(([, tier]) => tier === 'featured').map(([id]) => id));
-  const nativeFeaturedIds = new Set([...featuredIds].filter((id) =>
-    entrySupportsHarness(entryById.get(id), 'native')));
+  const nativeFeaturedIds = new Set(
+    featuredEntriesForHarness(currentEntries, 'native').map((entry) => entry.id),
+  );
   const labIds = [...resolvedTiers].filter(([, tier]) => tier === 'lab').map(([id]) => id);
 
   for (const file of runFiles) {

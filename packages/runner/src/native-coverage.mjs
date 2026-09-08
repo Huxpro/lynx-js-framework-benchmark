@@ -1,11 +1,10 @@
 import crypto from 'node:crypto';
 
 import { STARTUP_CASES, tableCasesForHarness } from '@lynx-bench/shared/workloads';
-import { entrySupportsHarness } from './entries.mjs';
+import { featuredEntriesForHarness } from './entry-cohorts.mjs';
 
 export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-black-box-matrix-v2';
 export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 23;
-export const NATIVE_FEATURED_MATRIX_CELL_COUNT = 138;
 
 const STARTUP_SCALES = [...STARTUP_CASES[0].scales];
 const NATIVE_TABLE_CASES = tableCasesForHarness('native');
@@ -36,9 +35,7 @@ export function nativeCellKey(cell) {
 }
 
 export function buildNativeMatrixContract(entries) {
-  const featured = entries
-    .filter((entry) => (entry.tier ?? 'featured') === 'featured'
-      && entrySupportsHarness(entry, 'native'))
+  const featured = featuredEntriesForHarness(entries, 'native')
     .sort((a, b) => a.id.localeCompare(b.id));
   const cells = [];
   for (const entry of featured) {

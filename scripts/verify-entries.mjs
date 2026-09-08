@@ -14,6 +14,15 @@ import {
   M0_ROWS,
   M0_RUNNER_CONTRACT_FILES,
 } from './m0-artifact-contract.mjs';
+import {
+  M3_BUILD_DRIVER_FILES,
+  M3_CAMPAIGN,
+  M3_ENTRY_IDS,
+  M3_PINNED_SOURCES,
+  M3_PLATFORM_LANE,
+  M3_ROWS,
+  M3_RUNNER_CONTRACT_FILES,
+} from './m3-artifact-contract.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
@@ -22,6 +31,7 @@ const REQUIRED = ['id', 'label', 'framework', 'frameworkVersion', 'config', 'tie
 const TIERS = new Set(['featured', 'lab', 'archive']);
 const HARNESSES = new Set(['web', 'native']);
 const M0_IDS = new Set(M0_ENTRY_IDS);
+const M3_IDS = new Set(M3_ENTRY_IDS);
 const M0_ROLES = {
   'octane-m0-current': 'm0-current-fork',
   'octane-m0-upstream': 'latest-upstream',
@@ -44,6 +54,24 @@ const M0_CONFIGURATIONS = {
 };
 const M0_RUNNER_RECEIPT = hashFiles(root, M0_RUNNER_CONTRACT_FILES);
 const M0_BUILD_DRIVER_RECEIPT = hashFiles(root, M0_BUILD_DRIVER_FILES);
+const M3_RUNNER_RECEIPT = hashFiles(root, M3_RUNNER_CONTRACT_FILES);
+const M3_BUILD_DRIVER_RECEIPT = hashFiles(root, M3_BUILD_DRIVER_FILES);
+const M3_ROLES = {
+  'octane-m3-current': 'm3-candidate',
+  'octane-m3-upstream': 'latest-upstream',
+  'reactlynx-m3-default': 'reactlynx',
+  'reactlynx-m3-et': 'reactlynx',
+  'vue-lynx-m3-vdom-default': 'vue-vdom',
+  'vue-lynx-m3-vdom-ifr-et': 'vue-vdom',
+  'vue-lynx-m3-vapor-default': 'vue-vapor',
+  'vue-lynx-m3-vapor-ifr': 'vue-vapor',
+};
+const M3_CONFIGURATIONS = Object.fromEntries(M3_ENTRY_IDS.map((id) => [
+  id,
+  id.endsWith('-et') || id.endsWith('-ifr') || id.endsWith('-ifr-et')
+    ? 'explicit-optimized'
+    : 'production-default',
+]));
 
 let failures = 0;
 const fail = (msg) => {
@@ -57,6 +85,9 @@ if (ids.length === 0) fail('no entries found');
 for (const id of M0_ENTRY_IDS) {
   if (!ids.includes(id)) fail(`missing frozen M0 identity ${id}`);
 }
+for (const id of M3_ENTRY_IDS) {
+  if (!ids.includes(id)) fail(`missing frozen M3 identity ${id}`);
+}
 
 for (const id of ids) {
   const dir = path.join(entriesDir, id);
@@ -67,6 +98,17 @@ for (const id of ids) {
   }
   if (manifest.id !== id) fail(`${id}: manifest id mismatch (${manifest.id})`);
   if (!TIERS.has(manifest.tier)) fail(`${id}: invalid tier "${manifest.tier}"`);
+  if (manifest.tiers != null) {
+    if (typeof manifest.tiers !== 'object' || Array.isArray(manifest.tiers)) {
+      fail(`${id}: tiers must be an object`);
+    } else {
+      for (const [harness, tier] of Object.entries(manifest.tiers)) {
+        if (!HARNESSES.has(harness) || !TIERS.has(tier)) {
+          fail(`${id}: invalid ${harness} harness tier ${JSON.stringify(tier)}`);
+        }
+      }
+    }
+  }
   if (manifest.harnesses != null && (
     !Array.isArray(manifest.harnesses)
     || manifest.harnesses.length === 0
@@ -190,6 +232,86 @@ for (const id of ids) {
       }
     }
   }
+  if (M3_IDS.has(id)) {
+    const pin = id.startsWith('octane-')
+      ? M3_PINNED_SOURCES[id]
+      : M3_PINNED_SOURCES.comparators;
+    const roadmap = manifest.roadmap;
+    const receipts = manifest.provenance?.receipts;
+    const expectedHarnesses = id === 'reactlynx-m3-et' ? ['native'] : ['web', 'native'];
+    if (manifest.tier !== 'archive'
+      || JSON.stringify(manifest.tiers) !== JSON.stringify({ native: 'featured' })) {
+      fail(`${id}: M3 identity must be archive globally and featured only in Native`);
+    }
+    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
+      fail(`${id}: M3 identity has the wrong executable harness set`);
+    }
+    if (roadmap?.issue !== 282 || roadmap?.milestone !== 'M3'
+      || roadmap?.campaign !== M3_CAMPAIGN
+      || roadmap?.role !== M3_ROLES[id]
+      || roadmap?.configuration !== M3_CONFIGURATIONS[id]) {
+      fail(`${id}: invalid M3 roadmap identity`);
+    }
+    if (manifest.provenance?.source !== pin.source
+      || manifest.provenance?.ref !== pin.ref
+      || manifest.provenance?.commit !== pin.commit) {
+      fail(`${id}: source identity differs from the frozen M3 pin`);
+    }
+    if (pin.producerPull != null && manifest.provenance?.producerPull !== pin.producerPull) {
+      fail(`${id}: comparator producer PR provenance differs from the frozen M3 pin`);
+    }
+    if (manifest.provenance?.patched !== false || manifest.provenance?.patchFile !== null
+      || receipts?.sourcePatch?.present !== false
+      || receipts?.sourcePatch?.path !== null
+      || receipts?.sourcePatch?.sha256 !== null) {
+      fail(`${id}: M3 identity must come from an unpatched checkout`);
+    }
+    if (receipts?.sourceCommit !== pin.commit
+      || JSON.stringify(manifest.platformLane) !== JSON.stringify(M3_PLATFORM_LANE)
+      || JSON.stringify(receipts?.platformLane) !== JSON.stringify(M3_PLATFORM_LANE)) {
+      fail(`${id}: source or Lynx 4.1 platform-lane receipt mismatch`);
+    }
+    if (!/^[\da-f]{64}$/.test(receipts?.dependencyLock?.sha256 ?? '')
+      || receipts?.dependencyLock?.path !== 'pnpm-lock.yaml') {
+      fail(`${id}: dependency-lock receipt is incomplete`);
+    }
+    const toolchain = receipts?.engineAndToolchain;
+    if (!/^v\d+\./.test(toolchain?.node ?? '')
+      || !/^\d+\.\d+\.\d+/.test(toolchain?.pnpm ?? '')
+      || !/Rspeedy v\d+\./.test(toolchain?.rspeedy ?? '')
+      || toolchain?.nodeEnv !== 'production'
+      || toolchain?.buildDriver?.sha256 !== M3_BUILD_DRIVER_RECEIPT.sha256
+      || JSON.stringify(toolchain?.buildDriver?.files)
+        !== JSON.stringify(M3_BUILD_DRIVER_RECEIPT.files)) {
+      fail(`${id}: M3 engine-and-toolchain receipt is incomplete`);
+    }
+    if (JSON.stringify(receipts?.configurationCapabilities)
+      !== JSON.stringify(manifest.capabilities)) {
+      fail(`${id}: M3 configuration-capabilities receipt mismatch`);
+    }
+    const workload = receipts?.workloadContract;
+    if (workload?.runner?.sha256 !== M3_RUNNER_RECEIPT.sha256
+      || JSON.stringify(workload?.runner?.files) !== JSON.stringify(M3_RUNNER_RECEIPT.files)
+      || !/^[\da-f]{64}$/.test(workload?.source?.sha256 ?? '')
+      || !/^[\da-f]{64}$/.test(workload?.sha256 ?? '')) {
+      fail(`${id}: M3 workload-contract receipt is incomplete or stale`);
+    }
+    const expectedBundleKeys = M3_ROWS.flatMap((rows) => [
+      `rows-${rows}/main.web.bundle`,
+      `rows-${rows}/main.lynx.bundle`,
+    ]);
+    if (Object.keys(manifest.provenance?.sha256 ?? {}).length !== expectedBundleKeys.length
+      || expectedBundleKeys.some((key) => !/^[\da-f]{64}$/.test(manifest.provenance?.sha256?.[key] ?? ''))
+      || JSON.stringify(receipts?.bundleSha256) !== JSON.stringify(manifest.provenance?.sha256)) {
+      fail(`${id}: frozen M3 row matrix or bundle-sha256 receipt is incomplete`);
+    }
+    for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
+      const hashes = M3_ROWS.map((rows) => manifest.provenance.sha256[`rows-${rows}/${bundle}`]);
+      if (new Set(hashes).size !== M3_ROWS.length) {
+        fail(`${id}: ${bundle} does not encode every M3 startup scale`);
+      }
+    }
+  }
   if (id === 'octane-hux') {
     if (manifest.label !== 'Octane (Hux)') fail(`${id}: public label must be Octane (Hux)`);
     if (manifest.tier !== 'featured') fail(`${id}: Hux composite entry must be featured`);
@@ -280,6 +402,34 @@ for (const [defaultId, optimizedId] of [
   }
 }
 
+for (const [defaultId, optimizedId] of [
+  ['reactlynx-m3-default', 'reactlynx-m3-et'],
+  ['vue-lynx-m3-vdom-default', 'vue-lynx-m3-vdom-ifr-et'],
+  ['vue-lynx-m3-vapor-default', 'vue-lynx-m3-vapor-ifr'],
+]) {
+  const readManifest = (id) => JSON.parse(
+    fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'),
+  );
+  const baseline = readManifest(defaultId).provenance.sha256;
+  const optimized = readManifest(optimizedId).provenance.sha256;
+  for (const rows of M3_ROWS) {
+    for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
+      const key = `rows-${rows}/${bundle}`;
+      if (baseline[key] === optimized[key]) {
+        fail(`${defaultId}/${optimizedId}: ${key} does not distinguish the configuration`);
+      }
+    }
+  }
+}
+
+const currentNativeIds = ids.flatMap((id) => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'));
+  return manifest.tiers?.native === 'featured' ? [id] : [];
+}).sort();
+if (JSON.stringify(currentNativeIds) !== JSON.stringify([...M3_ENTRY_IDS].sort())) {
+  fail('the explicit current Native cohort must contain exactly the frozen M3 identities');
+}
+
 const currentOctaneToolchain = JSON.parse(
   fs.readFileSync(path.join(entriesDir, 'octane-m0-current/entry.json'), 'utf8'),
 ).provenance.receipts.engineAndToolchain;
@@ -289,6 +439,18 @@ const upstreamOctaneToolchain = JSON.parse(
 for (const key of ['node', 'pnpm', 'rspeedy', 'platform', 'architecture', 'nodeEnv']) {
   if (currentOctaneToolchain[key] !== upstreamOctaneToolchain[key]) {
     fail(`M0 fork/upstream toolchain mismatch for ${key}`);
+  }
+}
+
+const currentM3Toolchain = JSON.parse(
+  fs.readFileSync(path.join(entriesDir, 'octane-m3-current/entry.json'), 'utf8'),
+).provenance.receipts.engineAndToolchain;
+const upstreamM3Toolchain = JSON.parse(
+  fs.readFileSync(path.join(entriesDir, 'octane-m3-upstream/entry.json'), 'utf8'),
+).provenance.receipts.engineAndToolchain;
+for (const key of ['node', 'pnpm', 'rspeedy', 'platform', 'architecture', 'nodeEnv']) {
+  if (currentM3Toolchain[key] !== upstreamM3Toolchain[key]) {
+    fail(`M3 candidate/upstream toolchain mismatch for ${key}`);
   }
 }
 

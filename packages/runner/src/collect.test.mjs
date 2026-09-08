@@ -1597,13 +1597,13 @@ test('history audits every run but publishes only complete source-defined featur
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  // Adding the eight M0 identities intentionally makes the legacy six-entry
-  // Native campaign incomplete for the current featured cohort. Its isolated
-  // observations remain auditable in nativeObservationRecords, but none may
-  // leak into the publishable comparison until a complete M0 campaign exists.
+  // The explicit M3 Native tier atomically replaces the legacy global-tier
+  // cohort. Historical observations remain in the source/history audit, but
+  // none may leak into current observations or publishable comparisons until
+  // a complete M3 campaign exists.
   assert.equal(retainedRecords.length, 3560);
   assert.equal(retainedRecords.some((record) => record.harness === 'native'), false);
-  assert.equal(out.nativeObservationRecords.length, 198);
+  assert.equal(out.nativeObservationRecords.length, 0);
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1883,7 +1883,7 @@ test('history audits every run but publishes only complete source-defined featur
     'native run; evaluated with its exact machine/environment cohort',
   );
   assert.equal(out.nativeObservations.some((observation) =>
-    observation.sourceRunFile === currentNativeFile), true);
+    observation.sourceRunFile === currentNativeFile), false);
   assert.equal(out.history.checkpoints.some((checkpoint) =>
     checkpoint.harnesses.some((cohort) => cohort.sourceRunFiles.includes(
       '2026-08-16T16-43-55-lynx-native-android-aries_10-10-devtool-direct-recycle1-0582f99c1abc-ce0729fa-native-2026-08-16-native-six-framework-final-bounded.json',

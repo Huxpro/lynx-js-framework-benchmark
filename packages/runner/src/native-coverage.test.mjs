@@ -18,7 +18,6 @@ import {
   assertNativeCoverage,
   buildNativeMatrixContract,
   classifyNativeCoverage,
-  NATIVE_FEATURED_MATRIX_CELL_COUNT,
   NATIVE_MATRIX_CELL_COUNT_PER_ENTRY,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
@@ -58,9 +57,9 @@ function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   };
 }
 
-test('featured Native contract is exactly six black-box eligible entries by 23 cells', () => {
+test('legacy global tiers fall back to six black-box Native entries by 23 cells', () => {
   const contract = buildNativeMatrixContract([...ENTRIES].reverse());
-  assert.equal(contract.expectedCellCount, NATIVE_FEATURED_MATRIX_CELL_COUNT);
+  assert.equal(contract.expectedCellCount, 6 * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
   assert.equal(contract.cells.length, 138);
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, 6);
   assert.equal(contract.entryIds.includes('octane-hux'), true);
@@ -86,6 +85,30 @@ test('featured Native contract is exactly six black-box eligible entries by 23 c
     ],
   );
   assert.equal(new Set(contract.cells.map((cell) => cell.entry)).size, contract.entryIds.length);
+});
+
+test('Native matrix uses an explicit current Native cohort without mutating historical tiers', () => {
+  const entries = [
+    ...ENTRIES,
+    {
+      id: 'octane-m3-current',
+      framework: 'octane',
+      tier: 'archive',
+      tiers: { native: 'featured' },
+      harnesses: ['web', 'native'],
+    },
+    {
+      id: 'reactlynx-m3-et',
+      framework: 'reactlynx',
+      tier: 'archive',
+      tiers: { native: 'featured' },
+      harnesses: ['native'],
+    },
+  ];
+
+  const contract = buildNativeMatrixContract(entries);
+  assert.deepEqual(contract.entryIds, ['octane-m3-current', 'reactlynx-m3-et']);
+  assert.equal(contract.cells.length, 2 * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
 });
 
 test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupported, and derivation bugs', () => {

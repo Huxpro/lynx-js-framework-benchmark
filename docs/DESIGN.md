@@ -235,16 +235,18 @@ now runs real Native Engine bundles:
   full transport, reconnect, lifecycle, render, timeout, thermal, and retry policy is versioned
   and included in campaign and machine identity. Explorer client discovery is repeated
   after every restart because DebugRouter may reassign the client port/ID.
-  Upstream Octane and its archived PR snapshot are Web-only because their Native paths lack the
-  same black-box producer boundary. The Hux #269 + #272 composite is Native-eligible through its
-  checked-in, checksum-verified benchmark-app instrumentation: a real touch handler records the
+  Historical upstream Octane and its archived PR snapshot remain Web-only when their Native paths
+  lack the same black-box producer boundary. The current M3 cohort preserves latest upstream
+  unpatched and records unsupported boundaries honestly. The M3 candidate's checked-in producer
+  uses a real touch handler to record the
   renderer transport acknowledgement and second Native frame without changing framework runtime
   code;
 - `packages/runner/src/harness-native.mjs` owns the framework-neutral adapter contract,
   workload matrix, retries, and DNF emission. It refuses to emit records marked `web`.
 
 Native and web numbers are never mixed in one chart series; the site renders the harness as a
-mode switch. A publishable Native campaign schedules six eligible entries in a 138-cell contract. Since
+mode switch. A publishable Native campaign schedules the explicit current per-harness cohort in a
+23-cell-per-entry contract (eight entries / 184 cells for M3). Since
 the honest per-cell timeout can exceed one Sandbox lease's capacity, a campaign may continue over
 multiple official leases of the same physical device. Each acquisition supplies `serial`,
 `issueId`, and `expiredAt`; the raw serial is equality-checked and replaced in metadata by its
@@ -281,7 +283,7 @@ calibration output, `latest.json`, and every site score/visual are derived.
   subsets; publishable Native runs require the full matrix. Machine fingerprint + calibration
   score are embedded. Native files are atomically rewritten after every completed cell; the
   `meta.checkpoint` marker, `checkpointComplete`, stable device cohort, ordered lease chain,
-  per-cell lease attribution, and 138-cell coverage ledger identify this resumable format.
+  per-cell lease attribution, and complete dynamic coverage ledger identify this resumable format.
 - Each Web run contains exactly one JS regime. Collection groups by physical machine × regime and
   selects a coherent comparison run independently for each lane; no ranking table contains records
   from more than one regime.

@@ -99,7 +99,7 @@ const CHECKPOINT_ZH: Record<string, { label: string; description: string }> = {
   },
   'current-main': {
     label: '当前 · compiled-create + FCP',
-    description: '当前清单是上游 Octane 9779569e 与 Hux #269 b166e43f + #272 66ff34a3 组合。完整七项 Web campaign 使用干净组合树 bundle；六项 Native campaign 使用校验过的 benchmark-app 插桩，并保留全部 138 个实测或 DNF 单元。各 Web 执行分栏及 Native 互不混合；完整 pipeline 与 storm campaign 仅作为描述性精确证据，不进入加权矩阵。',
+    description: '当前清单保留精确源码与 bundle 身份。Web 使用全局 featured cohort；Native 使用独立的当前 per-harness cohort 与完整动态矩阵。各 Web 执行分栏及 Native 互不混合；完整 pipeline 与 storm campaign 仅作为描述性精确证据，不进入加权矩阵。',
   },
 };
 

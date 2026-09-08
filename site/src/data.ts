@@ -462,6 +462,8 @@ export interface EntryMeta {
   /** featured = default public view; lab = calibrated author-development
    * variants; archive = source evidence that never enters a public cohort. */
   tier?: 'featured' | 'lab' | 'archive';
+  /** Optional all-or-nothing cohort override for one harness. */
+  tiers?: Partial<Record<'web' | 'native', 'featured' | 'lab' | 'archive'>>;
   /** Harnesses this public entry is eligible to run in. Omitted means both. */
   harnesses?: ('web' | 'native')[];
   listFixture?: {
