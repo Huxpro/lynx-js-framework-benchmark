@@ -691,7 +691,7 @@ export const HISTORY_REPLAY_SPEC = {
   },
 };
 
-const normalizedEntryId = (run, entry) => {
+const legacyNormalizedEntryId = (run, entry) => {
   if (entry === 'octane-main') return 'octane-prior';
   if (entry === 'octane-hux2' || entry === 'octane-new-2026-08-22') return 'octane-hux';
   if (entry === 'octane' && HUX1_COMMITS.has(run.meta.entryCommits?.octane)) {
@@ -700,8 +700,28 @@ const normalizedEntryId = (run, entry) => {
   return entry;
 };
 
-const normalizeRecord = (run, record) => {
-  const entry = normalizedEntryId(run, record.entry);
+const normalizedEntryIdsForRun = (run) => {
+  const sourceIds = [...new Set(run.records.map((record) => record.entry))];
+  const sourcesByNormalizedId = new Map();
+  for (const sourceId of sourceIds) {
+    const normalizedId = legacyNormalizedEntryId(run, sourceId);
+    const sources = sourcesByNormalizedId.get(normalizedId) ?? [];
+    sources.push(sourceId);
+    sourcesByNormalizedId.set(normalizedId, sources);
+  }
+  return new Map(sourceIds.map((sourceId) => {
+    const normalizedId = legacyNormalizedEntryId(run, sourceId);
+    // Legacy aliases make historical one-entry runs comparable with their
+    // current presentation ID. A sweep may also contain both the archived
+    // source and its successor; preserving those source IDs is the only
+    // lossless choice and prevents their observations from being merged.
+    const collides = sourcesByNormalizedId.get(normalizedId).length > 1;
+    return [sourceId, collides ? sourceId : normalizedId];
+  }));
+};
+
+const normalizeRecord = (run, record, normalizedEntryIds) => {
+  const entry = normalizedEntryIds.get(record.entry);
   const regime = normalizeWebRegime(record);
   // Prospective Web records devote `environment` to the execution-regime
   // object requested by issue #40. The derived dataset retains the historical
@@ -750,6 +770,7 @@ const normalizeRun = (rawRun, file) => {
     throw new Error(`${file}: invalid meta.generatedAt`);
   }
   if (!Array.isArray(rawRun.records)) throw new Error(`${file}: records must be an array`);
+  const normalizedEntryIds = normalizedEntryIdsForRun(rawRun);
   const normalizedRecords = rawRun.records.map((record, index) => {
     if (rawRun.schemaVersion === SCHEMA_VERSION && record.harness === 'web') {
       const environment = record.environment;
@@ -802,7 +823,7 @@ const normalizeRun = (rawRun, file) => {
     if (Array.isArray(record.failures) && record.failures.length > (record.dnfCount ?? 0)) {
       throw new Error(`${file}: record ${index} failures cannot exceed dnfCount`);
     }
-    return normalizeRecord(rawRun, record);
+    return normalizeRecord(rawRun, record, normalizedEntryIds);
   });
   const records = classifyComparability(
     rawRun,

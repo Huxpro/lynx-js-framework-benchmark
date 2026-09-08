@@ -1002,6 +1002,37 @@ test('featured cohort wins over broad Lab run and legacy Octane IDs become calib
   }
 });
 
+test('a sweep preserves archived and successor entry IDs that share a legacy alias', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-alias-collision-'));
+  fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
+  try {
+    writeRun(root, 'sweep.json', {
+      machineId: 'sweep',
+      score: 100,
+      entries: ['octane-hux', 'octane-hux2'],
+      entryCommits: {
+        'octane-hux': 'successor-sha',
+        'octane-hux2': 'archived-sha',
+      },
+    });
+
+    const out = collectRuns({
+      root,
+      generatedAt: 'test',
+      log: () => {},
+      entryTiers: entryTiers(['octane-hux', 'octane-hux2']),
+    });
+
+    assert.deepEqual(out.comparison.entryIds, ['octane-hux', 'octane-hux2']);
+    assert.deepEqual(
+      [...new Set(out.comparisonRecords.map(({ entry }) => entry))].sort(),
+      ['octane-hux', 'octane-hux2'],
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('prospective Lab estimates cannot cross comparison cohorts', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));
   fs.mkdirSync(path.join(root, 'results/runs'), { recursive: true });
