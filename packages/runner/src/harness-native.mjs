@@ -164,6 +164,7 @@ export async function runNativeMatrix({
   onProgress = async () => {},
   existingCellKeys = new Set(),
   shouldStopBeforeCell = () => false,
+  shouldStopBeforeRepetition = shouldStopBeforeCell,
 }) {
   if (bundleSnapshots == null) {
     throw new Error(
@@ -172,7 +173,7 @@ export async function runNativeMatrix({
   }
   const records = [];
   const stopIfNeeded = () => {
-    if (shouldStopBeforeCell()) throw new NativeLeaseExpiryStop(records);
+    if (shouldStopBeforeRepetition()) throw new NativeLeaseExpiryStop(records);
   };
   for (const entry of entries) {
     // There is deliberately no entry-wide page/session setup here. loadBundle
@@ -184,7 +185,6 @@ export async function runNativeMatrix({
         for (const scale of kase.scales.filter((s) => scales.includes(s))) {
           const expectedKey = [entry.id, 'table', kase.name, scale, 'latency'].join('|');
           if (existingCellKeys.has(expectedKey)) continue;
-          stopIfNeeded();
           const bundle = nativeBundleSnapshot(bundleSnapshots, entry.id, 0);
           const protocolUnavailable = producerProtocolUnavailableFailure(entry, 'table', bundle);
           const samples = [];
@@ -205,6 +205,7 @@ export async function runNativeMatrix({
               if (failure != null) failures.push({ rep, ...failure });
               continue;
             }
+            stopIfNeeded();
             let observed;
             let failureStage = 'loadBundle';
             try {
@@ -297,7 +298,6 @@ export async function runNativeMatrix({
         if (existingStartupMetrics !== 0) {
           throw new Error(`${entry.id} startup@${rows} is only partially checkpointed.`);
         }
-        stopIfNeeded();
         const bundle = nativeBundleSnapshot(bundleSnapshots, entry.id, rows);
         const protocolUnavailable = producerProtocolUnavailableFailure(entry, 'startup', bundle);
         const observations = new Map();
@@ -349,6 +349,7 @@ export async function runNativeMatrix({
             for (const name of expectedMetricNames) addFailure(name, rep, failure);
             continue;
           }
+          stopIfNeeded();
           let observed;
           let failureStage = 'loadBundle';
           try {

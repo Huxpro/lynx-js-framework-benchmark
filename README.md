@@ -123,9 +123,11 @@ identity so a preinstalled lane and two different SDK artifacts cannot merge.
 `LYNX_SANDBOX_LEASE_RECEIPT` (or `--lease-receipt`) is mandatory. It accepts JSON directly or a
 JSON-file path and must contain the exact acquired `serial`, traceable `issueId`, and lease API
 `expiredAt` epoch milliseconds. The raw serial is checked against `LYNX_SANDBOX_SERIAL` and then
-discarded; only its SHA-256 is persisted. Before each cell the runner derives a worst-cell expiry
-envelope from the formal repetition count, thermal-gate timeout, page/session and long-workload
-timeouts, every configured transport attempt and reconnect window, plus a cleanup margin.
+discarded; only its SHA-256 is persisted. Before each repetition the runner derives a
+worst-repetition expiry envelope from the thermal-gate timeout, page/session and long-workload
+timeouts, every configured transport attempt and reconnect window, plus a cleanup margin. If that
+boundary is reached partway through a cell, the incomplete cell's samples are discarded and its
+full formal repetition count starts again on the next lease; only complete cells enter a checkpoint.
 `LYNX_SANDBOX_LEASE_STOP_SAFETY_MS` may increase that envelope but a lower value is rejected. The
 runner stops before the resulting boundary, writes `checkpointComplete: false`, and exits cleanly.
 Continue only on

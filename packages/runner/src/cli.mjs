@@ -365,7 +365,7 @@ async function cmdRun(args) {
         leaseReceipt,
       },
       existingCellKeys: new Set(priorIndex.keys()),
-      shouldStopBeforeCell: () => shouldStopBeforeLeaseExpiry(leaseReceipt, {
+      shouldStopBeforeRepetition: () => shouldStopBeforeLeaseExpiry(leaseReceipt, {
         safetyMs: leaseExpirySafety.effectiveSafetyMs,
       }),
       log: (line) => console.log(line),

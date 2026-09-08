@@ -214,6 +214,13 @@ test('Native defaults schedule the full table/startup matrix and reject silent s
 });
 
 test('campaign policy includes every timeout, lifecycle, thermal, and retry input', () => {
+  assert.equal(
+    deriveNativeLeaseExpirySafety(resolveNativeSandboxPolicy({}), {
+      reps: 5,
+      startupReps: 3,
+    }).minimumSafetyMs,
+    1_920_000,
+  );
   const policy = resolveNativeSandboxPolicy({
     LYNX_SANDBOX_TIMEOUT_MS: '11',
     LYNX_SANDBOX_LONG_TIMEOUT_MS: '22',
@@ -242,7 +249,9 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   assert.equal(policy.retryScope, 'transport-only-within-repetition');
   const safety = deriveNativeLeaseExpirySafety(policy, { reps: 5, startupReps: 3 });
   assert.deepEqual(safety, {
-    protocol: 'native-lease-expiry-safety-v1',
+    protocol: 'native-lease-expiry-safety-v2',
+    checkpointScope: 'before-every-repetition',
+    incompleteCellPolicy: 'discard-and-repeat',
     repetitions: 5,
     attemptCount: 2,
     thermalGateTimeoutMs: 99,
@@ -251,9 +260,9 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
     reconnectAttempts: 1,
     explorerReconnectTimeoutMs: 66,
     cleanupMarginMs: 13,
-    minimumSafetyMs: 1663,
+    minimumSafetyMs: 343,
     overrideMs: null,
-    effectiveSafetyMs: 1663,
+    effectiveSafetyMs: 343,
   });
   const slower = resolveNativeSandboxPolicy({
     LYNX_SANDBOX_TIMEOUT_MS: '11',
@@ -264,7 +273,7 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
     LYNX_SANDBOX_LEASE_CLEANUP_MARGIN_MS: '13',
   });
   const slowerSafety = deriveNativeLeaseExpirySafety(slower, { reps: 5, startupReps: 3 });
-  assert.equal(slowerSafety.minimumSafetyMs, 4163);
+  assert.equal(slowerSafety.minimumSafetyMs, 843);
   assert.ok(slowerSafety.minimumSafetyMs > safety.minimumSafetyMs);
   assert.throws(
     () => deriveNativeLeaseExpirySafety(resolveNativeSandboxPolicy({
@@ -274,9 +283,9 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
       LYNX_SANDBOX_THERMAL_GATE_TIMEOUT_MS: '99',
       LYNX_SANDBOX_TRANSIENT_ATTEMPTS: '2',
       LYNX_SANDBOX_LEASE_CLEANUP_MARGIN_MS: '13',
-      LYNX_SANDBOX_LEASE_STOP_SAFETY_MS: '1662',
+      LYNX_SANDBOX_LEASE_STOP_SAFETY_MS: '342',
     }), { reps: 5, startupReps: 3 }),
-    /below the derived minimum 1663ms/,
+    /below the derived minimum 343ms/,
   );
   assert.equal(deriveNativeLeaseExpirySafety(resolveNativeSandboxPolicy({
     LYNX_SANDBOX_TIMEOUT_MS: '11',
