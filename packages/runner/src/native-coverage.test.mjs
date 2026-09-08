@@ -233,12 +233,16 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
     const entryDir = path.join(root, 'entries/react');
     const distDir = path.join(entryDir, 'dist');
     fs.mkdirSync(path.join(distDir, 'rows-0'), { recursive: true });
-    const bundle = Buffer.from('lynx-native-bench-v2 lynx-native-startup-v1');
+    const bundle = Buffer.from(
+      'lynx-native-bench-v2 lynx-native-startup-v1 lynx-native-bench-startup',
+    );
     const bundlePath = path.join(distDir, 'rows-0/main.lynx.bundle');
     fs.writeFileSync(bundlePath, bundle);
     const bundleSha = crypto.createHash('sha256').update(bundle).digest('hex');
     const manifest = {
       id: 'react',
+      framework: 'reactlynx',
+      capabilities: { nativeStartupTimingFlag: 'lynx-native-bench-startup' },
       provenance: {
         source: 'test', ref: 'test', commit: 'test', patchFile: 'entry.patch',
         sha256: { 'rows-0/main.lynx.bundle': bundleSha },
@@ -279,7 +283,45 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
       connectorPackageTrees,
       root,
     });
+    assert.equal(inputs.receipt.version, 'native-input-receipt-v3');
+    assert.equal(
+      inputs.receipt.entryArtifacts.react.bundles['0'].protocols.startupTimingFlag,
+      true,
+    );
     assert.deepEqual(inputs.receipt.connectorPackageTrees, connectorPackageTrees);
+    assert.doesNotThrow(() => assertNativeInputsUnchanged(inputs));
+    const legacyBundle = Buffer.from('lynx-native-bench-v2 lynx-native-startup-v1');
+    const legacyBundleSha = crypto.createHash('sha256').update(legacyBundle).digest('hex');
+    const { capabilities: _capabilities, ...legacyManifest } = manifest;
+    legacyManifest.provenance = {
+      ...legacyManifest.provenance,
+      sha256: { 'rows-0/main.lynx.bundle': legacyBundleSha },
+    };
+    fs.writeFileSync(bundlePath, legacyBundle);
+    fs.writeFileSync(path.join(entryDir, 'entry.json'), JSON.stringify(legacyManifest));
+    assert.doesNotThrow(() => snapshotNativeInputs({
+      entries: [{ ...legacyManifest, dir: entryDir, distDir }],
+      suites: ['table', 'startup'],
+      startupScales: [0],
+      adapterPath,
+      connectorPackageTrees,
+      root,
+    }));
+    assert.throws(() => snapshotNativeInputs({
+      entries: [{
+        ...legacyManifest,
+        capabilities: manifest.capabilities,
+        dir: entryDir,
+        distDir,
+      }],
+      suites: ['table', 'startup'],
+      startupScales: [0],
+      adapterPath,
+      connectorPackageTrees,
+      root,
+    }), /lacks lynx-native-bench-startup/);
+    fs.writeFileSync(bundlePath, bundle);
+    fs.writeFileSync(path.join(entryDir, 'entry.json'), JSON.stringify(manifest));
     assert.doesNotThrow(() => assertNativeInputsUnchanged(inputs));
     const connectorFile = path.join(root, 'connector-a/0/lib/index.js');
     fs.appendFileSync(connectorFile, '\nmutation');

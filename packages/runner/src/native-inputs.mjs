@@ -9,9 +9,10 @@ import {
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
 
-export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v2';
+export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v3';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
 export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
+export const NATIVE_STARTUP_TIMING_FLAG = 'lynx-native-bench-startup';
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -80,6 +81,7 @@ export function snapshotNativeInputs({
       const protocols = {
         table: bytes.includes(Buffer.from(NATIVE_TABLE_PROTOCOL)),
         startup: bytes.includes(Buffer.from(NATIVE_STARTUP_PROTOCOL)),
+        startupTimingFlag: bytes.includes(Buffer.from(NATIVE_STARTUP_TIMING_FLAG)),
       };
       if (requireProtocols && suites.includes('table') && rows === 0) {
         if (!protocols.table) {
@@ -96,6 +98,16 @@ export function snapshotNativeInputs({
         && !protocols.startup
       ) {
         throw new Error(`${entry.id}: rows-${rows} Native bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
+      }
+      if (
+        requireProtocols
+        && entry.framework !== 'octane'
+        && entry.capabilities?.nativeStartupTimingFlag === NATIVE_STARTUP_TIMING_FLAG
+        && suites.includes('startup')
+        && startupScales.includes(rows)
+        && !protocols.startupTimingFlag
+      ) {
+        throw new Error(`${entry.id}: rows-${rows} Native bundle lacks ${NATIVE_STARTUP_TIMING_FLAG}.`);
       }
       const key = `${entry.id}:${rows}`;
       snapshots.set(key, {

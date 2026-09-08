@@ -164,6 +164,67 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   assert.equal(progress.at(-1), records.length);
 });
 
+test('native startup keeps settled evidence when only FCP is DNF', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-partial-'));
+  try {
+    const { entry, snapshots } = fakeEntry(dir);
+    const records = await runNativeMatrix({
+      adapter: mockAdapter({
+        calls: [],
+        collect: [],
+        startup: [{
+          settledMs: 120,
+          metricFailures: {
+            fcp: {
+              category: 'performance-metric-unavailable',
+              capabilityScope: 'metric',
+              message: 'PipelineEntry exposes no FCP field',
+            },
+          },
+        }],
+      }),
+      entries: [entry],
+      cases: [],
+      suites: ['startup'],
+      startupScales: [0],
+      startupReps: 1,
+      bundleSnapshots: snapshots,
+    });
+    const fcp = records.find((record) => record.metric === 'fcp');
+    const settled = records.find((record) => record.metric === 'settled');
+    assert.equal(fcp.n, 0);
+    assert.equal(fcp.dnfCount, 1);
+    assert.equal(fcp.failures[0].category, 'performance-metric-unavailable');
+    assert.equal(settled.median, 120);
+    assert.equal(settled.dnfCount, 0);
+    assert.equal(settled.acceptedCount, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('native startup rejects an unaccounted missing metric', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-missing-'));
+  try {
+    const { entry, snapshots } = fakeEntry(dir);
+    await assert.rejects(() => runNativeMatrix({
+      adapter: mockAdapter({
+        calls: [],
+        collect: [],
+        startup: [{ settledMs: 120 }],
+      }),
+      entries: [entry],
+      cases: [],
+      suites: ['startup'],
+      startupScales: [0],
+      startupReps: 1,
+      bundleSnapshots: snapshots,
+    }), /missing=fcp/);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('known exhausted transport failures become evidenced DNF instead of discarding prior cells', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-transport-dnf-'));
   const { entry, snapshots } = fakeEntry(dir);
