@@ -60,6 +60,9 @@ export function snapshotNativeInputs({
   };
   const entryArtifacts = {};
   for (const entry of entries) {
+    const tableProtocolUnavailable =
+      entry.capabilities?.nativeTableProtocol === 'legacy-public-source';
+    const startupProtocolUnavailable = entry.capabilities?.nativeStartupReceipt === false;
     const manifestPath = path.join(entry.dir, 'entry.json');
     const manifest = pinFile(manifestPath, `${entry.id}:manifest`);
     const bundles = {};
@@ -84,10 +87,10 @@ export function snapshotNativeInputs({
         startupTimingFlag: bytes.includes(Buffer.from(NATIVE_STARTUP_TIMING_FLAG)),
       };
       if (requireProtocols && suites.includes('table') && rows === 0) {
-        if (!protocols.table) {
+        if (!protocols.table && !tableProtocolUnavailable) {
           throw new Error(`${entry.id}: rows-0 Native bundle lacks ${NATIVE_TABLE_PROTOCOL}.`);
         }
-        if (!protocols.startup) {
+        if (!protocols.startup && !startupProtocolUnavailable) {
           throw new Error(`${entry.id}: rows-0 Native bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
         }
       }
@@ -96,6 +99,7 @@ export function snapshotNativeInputs({
         && suites.includes('startup')
         && startupScales.includes(rows)
         && !protocols.startup
+        && !startupProtocolUnavailable
       ) {
         throw new Error(`${entry.id}: rows-${rows} Native bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
       }

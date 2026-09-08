@@ -48,7 +48,11 @@ import { pathToFileURL } from 'node:url';
 import { summarize } from '@lynx-bench/shared/stats';
 import { makeRecord } from '@lynx-bench/shared/schema';
 
-import { nativeBundleSnapshot } from './native-inputs.mjs';
+import {
+  NATIVE_STARTUP_PROTOCOL,
+  NATIVE_TABLE_PROTOCOL,
+  nativeBundleSnapshot,
+} from './native-inputs.mjs';
 import { NATIVE_SANDBOX_POLICY } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES } from './run-matrix.mjs';
 import { nativeStartupMetricContracts } from './native-coverage.mjs';
@@ -65,6 +69,33 @@ export class NativeLeaseExpiryStop extends Error {
     this.name = 'NativeLeaseExpiryStop';
     this.records = records;
   }
+}
+
+function producerProtocolUnavailableFailure(entry, suite, bundle) {
+  const table = suite === 'table';
+  const declaredCapability = table
+    ? entry.capabilities?.nativeTableProtocol
+    : entry.capabilities?.nativeStartupReceipt;
+  const unavailable = table
+    ? declaredCapability === 'legacy-public-source'
+    : declaredCapability === false;
+  if (!unavailable) return null;
+  const expectedProtocol = table ? NATIVE_TABLE_PROTOCOL : NATIVE_STARTUP_PROTOCOL;
+  return {
+    category: 'producer-protocol-unavailable',
+    capabilityScope: 'entry',
+    message:
+      `${entry.id} intentionally preserves an unpatched producer that does not declare ${expectedProtocol} support.`,
+    evidence: {
+      capabilityProven: true,
+      expectedProtocol,
+      declaredCapability,
+      observedInBundle: bundle.protocols?.[table ? 'table' : 'startup'] === true,
+      bundleSha256: bundle.sha256 ?? null,
+      sourceCommit: entry.provenance?.commit ?? null,
+      sourcePatches: entry.capabilities?.sourcePatches ?? null,
+    },
+  };
 }
 
 async function withTransientRetry(
@@ -155,6 +186,7 @@ export async function runNativeMatrix({
           if (existingCellKeys.has(expectedKey)) continue;
           stopIfNeeded();
           const bundle = nativeBundleSnapshot(bundleSnapshots, entry.id, 0);
+          const protocolUnavailable = producerProtocolUnavailableFailure(entry, 'table', bundle);
           const samples = [];
           const detailSamples = [];
           const extras = new Map();
@@ -162,6 +194,11 @@ export async function runNativeMatrix({
           let dnfCount = 0;
           const failures = [];
           for (let rep = 0; rep < reps; rep++) {
+            if (protocolUnavailable != null) {
+              dnfCount++;
+              failures.push({ rep, ...protocolUnavailable });
+              continue;
+            }
             if (adapter.isTableUnsupported?.(entry, kase, scale)) {
               dnfCount++;
               const failure = adapter.tableUnsupportedReason?.(entry, kase, scale);
@@ -262,6 +299,7 @@ export async function runNativeMatrix({
         }
         stopIfNeeded();
         const bundle = nativeBundleSnapshot(bundleSnapshots, entry.id, rows);
+        const protocolUnavailable = producerProtocolUnavailableFailure(entry, 'startup', bundle);
         const observations = new Map();
         const expectedMetrics = nativeStartupMetricContracts(entry);
         const expectedMetricNames = new Set(expectedMetrics.map(({ metric }) => metric));
@@ -299,6 +337,10 @@ export async function runNativeMatrix({
           addContract(contract.metric, contract.unit, contract.boundary);
         }
         for (let rep = 0; rep < startupReps; rep++) {
+          if (protocolUnavailable != null) {
+            for (const name of expectedMetricNames) addFailure(name, rep, protocolUnavailable);
+            continue;
+          }
           if (adapter.isStartupUnsupported?.(entry, rows)) {
             const failure = adapter.startupUnsupportedReason?.(entry, rows);
             for (const contract of adapter.startupUnsupportedContracts?.(entry, rows) ?? []) {

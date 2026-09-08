@@ -13,7 +13,10 @@ import {
   assertConnectorPackageTreesMatch,
   connectorPackageTreesSha256,
   createPackageTreeReceipt,
+  resolveConnectorPackageTrees,
 } from './connector-receipt.mjs';
+import { featuredEntriesForHarness } from './entry-cohorts.mjs';
+import { discoverEntries, repoRoot } from './entries.mjs';
 import {
   assertNativeCoverage,
   buildNativeMatrixContract,
@@ -111,6 +114,36 @@ test('Native matrix uses an explicit current Native cohort without mutating hist
   assert.equal(contract.cells.length, 2 * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
 });
 
+test('featured Native artifacts match their strict or explicitly unavailable producer boundary', () => {
+  const root = repoRoot();
+  const adapterPath = path.join(root, 'packages/runner/adapters/lynx-sandbox-android.mjs');
+  const entries = featuredEntriesForHarness(discoverEntries({ root }), 'native');
+  const inputs = snapshotNativeInputs({
+    entries,
+    suites: ['table', 'startup'],
+    startupScales: NATIVE_STARTUP_SCALES,
+    adapterPath,
+    connectorPackageTrees: resolveConnectorPackageTrees({ fromPath: adapterPath }),
+    root,
+  });
+
+  assert.equal(entries.length, 8);
+  assert.deepEqual(inputs.snapshots.get('octane-m3-upstream:0').protocols, {
+    table: false,
+    // The legacy bundle contains the old startup marker, but its manifest
+    // deliberately declines the strict receipt boundary. String presence does
+    // not upgrade a producer capability.
+    startup: true,
+    startupTimingFlag: false,
+  });
+  for (const entry of entries.filter(({ id }) => id !== 'octane-m3-upstream')) {
+    assert.equal(inputs.snapshots.get(`${entry.id}:0`).protocols.table, true, entry.id);
+    for (const rows of NATIVE_STARTUP_SCALES) {
+      assert.equal(inputs.snapshots.get(`${entry.id}:${rows}`).protocols.startup, true, `${entry.id}:${rows}`);
+    }
+  }
+});
+
 test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupported, and derivation bugs', () => {
   const contract = buildNativeMatrixContract(ENTRIES);
   const measured = recordFor(contract.cells[0]);
@@ -134,6 +167,30 @@ test('Native coverage distinguishes unscheduled, per-cell DNF, proven unsupporte
   });
   assert.deepEqual(complete.summary, { measured: 138 });
   assert.doesNotThrow(() => assertNativeCoverage(complete));
+});
+
+test('producer protocol absence is unsupported only with entry-scoped capability proof', () => {
+  const contract = buildNativeMatrixContract(ENTRIES);
+  const cell = contract.cells[0];
+  const unproven = recordFor(cell, { dnf: true });
+  unproven.failures = [{ category: 'producer-protocol-unavailable' }];
+  const proven = {
+    ...unproven,
+    failures: [{
+      category: 'producer-protocol-unavailable',
+      capabilityScope: 'entry',
+      evidence: { capabilityProven: true },
+    }],
+  };
+
+  assert.equal(classifyNativeCoverage({
+    entries: ENTRIES,
+    sourceRecords: [unproven],
+  }).cells[0].status, 'dnf');
+  assert.equal(classifyNativeCoverage({
+    entries: ENTRIES,
+    sourceRecords: [proven],
+  }).cells[0].status, 'unsupported');
 });
 
 test('Native defaults schedule the full table/startup matrix and reject silent scale loss', () => {
@@ -343,6 +400,45 @@ test('immutable input receipt detects source, manifest, patch, bundle, and memor
       connectorPackageTrees,
       root,
     }), /lacks lynx-native-bench-startup/);
+    const noProtocolBundle = Buffer.from('unpatched legacy public producer');
+    const noProtocolBundleSha = crypto.createHash('sha256').update(noProtocolBundle).digest('hex');
+    const unavailableManifest = {
+      ...legacyManifest,
+      capabilities: {
+        nativeTableProtocol: 'legacy-public-source',
+        nativeStartupReceipt: false,
+      },
+      provenance: {
+        ...legacyManifest.provenance,
+        sha256: { 'rows-0/main.lynx.bundle': noProtocolBundleSha },
+      },
+    };
+    fs.writeFileSync(bundlePath, noProtocolBundle);
+    fs.writeFileSync(path.join(entryDir, 'entry.json'), JSON.stringify(unavailableManifest));
+    assert.doesNotThrow(() => snapshotNativeInputs({
+      entries: [{ ...unavailableManifest, dir: entryDir, distDir }],
+      suites: ['table', 'startup'],
+      startupScales: [0],
+      adapterPath,
+      connectorPackageTrees,
+      root,
+    }));
+    assert.throws(() => snapshotNativeInputs({
+      entries: [{
+        ...unavailableManifest,
+        capabilities: {
+          nativeTableProtocol: 'lynx-native-bench-v2',
+          nativeStartupReceipt: true,
+        },
+        dir: entryDir,
+        distDir,
+      }],
+      suites: ['table', 'startup'],
+      startupScales: [0],
+      adapterPath,
+      connectorPackageTrees,
+      root,
+    }), /lacks lynx-native-bench-v2/);
     fs.writeFileSync(bundlePath, bundle);
     fs.writeFileSync(path.join(entryDir, 'entry.json'), JSON.stringify(manifest));
     assert.doesNotThrow(() => assertNativeInputsUnchanged(inputs));
