@@ -9,6 +9,7 @@ const args = process.argv.slice(2);
 const options = {
   candidate: null,
   comparator: null,
+  output: null,
   interaction: [],
   startup: [],
 };
@@ -20,11 +21,12 @@ for (let index = 0; index < args.length; index += 2) {
   }
   if (name === '--candidate') options.candidate = value;
   else if (name === '--comparator') options.comparator = value;
+  else if (name === '--output') options.output = value;
   else if (name === '--interaction-run') options.interaction.push(value);
   else if (name === '--startup-run') options.startup.push(value);
   else throw new Error(`unknown option: ${name}`);
 }
-const { candidate, comparator } = options;
+const { candidate, comparator, output } = options;
 const filesBySuite = {
   interaction: options.interaction,
   startup: options.startup,
@@ -56,7 +58,7 @@ const result = qualifyRawSuiteRuns({
   comparator,
 });
 
-process.stdout.write(`${JSON.stringify({
+const serialized = `${JSON.stringify({
   ...result,
   sourceRuns: Object.fromEntries(Object.entries(sourcesBySuite).map(
     ([suite, sources]) => [
@@ -64,4 +66,12 @@ process.stdout.write(`${JSON.stringify({
       sources.map(({ file, sha256 }) => ({ file, sha256 })),
     ],
   )),
-}, null, 2)}\n`);
+}, null, 2)}\n`;
+if (output == null) {
+  process.stdout.write(serialized);
+} else {
+  const outputPath = path.resolve(output);
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, serialized);
+  process.stderr.write(`[qualify] wrote ${outputPath}\n`);
+}

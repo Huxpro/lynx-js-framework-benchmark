@@ -104,7 +104,8 @@ windows:
 ```bash
 pnpm bench:qualify:m4 --candidate <candidate-id> --comparator <comparator-id> \
   --interaction-run results/runs/<table-session-01>.json \
-  --startup-run results/runs/<startup-session-01>.json
+  --startup-run results/runs/<startup-session-01>.json \
+  --output results/audits/<qualification.json>
 ```
 
 ## Execution sequence
