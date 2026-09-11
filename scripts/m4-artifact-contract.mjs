@@ -21,7 +21,7 @@ export const M4_PINNED_SOURCES = Object.freeze({
     ref: 'huxcx/m4-main-thread-capability-payload-291',
     // Pre-merge identity only. The M4 evidence PR must update this to the exact
     // new-lynx merge SHA before any result is accepted as final.
-    commit: 'a03ae3a81bd44bbc9f52ab7ab182d71dd66545d0',
+    commit: '805fd9ed861eec7ca8d113039f6722699b6cce1c',
   }),
   'octane-m4-upstream': Object.freeze({
     source: 'https://github.com/octanejs/octane',
