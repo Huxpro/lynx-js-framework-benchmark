@@ -61,6 +61,13 @@ loop:
    point boundary, where balanced pairs are required before choosing a code
    target.
 
+The first owner was then checked in ten independent, order-balanced FCP@0-only
+pairs (five AB and five BA). The same frozen paired bootstrap implementation
+reports candidate/ReactLynx 1.6990, 95% CI [1.6050, 1.8011]. This is a
+conclusive diagnostic failure for that cell, but still not a full-scorecard M4
+verdict. The machine-readable result and all ten raw-run hashes are in
+results/audits/2026-09-11-m4-premerge-react-fcp0-diagnostic.json.
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
