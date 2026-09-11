@@ -14,7 +14,10 @@ test('M4 freezes a distinct final qualification cohort', () => {
   assert.deepEqual(M4_ROWS, [0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
   assert.equal(new Set(M4_ENTRY_IDS).size, 8);
   assert.equal(M4_ENTRY_IDS.every((id) => id.includes('m4')), true);
-  assert.equal(M4_PINNED_SOURCES['octane-m4-final'].ref, 'huxcx/m3-auto-block-core-290');
+  assert.equal(
+    M4_PINNED_SOURCES['octane-m4-final'].ref,
+    'huxcx/m4-main-thread-capability-payload-291',
+  );
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-upstream'].commit,
     '55a9aa3acd3ffad847d5604ffbdc4342a30a861d',

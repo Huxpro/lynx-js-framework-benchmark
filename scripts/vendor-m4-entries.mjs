@@ -388,6 +388,9 @@ const comparatorSpecs = [
 ];
 
 for (const spec of comparatorSpecs) {
+  // Avoid evaluating checkout-derived cells for entries excluded by
+  // VENDOR_ONLY; their checkout is intentionally absent in a scoped refresh.
+  if (!wants(spec.id)) continue;
   const capabilities = spec.capabilities ?? {
     production: true,
     sourcePatches: false,

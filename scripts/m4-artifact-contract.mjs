@@ -18,10 +18,10 @@ export const M4_ENTRY_IDS = Object.freeze([
 export const M4_PINNED_SOURCES = Object.freeze({
   'octane-m4-final': Object.freeze({
     source: 'https://github.com/Huxpro/octane',
-    ref: 'huxcx/m3-auto-block-core-290',
+    ref: 'huxcx/m4-main-thread-capability-payload-291',
     // Pre-merge identity only. The M4 evidence PR must update this to the exact
     // new-lynx merge SHA before any result is accepted as final.
-    commit: 'cf1018a051cd14b2c384ed0541b0ee5ee1789970',
+    commit: 'a03ae3a81bd44bbc9f52ab7ab182d71dd66545d0',
   }),
   'octane-m4-upstream': Object.freeze({
     source: 'https://github.com/octanejs/octane',
