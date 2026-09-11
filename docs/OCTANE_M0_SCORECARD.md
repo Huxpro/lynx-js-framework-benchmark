@@ -94,6 +94,19 @@ The ingest gate also requires a clean runner checkout, one exact machine and
 comparability cohort, consistent source commits, auditable two-arm order, and
 complete DNF-free source samples for every repetition and frozen cell.
 
+M4 may use independent prospective windows for interaction and startup so a
+full table campaign cannot warm or otherwise contaminate a later startup
+measurement. Each suite still independently requires its own complete,
+order-balanced, same-machine, same-cohort raw run set, while candidate,
+comparator, harness, machine, and exact source commits must match across the two
+windows:
+
+```bash
+pnpm bench:qualify:m4 --candidate <candidate-id> --comparator <comparator-id> \
+  --interaction-run results/runs/<table-session-01>.json \
+  --startup-run results/runs/<startup-session-01>.json
+```
+
 ## Execution sequence
 
 1. Vendor and verify newly named comparator bundles without overwriting old
