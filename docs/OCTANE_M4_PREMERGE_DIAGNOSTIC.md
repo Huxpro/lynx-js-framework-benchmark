@@ -120,6 +120,51 @@ it does not override the failed scorecard. The final merged identity will use
 a prospectively fixed higher-power cohort rather than appending samples to
 this observed failure.
 
+## Compact candidate versus Vue VDOM default: startup passes, interaction fails
+
+The same compact candidate was next measured against Vue VDOM default at
+`8e02c0e4e25cd216df080c339cf1ccab855d2c71`. Ten table-only sessions and ten
+startup-only sessions (five AB and five BA in each independent window) produced
+3,100 records with zero DNF. The frozen 10,000-resample result is:
+
+| suite/cell | point ratio | 95% CI | gate |
+| --- | ---: | ---: | --- |
+| interaction aggregate | 0.78333 | [0.76956, 0.79916] | aggregate passes |
+| select@1k | 1.18185 | [1.07808, 1.29643] | **fail** |
+| remove@1k | 1.00618 | [0.95678, 1.05588] | **fail** |
+| clear@1k | 1.00847 | [0.96162, 1.05529] | **fail** |
+| startup aggregate | 0.55290 | [0.53922, 0.56462] | pass |
+| FCP@0 | 0.48926 | [0.46241, 0.51599] | pass |
+| FCP@1k | 0.59326 | [0.57806, 0.60850] | pass |
+| FCP@10k | 0.58232 | [0.57258, 0.59206] | pass |
+
+Every other interaction cell passes its 1.05 upper-bound gate, but the three
+listed cells make the complete scorecard a failure. The exact verdict and all
+20 formal raw-run hashes are in
+`results/audits/2026-09-11-m4-premerge-vue-vdom-default-web-jit-independent-windows.json`
+(SHA-256 `fdf650478ebad5e0d07af0db9559dc1bbe77fbe11fc45879f6800dcf24f5010a`).
+
+Attribution does not support a semantics-changing runtime cut for this
+pre-merge failure. Across the 70 formal select samples per arm, Octane used
+1.11 ms mean BTS sampled CPU versus Vue's 4.60 ms, while MTS CPU was 4.45 ms
+versus 4.46 ms. Octane's pooled select p95 was also lower (27.35 ms versus
+29.43 ms), despite the adverse session-median ratio. A framework-neutral
+two-order pipeline diagnostic made Octane select faster (14.22 ms mean versus
+21.26 ms) and showed that remove/clear differences move between synchronous
+PAPI work and outside-PAPI frame observation. Its raw runs are
+`2026-09-11T22-41-29-65160668d8d9.json` (SHA-256
+`dd5e003eda0a1fe0be9caeb5edb94f444a8896f1f5aeab41eaa7a10210c5e2f8`) and
+`2026-09-11T22-42-47-65160668d8d9.json` (SHA-256
+`c2fbf61819c01aea0f557b6f4d4a10eff7771d558004bf828f061aee76a0ecde`).
+
+Two 20-repetition, uninstrumented focused table orders likewise moved remove
+from slightly adverse to slightly favorable and left clear within about 3%,
+while select remained frame-phase sensitive. An explicit-flush experiment was
+then rejected: ten independent five-AB/five-BA select sessions gave
+flush/baseline 1.07263, 95% CI [0.93504, 1.20269]. It did not improve the cell
+and would add a new failure boundary. The source experiment was fully reverted;
+the accepted candidate bundle and formal failure evidence are unchanged.
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
