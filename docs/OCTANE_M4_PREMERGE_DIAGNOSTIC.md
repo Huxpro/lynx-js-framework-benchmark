@@ -165,6 +165,53 @@ flush/baseline 1.07263, 95% CI [0.93504, 1.20269]. It did not improve the cell
 and would add a new failure boundary. The source experiment was fully reverted;
 the accepted candidate bundle and formal failure evidence are unchanged.
 
+## Compact candidate versus Vue VDOM +IFR +ET: startup passes, interaction fails
+
+The next prospectively fixed comparator was Vue VDOM with initial full render
+and event-prop teardown enabled, still from commit
+`8e02c0e4e25cd216df080c339cf1ccab855d2c71`. Its independent table-only and
+startup-only windows each contain ten sessions with five AB and five BA orders.
+All 3,100 observations completed with zero DNF. The frozen 10,000-resample
+scorecard is:
+
+| suite/cell | point ratio | 95% CI | gate |
+| --- | ---: | ---: | --- |
+| interaction aggregate | 0.79894 | [0.78324, 0.81584] | aggregate passes |
+| select@1k | 1.06089 | [0.94695, 1.17013] | **fail** |
+| swap@1k | 0.90884 | [0.76131, 1.08816] | **fail** |
+| remove@1k | 1.05247 | [1.02286, 1.08249] | **fail** |
+| clear@1k | 1.10437 | [1.05288, 1.15759] | **fail** |
+| startup aggregate | 0.60470 | [0.59083, 0.61829] | pass |
+| FCP@0 | 0.61883 | [0.58595, 0.65103] | pass |
+| FCP@1k | 0.70106 | [0.68886, 0.71406] | pass |
+| FCP@10k | 0.50968 | [0.49947, 0.51862] | pass |
+
+Every other interaction cell passes. The formal verdict, exact commands, and
+all 20 source-run hashes are retained in
+`results/audits/2026-09-12-m4-premerge-vue-vdom-ifr-et-web-jit-independent-windows.json`
+(SHA-256 `e7a0906a3a021d5093ff2f284a5f1104f73408ce40ca334f620fe815497df18a`).
+
+The failed select and swap cells remain phase-sensitive rather than CPU-owner
+regressions: across 70 samples per arm, Octane's pooled select mean/p95 was
+20.91/27.43 ms versus Vue's 21.27/28.08 ms, with 1.07 versus 4.24 ms background
+JS CPU and 4.52 versus 4.55 ms main-thread JS CPU. Swap was likewise faster in
+pooled mean/p95 (19.12/25.72 ms versus 21.21/28.94 ms). Remove and clear are
+different: Octane used 7.16 versus 5.86 ms background JS CPU for remove and
+2.99 versus 2.38 ms for clear, so their adverse ratios were investigated as a
+real Block listener-journal hypothesis.
+
+That source hypothesis was rejected rather than shipped. Replacing the Block
+root listener `Map` with dense indexed slots preserved acknowledgement and
+synchronous teardown semantics, passed 100 focused tests, and was measured in
+ten new five-AB/five-BA focused sessions with 20 repetitions per cell. The
+patch/baseline aggregate was 0.99935, 95% CI [0.97192, 1.02608]; remove was
+1.00454 [0.97192, 1.03710] and clear was 0.99658 [0.96860, 1.02391]. With no
+stable benefit, the source was fully reverted and the experimental entry moved
+to a recoverable temporary directory. The complete rejection receipt and ten
+raw hashes are in
+`results/audits/2026-09-12-m4-rejected-dense-listener-web-jit-focused.json`
+(SHA-256 `938ecebcde3919375951d6d54fb2d802b3cd6f980d79f681361611f4181a46ce`).
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
