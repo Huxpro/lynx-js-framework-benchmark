@@ -178,16 +178,23 @@ An entry opts in without changing the driver:
 
 ```jsonc
 "listFixture": {
-  "protocol": "lynx-list-fixture-v1",
+  "protocol": "lynx-list-fixture-v2",
   "contractSha256": "<reported by pnpm bench list-coverage>",
-  "bundles": { "web": "dist/list/main.web.bundle", "native": "dist/list/main.lynx.bundle" },
-  "sha256": { "web": "<64 hex>", "native": "<64 hex>" }
+  "bundles": {
+    "web": { "1000": "dist/list/rows-1000/main.web.bundle", "10000": "dist/list/rows-10000/main.web.bundle" },
+    "native": { "1000": "dist/list/rows-1000/main.lynx.bundle", "10000": "dist/list/rows-10000/main.lynx.bundle" }
+  },
+  "sha256": {
+    "web": { "1000": "<64 hex>", "10000": "<64 hex>" },
+    "native": { "1000": "<64 hex>", "10000": "<64 hex>" }
+  }
 }
 ```
 
 Each declared artifact must stay inside its entry directory and match its manifest checksum. The
-same case data, viewport receipt, item-key semantics, and stimulus schedule drive every framework;
-the only harness-specific fields are the declared input and observation mechanisms.
+same case data, viewport receipt, and item-key semantics drive every framework; the input schedule
+and observation mechanism are declared per harness. Native capability gaps are metric-scoped and
+proven; they never turn into estimated values or hide the other measurable source metrics.
 
 ## Harnesses
 

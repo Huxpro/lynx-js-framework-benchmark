@@ -47,7 +47,7 @@ export function selectListCampaignRecords(records, entries) {
   return [...selected.values()].flatMap((candidate) => candidate.records);
 }
 
-function fixtureStatus(entry, harness) {
+export function listFixtureStatus(entry, harness, scale) {
   const fixture = entry.listFixture;
   if (fixture == null) {
     return {
@@ -75,12 +75,14 @@ function fixtureStatus(entry, harness) {
       },
     };
   }
-  const relativeBundle = fixture.bundles?.[harness];
+  const relativeBundle = fixture.bundles?.[harness]?.[String(scale)];
   if (typeof relativeBundle !== 'string' || relativeBundle.length === 0) {
     return {
       supported: false,
-      reason: `list-${harness}-bundle-not-declared`,
-      source: { kind: 'entry-manifest', declared: true, protocol: fixture.protocol },
+      reason: `list-${harness}-bundle-at-${scale}-not-declared`,
+      source: {
+        kind: 'entry-manifest', declared: true, protocol: fixture.protocol, scale,
+      },
     };
   }
   const bundle = path.resolve(entry.dir, relativeBundle);
@@ -105,7 +107,7 @@ function fixtureStatus(entry, harness) {
       },
     };
   }
-  const expectedSha256 = fixture.sha256?.[harness];
+  const expectedSha256 = fixture.sha256?.[harness]?.[String(scale)];
   if (typeof expectedSha256 !== 'string' || !/^[0-9a-f]{64}$/.test(expectedSha256)) {
     return {
       supported: false,
@@ -134,6 +136,7 @@ function fixtureStatus(entry, harness) {
     source: {
       kind: 'entry-manifest-and-artifact', declared: true,
       protocol: fixture.protocol, contractSha256: fixture.contractSha256,
+      scale,
       bundle: relativeBundle, sha256: expectedSha256,
     },
   };
@@ -169,53 +172,113 @@ function recordStatus(records, kase) {
       recordCount: records.length,
     };
   }
-  if (records.every((record) => (record.dnfCount ?? 0) > 0 && (record.n ?? 0) === 0)) {
-    return { status: 'dnf', reason: null, recordCount: records.length };
+  const repetitionMismatch = records.filter((record) => {
+    const acceptedCount = record.acceptedCount;
+    const attemptedCount = record.attemptedCount;
+    const sampleCount = Array.isArray(record.samples) ? record.samples.length : 0;
+    if (!Number.isSafeInteger(acceptedCount) || acceptedCount !== sampleCount
+      || !Number.isSafeInteger(attemptedCount) || attemptedCount < acceptedCount) return true;
+    if (record.metric === 'materializationTimesMs') {
+      return attemptedCount !== acceptedCount + (record.dnfCount ?? 0);
+    }
+    return attemptedCount !== LIST_CONFIG.recycle.repetitions
+      || acceptedCount + (record.dnfCount ?? 0) !== attemptedCount;
+  }).map((record) => record.metric);
+  if (repetitionMismatch.length > 0) {
+    return {
+      status: 'invalid-incomparable',
+      reason: `list repetition accounting mismatch: ${repetitionMismatch.join(', ')}`,
+      recordCount: records.length,
+    };
   }
-  if (records.every((record) => (record.n ?? 0) > 0 && (record.dnfCount ?? 0) === 0)) {
+  const observed = records.filter((record) => (record.n ?? 0) > 0 && (record.dnfCount ?? 0) === 0);
+  const failed = records.filter((record) => (record.dnfCount ?? 0) > 0 && (record.n ?? 0) === 0);
+  if (observed.length + failed.length !== records.length) {
+    return {
+      status: 'invalid-incomparable',
+      reason: 'list source metrics mix observations and DNF within one metric',
+      recordCount: records.length,
+    };
+  }
+  if (failed.length === records.length) {
+    const unsupported = failed.every((record) =>
+      (record.failures ?? []).length > 0
+      && record.failures.every((failure) =>
+        String(failure.category ?? '').startsWith('unsupported-')
+        && failure.capabilityScope === 'metric'
+        && failure.capabilityProven === true));
+    return {
+      status: unsupported ? 'unsupported' : 'dnf', reason: null, recordCount: records.length,
+    };
+  }
+  if (observed.length === records.length) {
     return { status: 'measured', reason: null, recordCount: records.length };
+  }
+  const unsupported = failed.every(
+    (record) =>
+      (record.failures ?? []).length > 0
+      && record.failures.every((failure) =>
+        String(failure.category ?? '').startsWith('unsupported-')
+        && failure.capabilityScope === 'metric'
+        && failure.capabilityProven === true),
+  );
+  if (unsupported) {
+    return {
+      status: 'measured-with-unsupported-metrics',
+      reason: failed
+        .map((record) => record.metric)
+        .sort()
+        .join(','),
+      recordCount: records.length,
+    };
   }
   return {
     status: 'invalid-incomparable',
-    reason: 'list source metrics mix observations, DNF, or empty evidence',
+    reason: 'list source metrics mix observations and non-capability DNF',
     recordCount: records.length,
   };
 }
 
-export function buildListCoverage({ entries, sourceRecords = [] }) {
-  const featured = entries
-    .filter((entry) => (entry.tier ?? 'featured') === 'featured')
-    .sort((left, right) => left.id.localeCompare(right.id));
+export function buildListCoverage({ entries, sourceRecords = [], includeAllEntries = false }) {
   const recordsByCase = new Map();
   for (const record of sourceRecords.filter((candidate) => candidate.suite === 'list')) {
     const key = listCaseKey(record);
     recordsByCase.set(key, [...(recordsByCase.get(key) ?? []), record]);
   }
-  const cells = featured.flatMap((entry) => LIST_HARNESSES.flatMap((harness) => {
-    const fixture = fixtureStatus(entry, harness);
-    return LIST_CASES.flatMap((kase) => kase.scales.map((scale) => {
-      const expected = {
-        entry: entry.id,
-        harness,
-        workload: kase.name,
-        scale,
-      };
-      const key = listCaseKey(expected);
-      const measured = fixture.supported
-        ? recordStatus(recordsByCase.get(key) ?? [], kase)
-        : { status: 'unsupported', reason: fixture.reason, recordCount: 0 };
-      return {
-        ...expected,
-        key,
-        status: measured.status,
-        reason: measured.reason,
-        recordCount: measured.recordCount,
-        fixture: fixture.source,
-        sourceMetrics: [...kase.sourceMetrics],
-        derivedMetrics: [...kase.derivedMetrics],
-      };
-    }));
-  }));
+  const featured = (includeAllEntries
+    ? entries
+    : entries.filter((entry) => (entry.tier ?? 'featured') === 'featured')
+  ).sort((left, right) => left.id.localeCompare(right.id));
+  const cells = [];
+  for (const harness of LIST_HARNESSES) {
+    for (const entry of featured) {
+      for (const kase of LIST_CASES) {
+        for (const scale of kase.scales) {
+          const fixture = listFixtureStatus(entry, harness, scale);
+          const expected = {
+            entry: entry.id,
+            harness,
+            workload: kase.name,
+            scale,
+          };
+          const key = listCaseKey(expected);
+          const measured = fixture.supported
+            ? recordStatus(recordsByCase.get(key) ?? [], kase)
+            : { status: 'unsupported', reason: fixture.reason, recordCount: 0 };
+          cells.push({
+            ...expected,
+            key,
+            status: measured.status,
+            reason: measured.reason,
+            recordCount: measured.recordCount,
+            fixture: fixture.source,
+            sourceMetrics: [...kase.sourceMetrics],
+            derivedMetrics: [...kase.derivedMetrics],
+          });
+        }
+      }
+    }
+  }
   const statuses = [...new Set(cells.map((cell) => cell.status))].sort();
   return {
     version: LIST_WORKLOAD_CONTRACT_VERSION,
@@ -245,5 +308,18 @@ export function assertListCoverage(coverage) {
   }
   const invalid = coverage.cells.filter((cell) => cell.status === 'invalid-incomparable');
   if (invalid.length > 0) throw new Error(`list coverage contains ${invalid.length} invalid cells`);
+  return coverage;
+}
+
+export function assertNativeListCoverage(coverage) {
+  assertListCoverage(coverage);
+  const invalid = coverage.cells.filter(
+    (cell) =>
+      cell.harness === 'native' &&
+      !['measured', 'measured-with-unsupported-metrics'].includes(cell.status),
+  );
+  if (invalid.length > 0) {
+    throw new Error(`Native list campaign has ${invalid.length} incomplete or failed cells`);
+  }
   return coverage;
 }

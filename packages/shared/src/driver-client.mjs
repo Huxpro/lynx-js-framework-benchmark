@@ -200,6 +200,91 @@ export const DRIVER_CLIENT_JS = `(() => {
   };
 })()`;
 
+// Dedicated list observer. It is injected only into /list and observes the
+// composed host tree; fixtures expose stable keys through ordinary rendered
+// text and never receive a renderer-specific callback from the harness.
+export const LIST_DRIVER_CLIENT_JS = `${DRIVER_CLIENT_JS.slice(0, -4)}
+
+  const listViewport = () => findByClass('bench-list-viewport')[0] ?? null;
+  const listCells = () => findByClass('bench-list-cell');
+  const keyForCell = (cell) => {
+    const stack = [cell];
+    while (stack.length > 0) {
+      const node = stack.shift();
+      if (node !== cell && hasClass(node, 'bench-list-key')) return node.textContent ?? null;
+      if (node.shadowRoot) stack.push(...node.shadowRoot.childNodes);
+      stack.push(...(node.children ?? []));
+    }
+    return null;
+  };
+  x.listSnapshot = () => {
+    const viewport = listViewport();
+    if (!viewport) return { atMs: performance.now(), keys: [], cells: [] };
+    const vr = viewport.getBoundingClientRect();
+    const cells = [];
+    for (const cell of listCells()) {
+      const rect = cell.getBoundingClientRect();
+      if (rect.bottom <= vr.top || rect.top >= vr.bottom) continue;
+      const key = keyForCell(cell);
+      if (key == null) continue;
+      cells.push({ key, top: rect.top - vr.top, bottom: rect.bottom - vr.top });
+    }
+    cells.sort((left, right) => left.top - right.top || left.key.localeCompare(right.key));
+    return { atMs: performance.now(), keys: cells.map((cell) => cell.key), cells };
+  };
+  x.waitListFirstContent = (timeoutMs = 120000) =>
+    new Promise((resolve, reject) => {
+      const startedAt = x.viewAttachTime ?? performance.now();
+      const deadline = performance.now() + timeoutMs;
+      const tick = () => {
+        const snapshot = x.listSnapshot();
+        if (snapshot.keys.length > 0) {
+          resolve({ ...snapshot, firstVisibleContentMs: performance.now() - startedAt });
+          return;
+        }
+        if (performance.now() > deadline) {
+          reject(new Error('list first visible content timeout'));
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  x.armListMotion = ({ durationMs, timeoutMs = 120000 }) =>
+    new Promise((resolve, reject) => {
+      let t0 = null;
+      let lastSignature = null;
+      let stableFrames = 0;
+      const frames = [];
+      const onWheel = () => { if (t0 == null) t0 = performance.now(); };
+      window.addEventListener('wheel', onWheel, { capture: true });
+      const deadline = performance.now() + timeoutMs;
+      const tick = () => {
+        const now = performance.now();
+        if (t0 != null) {
+          const snapshot = x.listSnapshot();
+          snapshot.atMs -= t0;
+          frames.push(snapshot);
+          const signature = snapshot.keys.join('\\0');
+          stableFrames = signature === lastSignature ? stableFrames + 1 : 0;
+          lastSignature = signature;
+          if (now - t0 >= durationMs && stableFrames >= 2) {
+            window.removeEventListener('wheel', onWheel, { capture: true });
+            resolve({ frames, elapsedMs: now - t0 });
+            return;
+          }
+        }
+        if (now > deadline) {
+          window.removeEventListener('wheel', onWheel, { capture: true });
+          reject(new Error('list motion timeout'));
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+})()`;
+
 const PIPELINE_ARM_JS = `  // Dedicated ElementPAPI capture primitive. This is
   // injected only in /pipeline; the ordinary latency driver remains byte-for-byte unchanged.
   x.armPipeline = (spec, timeoutMs) =>

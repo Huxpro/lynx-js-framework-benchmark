@@ -2,7 +2,7 @@
 // lynx-bench CLI.
 //
 //   lynx-bench run [--entry a,b] [--case create,select] [--scale 1000,10000]
-//                  [--suite table,startup,pipeline,storm] [--commit every-tick|final-state]
+//                  [--suite table,startup,pipeline,storm,list] [--commit every-tick|final-state]
 //                  [--reps N] [--quick] [--label x] [--session-id id]
 //                  [--harness web|native]
 //                  [--jit jit|interp] [--cpu-throttle N]
@@ -21,7 +21,7 @@ import {
   TABLE_CASES,
 } from '@lynx-bench/shared/workloads';
 import { SCHEMA_VERSION } from '@lynx-bench/shared/schema';
-import { LIST_CASES } from '../../shared/src/list-workloads.mjs';
+import { LIST_CASES, LIST_CONFIG } from '../../shared/src/list-workloads.mjs';
 
 import { featuredEntriesForHarness } from './entry-cohorts.mjs';
 import {
@@ -30,7 +30,13 @@ import {
   selectEntriesForHarness,
 } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
+import { runWebListHarness } from './harness-web-list.mjs';
 import { runNativeHarness } from './harness-native.mjs';
+import {
+  NATIVE_LIST_CAMPAIGN_VERSION,
+  buildNativeListMatrixContract,
+  runNativeListHarness,
+} from './harness-native-list.mjs';
 import { attachWebBundleEnvironment, bundleRecords } from './bundles.mjs';
 import { collectRuns } from './collect.mjs';
 import { machineFingerprint } from './machine.mjs';
@@ -57,7 +63,15 @@ import {
   nativeCellKey,
 } from './native-coverage.mjs';
 import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
-import { assertListCoverage, buildListCoverage } from './list-coverage.mjs';
+import {
+  assertListCoverage,
+  assertNativeListCoverage,
+  buildListCoverage,
+} from './list-coverage.mjs';
+import {
+  assertNativeListInputsUnchanged,
+  snapshotNativeListInputs,
+} from './list-native-inputs.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
   NATIVE_SANDBOX_POLICY,
@@ -100,6 +114,213 @@ const sha256Json = (value) => crypto.createHash('sha256')
   .update(JSON.stringify(value))
   .digest('hex');
 
+async function runNativeListCommand({ args, entries, listCases, caseNames, suites, sessionId }) {
+  if (suites.length !== 1 || suites[0] !== 'list') {
+    throw new Error('Native list is an isolated campaign; pass exactly --suite list.');
+  }
+  if (typeof args.adapter !== 'string' || args.adapter.length === 0) {
+    throw new Error('Native list run requires --adapter <module.mjs>.');
+  }
+  const expectedEntries = featuredEntriesForHarness(discoverEntries(), 'native');
+  const selectedIds = entries.map((entry) => entry.id).sort();
+  const expectedIds = expectedEntries.map((entry) => entry.id).sort();
+  const requestedCaseNames = [...new Set(caseNames ?? LIST_CASES.map((kase) => kase.name))].sort();
+  const expectedCaseNames = LIST_CASES.map((kase) => kase.name).sort();
+  if (JSON.stringify(selectedIds) !== JSON.stringify(expectedIds)
+    || JSON.stringify(requestedCaseNames) !== JSON.stringify(expectedCaseNames)) {
+    throw new Error(
+      'Native list publishable campaigns must run every featured Native entry and every list case.',
+    );
+  }
+  const reps = Number(args['list-reps'] ?? args.reps ?? LIST_CONFIG.recycle.repetitions);
+  if (reps !== LIST_CONFIG.recycle.repetitions) {
+    throw new Error(
+      `Native list publication requires exactly ${LIST_CONFIG.recycle.repetitions} repetitions; `
+      + `received ${reps}.`,
+    );
+  }
+  const root = repoRoot();
+  const matrixContract = buildNativeListMatrixContract(entries);
+  const connectorPackageTrees = resolveConnectorPackageTrees({
+    fromPath: path.resolve(args.adapter),
+  });
+  assertConnectorPackageTrees(connectorPackageTrees);
+  const inputs = snapshotNativeListInputs({
+    entries,
+    adapterPath: args.adapter,
+    connectorPackageTrees,
+    root,
+  });
+  const resolvedMatrix = {
+    suites: ['list'],
+    cases: listCases.map((kase) => kase.name),
+    scales: [...new Set(listCases.flatMap((kase) => kase.scales))].sort((a, b) => a - b),
+    reps,
+  };
+  const leaseExpirySafety = deriveNativeLeaseExpirySafety(NATIVE_SANDBOX_POLICY, {
+    reps,
+    startupReps: reps,
+  });
+  const campaignPayload = {
+    version: NATIVE_LIST_CAMPAIGN_VERSION,
+    label: typeof args['campaign-id'] === 'string' ? args['campaign-id'] : args.label ?? null,
+    matrixContractSha256: matrixContract.sha256,
+    inputReceiptSha256: inputs.receipt.sha256,
+    connectorPackageTreesSha256: connectorPackageTrees.sha256,
+    resolvedMatrix,
+    entryOrder: entries.map((entry) => entry.id),
+    ...(sessionId == null ? {} : { sessionId }),
+    runtimePolicy: NATIVE_SANDBOX_POLICY,
+    leaseExpirySafety,
+  };
+  const campaign = {
+    ...campaignPayload,
+    id: sha256Json(campaignPayload).slice(0, 16),
+  };
+  const leaseReceiptInput = args['lease-receipt'] ?? process.env.LYNX_SANDBOX_LEASE_RECEIPT;
+  if (leaseReceiptInput == null) {
+    throw new Error(
+      'Native list run requires --lease-receipt <json-or-file> with issueId, expiredAt, and serial.',
+    );
+  }
+  const leaseReceipt = parseNativeLeaseReceipt(leaseReceiptInput, {
+    serial: process.env.LYNX_SANDBOX_SERIAL,
+  });
+  if (args.resume === true) throw new Error('--resume requires an incomplete checkpoint path.');
+  const resumePath = typeof args.resume === 'string' ? path.resolve(args.resume) : null;
+  let priorRecords = [];
+  let priorDeviceCohort = null;
+  let cellLeaseIds = {};
+  let persistedCampaign = campaign;
+  let persistedInputReceipt = inputs.receipt;
+  let leaseChain = appendNativeLeaseReceipt(null, leaseReceipt);
+  if (resumePath != null) {
+    const priorRun = JSON.parse(fs.readFileSync(resumePath, 'utf8'));
+    const resumed = validateNativeResumeCheckpoint(priorRun, {
+      campaign,
+      matrixContract,
+      inputReceipt: inputs.receipt,
+      connectorPackageTrees,
+      entries,
+      leaseReceipt,
+    });
+    priorRecords = resumed.records;
+    priorDeviceCohort = resumed.priorDeviceCohort;
+    cellLeaseIds = resumed.cellLeaseIds;
+    leaseChain = resumed.leaseChain;
+    persistedCampaign = resumed.campaign;
+    persistedInputReceipt = resumed.campaignInputReceipt;
+  }
+  const priorIndex = nativeRecordIndex(priorRecords, matrixContract);
+  console.log(`[run:native-list] entries: ${entries.map((entry) => entry.id).join(', ')}`);
+  console.log(
+    `[run:native-list] contract=${matrixContract.expectedCellCount} cells `
+      + `reps=${reps} campaign=${persistedCampaign.id}`,
+  );
+  const now = new Date();
+  const label = args.label ? `-${args.label}` : '';
+  let outPath = resumePath;
+  const persist = ({ records: newRecords, machine: adapterMachine }, { complete = false } = {}) => {
+    const machine = adapterMachine ?? machineFingerprint();
+    const deviceCohort = assertNativeResumeDeviceCohort(
+      priorDeviceCohort,
+      machine.deviceCohort,
+    );
+    const records = mergeNativeRecords(priorRecords, newRecords, matrixContract);
+    for (const record of newRecords) {
+      const key = nativeCellKey(record);
+      const priorLeaseId = cellLeaseIds[key];
+      if (priorLeaseId != null && priorLeaseId !== leaseReceipt.deviceLeaseId) {
+        throw new Error(`Native list cell ${key} already belongs to lease ${priorLeaseId}.`);
+      }
+      cellLeaseIds[key] = leaseReceipt.deviceLeaseId;
+    }
+    if (outPath === null) {
+      const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      outPath = path.join(root, 'results/runs', `${stamp}-${machine.id}-native-list${label}.json`);
+    }
+    const listCoverage = buildListCoverage({
+      entries,
+      sourceRecords: records,
+      includeAllEntries: true,
+    });
+    if (complete) assertNativeListCoverage(listCoverage);
+    const run = {
+      schemaVersion: SCHEMA_VERSION,
+      meta: {
+        generatedAt: now.toISOString(),
+        machine,
+        calibration: null,
+        harness: 'native',
+        suite: 'list',
+        adapter: path.resolve(args.adapter),
+        argv: process.argv.slice(2),
+        entryOrder: entries.map((entry) => entry.id),
+        ...(sessionId == null ? {} : { sessionId }),
+        checkpoint: true,
+        checkpointComplete: complete,
+        deviceCohort,
+        leaseChain,
+        cellLeaseIds,
+        campaign: persistedCampaign,
+        resolvedMatrix,
+        matrixContract,
+        inputReceipt: persistedInputReceipt,
+        entryCommits: Object.fromEntries(
+          entries.map((entry) => [entry.id, entry.provenance?.commit ?? null]),
+        ),
+      },
+      listCoverage,
+      records,
+    };
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    const temporary = `${outPath}.tmp`;
+    fs.writeFileSync(temporary, stringifyResult(run));
+    fs.renameSync(temporary, outPath);
+  };
+  const native = await runNativeListHarness({
+    adapterPath: args.adapter,
+    entries,
+    cases: listCases,
+    reps,
+    bundleSnapshots: inputs.snapshots,
+    campaignIdentity: {
+      campaignId: persistedCampaign.id,
+      matrixContractSha256: matrixContract.sha256,
+      inputReceiptSha256: persistedInputReceipt.sha256,
+      connectorPackageTrees,
+      connectorPackageTreesSha256: connectorPackageTrees.sha256,
+      leaseReceipt,
+    },
+    existingCellKeys: new Set(priorIndex.keys()),
+    shouldStopBeforeRepetition: () =>
+      shouldStopBeforeLeaseExpiry(leaseReceipt, {
+        safetyMs: leaseExpirySafety.effectiveSafetyMs,
+      }),
+    log: (line) => console.log(line),
+    onProgress: persist,
+  });
+  const records = mergeNativeRecords(priorRecords, native.records, matrixContract);
+  assertNativeListInputsUnchanged(inputs);
+  if (native.stoppedForLeaseExpiry) {
+    persist({ records: native.records, machine: native.machine }, { complete: false });
+    console.log(
+      `[run:native-list] lease-expiry checkpoint ${records.length}/`
+        + `${matrixContract.expectedCellCount} records → ${path.relative(root, outPath)}`,
+    );
+    return;
+  }
+  if (records.length !== matrixContract.expectedCellCount) {
+    throw new Error(
+      `Native list campaign returned ${records.length} records; `
+      + `expected ${matrixContract.expectedCellCount}.`,
+    );
+  }
+  persist({ records: native.records, machine: native.machine }, { complete: true });
+  console.log(`[run:native-list] ${records.length} records → ${path.relative(root, outPath)}`);
+  if (shouldCollectAfterRun(args)) collectRuns();
+}
+
 async function cmdRun(args) {
   const harness = args.harness ?? 'web';
   if (harness !== 'web' && harness !== 'native') throw new Error(`unknown harness: ${harness}`);
@@ -140,18 +361,38 @@ async function cmdRun(args) {
   const stormCases = STORM_CASES.filter((kase) =>
     (caseNames == null || caseNames.includes(kase.name))
     && commitPolicies.includes(kase.commitPolicy));
+  const listCases = LIST_CASES.filter((kase) =>
+    caseNames == null || caseNames.includes(kase.name));
   if (caseNames) {
-    const knownCases = new Set([...TABLE_CASES, ...STORM_CASES].map((kase) => kase.name));
+    const knownCases = new Set(
+      [...TABLE_CASES, ...STORM_CASES, ...LIST_CASES].map((kase) => kase.name),
+    );
     const unknownCases = caseNames.filter((name) => !knownCases.has(name));
     if (unknownCases.length) throw new Error(`unknown case(s): ${unknownCases.join(', ')}`);
   }
   const suites = list(args.suite)
     ?? (harness === 'web' ? ['table', 'startup', 'pipeline', 'storm'] : ['table', 'startup']);
   const unknownSuites = suites.filter((suite) =>
-    !['table', 'startup', 'pipeline', 'storm'].includes(suite));
+    !['table', 'startup', 'pipeline', 'storm', 'list'].includes(suite));
   if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
+  if (harness === 'web' && suites.includes('list')
+    && (suites.length !== 1 || suites[0] !== 'list')) {
+    throw new Error('Web list is an isolated campaign; pass exactly --suite list.');
+  }
+
   if (harness === 'native') {
+    if (suites.includes('list')) {
+      await runNativeListCommand({
+        args,
+        entries,
+        listCases,
+        caseNames,
+        suites,
+        sessionId,
+      });
+      return;
+    }
     if (suites.includes('pipeline') || suites.includes('storm')) {
       throw new Error(
         'The pipeline and storm suites are Web-only; use the standard Native table/startup matrix.',
@@ -399,6 +640,21 @@ async function cmdRun(args) {
   const reps = args.reps ? Number(args.reps) : quick ? 3 : 7;
   const stormReps = args['storm-reps'] ? Number(args['storm-reps']) : quick ? 1 : 3;
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
+  const listReps = suites.includes('list')
+    ? args['list-reps'] ? Number(args['list-reps']) : quick ? 2 : LIST_CONFIG.recycle.repetitions
+    : undefined;
+  if (suites.includes('list')) {
+    const missingListCases = LIST_CASES.filter((kase) => !listCases.includes(kase));
+    if (missingListCases.length > 0) {
+      throw new Error('Web list publication requires every list case in one coherent campaign.');
+    }
+    if (listReps !== LIST_CONFIG.recycle.repetitions) {
+      throw new Error(
+        `Web list publication requires exactly ${LIST_CONFIG.recycle.repetitions} repetitions; `
+        + `received ${listReps}.`,
+      );
+    }
+  }
 
   console.log(`[run] entries: ${entries.map((e) => e.id).join(', ')}`);
   console.log(
@@ -460,6 +716,7 @@ async function cmdRun(args) {
   console.log(`[preflight] score=${probe.score} (probe v${probe.probeVersion})`);
   const receipt = runReceipt({
     entries, reps, stormReps, startupReps,
+    listReps,
     execution: {
       harness: 'web', browser: preflight.browser, jsRegime: jit, jsFlags, cpuThrottle,
       throttleScope,
@@ -471,11 +728,16 @@ async function cmdRun(args) {
     },
   });
 
+  const runHarness = suites.includes('list') ? runWebListHarness : runWebHarness;
   const {
     records, executablePath, browserVersion, processThrottle,
     processThrottleEntryVerifications, verifiedSlowdownByEntry,
-  } = await runWebHarness({
-    entries, cases, stormCases, suites, scales, startupScales, reps, stormReps, startupReps,
+  } = await runHarness({
+    entries,
+    cases: suites.includes('list') ? listCases : cases,
+    stormCases,
+    suites, scales, startupScales, reps, stormReps, startupReps,
+    listReps,
     jit, cpuThrottle, throttleScope,
     processThrottleControl: preflight.processThrottleVerification?.control ?? null,
     processQuotaPercent: preflight.processQuotaPercent,
@@ -597,7 +859,10 @@ function cmdList() {
       ? fs.readdirSync(e.distDir).filter((d) => d.startsWith('rows-')).map((d) => d.slice(5)).join(',')
       : 'no dist';
     const listFixture = e.listFixture == null ? 'unsupported' : e.listFixture.protocol ?? 'invalid';
-    console.log(`${e.id.padEnd(18)} ${e.label.padEnd(28)} [${e.tags?.join(',') ?? ''}] rows: ${scales}; list: ${listFixture}`);
+    console.log(
+      `${e.id.padEnd(18)} ${e.label.padEnd(28)} `
+      + `[${e.tags?.join(',') ?? ''}] rows: ${scales}; list: ${listFixture}`,
+    );
   }
   console.log(
     '\ncases: ' + TABLE_CASES.map((c) => c.name).join(', ')

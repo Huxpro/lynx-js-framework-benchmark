@@ -1,12 +1,12 @@
-export const LIST_WORKLOAD_CONTRACT_VERSION = 'lynx-list-workloads-v1';
-export const LIST_FIXTURE_PROTOCOL = 'lynx-list-fixture-v1';
+export const LIST_WORKLOAD_CONTRACT_VERSION = 'lynx-list-workloads-v2';
+export const LIST_FIXTURE_PROTOCOL = 'lynx-list-fixture-v2';
 
 export const LIST_SOURCE_METRIC_CONTRACTS = Object.freeze({
   firstVisibleContentMs: Object.freeze({
-    unit: 'ms', boundary: 'list-attach-to-first-visible-content-frame',
+    unit: 'ms', boundary: 'list-attach-to-first-visible-tree-observation',
   }),
   operationTimeMs: Object.freeze({
-    unit: 'ms', boundary: 'list-one-viewport-scroll-input-to-presented-frame',
+    unit: 'ms', boundary: 'list-one-viewport-scroll-input-to-visible-tree-observation',
   }),
   recycledCells: Object.freeze({
     unit: 'cells', boundary: 'list-visible-cell-key-replacement-count-during-one-viewport-scroll',
@@ -18,16 +18,16 @@ export const LIST_SOURCE_METRIC_CONTRACTS = Object.freeze({
     unit: 'bytes', boundary: 'list-host-transport-during-one-viewport-scroll',
   }),
   elapsedMs: Object.freeze({
-    unit: 'ms', boundary: 'list-fixed-velocity-fling-input-to-terminal-presented-frame',
+    unit: 'ms', boundary: 'list-fling-input-to-terminal-visible-tree-observation',
   }),
   materializedCells: Object.freeze({
     unit: 'cells', boundary: 'list-visible-cell-first-appearance-count-during-fling',
   }),
   blankFrames: Object.freeze({
-    unit: 'frames', boundary: 'list-presented-frame-with-zero-expected-visible-cells-count',
+    unit: 'frames', boundary: 'list-observer-frame-with-zero-expected-visible-cells-count',
   }),
   materializationTimesMs: Object.freeze({
-    unit: 'ms', boundary: 'list-expected-viewport-entry-to-first-visible-presented-frame',
+    unit: 'ms', boundary: 'list-expected-viewport-entry-to-first-visible-tree-observation',
   }),
 });
 
@@ -36,7 +36,11 @@ export const LIST_CONFIG = Object.freeze({
   row: Object.freeze({ estimatedHeightPx: 40, itemKey: 'id' }),
   buffer: Object.freeze({ leadingRows: 2, trailingRows: 2 }),
   recycle: Object.freeze({ distancePx: 640, repetitions: 20 }),
-  fling: Object.freeze({ velocityPxPerSecond: 4800, durationMs: 1500 }),
+  fling: Object.freeze({
+    velocityPxPerSecond: 4800,
+    durationMs: 1500,
+    nativeReleaseDistancePx: 600,
+  }),
   observation: Object.freeze({
     web: 'composed-dom-visible-list-cell-window-v1',
     native: 'native-visible-list-cell-tree-v1',
@@ -48,12 +52,12 @@ export const LIST_CONFIG = Object.freeze({
     }),
     native: Object.freeze({
       recycle: 'shared-touch-drag-one-viewport-v1',
-      fling: 'shared-native-touch-fling-velocity-v1',
+      fling: 'shared-native-touch-release-velocity-v1',
     }),
   }),
   semantics: Object.freeze({
-    materializedCell: 'stable-item-key-first-visible-at-presented-frame-v1',
-    blankFrame: 'presented-frame-with-zero-expected-visible-cells-v1',
+    materializedCell: 'stable-item-key-first-visible-at-observer-frame-v1',
+    blankFrame: 'observer-frame-with-zero-expected-visible-cells-v1',
   }),
 });
 

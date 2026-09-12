@@ -116,15 +116,20 @@ metric rather than silently changing the upstream interaction formula.
   bookkeeping/root attach, not the browser's full layout/commit cost. Native is explicitly
   unsupported because it has no equivalent framework-neutral seam; no proxy value is emitted.
 - **List virtualization (capability-gated)**: `list-startup@1k/10k` attaches a separately built,
-  prepopulated declarative list and observes the first visible content frame. `list-recycle@10k`
+  prepopulated declarative list and observes the first visible content tree. `list-recycle@10k`
   moves exactly one 390×640 viewport twenty times and retains raw elapsed time, recycled-cell count,
-  and wire totals. `list-fling@10k` applies 4,800 px/s for 1,500 ms and retains materialized cells,
-  materialization samples, and every blank frame. Collection alone derives cost/bytes per recycled
+  and wire totals. Web `list-fling@10k` applies 4,800 px/s for 1,500 ms. Native performs a 600 px
+  touch gesture whose release velocity is 4,800 px/s, then observes for 1,500 ms after release.
+  Both retain materialized cells and every post-release blank observer frame; Web additionally
+  retains materialization samples. Collection alone derives cost/bytes per recycled
   cell, materialized cells/s, and p50/p99. The fixture uses stable keyed `list-item` children with a
   40 px estimate and two leading/trailing buffer rows. Native observes the versioned visible-cell
-  tree and uses a shared fixed-velocity touch gesture; Web uses its separate composed-tree observer
-  and shared wheel schedule. A materialization is a stable item key first becoming visible on a
-  presented frame; a blank frame has zero expected visible keys. Renderer internals such as
+  tree and uses a shared release-velocity touch gesture; Web uses its separate composed-tree observer
+  and continuous wheel schedule. A materialization is a stable item key first becoming visible in
+  an observer frame; a blank observer frame has zero expected visible keys. Native DevTool exposes
+  neither a framework-neutral transport byte counter nor a common scroll-offset
+  presentation clock, so Native wire bytes and expected-entry materialization latency are explicit
+  metric-scoped unsupported cells rather than estimates. Renderer internals such as
   `componentAtIndex` are observational implementation details, never framework-facing calls.
   Existing eager-table artifacts declare no list fixture, so their cells are explicitly
   unsupported instead of being proxied. A non-zero blank-frame count is valid measured data; only
