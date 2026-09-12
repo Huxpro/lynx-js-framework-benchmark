@@ -323,6 +323,26 @@ final scorecard claim. Its complete focused receipt is
 `results/audits/2026-09-12-m4-stage-row-indices-remove-profile.json` (SHA-256
 `b8d45348763db5cb47d1ff6c30c87e215f0b16651f6551ce9326b9575f6a6061`).
 
+### Retained owner cut: replace descriptors when a range becomes empty
+
+The later deletion-descriptor shortcut improved partial removals but also made
+`clear` retain the committed descriptor Map, allocate every old key, and delete
+those keys individually after acknowledgement. The empty-range follow-up keeps
+the acknowledgement boundary and instead lets the ordinary empty render publish
+its fresh empty Map. It does not skip user work that would otherwise run: an
+empty range has no key or row producer calls.
+
+Ten independent focused sessions, five AB and five BA with 20 repetitions per
+arm, measured the patch against the deletion-descriptor candidate. Clear wall
+latency was non-inferior at 1.01212 [0.98952, 1.03322]. The direct BTS owner was
+0.92390 [0.90588, 0.94369], while MTS CPU was 1.00229
+[0.98747, 1.01739]. Wire bytes were identical, all four 10k GC snapshot upper
+bounds were below 1.002, and the Web and Native rows-zero bundles each grew by
+14 bytes. The patch is retained as an owner cut, not a final scorecard claim.
+The complete receipt is
+`results/audits/2026-09-12-m4-empty-range-fresh-map-web-jit-focused.json`
+(SHA-256 `556fcc4b10a23f60f46f799d5e78fa65d57c9bcdab2bf415bef8378790d032f3`).
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
