@@ -279,6 +279,27 @@ was 4.47 versus 4.61 ms, so the structural gap is again before transport. The
 earlier listener-container and exact-listener-identity experiments are not
 repeated because their focused receipts rejected those mechanisms.
 
+### Retained owner cut: compiler-proven keyed component rows
+
+The Block component lowering was then changed to reuse a retained component-row
+descriptor when the compiler proof establishes the same key, item identity,
+index, non-selection captures, and selected state. This removes descriptor
+construction for 900 of 1,000 update rows and 998 of 1,000 swap rows without
+changing the wire or skipping rows whose item or index moved.
+
+Ten focused sessions, balanced five AB and five BA with 20 repetitions per arm,
+measured patch versus the compact candidate. Aggregate latency was 0.98328,
+95% CI [0.96777, 0.99650]. The direct owner moved more strongly: aggregate BTS
+CPU was 0.89386 [0.88236, 0.90609], update was 0.78610 [0.76923, 0.80495], and
+swap was 0.79013 [0.77441, 0.80481]. Transport bytes were identical. The Web
+and Native rows-zero bundles each grew by 197 bytes. The patch is retained for
+formal comparator validation because it removes more than 20% of the measured
+owner without moving cost to MTS or the wire. It does not itself pass the final
+gate: patch/baseline swap latency was 1.01710 [0.95740, 1.07638], so the formal
+comparator matrix must be rerun rather than inferred. The complete receipt is
+`results/audits/2026-09-12-m4-keyed-row-retention-web-jit-focused.json`
+(SHA-256 `784f9216b5150529fec691f98aac7092785f29489e242d5d53a6ea1373fa1ac9`).
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
