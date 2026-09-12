@@ -1,0 +1,124 @@
+{
+  "kind": "m4-rejected-hypothesis",
+  "candidate": "octane-m4-precomputed-row-keys-experiment",
+  "candidateCommit": "ee6493dbd0e3d422e31b41ee9052188d24c6d20b",
+  "comparator": "octane-m4-retain-row-listeners-experiment",
+  "comparatorCommit": "eda005a520294fdfc4aa1ff2846eff5b90a3c93e",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Reuse the component pass's complete ordered key sequence and duplicate-checked retained map during structural Block reconciliation, avoiding a second key-producer pass, key array, and duplicate set.",
+  "disposition": "rejected-no-pr-source-and-bundles-archived",
+  "recoveryPath": "/data00/home/xuan.huang/.codex/tmp/issue291-rejected-precomputed-row-keys.t6JPkJ",
+  "decision": "The combined population retained a strict background-thread CPU reduction, but end-to-end latency regressed and its confidence interval exceeded the frozen 1.05 cell ceiling. The confirmation cohort also did not independently establish a strict background-thread win, so the source is not eligible for the M4 stack.",
+  "sampling": {
+    "independentSessions": 20,
+    "orderCounts": { "AB": 10, "BA": 10 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x291ee84 plus metric index",
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "extensionDisclosure": {
+      "stage1": "The first fixed balanced 10-session cohort established strict BTS and MTS wins but missed the 1.05 latency non-inferiority ceiling.",
+      "decision": "Before collecting any more observations, a second independent balanced 10-session confirmation cohort and a fixed 20-session combined analysis were declared.",
+      "confirmation": "The second cohort remained latency-inconclusive and did not independently reproduce the strict BTS win.",
+      "qualificationPopulation": "All 20 sessions; no session was removed or replaced."
+    }
+  },
+  "subcohorts": {
+    "stage1": {
+      "sessions": 10,
+      "latency": { "point": 1.036003317076222, "lower": 0.9947453878877628, "upper": 1.0864946197864267 },
+      "backgroundCpu": { "point": 0.9188941871821542, "lower": 0.8949714418663752, "upper": 0.9478371496252698 },
+      "mainThreadCpu": { "point": 0.9647575992365564, "lower": 0.9303036509177579, "upper": 0.9967804619599734 }
+    },
+    "confirmation": {
+      "sessions": 10,
+      "latency": { "point": 1.030330531104701, "lower": 0.9880645530615453, "upper": 1.0721281236559417 },
+      "backgroundCpu": { "point": 0.9825734649572924, "lower": 0.9521945622815525, "upper": 1.016428894678817 },
+      "mainThreadCpu": { "point": 1.0092987616246532, "lower": 0.9845827816799434, "upper": 1.0349577495577975 }
+    }
+  },
+  "removeAt1000": {
+    "latency": {
+      "point": 1.0331630306536213,
+      "lower": 1.0023986472503514,
+      "upper": 1.0659491648605555,
+      "nonInferior": false,
+      "strictWin": false
+    },
+    "backgroundCpu": {
+      "point": 0.9502005290614629,
+      "lower": 0.9263749511140071,
+      "upper": 0.9763585138218129,
+      "nonInferior": true,
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 0.9867768999005955,
+      "lower": 0.9630217872409469,
+      "upper": 1.0095734216002932,
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "wireToBtsBytes": { "point": 0.9999595313710992, "lower": 0.9998785990263609, "upper": 1, "nonInferior": true },
+    "wireToMtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": { "point": 0.9997726306702995, "lower": 0.9993335753964667, "upper": 1.0001969599979839, "nonInferior": true },
+    "heapBts": { "point": 1.000051707646518, "lower": 0.9999906921060866, "upper": 1.0001145976302226, "nonInferior": true },
+    "heapMtsAfterClear": { "point": 0.999707327952603, "lower": 0.9994544766769051, "upper": 0.9999233327484706, "nonInferior": true },
+    "heapBtsAfterClear": { "point": 1.0003542165104453, "lower": 0.9999334270578291, "upper": 1.000890377652725, "nonInferior": true }
+  },
+  "bundle": {
+    "web": {
+      "comparatorBytes": 184466,
+      "candidateBytes": 184537,
+      "deltaBytes": 71,
+      "candidateSha256": "5a65da8409f3e98b3e033bbd9e0416fe3e51924990cc57cc51c657e4c07a5858"
+    },
+    "native": {
+      "comparatorBytes": 184586,
+      "candidateBytes": 184657,
+      "deltaBytes": 71,
+      "candidateSha256": "d0f9e2c37d92e9ac62802020b08e7f86fcf824cfb15823335c8ff3c7daa60365"
+    }
+  },
+  "validation": {
+    "focusedTests": "2 files, 89 tests passed",
+    "fullLynxProject": "57 files, 996 tests passed",
+    "typecheck": "production, testing, and typetest tsconfigs passed",
+    "sync": "passed",
+    "manifestAndBundles": "all 16 candidate SHA-256 receipts verified"
+  },
+  "benchmarkReceipt": {
+    "commit": "35b84b885582fe518141c9a167e8d195cee7dc92",
+    "dirty": true,
+    "ignoredGeneratedPaths": ["results/runs/**", "results/audits/**", "results/latest.json", "site/dist/**"]
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T07-32-29-65160668d8d9.json", "sha256": "95aea4b7faadb126be9a84da3618fd679703fd2f5f7e295a2487ccd2f808c850", "sessionId": "issue291-precomputed-keys-formal-01-ab", "calibration": 2395 },
+    { "file": "results/runs/2026-09-12T07-33-36-65160668d8d9.json", "sha256": "6da7a07ab933783f42a35863cb916863245d69f82c760689eac858afb99f011f", "sessionId": "issue291-precomputed-keys-formal-02-ba", "calibration": 2331.1 },
+    { "file": "results/runs/2026-09-12T07-34-44-65160668d8d9.json", "sha256": "9cb8c1ceac4080558b478fedc8086bab82c8ba86d62dc922b309179139da0f7b", "sessionId": "issue291-precomputed-keys-formal-03-ab", "calibration": 2396.8 },
+    { "file": "results/runs/2026-09-12T07-35-48-65160668d8d9.json", "sha256": "825e1d0eaaef7e2e61eebf5edc7116f77598671f3c230dd8251f9742746b75d3", "sessionId": "issue291-precomputed-keys-formal-04-ba", "calibration": 2329.5 },
+    { "file": "results/runs/2026-09-12T07-36-51-65160668d8d9.json", "sha256": "f5442b26b42f12f15289c3254d5a301a8d36f74767f70a03d357dd96168e9846", "sessionId": "issue291-precomputed-keys-formal-05-ab", "calibration": 2444.8 },
+    { "file": "results/runs/2026-09-12T07-37-56-65160668d8d9.json", "sha256": "aeb3c96bae8fd0d16fd86a6bb92ad4d2969a6b69308fb43a910c5a4ae8777198", "sessionId": "issue291-precomputed-keys-formal-06-ba", "calibration": 2393.3 },
+    { "file": "results/runs/2026-09-12T07-39-00-65160668d8d9.json", "sha256": "0e641b2fd74c06cf4fe5c826f525cf1e90cd701dc8a4d041b4cd6adc5ad5b100", "sessionId": "issue291-precomputed-keys-formal-07-ab", "calibration": 2400.8 },
+    { "file": "results/runs/2026-09-12T07-40-05-65160668d8d9.json", "sha256": "5f781413f57d4ed4a1bdfa4e901c4c80fffa4d8ecda51d04e16ebd83974eed37", "sessionId": "issue291-precomputed-keys-formal-08-ba", "calibration": 2298.8 },
+    { "file": "results/runs/2026-09-12T07-41-09-65160668d8d9.json", "sha256": "3d2669698b4388a887b5178f3e1f88d478c7d121271ac9b11b9cd50c69c2ad21", "sessionId": "issue291-precomputed-keys-formal-09-ab", "calibration": 2351 },
+    { "file": "results/runs/2026-09-12T07-42-14-65160668d8d9.json", "sha256": "093ed28557cb7d049ff8c577f2053268796ea4f48bcb1b565ec8f3121e4af6b9", "sessionId": "issue291-precomputed-keys-formal-10-ba", "calibration": 2336.8 },
+    { "file": "results/runs/2026-09-12T07-43-48-65160668d8d9.json", "sha256": "2484d4976f7062e7970db672dca9abe5b87958fb6b0a4dde5a3ec6510118541b", "sessionId": "issue291-precomputed-keys-confirm-01-ab", "calibration": 2396.8 },
+    { "file": "results/runs/2026-09-12T07-44-52-65160668d8d9.json", "sha256": "3facd4c6be88757d142a5245c818c6a0123bf154c53b1b297e14c932b28ddb94", "sessionId": "issue291-precomputed-keys-confirm-02-ba", "calibration": 2349.8 },
+    { "file": "results/runs/2026-09-12T07-45-56-65160668d8d9.json", "sha256": "bb558e7c8fb7e0fda3df58254142b5a906e0453cecbeda8c5dab52e2f0651c7a", "sessionId": "issue291-precomputed-keys-confirm-03-ab", "calibration": 2372.3 },
+    { "file": "results/runs/2026-09-12T07-47-01-65160668d8d9.json", "sha256": "4481d915533d9713d91555e75ae0fde4f376c4fd13bdc5bf9aaf3a27e06d7082", "sessionId": "issue291-precomputed-keys-confirm-04-ba", "calibration": 2391 },
+    { "file": "results/runs/2026-09-12T07-48-04-65160668d8d9.json", "sha256": "0d3ec9af12ae0a46887a792a5c21d7e312cfa040ebfb7c1dffb0a09cc8ceee65", "sessionId": "issue291-precomputed-keys-confirm-05-ab", "calibration": 2408 },
+    { "file": "results/runs/2026-09-12T07-49-09-65160668d8d9.json", "sha256": "01e03334617be69bf80d42a496b96c3c39649e392d9c9e570ddba9e42a4a1b21", "sessionId": "issue291-precomputed-keys-confirm-06-ba", "calibration": 2359.5 },
+    { "file": "results/runs/2026-09-12T07-50-13-65160668d8d9.json", "sha256": "f0c5a8e6f48064ff19f94b63d181e4ed3bfa5275677c76356c5d6d9489d5d206", "sessionId": "issue291-precomputed-keys-confirm-07-ab", "calibration": 2431.5 },
+    { "file": "results/runs/2026-09-12T07-51-17-65160668d8d9.json", "sha256": "a18529431d2db9d2bf123f74be04d40c3d1445ffec9d4ba90553612b3a0befa9", "sessionId": "issue291-precomputed-keys-confirm-08-ba", "calibration": 2392.8 },
+    { "file": "results/runs/2026-09-12T07-52-20-65160668d8d9.json", "sha256": "305c7c2aac1be1aa76df8a9bae36b77a1d782e4938bea03da60b56aef9f81291", "sessionId": "issue291-precomputed-keys-confirm-09-ab", "calibration": 2334.8 },
+    { "file": "results/runs/2026-09-12T07-53-25-65160668d8d9.json", "sha256": "b8e4597ec06e89b9a3f3d94bb612649bd5b2cb8034348a9c66f3bbbe8fb89dc7", "sessionId": "issue291-precomputed-keys-confirm-10-ba", "calibration": 2279 }
+  ]
+}
