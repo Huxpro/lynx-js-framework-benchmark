@@ -48,3 +48,30 @@ test('list derivation rejects misaligned source samples instead of inventing a r
     source('list-recycle', 'recycledCells', [10]),
   ]), /not aligned/);
 });
+
+test('list derivation omits a proven unsupported Native wire metric', () => {
+  const unsupported = {
+    ...source('list-recycle', 'wireToMtsBytes', []),
+    harness: 'native',
+    dnfCount: 2,
+    failures: [
+      {
+        category: 'unsupported-native-wire-meter',
+        capabilityScope: 'metric',
+        capabilityProven: true,
+      },
+    ],
+  };
+  const derived = deriveListRecords([
+    {
+      ...source('list-recycle', 'operationTimeMs', [20, 30]),
+      harness: 'native',
+    },
+    { ...source('list-recycle', 'recycledCells', [10, 15]), harness: 'native' },
+    unsupported,
+  ]);
+  assert.deepEqual(
+    derived.map((record) => record.metric),
+    ['timePerRecycledCellMs'],
+  );
+});

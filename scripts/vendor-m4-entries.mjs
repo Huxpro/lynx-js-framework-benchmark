@@ -6,6 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+} from '../packages/shared/src/list-workloads.mjs';
+
+import {
   combineWorkloadReceipts,
   hashFiles,
   M4_BUILD_DRIVER_FILES,
@@ -30,6 +35,11 @@ const checkouts = {
 };
 const runnerReceipt = hashFiles(root, M4_RUNNER_CONTRACT_FILES);
 const buildDriverReceipt = hashFiles(root, M4_BUILD_DRIVER_FILES);
+
+const listContractSha256 = crypto
+  .createHash('sha256')
+  .update(JSON.stringify(LIST_WORKLOAD_CONTRACT))
+  .digest('hex');
 
 const presentation = Object.fromEntries(
   M4_ENTRY_IDS.map((id, index) => [
@@ -125,10 +135,25 @@ function octaneCells(checkout, core) {
   }));
 }
 
+function octaneListCells(checkout, core) {
+  const coreSuffix = core === 'automatic' ? '-automatic' : '';
+  return [1000, 10000].map((rows) => ({
+    rows,
+    from: path.join(checkout, 'benchmarks/lynx-table/app', `dist${coreSuffix}-list-rows${rows}`),
+  }));
+}
+
 function comparatorCells(checkout, id) {
   return M4_ROWS.map((rows) => ({
     rows,
     from: path.join(checkout, 'bench-out', id, `rows-${rows}`),
+  }));
+}
+
+function comparatorListCells(checkout, id) {
+  return [1000, 10000].map((rows) => ({
+    rows,
+    from: path.join(checkout, 'bench-out', id, 'list', `rows-${rows}`),
   }));
 }
 
@@ -148,6 +173,7 @@ function vendor({
   pnpmVersion,
   buildCommand,
   cells,
+  listCells,
   harnesses = ['web', 'native'],
   unsupportedHarnessReasons,
 }) {
@@ -173,6 +199,24 @@ function vendor({
     const hashes = M4_ROWS.map((rows) => checks[`rows-${rows}/${bundle}`]);
     if (new Set(hashes).size !== M4_ROWS.length) {
       throw new Error(`${id}: ${bundle} does not encode every frozen startup scale`);
+    }
+  }
+  const listChecks = { web: {}, native: {} };
+  const listBundles = { web: {}, native: {} };
+  for (const { rows, from } of listCells ?? []) {
+    const target = path.join(dist, 'list', `rows-${rows}`);
+    fs.mkdirSync(target, { recursive: true });
+    for (const [harness, bundle] of [
+      ['web', 'main.web.bundle'],
+      ['native', 'main.lynx.bundle'],
+    ]) {
+      const input = path.join(from, bundle);
+      if (!fs.existsSync(input)) throw new Error(`${id}: missing ${input}`);
+      const relative = path.join('dist', 'list', `rows-${rows}`, bundle);
+      const output = path.join(dir, relative);
+      fs.copyFileSync(input, output);
+      listBundles[harness][rows] = relative;
+      listChecks[harness][rows] = sha256(output);
     }
   }
   const sourceWorkload = hashFiles(sourceCheckout, sourceFiles);
@@ -227,6 +271,16 @@ function vendor({
       web: 'dist/rows-0/main.web.bundle',
       lynx: 'dist/rows-0/main.lynx.bundle',
     },
+    ...(listCells == null
+      ? {}
+      : {
+          listFixture: {
+            protocol: LIST_FIXTURE_PROTOCOL,
+            contractSha256: listContractSha256,
+            bundles: listBundles,
+            sha256: listChecks,
+          },
+        }),
   };
   fs.writeFileSync(path.join(dir, 'entry.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`[vendor-m4] ${id}: ${Object.keys(checks).length} immutable bundles`);
@@ -238,6 +292,9 @@ const octaneSourceFiles = [
   'benchmarks/lynx-table/app/src/app.css',
   'benchmarks/lynx-table/app/src/data.ts',
   'benchmarks/lynx-table/app/src/index.ts',
+  'benchmarks/lynx-table/app/src/ListApp.lynx.tsrx',
+  'benchmarks/lynx-table/app/src/list-index.ts',
+  'benchmarks/lynx-table/app/src/list.css',
   'benchmarks/lynx-table/scripts/build-app.mjs',
 ];
 
@@ -280,6 +337,7 @@ for (const spec of [
     toolchainDirectory: 'packages/rspeedy-plugin-octane',
     buildCommand: `BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`,
     cells: octaneCells(spec.checkout, spec.core),
+    listCells: octaneListCells(spec.checkout, spec.core),
   });
 }
 
@@ -412,9 +470,12 @@ for (const spec of comparatorSpecs) {
       `packages/benchmark/apps/${spec.app}/lynx.config.${spec.app === 'ui-react' ? 'ts' : 'ts'}`,
       `packages/benchmark/apps/${spec.app}/src/${spec.app === 'ui-react' ? 'App.tsx' : 'App.vue'}`,
       `packages/benchmark/apps/${spec.app}/src/index.${spec.app === 'ui-react' ? 'tsx' : 'ts'}`,
+      `packages/benchmark/apps/${spec.app}/src/ListApp.${spec.app === 'ui-react' ? 'tsx' : 'vue'}`,
+      `packages/benchmark/apps/${spec.app}/src/list-index.${spec.app === 'ui-react' ? 'tsx' : 'ts'}`,
       ...(spec.app === 'ui-react'
         ? [
             'packages/benchmark/apps/ui-react/src/App.css',
+            'packages/benchmark/apps/ui-react/src/List.css',
             'packages/benchmark/apps/ui-react/src/data.ts',
           ]
         : []),
@@ -425,6 +486,7 @@ for (const spec of comparatorSpecs) {
     buildCommand:
       'BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-vue-m4.mjs <vue-lynx-checkout>',
     cells: comparatorCells(comparatorCheckout, spec.id),
+    listCells: comparatorListCells(comparatorCheckout, spec.id),
   });
 }
 

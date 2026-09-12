@@ -2,7 +2,7 @@ import { combineWorkloadReceipts, hashFiles } from './m0-artifact-contract.mjs';
 
 export { combineWorkloadReceipts, hashFiles };
 
-export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v1';
+export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v2';
 export const M4_ROWS = Object.freeze([0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
 export const M4_ENTRY_IDS = Object.freeze([
   'octane-m4-final',
@@ -46,16 +46,29 @@ export const M4_PLATFORM_LANE = Object.freeze({
 });
 
 export const M4_RUNNER_CONTRACT_FILES = Object.freeze([
+  'packages/runner/adapters/lynx-sandbox-android.mjs',
+  'packages/runner/src/cli.mjs',
+  'packages/runner/src/connector-receipt.mjs',
   'packages/runner/src/entry-cohorts.mjs',
   'packages/runner/src/entries.mjs',
+  'packages/runner/src/harness-native-list.mjs',
   'packages/runner/src/harness-native.mjs',
   'packages/runner/src/harness-web.mjs',
+  'packages/runner/src/list-coverage.mjs',
+  'packages/runner/src/list-derivation.mjs',
+  'packages/runner/src/list-native-inputs.mjs',
+  'packages/runner/src/list-observation.mjs',
   'packages/runner/src/native-coverage.mjs',
   'packages/runner/src/native-inputs.mjs',
   'packages/runner/src/native-protocol.mjs',
+  'packages/runner/src/native-resume.mjs',
   'packages/runner/src/qualification-runs.mjs',
   'packages/runner/src/run-matrix.mjs',
+  'packages/runner/src/server.mjs',
+  'packages/shared/src/driver-client.mjs',
+  'packages/shared/src/list-workloads.mjs',
   'packages/shared/src/qualification.mjs',
+  'packages/shared/src/schema.mjs',
   'packages/shared/src/scorecard.mjs',
   'packages/shared/src/workloads.mjs',
 ]);

@@ -166,19 +166,21 @@ export function entryBundleReceipts(entries) {
   ]));
 }
 
-export function samplingPolicy({ reps, stormReps, startupReps }) {
+export function samplingPolicy({ reps, stormReps, startupReps, listReps }) {
   return {
-    repetitions: { table: reps, storm: stormReps, startup: startupReps },
+    repetitions: { table: reps, storm: stormReps, startup: startupReps, list: listReps },
     warmup: {
       table: { createClearCycles: 2, page: 'shared-per-entry' },
       storm: { cycles: 0, page: 'fresh-per-attempt' },
       startup: { cycles: 0, page: 'fresh-per-attempt' },
+      list: { cycles: 0, page: 'fresh-per-attempt' },
     },
     acceptance: {
       table: 'dom-predicate-completed-before-timeout',
       pipeline: 'dom-predicate-completed-with-tree-and-call-multiset-controls',
       storm: 'terminal-state-observed-with-explicit-commit-outcome-and-input-schedule-controls',
       startup: 'first-content-observed-before-timeout',
+      list: 'visible-list-contract-observed-before-timeout',
     },
     aggregation: 'median-with-t-distribution-ci95',
     outliers: 'none-removed',
@@ -186,12 +188,12 @@ export function samplingPolicy({ reps, stormReps, startupReps }) {
 }
 
 export function runReceipt({
-  entries, reps, stormReps, startupReps, execution, root = repoRoot(),
+  entries, reps, stormReps, startupReps, listReps, execution, root = repoRoot(),
 }) {
   const repository = repositoryReceipt(root);
   const runtime = runtimeReceipt(root);
   const workload = workloadReceipt(root);
-  const sampling = samplingPolicy({ reps, stormReps, startupReps });
+  const sampling = samplingPolicy({ reps, stormReps, startupReps, listReps });
   // Session identity and AB/BA schedule are audit dimensions, not environment
   // dimensions. Keeping them in `execution` proves what actually ran, while
   // excluding them here lets independently scheduled pairs share one cohort.

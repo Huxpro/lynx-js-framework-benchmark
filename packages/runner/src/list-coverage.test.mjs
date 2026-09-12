@@ -14,6 +14,7 @@ import {
 import {
   LIST_WORKLOAD_CONTRACT_SHA256,
   assertListCoverage,
+  assertNativeListCoverage,
   buildListCoverage,
   selectListCampaignRecords,
 } from './list-coverage.mjs';
@@ -34,19 +35,48 @@ test('list coverage makes absent fixtures explicit for both isolated harnesses',
   assert.doesNotThrow(() => assertListCoverage(coverage));
 });
 
+test('Native list publication accepts only complete measurements plus proven metric gaps', () => {
+  const coverage = {
+    expectedCellCount: 2,
+    cells: [
+      { key: 'a', harness: 'native', status: 'measured' },
+      {
+        key: 'b',
+        harness: 'native',
+        status: 'measured-with-unsupported-metrics',
+      },
+    ],
+  };
+  assert.doesNotThrow(() => assertNativeListCoverage(coverage));
+  assert.throws(
+    () =>
+      assertNativeListCoverage({
+        ...coverage,
+        cells: [coverage.cells[0], { ...coverage.cells[1], status: 'dnf' }],
+      }),
+    /incomplete or failed/,
+  );
+});
+
 test('declared fixtures become unscheduled, then measured or DNF without changing blank frames into DNF', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-list-fixture-'));
   try {
     fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'dist/list.web.bundle'), 'fixture');
+    fs.writeFileSync(path.join(root, 'dist/list-1000.web.bundle'), 'fixture');
+    fs.writeFileSync(path.join(root, 'dist/list-10000.web.bundle'), 'fixture');
     const bundleSha256 = crypto.createHash('sha256').update('fixture').digest('hex');
     const entry = {
       id: 'react', tier: 'featured', dir: root,
       listFixture: {
         protocol: LIST_FIXTURE_PROTOCOL,
         contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
-        bundles: { web: 'dist/list.web.bundle' },
-        sha256: { web: bundleSha256 },
+        bundles: {
+          web: {
+            1000: 'dist/list-1000.web.bundle',
+            10000: 'dist/list-10000.web.bundle',
+          },
+        },
+        sha256: { web: { 1000: bundleSha256, 10000: bundleSha256 } },
       },
     };
     const sourceRecords = [
@@ -55,14 +85,16 @@ test('declared fixtures become unscheduled, then measured or DNF without changin
       suite: 'list', entry: 'react', harness: 'web', workload: 'list-fling', scale: 10000,
       metric, contractVersion: LIST_WORKLOAD_CONTRACT_VERSION,
       ...LIST_SOURCE_METRIC_CONTRACTS[metric],
-      n: 1, dnfCount: 0, samples: [metric === 'blankFrames' ? 3 : 1],
+      n: 20, dnfCount: 0,
+      samples: Array(20).fill(metric === 'blankFrames' ? 3 : 1),
+      attemptedCount: 20, acceptedCount: 20,
     })).concat([
-      'operationTimeMs', 'recycledCells', 'wireToMtsBytes', 'wireToBtsBytes',
-    ].map((metric) => ({
+      'operationTimeMs', 'recycledCells', 'wireToMtsBytes', 'wireToBtsBytes'].map((metric) => ({
       suite: 'list', entry: 'react', harness: 'web', workload: 'list-recycle', scale: 10000,
       metric, contractVersion: LIST_WORKLOAD_CONTRACT_VERSION,
       ...LIST_SOURCE_METRIC_CONTRACTS[metric],
-      n: 0, dnfCount: 1, samples: [], failures: [{ category: 'capture-timeout' }],
+      n: 0, dnfCount: 20, samples: [], attemptedCount: 20, acceptedCount: 0,
+      failures: [{ category: 'capture-timeout' }],
     })));
     const coverage = buildListCoverage({ entries: [entry], sourceRecords });
     assert.equal(coverage.cells.find((cell) => cell.harness === 'web'
@@ -73,6 +105,12 @@ test('declared fixtures become unscheduled, then measured or DNF without changin
       && cell.status === 'unscheduled').length, 2);
     assert.equal(coverage.cells.filter((cell) => cell.harness === 'native'
       && cell.status === 'unsupported').length, 4);
+    const shortRun = structuredClone(sourceRecords);
+    shortRun.find((record) => record.metric === 'elapsedMs').attemptedCount = 19;
+    assert.throws(
+      () => assertListCoverage(buildListCoverage({ entries: [entry], sourceRecords: shortRun })),
+      /invalid cells/,
+    );
     assert.equal(
       crypto.createHash('sha256').update(JSON.stringify(coverage.config)).digest('hex').length,
       64,

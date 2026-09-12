@@ -35,6 +35,7 @@ function rowsFromEnvironment() {
 }
 
 const rowsMatrix = rowsFromEnvironment();
+const listRowsMatrix = [1000, 10000];
 
 for (const rows of rowsMatrix) {
   execFileSync(process.execPath, [buildScript], {
@@ -44,6 +45,7 @@ for (const rows of rowsMatrix) {
       ...process.env,
       NODE_ENV: 'production',
       BENCH_AUTOROWS: String(rows),
+      BENCH_LIST_ROWS: '0',
       BENCH_CORE: requestedCore,
       BENCH_BLOCK_MODE: blockMode,
     },
@@ -55,4 +57,25 @@ for (const rows of rowsMatrix) {
   }
 }
 
-console.log(`[build-octane-m4] ${requestedCore}/${blockMode} rows ${rowsMatrix.join('/')} complete`);
+for (const rows of listRowsMatrix) {
+  execFileSync(process.execPath, [buildScript], {
+    cwd: checkout,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      NODE_ENV: 'production',
+      BENCH_AUTOROWS: '0',
+      BENCH_LIST_ROWS: String(rows),
+      BENCH_CORE: requestedCore,
+      BENCH_BLOCK_MODE: blockMode,
+    },
+  });
+  const dist = path.join(checkout, `benchmarks/lynx-table/app/dist${coreSuffix}-list-rows${rows}`);
+  for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
+    if (!fs.existsSync(path.join(dist, file))) throw new Error(`missing ${dist}/${file}`);
+  }
+}
+
+console.log(
+  `[build-octane-m4] ${requestedCore}/${blockMode} table ${rowsMatrix.join('/')} list ${listRowsMatrix.join('/')} complete`,
+);

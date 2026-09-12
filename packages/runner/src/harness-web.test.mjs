@@ -5,6 +5,7 @@ import test from 'node:test';
 import { STORM_SELECT_TICKS, STORM_UPDATE_TICKS } from '@lynx-bench/shared/workloads';
 
 import { stormCommitGuard, waitForTransportIdle } from './harness-web.mjs';
+import { makeListHarnessHtml } from './server.mjs';
 
 const wire = (toMtsMessages, toBtsMessages) => ({
   toMts: { messages: toMtsMessages, bytes: 0, byName: {} },
@@ -71,4 +72,12 @@ test('process-cgroup readiness policy is retained in the run mechanism receipt',
   assert.match(source, /method: 'wire-idle-v1'/);
   assert.match(source, /readinessBarrier: PROCESS_CGROUP_READINESS_BARRIER/);
   assert.match(source, /mechanism: processThrottleReceipt/);
+});
+
+test('dedicated list page installs the composed-tree observer at the frozen viewport', () => {
+  const html = makeListHarnessHtml();
+  assert.match(html, /bench-list-viewport/);
+  assert.match(html, /bench-list-cell/);
+  assert.match(html, /width:390px;height:640px/);
+  assert.doesNotMatch(html, /armPipeline/);
 });
