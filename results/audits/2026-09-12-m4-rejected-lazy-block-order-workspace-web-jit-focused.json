@@ -1,0 +1,65 @@
+{
+  "kind": "m4-rejected-hypothesis",
+  "candidate": "octane-m4-lazy-block-order-workspace-experiment",
+  "candidateCommit": "f9124b4dea99c215584738577e9858562851d873",
+  "comparator": "octane-m4-retain-row-listeners-experiment",
+  "comparatorCommit": "eda005a520294fdfc4aa1ff2846eff5b90a3c93e",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Allocate keyed Block reconciliation's LIS sequence only after detecting a real reorder and reuse the survivor workspace as the final linked order, removing two list-sized arrays from pure insertion/removal.",
+  "disposition": "rejected-no-pr-source-and-bundles-archived",
+  "recoveryPath": "/data00/home/xuan.huang/.codex/tmp/issue291-rejected-lazy-block-order.jwn3iJ",
+  "decision": "The fixed formal cohort did not establish a background-thread CPU win, missed the five-percent continuation threshold, and exceeded the frozen end-to-end 1.05 cell ceiling. No confirmation extension was warranted.",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": { "AB": 5, "BA": 5 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x291f912 plus metric index",
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false
+  },
+  "removeAt1000": {
+    "latency": { "point": 1.0337709783053275, "lower": 0.9786481177977634, "upper": 1.0975788573109424, "nonInferior": false, "strictWin": false },
+    "backgroundCpu": { "point": 0.9786248128943041, "lower": 0.9462632272427, "upper": 1.0106282423122392, "nonInferior": true, "strictWin": false },
+    "mainThreadCpu": { "point": 1.0079264513394972, "lower": 0.9870361979658561, "upper": 1.0268178079850745, "nonInferior": true, "strictWin": false },
+    "wireToBtsBytes": { "point": 1.0000000655641208, "lower": 0.9997572127909182, "upper": 1.0002430429091664, "nonInferior": true },
+    "wireToMtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": { "point": 0.9997440103124153, "lower": 0.998813568862643, "upper": 1.0006347622002913, "nonInferior": true },
+    "heapBts": { "point": 1.000060672691365, "lower": 1.0000159315740262, "upper": 1.0001413667431653, "nonInferior": true },
+    "heapMtsAfterClear": { "point": 0.9998948251368849, "lower": 0.9994730199419743, "upper": 1.0002296680144822, "nonInferior": true },
+    "heapBtsAfterClear": { "point": 1.0003649907422607, "lower": 1.0000435131485519, "upper": 1.0009329474316377, "nonInferior": true }
+  },
+  "bundle": {
+    "web": { "comparatorBytes": 184466, "candidateBytes": 184557, "deltaBytes": 91, "candidateSha256": "457c19ff2205ef7adc1861a58f97ddafc1afb8d739ad71607d68535fed5208d7" },
+    "native": { "comparatorBytes": 184586, "candidateBytes": 184677, "deltaBytes": 91, "candidateSha256": "c6defc3953609724b87021929a502ebcdcb5c361e540338ca16b3550793d83de" }
+  },
+  "validation": {
+    "focusedTests": "2 files, 88 tests passed",
+    "fullLynxProject": "57 files, 995 tests passed",
+    "typecheck": "production, testing, and typetest tsconfigs passed",
+    "sync": "passed"
+  },
+  "benchmarkReceipt": {
+    "commit": "3c4a218c16b61317296897f2555993373be240e5",
+    "dirty": true,
+    "ignoredGeneratedPaths": ["results/runs/**", "results/audits/**", "results/latest.json", "site/dist/**"]
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T08-01-31-65160668d8d9.json", "sha256": "0d9a03f35307e916a93378f2e63fc8349f64beec25a8177f7dab3e099b362568", "sessionId": "issue291-lazy-order-formal-01-ab", "calibration": 2402.3 },
+    { "file": "results/runs/2026-09-12T08-02-35-65160668d8d9.json", "sha256": "e4f3ac5559e025300f7bab90a8430c9bd8a1004f25414c70d6d6ef77f1c11634", "sessionId": "issue291-lazy-order-formal-02-ba", "calibration": 2418.3 },
+    { "file": "results/runs/2026-09-12T08-03-40-65160668d8d9.json", "sha256": "02acb1b934fc6d66b1cb5469cf82fe3d8e040d6fb3eb0cff0140e5dae084d541", "sessionId": "issue291-lazy-order-formal-03-ab", "calibration": 2279.8 },
+    { "file": "results/runs/2026-09-12T08-04-49-65160668d8d9.json", "sha256": "6e77366ac160b842c547784f35310ff856cadfe2953b96b1ace1011ed59fce6e", "sessionId": "issue291-lazy-order-formal-04-ba", "calibration": 2338.5 },
+    { "file": "results/runs/2026-09-12T08-05-57-65160668d8d9.json", "sha256": "4a64b518acde0acbdc038cb4bed1cec83f95086a6abbe9da8ce907c93735d8fc", "sessionId": "issue291-lazy-order-formal-05-ab", "calibration": 2357.3 },
+    { "file": "results/runs/2026-09-12T08-07-03-65160668d8d9.json", "sha256": "823fb35106a96a66b7489d704db21609d8e0542bed6b71e26ca8edc1fc828d05", "sessionId": "issue291-lazy-order-formal-06-ba", "calibration": 2395.8 },
+    { "file": "results/runs/2026-09-12T08-08-13-65160668d8d9.json", "sha256": "fb0adfeeed8707d955e50307c7c4436ba2bc71bea20242da05651e6eb9ceda0e", "sessionId": "issue291-lazy-order-formal-07-ab", "calibration": 2396.3 },
+    { "file": "results/runs/2026-09-12T08-09-16-65160668d8d9.json", "sha256": "db624909daf9685bda64bac4c13beef67617fdaf408c5d1f2e66250a2c59006d", "sessionId": "issue291-lazy-order-formal-08-ba", "calibration": 2385 },
+    { "file": "results/runs/2026-09-12T08-10-20-65160668d8d9.json", "sha256": "8cebfd82257e3774b8e08e3d665c411c32c3b34ad4eb2e89484513e4a145e292", "sessionId": "issue291-lazy-order-formal-09-ab", "calibration": 2323.8 },
+    { "file": "results/runs/2026-09-12T08-11-24-65160668d8d9.json", "sha256": "5ebc422d59326a04afb5b6dedeaf563db1a9956480b90b146915c676be277db2", "sessionId": "issue291-lazy-order-formal-10-ba", "calibration": 2325.3 }
+  ]
+}
