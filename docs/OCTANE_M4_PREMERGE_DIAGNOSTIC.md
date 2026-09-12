@@ -248,6 +248,37 @@ rejection receipt is
 `results/audits/2026-09-12-m4-rejected-listener-identity-web-jit-focused.json`
 (SHA-256 `65995fb6cc1dcd76f4040be8759452a64b29beb797f6fa2fd687ac4e9a154d39`).
 
+## Compact candidate versus Vue Vapor +IFR: startup passes, interaction cells fail
+
+The optimized Vue Vapor configuration with `enableFiber` and
+`enableElementThread` was measured in a fresh pair of independent windows. Ten
+table-only and ten startup-only sessions, each balanced five AB and five BA,
+produced 3,100 observations with zero DNF:
+
+| suite/cell | point ratio | 95% CI | gate |
+| --- | ---: | ---: | --- |
+| interaction aggregate | 0.76439 | [0.75071, 0.77988] | aggregate passes |
+| update10th@1k | 0.97209 | [0.87358, 1.08885] | **fail** |
+| select@1k | 1.08905 | [0.95526, 1.25887] | **fail** |
+| swap@1k | 1.04731 | [0.89654, 1.19179] | **fail** |
+| remove@1k | 1.04271 | [0.96731, 1.11952] | **fail** |
+| startup aggregate | 0.55036 | [0.54040, 0.56091] | pass |
+| FCP@0 | 0.58350 | [0.56313, 0.60580] | pass |
+| FCP@1k | 0.62948 | [0.61534, 0.64300] | pass |
+| FCP@10k | 0.45384 | [0.44603, 0.46143] | pass |
+
+Every other frozen interaction cell passes. The formal scorecard and all raw
+hashes are in
+`results/audits/2026-09-12-m4-premerge-vue-vapor-ifr-web-jit-independent-windows.json`
+(SHA-256 `c40496e31c5b27ea0c850f364693d135e7e971d4988ef93abae95965693afa42`).
+The pooled phase records identify background work rather than main-thread
+transport as the common owner. Octane versus Vapor +IFR background JS CPU was
+4.47 versus 1.11 ms for update, 1.10 versus 0.56 ms for select, 4.61 versus
+1.71 ms for swap, and 7.36 versus 1.42 ms for remove. Remove main-thread JS CPU
+was 4.47 versus 4.61 ms, so the structural gap is again before transport. The
+earlier listener-container and exact-listener-identity experiments are not
+repeated because their focused receipts rejected those mechanisms.
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
