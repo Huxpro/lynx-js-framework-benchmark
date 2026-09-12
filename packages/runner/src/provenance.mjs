@@ -168,19 +168,24 @@ export function entryBundleReceipts(entries) {
 
 export function samplingPolicy({ reps, stormReps, startupReps, listReps }) {
   return {
-    repetitions: { table: reps, storm: stormReps, startup: startupReps, list: listReps },
+    repetitions: {
+      table: reps,
+      storm: stormReps,
+      startup: startupReps,
+      ...(listReps == null ? {} : { list: listReps }),
+    },
     warmup: {
       table: { createClearCycles: 2, page: 'shared-per-entry' },
       storm: { cycles: 0, page: 'fresh-per-attempt' },
       startup: { cycles: 0, page: 'fresh-per-attempt' },
-      list: { cycles: 0, page: 'fresh-per-attempt' },
+      ...(listReps == null ? {} : { list: { cycles: 0, page: 'fresh-per-attempt' } }),
     },
     acceptance: {
       table: 'dom-predicate-completed-before-timeout',
       pipeline: 'dom-predicate-completed-with-tree-and-call-multiset-controls',
       storm: 'terminal-state-observed-with-explicit-commit-outcome-and-input-schedule-controls',
       startup: 'first-content-observed-before-timeout',
-      list: 'visible-list-contract-observed-before-timeout',
+      ...(listReps == null ? {} : { list: 'visible-list-contract-observed-before-timeout' }),
     },
     aggregation: 'median-with-t-distribution-ci95',
     outliers: 'none-removed',

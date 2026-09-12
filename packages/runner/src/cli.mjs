@@ -30,6 +30,7 @@ import {
   selectEntriesForHarness,
 } from './entries.mjs';
 import { runWebHarness } from './harness-web.mjs';
+import { runWebListHarness } from './harness-web-list.mjs';
 import { runNativeHarness } from './harness-native.mjs';
 import {
   NATIVE_LIST_CAMPAIGN_VERSION,
@@ -375,6 +376,11 @@ async function cmdRun(args) {
     !['table', 'startup', 'pipeline', 'storm', 'list'].includes(suite));
   if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
 
+  if (harness === 'web' && suites.includes('list')
+    && (suites.length !== 1 || suites[0] !== 'list')) {
+    throw new Error('Web list is an isolated campaign; pass exactly --suite list.');
+  }
+
   if (harness === 'native') {
     if (suites.includes('list')) {
       await runNativeListCommand({
@@ -634,7 +640,9 @@ async function cmdRun(args) {
   const reps = args.reps ? Number(args.reps) : quick ? 3 : 7;
   const stormReps = args['storm-reps'] ? Number(args['storm-reps']) : quick ? 1 : 3;
   const startupReps = args['startup-reps'] ? Number(args['startup-reps']) : quick ? 2 : 5;
-  const listReps = args['list-reps'] ? Number(args['list-reps']) : quick ? 2 : LIST_CONFIG.recycle.repetitions;
+  const listReps = suites.includes('list')
+    ? args['list-reps'] ? Number(args['list-reps']) : quick ? 2 : LIST_CONFIG.recycle.repetitions
+    : undefined;
   if (suites.includes('list')) {
     const missingListCases = LIST_CASES.filter((kase) => !listCases.includes(kase));
     if (missingListCases.length > 0) {
@@ -720,12 +728,14 @@ async function cmdRun(args) {
     },
   });
 
+  const runHarness = suites.includes('list') ? runWebListHarness : runWebHarness;
   const {
     records, executablePath, browserVersion, processThrottle,
     processThrottleEntryVerifications, verifiedSlowdownByEntry,
-  } = await runWebHarness({
-    entries, cases, stormCases,
-    listCases,
+  } = await runHarness({
+    entries,
+    cases: suites.includes('list') ? listCases : cases,
+    stormCases,
     suites, scales, startupScales, reps, stormReps, startupReps,
     listReps,
     jit, cpuThrottle, throttleScope,
