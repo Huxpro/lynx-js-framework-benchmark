@@ -40,14 +40,14 @@ geometric mean; startup gives equal weight to FCP@0/1k/10k. These are medians
 from one ordered diagnostic window, so no strict-win or non-inferiority
 decision is made.
 
-| Comparator | interaction | startup FCP | point-risk core cells above 1.05 |
-| --- | ---: | ---: | --- |
-| latest upstream | 0.716 | 0.749 | FCP@0 1.094 |
-| ReactLynx default | 0.840 | 1.105 | replace 1.217; append1k 1.194; FCP@0 1.462 |
-| Vue VDOM default | 0.834 | 0.715 | replace 1.239; remove 1.197 |
-| Vue VDOM +IFR +ET | 0.837 | 0.810 | replace 1.213; remove 1.196; FCP@0 1.080 |
-| Vue Vapor default | 0.848 | 0.684 | replace 1.132; update10th 1.109; remove 1.057; clear 1.082 |
-| Vue Vapor +IFR | 0.806 | 0.719 | replace 1.086; clear 1.085 |
+| Comparator        | interaction | startup FCP | point-risk core cells above 1.05                           |
+| ----------------- | ----------: | ----------: | ---------------------------------------------------------- |
+| latest upstream   |       0.716 |       0.749 | FCP@0 1.094                                                |
+| ReactLynx default |       0.840 |       1.105 | replace 1.217; append1k 1.194; FCP@0 1.462                 |
+| Vue VDOM default  |       0.834 |       0.715 | replace 1.239; remove 1.197                                |
+| Vue VDOM +IFR +ET |       0.837 |       0.810 | replace 1.213; remove 1.196; FCP@0 1.080                   |
+| Vue Vapor default |       0.848 |       0.684 | replace 1.132; update10th 1.109; remove 1.057; clear 1.082 |
+| Vue Vapor +IFR    |       0.806 |       0.719 | replace 1.086; clear 1.085                                 |
 
 The run identifies three concrete owners for the next measurement/engineering
 loop:
@@ -92,13 +92,13 @@ removed that cross-suite workload without changing the production bundles or
 FCP endpoint. Combined with the original interaction window, the frozen 10,000
 resample qualification result is:
 
-| suite/cell | point ratio | 95% CI | gate |
-| --- | ---: | ---: | --- |
-| interaction aggregate | 0.78979 | [0.77979, 0.79975] | pass |
-| startup aggregate | 0.90815 | [0.89481, 0.92092] | pass |
-| FCP@0 | 1.01309 | [0.97181, 1.05098] | **fail** |
-| FCP@1k | 0.88640 | [0.87313, 0.89982] | pass |
-| FCP@10k | 0.83405 | [0.82735, 0.84092] | pass |
+| suite/cell            | point ratio |             95% CI | gate     |
+| --------------------- | ----------: | -----------------: | -------- |
+| interaction aggregate |     0.78979 | [0.77979, 0.79975] | pass     |
+| startup aggregate     |     0.90815 | [0.89481, 0.92092] | pass     |
+| FCP@0                 |     1.01309 | [0.97181, 1.05098] | **fail** |
+| FCP@1k                |     0.88640 | [0.87313, 0.89982] | pass     |
+| FCP@10k               |     0.83405 | [0.82735, 0.84092] | pass     |
 
 The exact machine-readable verdict, suite-specific cohort IDs, session IDs,
 and all 40 raw-run SHA-256 hashes are in
@@ -127,16 +127,16 @@ The same compact candidate was next measured against Vue VDOM default at
 startup-only sessions (five AB and five BA in each independent window) produced
 3,100 records with zero DNF. The frozen 10,000-resample result is:
 
-| suite/cell | point ratio | 95% CI | gate |
-| --- | ---: | ---: | --- |
-| interaction aggregate | 0.78333 | [0.76956, 0.79916] | aggregate passes |
-| select@1k | 1.18185 | [1.07808, 1.29643] | **fail** |
-| remove@1k | 1.00618 | [0.95678, 1.05588] | **fail** |
-| clear@1k | 1.00847 | [0.96162, 1.05529] | **fail** |
-| startup aggregate | 0.55290 | [0.53922, 0.56462] | pass |
-| FCP@0 | 0.48926 | [0.46241, 0.51599] | pass |
-| FCP@1k | 0.59326 | [0.57806, 0.60850] | pass |
-| FCP@10k | 0.58232 | [0.57258, 0.59206] | pass |
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.78333 | [0.76956, 0.79916] | aggregate passes |
+| select@1k             |     1.18185 | [1.07808, 1.29643] | **fail**         |
+| remove@1k             |     1.00618 | [0.95678, 1.05588] | **fail**         |
+| clear@1k              |     1.00847 | [0.96162, 1.05529] | **fail**         |
+| startup aggregate     |     0.55290 | [0.53922, 0.56462] | pass             |
+| FCP@0                 |     0.48926 | [0.46241, 0.51599] | pass             |
+| FCP@1k                |     0.59326 | [0.57806, 0.60850] | pass             |
+| FCP@10k               |     0.58232 | [0.57258, 0.59206] | pass             |
 
 Every other interaction cell passes its 1.05 upper-bound gate, but the three
 listed cells make the complete scorecard a failure. The exact verdict and all
@@ -174,17 +174,17 @@ startup-only windows each contain ten sessions with five AB and five BA orders.
 All 3,100 observations completed with zero DNF. The frozen 10,000-resample
 scorecard is:
 
-| suite/cell | point ratio | 95% CI | gate |
-| --- | ---: | ---: | --- |
-| interaction aggregate | 0.79894 | [0.78324, 0.81584] | aggregate passes |
-| select@1k | 1.06089 | [0.94695, 1.17013] | **fail** |
-| swap@1k | 0.90884 | [0.76131, 1.08816] | **fail** |
-| remove@1k | 1.05247 | [1.02286, 1.08249] | **fail** |
-| clear@1k | 1.10437 | [1.05288, 1.15759] | **fail** |
-| startup aggregate | 0.60470 | [0.59083, 0.61829] | pass |
-| FCP@0 | 0.61883 | [0.58595, 0.65103] | pass |
-| FCP@1k | 0.70106 | [0.68886, 0.71406] | pass |
-| FCP@10k | 0.50968 | [0.49947, 0.51862] | pass |
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.79894 | [0.78324, 0.81584] | aggregate passes |
+| select@1k             |     1.06089 | [0.94695, 1.17013] | **fail**         |
+| swap@1k               |     0.90884 | [0.76131, 1.08816] | **fail**         |
+| remove@1k             |     1.05247 | [1.02286, 1.08249] | **fail**         |
+| clear@1k              |     1.10437 | [1.05288, 1.15759] | **fail**         |
+| startup aggregate     |     0.60470 | [0.59083, 0.61829] | pass             |
+| FCP@0                 |     0.61883 | [0.58595, 0.65103] | pass             |
+| FCP@1k                |     0.70106 | [0.68886, 0.71406] | pass             |
+| FCP@10k               |     0.50968 | [0.49947, 0.51862] | pass             |
 
 Every other interaction cell passes. The formal verdict, exact commands, and
 all 20 source-run hashes are retained in
@@ -218,15 +218,15 @@ Vue Vapor default was measured next at the same comparator commit. Ten
 table-only and ten startup-only sessions, independently balanced five AB and
 five BA, again produced 3,100 observations with zero DNF:
 
-| suite/cell | point ratio | 95% CI | gate |
-| --- | ---: | ---: | --- |
-| interaction aggregate | 0.76096 | [0.74755, 0.77430] | aggregate passes |
-| swap@1k | 0.99710 | [0.87454, 1.13028] | **fail** |
-| remove@1k | 1.08669 | [1.02482, 1.16219] | **fail** |
-| startup aggregate | 0.53104 | [0.52319, 0.53890] | pass |
-| FCP@0 | 0.47132 | [0.45737, 0.48449] | pass |
-| FCP@1k | 0.55680 | [0.54363, 0.57239] | pass |
-| FCP@10k | 0.57064 | [0.56124, 0.58102] | pass |
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.76096 | [0.74755, 0.77430] | aggregate passes |
+| swap@1k               |     0.99710 | [0.87454, 1.13028] | **fail**         |
+| remove@1k             |     1.08669 | [1.02482, 1.16219] | **fail**         |
+| startup aggregate     |     0.53104 | [0.52319, 0.53890] | pass             |
+| FCP@0                 |     0.47132 | [0.45737, 0.48449] | pass             |
+| FCP@1k                |     0.55680 | [0.54363, 0.57239] | pass             |
+| FCP@10k               |     0.57064 | [0.56124, 0.58102] | pass             |
 
 Every other frozen interaction cell passes. The formal scorecard and all raw
 hashes are in
@@ -255,17 +255,17 @@ The optimized Vue Vapor configuration with `enableFiber` and
 table-only and ten startup-only sessions, each balanced five AB and five BA,
 produced 3,100 observations with zero DNF:
 
-| suite/cell | point ratio | 95% CI | gate |
-| --- | ---: | ---: | --- |
-| interaction aggregate | 0.76439 | [0.75071, 0.77988] | aggregate passes |
-| update10th@1k | 0.97209 | [0.87358, 1.08885] | **fail** |
-| select@1k | 1.08905 | [0.95526, 1.25887] | **fail** |
-| swap@1k | 1.04731 | [0.89654, 1.19179] | **fail** |
-| remove@1k | 1.04271 | [0.96731, 1.11952] | **fail** |
-| startup aggregate | 0.55036 | [0.54040, 0.56091] | pass |
-| FCP@0 | 0.58350 | [0.56313, 0.60580] | pass |
-| FCP@1k | 0.62948 | [0.61534, 0.64300] | pass |
-| FCP@10k | 0.45384 | [0.44603, 0.46143] | pass |
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.76439 | [0.75071, 0.77988] | aggregate passes |
+| update10th@1k         |     0.97209 | [0.87358, 1.08885] | **fail**         |
+| select@1k             |     1.08905 | [0.95526, 1.25887] | **fail**         |
+| swap@1k               |     1.04731 | [0.89654, 1.19179] | **fail**         |
+| remove@1k             |     1.04271 | [0.96731, 1.11952] | **fail**         |
+| startup aggregate     |     0.55036 | [0.54040, 0.56091] | pass             |
+| FCP@0                 |     0.58350 | [0.56313, 0.60580] | pass             |
+| FCP@1k                |     0.62948 | [0.61534, 0.64300] | pass             |
+| FCP@10k               |     0.45384 | [0.44603, 0.46143] | pass             |
 
 Every other frozen interaction cell passes. The formal scorecard and all raw
 hashes are in
@@ -299,6 +299,29 @@ gate: patch/baseline swap latency was 1.01710 [0.95740, 1.07638], so the formal
 comparator matrix must be rerun rather than inferred. The complete receipt is
 `results/audits/2026-09-12-m4-keyed-row-retention-web-jit-focused.json`
 (SHA-256 `784f9216b5150529fec691f98aac7092785f29489e242d5d53a6ea1373fa1ac9`).
+
+### Retained owner cut: publish shifted row indices after commit
+
+A remove profile then separated the remaining background owner. Across ten
+balanced raw profiler runs per arm, the retained-row candidate used 7.51 ms
+mean BTS sampled CPU for remove while `reconcileForSlot` accounted for about
+0.94 ms per run. Object-spread helpers used to copy the retained record for
+every shifted survivor were a larger owner. The follow-up stages the new order
+in the completed range render and publishes it in Map insertion order only
+after the frame commits. A rejected frame therefore cannot change the indices
+used by a later sparse selection.
+
+Ten independent focused sessions, five AB and five BA with 20 repetitions per
+arm, gave remove latency 0.95316, 95% CI [0.92134, 0.98813], and BTS CPU
+0.64576 [0.63194, 0.66102]. MTS CPU was non-inferior at 0.99923
+[0.96494, 1.03996]; BTS→MTS bytes were identical. All four 10k GC snapshot
+ratios had upper bounds below 1.003, and the Web and Native rows-zero bundles
+each grew by 13 bytes. The patch is retained as a measured owner cut, not a
+final scorecard claim. Its complete focused receipt is
+`results/audits/2026-09-12-m4-stage-row-indices-web-jit-focused.json` (SHA-256
+`93202fae7aec526584c5da753e209ed17b3a7d06fd63027d999848f694bcdab9`); the raw profile is
+`results/audits/2026-09-12-m4-stage-row-indices-remove-profile.json` (SHA-256
+`b8d45348763db5cb47d1ff6c30c87e215f0b16651f6551ce9326b9575f6a6061`).
 
 ## Memory snapshot is not the memory gate
 
