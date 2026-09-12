@@ -53,7 +53,7 @@ function alignedRatio(numerator, denominator, label, multiplier = 1) {
     if (!Number.isFinite(value) || !Number.isFinite(divisor) || divisor <= 0) {
       throw new Error(`${label} list source contains a non-finite value or zero divisor`);
     }
-    return value * multiplier / divisor;
+    return (value * multiplier) / divisor;
   });
 }
 
@@ -76,7 +76,7 @@ export function deriveListRecords(sourceRecords) {
       ]) {
         const [sourceMetric, metric, boundary, unit] = spec;
         const source = byMetric.get(sourceMetric);
-        if (source == null || recycled == null) continue;
+        if (!(source?.samples?.length > 0) || !(recycled?.samples?.length > 0)) continue;
         out.push(derivedRecord(source, {
           metric, boundary, unit,
           samples: alignedRatio(source, recycled, metric),
@@ -87,7 +87,7 @@ export function deriveListRecords(sourceRecords) {
     if (base.workload === 'list-fling') {
       const elapsed = byMetric.get('elapsedMs');
       const materialized = byMetric.get('materializedCells');
-      if (elapsed != null && materialized != null) {
+      if (elapsed?.samples?.length > 0 && materialized?.samples?.length > 0) {
         out.push(derivedRecord(materialized, {
           metric: 'materializedCellsPerSecond',
           boundary: BOUNDARIES.listFlingRate,
@@ -101,13 +101,15 @@ export function deriveListRecords(sourceRecords) {
         for (const [metric, probability] of [
           ['materializationP50Ms', 0.5],
           ['materializationP99Ms', 0.99],
-        ]) out.push(derivedRecord(timings, {
-          metric,
-          boundary: BOUNDARIES.listMaterializationDistribution,
-          unit: 'ms',
-          value: percentile(timings.samples, probability),
-          derivedFrom: ['materializationTimesMs'],
-        }));
+        ]) {
+          out.push(derivedRecord(timings, {
+            metric,
+            boundary: BOUNDARIES.listMaterializationDistribution,
+            unit: 'ms',
+            value: percentile(timings.samples, probability),
+            derivedFrom: ['materializationTimesMs'],
+          }));
+        }
       }
     }
   }

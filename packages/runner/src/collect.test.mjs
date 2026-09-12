@@ -8,9 +8,17 @@ import test from 'node:test';
 import { STORM_SELECT_TICKS } from '@lynx-bench/shared/workloads';
 
 import {
+  LIST_CASES,
+  LIST_CONFIG,
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT_VERSION,
+} from '../../shared/src/list-workloads.mjs';
+
+import {
   collectRuns,
   DATASET_CHECKPOINT_SPECS,
   HISTORY_REPLAY_SPEC,
+  isValidNativeListRun,
 } from './collect.mjs';
 import {
   CONNECTOR_PACKAGE_NAMES,
@@ -18,13 +26,21 @@ import {
   connectorPackageTreesSha256,
 } from './connector-receipt.mjs';
 import { repoRoot } from './entries.mjs';
+import {
+  NATIVE_LIST_CAMPAIGN_VERSION,
+  buildNativeListMatrixContract,
+  nativeListCellKey,
+} from './harness-native-list.mjs';
+import { LIST_WORKLOAD_CONTRACT_SHA256 } from './list-coverage.mjs';
 import { buildNativeMatrixContract, nativeCellKey } from './native-coverage.mjs';
 import {
   NATIVE_SANDBOX_CAMPAIGN_VERSION,
+  NATIVE_SANDBOX_POLICY,
   appendNativeMethodRevision,
   appendNativeLeaseReceipt,
   buildNativeDeviceCohort,
   createNativeMethodRevisionChain,
+  deriveNativeLeaseExpirySafety,
   parseNativeLeaseReceipt,
 } from './native-protocol.mjs';
 
@@ -184,6 +200,127 @@ function nativeCampaignMeta(entries, {
   };
 }
 
+function nativeListFixture(root, id = 'octane') {
+  fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
+  const bytes = Buffer.from('native-list-fixture');
+  const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+  for (const scale of [1000, 10000]) {
+    fs.writeFileSync(path.join(root, `dist/list-${scale}.lynx.bundle`), bytes);
+  }
+  return {
+    id,
+    framework: id,
+    tier: 'featured',
+    dir: root,
+    provenance: { commit: `${id}-new` },
+    listFixture: {
+      protocol: LIST_FIXTURE_PROTOCOL,
+      contractSha256: LIST_WORKLOAD_CONTRACT_SHA256,
+      bundles: {
+        native: {
+          1000: 'dist/list-1000.lynx.bundle',
+          10000: 'dist/list-10000.lynx.bundle',
+        },
+      },
+      sha256: { native: { 1000: sha256, 10000: sha256 } },
+    },
+  };
+}
+
+function nativeListRun(entries) {
+  const environment = 'native-list-test';
+  const records = buildNativeListMatrixContract(entries).cells.map((cell) => ({
+    ...cell,
+    harness: 'native',
+    environment,
+    contractVersion: LIST_WORKLOAD_CONTRACT_VERSION,
+    samples: Array(20).fill(1),
+    n: 20,
+    median: 1,
+    mean: 1,
+    std: null,
+    min: 1,
+    max: 1,
+    p95: null,
+    ci95: null,
+    detail: null,
+    dnfCount: 0,
+    failures: [],
+    attemptedCount: 20,
+    acceptedCount: 20,
+  }));
+  const matrixContract = buildNativeListMatrixContract(entries);
+  const leaseChain = nativeLeaseChain(nativeLease());
+  const deviceLeaseId = leaseChain.receipts.at(-1).deviceLeaseId;
+  const inputReceiptPayload = { connectorPackageTrees: defaultConnectorReceipt };
+  const inputReceiptSha256 = sha256Json(inputReceiptPayload);
+  const inputReceipt = { ...inputReceiptPayload, sha256: inputReceiptSha256 };
+  const resolvedMatrix = {
+    suites: ['list'],
+    cases: LIST_CASES.map((kase) => kase.name),
+    scales: [...new Set(LIST_CASES.flatMap((kase) => kase.scales))].sort((a, b) => a - b),
+    reps: LIST_CONFIG.recycle.repetitions,
+  };
+  const campaignPayload = {
+    version: NATIVE_LIST_CAMPAIGN_VERSION,
+    matrixContractSha256: matrixContract.sha256,
+    inputReceiptSha256,
+    connectorPackageTreesSha256: defaultConnectorReceipt.sha256,
+    resolvedMatrix,
+    entryOrder: entries.map((entry) => entry.id),
+    runtimePolicy: NATIVE_SANDBOX_POLICY,
+    leaseExpirySafety: deriveNativeLeaseExpirySafety(NATIVE_SANDBOX_POLICY, {
+      reps: LIST_CONFIG.recycle.repetitions,
+      startupReps: LIST_CONFIG.recycle.repetitions,
+    }),
+  };
+  const campaignId = sha256Json(campaignPayload).slice(0, 16);
+  const harnessConfigId = 'native-list-method';
+  const deviceCohort = buildNativeDeviceCohort({
+    serialSha256: leaseChain.serialSha256,
+    environment,
+    hardware: { cpuModel: 'test-device', cores: 8, osVersion: '10' },
+    campaignId,
+    matrixContractSha256: matrixContract.sha256,
+    inputReceiptSha256,
+    connectorPackageTreesSha256: defaultConnectorReceipt.sha256,
+    harnessConfigId,
+  });
+  const campaign = { ...campaignPayload, id: campaignId };
+  return {
+    schemaVersion: 3,
+    meta: {
+      generatedAt: '2026-01-02T00:00:00Z',
+      checkpoint: true,
+      checkpointComplete: true,
+      entryOrder: entries.map((entry) => entry.id),
+      campaign,
+      resolvedMatrix,
+      matrixContract,
+      inputReceipt,
+      deviceCohort,
+      leaseChain,
+      cellLeaseIds: Object.fromEntries(
+        records.map((candidate) => [nativeListCellKey(candidate), deviceLeaseId]),
+      ),
+      machine: {
+        ...machine(`lease-${deviceLeaseId}`),
+        deviceLeaseId,
+        deviceCohortId: deviceCohort.id,
+        deviceCohort,
+        harnessConfigId,
+        campaignId,
+        matrixContractSha256: matrixContract.sha256,
+        inputReceiptSha256,
+        connectorPackageTreesSha256: defaultConnectorReceipt.sha256,
+        connectorPackageTrees: defaultConnectorReceipt,
+      },
+      entryCommits: Object.fromEntries(entries.map((entry) => [entry.id, entry.provenance.commit])),
+    },
+    records,
+  };
+}
+
 const writeRun = (root, file, {
   machineId, score, entries, generatedAt = '2026-01-01T00:00:00Z', entryCommits = null,
   receipt = null, schemaVersion = 2, regime = null,
@@ -207,6 +344,47 @@ const entryTiers = (featured, lab = []) => new Map([
   ...featured.map((id) => [id, 'featured']),
   ...lab.map((id) => [id, 'lab']),
 ]);
+
+test('collector accepts only complete exact-identity Native list campaigns', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-native-list-'));
+  try {
+    const entry = nativeListFixture(root);
+    const entryById = new Map([[entry.id, entry]]);
+    const run = nativeListRun([entry]);
+    assert.equal(isValidNativeListRun(run, entryById), true);
+    assert.equal(isValidNativeListRun({
+      ...run,
+      meta: { ...run.meta, checkpointComplete: false },
+    }, entryById), false);
+    assert.equal(isValidNativeListRun({
+      ...run,
+      records: run.records.slice(1),
+    }, entryById), false);
+    assert.equal(isValidNativeListRun({
+      ...run,
+      meta: {
+        ...run.meta,
+        campaign: { ...run.meta.campaign, inputReceiptSha256: 'forked-input' },
+      },
+    }, entryById), false);
+    assert.equal(isValidNativeListRun({
+      ...run,
+      meta: { ...run.meta, entryCommits: { [entry.id]: 'stale-commit' } },
+    }, entryById), false);
+    assert.equal(isValidNativeListRun({
+      ...run,
+      meta: {
+        ...run.meta,
+        campaign: {
+          ...run.meta.campaign,
+          runtimePolicy: { ...run.meta.campaign.runtimePolicy, maxRetries: 99 },
+        },
+      },
+    }, entryById), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test('collect keeps record calibration and charts one coherent broadest run', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lynx-bench-collect-'));

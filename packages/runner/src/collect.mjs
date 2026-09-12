@@ -27,11 +27,17 @@ import {
   STORM_UPDATE_TICKS,
   TABLE_CASES,
 } from '@lynx-bench/shared/workloads';
+import { LIST_CASES, LIST_CONFIG } from '../../shared/src/list-workloads.mjs';
 
 import { bundleRecords } from './bundles.mjs';
 import { connectorPackageTreesError } from './connector-receipt.mjs';
 import { featuredEntriesForHarness } from './entry-cohorts.mjs';
 import { discoverEntries, repoRoot } from './entries.mjs';
+import {
+  NATIVE_LIST_CAMPAIGN_VERSION,
+  buildNativeListMatrixContract,
+  nativeListCellKey,
+} from './harness-native-list.mjs';
 import { assertNativeCoverage, classifyNativeCoverage, nativeCellKey } from './native-coverage.mjs';
 import {
   assertPipelineCoverage,
@@ -42,10 +48,12 @@ import {
   assertNativeDeviceCohort,
   assertNativeLeaseChain,
   assertNativeMethodRevisionChain,
+  deriveNativeLeaseExpirySafety,
 } from './native-protocol.mjs';
 import { stormContractPass } from './storm-contract.mjs';
 import {
   assertListCoverage,
+  assertNativeListCoverage,
   buildListCoverage,
   selectListCampaignRecords,
 } from './list-coverage.mjs';
@@ -910,13 +918,17 @@ const isPublishableRecord = (run, record) => !(
   )
 );
 
-const nativeCohortIdentity = (run, environment) => {
+const nativeCohortIdentity = (
+  run,
+  environment,
+  campaignVersion = NATIVE_SANDBOX_CAMPAIGN_VERSION,
+) => {
   const campaign = run.meta.campaign;
   const machine = run.meta.machine;
   const inputConnectorPackageTrees = run.meta.inputReceipt?.connectorPackageTrees;
   const machineConnectorPackageTrees = machine?.connectorPackageTrees;
   if (
-    campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION
+    campaign?.version !== campaignVersion
     || !campaign?.id
     || !campaign?.matrixContractSha256
     || !campaign?.inputReceiptSha256
@@ -989,6 +1001,71 @@ const nativeCohortIdentity = (run, environment) => {
   ].join('|');
   return { stableIdentity, deviceCohort, leaseChain, methodRevisionChain };
 };
+
+export function isValidNativeListRun(run, entryById) {
+  if (
+    run.meta.checkpoint !== true
+    || run.meta.checkpointComplete !== true
+    || run.meta.campaign?.version !== NATIVE_LIST_CAMPAIGN_VERSION
+  ) return false;
+  const records = run.records;
+  if (records.length === 0
+    || records.some((record) => record.harness !== 'native' || record.suite !== 'list')) return false;
+  const entryIds = run.meta.entryOrder;
+  if (!Array.isArray(entryIds) || entryIds.length === 0
+    || new Set(entryIds).size !== entryIds.length) return false;
+  const entries = entryIds.map((id) => entryById.get(id));
+  if (entries.some((entry) => entry == null)) return false;
+  if (entries.some((entry) =>
+    run.meta.entryCommits?.[entry.id] !== entry.provenance?.commit)) return false;
+  const contract = buildNativeListMatrixContract(entries);
+  if (JSON.stringify(run.meta.matrixContract) !== JSON.stringify(contract)) return false;
+  const expectedMatrix = {
+    suites: ['list'],
+    cases: LIST_CASES.map((kase) => kase.name),
+    scales: [...new Set(LIST_CASES.flatMap((kase) => kase.scales))].sort((a, b) => a - b),
+    reps: LIST_CONFIG.recycle.repetitions,
+  };
+  if (JSON.stringify(run.meta.resolvedMatrix) !== JSON.stringify(expectedMatrix)
+    || JSON.stringify(run.meta.campaign?.resolvedMatrix) !== JSON.stringify(expectedMatrix)
+    || JSON.stringify(run.meta.campaign?.entryOrder) !== JSON.stringify(entryIds)) return false;
+  let expectedLeaseExpirySafety;
+  try {
+    expectedLeaseExpirySafety = deriveNativeLeaseExpirySafety(run.meta.campaign?.runtimePolicy, {
+      reps: LIST_CONFIG.recycle.repetitions,
+      startupReps: LIST_CONFIG.recycle.repetitions,
+    });
+  } catch {
+    return false;
+  }
+  if (JSON.stringify(run.meta.campaign?.leaseExpirySafety)
+    !== JSON.stringify(expectedLeaseExpirySafety)) return false;
+  const { id: campaignId, ...campaignPayload } = run.meta.campaign;
+  if (crypto.createHash('sha256').update(JSON.stringify(campaignPayload)).digest('hex')
+    .slice(0, 16) !== campaignId) return false;
+  const { sha256: inputReceiptSha256, ...inputReceiptPayload } = run.meta.inputReceipt ?? {};
+  if (crypto.createHash('sha256').update(JSON.stringify(inputReceiptPayload)).digest('hex')
+    !== inputReceiptSha256) return false;
+  const expected = new Set(contract.cells.map(nativeListCellKey));
+  const observed = new Set(records.map(nativeListCellKey));
+  if (records.length !== contract.cells.length || observed.size !== expected.size
+    || [...expected].some((key) => !observed.has(key))) return false;
+  if (Object.keys(run.meta.cellLeaseIds ?? {}).length !== expected.size) return false;
+  const environments = new Set(records.map((record) => record.environment));
+  if (environments.size !== 1) return false;
+  const environment = environments.values().next().value;
+  if (nativeCohortIdentity(run, environment, NATIVE_LIST_CAMPAIGN_VERSION) == null) return false;
+  try {
+    assertNativeListCoverage(buildListCoverage({
+      entries,
+      sourceRecords: records,
+      includeAllEntries: true,
+    }));
+  } catch {
+    return false;
+  }
+  return true;
+}
 
 function mergeLeaseChains(left, right) {
   const leftReceipts = assertNativeLeaseChain(left).receipts;
@@ -1987,7 +2064,8 @@ export function collectRuns({
       continue;
     }
     if (rawRun.meta?.checkpoint === true && rawRun.meta?.checkpointComplete !== true) {
-      if (rawRun.meta?.campaign?.version !== NATIVE_SANDBOX_CAMPAIGN_VERSION) {
+      if (![NATIVE_SANDBOX_CAMPAIGN_VERSION, NATIVE_LIST_CAMPAIGN_VERSION]
+        .includes(rawRun.meta?.campaign?.version)) {
         log(`[collect] skip ${file}: incomplete legacy Native checkpoint`);
         continue;
       }
@@ -2176,6 +2254,9 @@ export function collectRuns({
   const retainedRuns = runs.filter(({ file }) =>
     !incompleteCheckpointFiles.has(file) || selectedNativeFiles.has(file));
   const retainedRunFiles = new Set(retainedRuns.map(({ file }) => file));
+  const validNativeListFiles = new Set(retainedRuns
+    .filter(({ run }) => isValidNativeListRun(run, entryById))
+    .map(({ file }) => file));
   const nativeSourceRecords = nativeCohort
     ? [...nativeCohort.entries.values()].flatMap((entry) => [...entry.cells.values()].map((source) =>
       ({
@@ -2197,7 +2278,8 @@ export function collectRuns({
   });
   if (nativeCohort) assertNativeCoverage(nativeCoverage);
   const listSourceRecords = selectListCampaignRecords(
-    [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile)),
+    [...merged.values()].filter((record) => retainedRunFiles.has(record.runFile)
+      && (record.harness !== 'native' || validNativeListFiles.has(record.runFile))),
     currentEntries,
   );
   const listCoverage = buildListCoverage({

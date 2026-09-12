@@ -8,6 +8,7 @@ import path from 'node:path';
 
 import {
   DRIVER_CLIENT_JS,
+  LIST_DRIVER_CLIENT_JS,
   PIPELINE_DRIVER_CLIENT_JS,
   STORM_DRIVER_CLIENT_JS,
 } from '@lynx-bench/shared/driver-client';
@@ -55,14 +56,31 @@ export function makeHarnessHtml({ pipeline = false, storm = false } = {}) {
 </html>`;
 }
 
+export function makeListHarnessHtml() {
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script>${PAGE_INSTRUMENT_JS}</script>
+  <script>${LIST_DRIVER_CLIENT_JS}</script>
+  <script type="module" src="/webcore/static/js/client.js"></script>
+  <link rel="stylesheet" href="/webcore/static/css/client.css">
+  <style>html,body{margin:0;padding:0;width:390px;height:640px;overflow:hidden}</style>
+</head>
+<body></body>
+</html>`;
+}
+
 /**
  * @param bundleRoots map of entryId -> absolute dir containing bundle files.
  */
-export async function startServer({ bundleRoots }) {
+export async function startServer({ bundleRoots, entryRoots = {} }) {
   const coreRoot = webCoreRoot();
   const harnessHtml = makeHarnessHtml();
   const pipelineHarnessHtml = makeHarnessHtml({ pipeline: true });
   const stormHarnessHtml = makeHarnessHtml({ storm: true });
+
+  const listHarnessHtml = makeListHarnessHtml();
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
@@ -88,6 +106,11 @@ export async function startServer({ bundleRoots }) {
         res.end(stormHarnessHtml);
         return;
       }
+      if (url.pathname === '/list' || url.pathname === '/list.html') {
+        res.writeHead(200, { ...headers, 'content-type': 'text/html' });
+        res.end(listHarnessHtml);
+        return;
+      }
       if (url.pathname === '/instrument-worker.js') {
         res.writeHead(200, { ...headers, 'content-type': 'text/javascript' });
         res.end(WORKER_INSTRUMENT_JS);
@@ -99,6 +122,10 @@ export async function startServer({ bundleRoots }) {
       } else if (url.pathname.startsWith('/bundles/')) {
         const [, , entryId, ...rest] = url.pathname.split('/');
         const root = bundleRoots[entryId];
+        if (root) filePath = path.join(root, rest.join('/'));
+      } else if (url.pathname.startsWith('/entries/')) {
+        const [, , entryId, ...rest] = url.pathname.split('/');
+        const root = entryRoots[entryId];
         if (root) filePath = path.join(root, rest.join('/'));
       }
       if (!filePath) {

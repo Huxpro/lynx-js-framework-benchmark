@@ -58,6 +58,7 @@ packages:
       reps: 7,
       stormReps: 3,
       startupReps: 5,
+      listReps: 20,
       execution: {
         harness: 'web',
         browser: { version: 'Chromium 1' },
@@ -77,7 +78,7 @@ packages:
     ]);
     assert.match(clean.entryBundles.example['rows-0/main.web.bundle'], /^[0-9a-f]{64}$/);
     assert.equal(clean.workload.roadmapScorecardVersion, 1);
-    assert.deepEqual(clean.sampling.repetitions, { table: 7, storm: 3, startup: 5 });
+    assert.deepEqual(clean.sampling.repetitions, { table: 7, storm: 3, startup: 5, list: 20 });
     assert.equal(clean.sampling.outliers, 'none-removed');
     assert.deepEqual(clean.execution.entryOrder, ['example']);
     assert.equal(clean.execution.sessionId, 'ab-01');

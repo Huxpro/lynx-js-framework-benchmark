@@ -15,6 +15,8 @@ import {
   NATIVE_STARTUP_TIMING_FLAG,
   NATIVE_TABLE_PROTOCOL,
 } from '../src/native-inputs.mjs';
+import { analyzeListFling, analyzeListRecycle } from '../src/list-observation.mjs';
+import { LIST_CONFIG } from '../../shared/src/list-workloads.mjs';
 import {
   NATIVE_SANDBOX_POLICY,
   assertNativeLeaseReceipt,
@@ -296,7 +298,7 @@ function expectedStormTicks(name) {
 const isOctaneEntryId = (entryId) => entryId === 'octane' || entryId.startsWith('octane-');
 
 export function requiresOctaneDriverReadiness({ framework, suite, triggerMode }) {
-  return framework === 'octane' && suite !== 'startup' && triggerMode === 'driver';
+  return framework === 'octane' && suite === 'table' && triggerMode === 'driver';
 }
 
 export function isNativeStartupPayloadPending(payload, { entryId } = {}) {
@@ -539,7 +541,8 @@ export function nativeProducerProtocolDnf(error, { suite, entry, kase, scale, ro
 
 export function isNativeTransientTransportFailure(error) {
   const message = String(error);
-  return message.includes('No response found')
+  return (
+    message.includes('No response found')
     || message.includes('inactive hook')
     || message.includes('Native CDP channel closed')
     || message.includes('Native CDP channel stopped')
@@ -552,7 +555,8 @@ export function isNativeTransientTransportFailure(error) {
     || message.includes('CDP Input.')
     || message.includes('Native session did not appear')
     || message.includes('Lynx Explorer did not reconnect on sandbox')
-    || message.includes('timeout waiting for the Octane Native background root');
+    || message.includes('timeout waiting for the Octane Native background root')
+  );
 }
 
 export function nativeTransportFailureDnf(
@@ -670,6 +674,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   const isCurrentOctane = () => currentEntryFramework === 'octane';
   let currentRows = null;
   let currentOpenTime = null;
+  let currentLoadStartedAt = null;
   let lastObserved = null;
   let startupPayloadLogged = false;
   let consoleReader = null;
@@ -987,6 +992,135 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     const hit = await cdp('DOM.getNodeForLocation', point);
     if (!hit?.nodeId) throw new Error(`no Native hit target at ${point.x},${point.y}.`);
     return point;
+  }
+
+  function nodeAttributes(node) {
+    const entries = node?.attributes ?? [];
+    const result = {};
+    for (let index = 0; index + 1 < entries.length; index += 2) {
+      result[entries[index]] = entries[index + 1];
+    }
+    return result;
+  }
+
+  async function nativeListSnapshot(startedAt = Date.now()) {
+    const viewportNodes = await search('bench-list-viewport');
+    if (viewportNodes.length !== 1) {
+      throw new Error(`expected one Native list viewport, found ${viewportNodes.length}.`);
+    }
+    const viewportBox = await cdp('DOM.getBoxModel', {
+      nodeId: viewportNodes[0],
+    });
+    const viewport = bounds(viewportBox.model.content ?? viewportBox.model.border);
+    const cellNodes = await search('bench-list-cell');
+    const cells = [];
+    for (const nodeId of cellNodes) {
+      let box;
+      try {
+        box = await cdp('DOM.getBoxModel', { nodeId });
+      } catch {
+        // A recycled node can disappear between the search and box-model call.
+        continue;
+      }
+      const rect = bounds(box.model.border);
+      if (rect.bottom <= viewport.top || rect.top >= viewport.bottom) continue;
+      const described = await cdp('DOM.describeNode', { nodeId, depth: 0 });
+      const key = nodeAttributes(described.node)['item-key'];
+      if (typeof key !== 'string' || !/^row-\d+$/.test(key)) {
+        throw new Error(`Native visible list cell has invalid item-key ${JSON.stringify(key)}.`);
+      }
+      cells.push({
+        key,
+        top: rect.top - viewport.top,
+        bottom: rect.bottom - viewport.top,
+      });
+    }
+    cells.sort((left, right) => left.top - right.top || left.key.localeCompare(right.key));
+    return {
+      atMs: Date.now() - startedAt,
+      keys: cells.map((cell) => cell.key),
+      cells,
+    };
+  }
+
+  async function waitForNativeListFirstContent(timeoutMs = LONG_WORKLOAD_TIMEOUT_MS) {
+    if (!Number.isFinite(currentLoadStartedAt)) {
+      throw new Error('Native list load boundary is unavailable.');
+    }
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const initial = await nativeListSnapshot(currentLoadStartedAt);
+      if (initial.keys.length > 0) {
+        return {
+          firstVisibleContentMs: initial.atMs,
+          initial: { ...initial, atMs: 0 },
+          observation: LIST_CONFIG.observation.native,
+        };
+      }
+      await delay(16);
+    }
+    throw new Error('timeout waiting for Native list first visible content.');
+  }
+
+  async function emitTouch(type, point, timestamp) {
+    await cdp('Input.emulateTouchFromMouseEvent', {
+      type,
+      ...point,
+      // CDP TimeSinceEpoch is seconds, not JavaScript epoch milliseconds.
+      timestamp: timestamp / 1000,
+      button: 'left',
+      clickCount: 1,
+    });
+  }
+
+  async function nativeListGesture(kase) {
+    const viewportNodes = await search('bench-list-viewport');
+    if (viewportNodes.length !== 1) {
+      throw new Error(`expected one Native list viewport, found ${viewportNodes.length}.`);
+    }
+    const viewportBox = await cdp('DOM.getBoxModel', {
+      nodeId: viewportNodes[0],
+    });
+    const viewport = bounds(viewportBox.model.content ?? viewportBox.model.border);
+    const x = (viewport.left + viewport.right) / 2;
+    const startY = viewport.bottom - 1;
+    const fling = kase.name === 'list-fling';
+    const distancePx = fling ? LIST_CONFIG.fling.nativeReleaseDistancePx : LIST_CONFIG.recycle.distancePx;
+    const durationMs = fling ? (distancePx / LIST_CONFIG.fling.velocityPxPerSecond) * 1000 : 800;
+    const steps = Math.max(2, Math.round(durationMs / (1000 / 60)));
+    const startedAt = Date.now();
+    const frames = [];
+    await emitTouch('mousePressed', { x, y: startY }, startedAt);
+    for (let step = 1; step <= steps; step++) {
+      const targetAt = startedAt + (durationMs * step) / steps;
+      const y = startY - (distancePx * step) / steps;
+      const remaining = targetAt - Date.now();
+      if (remaining > 0) await delay(remaining);
+      await emitTouch('mouseMoved', { x, y }, Date.now());
+    }
+    await emitTouch('mouseReleased', { x, y: startY - distancePx }, Date.now());
+    const releasedAt = Date.now();
+    const observeUntil = fling ? releasedAt + LIST_CONFIG.fling.durationMs : releasedAt + 250;
+    let stableFrames = 0;
+    let lastSignature = null;
+    while (Date.now() < observeUntil || (!fling && stableFrames < 2)) {
+      const frame = await nativeListSnapshot(startedAt);
+      frames.push(frame);
+      const signature = frame.keys.join('\0');
+      stableFrames = signature === lastSignature ? stableFrames + 1 : 0;
+      lastSignature = signature;
+      if (!fling && stableFrames >= 2) break;
+      await delay(16);
+    }
+    return {
+      frames,
+      input: fling ? LIST_CONFIG.input.native.fling : LIST_CONFIG.input.native.recycle,
+      gesture: {
+        distancePx,
+        durationMs,
+        velocityPxPerSecond: (distancePx / durationMs) * 1000,
+      },
+    };
   }
 
   async function tapPoint(point) {
@@ -1582,6 +1716,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       const nonce = `${entry.id}-${rows}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const url = `http://127.0.0.1:${port}/main.lynx.bundle?run=${encodeURIComponent(nonce)}`;
       try {
+        currentLoadStartedAt = Date.now();
         currentOpenTime = Date.now() + deviceClock.offsetMs;
         await connectorCall('open-page', () => connector.openPage(client.id, url));
       } catch (error) {
@@ -1592,6 +1727,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           message: String(error),
         });
         await restartExplorer();
+        currentLoadStartedAt = Date.now();
         currentOpenTime = Date.now() + deviceClock.offsetMs;
         await connectorCall('open-page-after-restart', () => connector.openPage(client.id, url));
       }
@@ -1714,6 +1850,71 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         latencyMs: lastObserved.latencyMs,
         boundary: lastObserved.boundary,
         detail: lastObserved,
+      };
+    },
+
+    async collectListStartup() {
+      return waitForNativeListFirstContent();
+    },
+
+    async driveListCase(kase, scale, initial) {
+      if (kase.name !== 'list-recycle' && kase.name !== 'list-fling') {
+        throw new Error(`unsupported Native list case ${kase.name}.`);
+      }
+      if (scale !== currentRows) {
+        throw new Error(`Native list scale ${scale} does not match loaded scale ${currentRows}.`);
+      }
+      const capture = await nativeListGesture(kase);
+      if (kase.name === 'list-recycle') {
+        const measured = analyzeListRecycle(initial, capture.frames);
+        const unavailableWire = {
+          category: 'unsupported-native-wire-meter',
+          capabilityScope: 'metric',
+          capabilityProven: true,
+          message:
+            'The production Native comparator runtimes expose no common byte counter for framework BTS↔MTS traffic.',
+          evidence: {
+            observation: LIST_CONFIG.observation.native,
+            input: capture.input,
+          },
+        };
+        return {
+          metrics: {
+            operationTimeMs: measured.operationTimeMs,
+            recycledCells: measured.recycledCells,
+          },
+          metricFailures: {
+            wireToMtsBytes: unavailableWire,
+            wireToBtsBytes: unavailableWire,
+          },
+          detail: { ...capture, terminal: measured.terminal },
+        };
+      }
+      const measured = analyzeListFling(initial, capture.frames);
+      if (measured.materializedCells === 0) {
+        throw new Error('Native list fling observed no newly materialized visible cells.');
+      }
+      const unavailableMaterializationClock = {
+        category: 'unsupported-native-materialization-entry-clock',
+        capabilityScope: 'metric',
+        capabilityProven: true,
+        message:
+          'The production Native comparator runtimes expose visible keys but no common scroll-offset presentation clock for expected viewport entry.',
+        evidence: {
+          observation: LIST_CONFIG.observation.native,
+          input: capture.input,
+        },
+      };
+      return {
+        metrics: {
+          elapsedMs: measured.elapsedMs,
+          materializedCells: measured.materializedCells,
+          blankFrames: measured.blankFrames,
+        },
+        metricFailures: {
+          materializationTimesMs: unavailableMaterializationClock,
+        },
+        detail: { ...capture, firstVisibleFrame: measured.firstVisibleFrame },
       };
     },
 
