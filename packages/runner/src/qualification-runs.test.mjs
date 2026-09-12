@@ -4,7 +4,7 @@ import test from 'node:test';
 import { ROADMAP_SCORECARD } from '@lynx-bench/shared/scorecard';
 import { makeRecord, SCHEMA_VERSION } from '@lynx-bench/shared/schema';
 
-import { qualifyRawRuns } from './qualification-runs.mjs';
+import { qualifyRawRuns, qualifyRawSuiteRuns } from './qualification-runs.mjs';
 
 const candidate = 'candidate';
 const comparator = 'comparator';
@@ -101,4 +101,30 @@ test('re-derives medians instead of trusting stored aggregate fields', () => {
   for (const record of runs[0].records) record.median = 0.000001;
   const result = qualifyRawRuns({ runs, candidate, comparator });
   assert.ok(Math.abs(result.suites.interaction.aggregate.point - 0.9) < 1e-12);
+});
+
+test('qualifies interaction and startup from independent uncontaminated windows', () => {
+  const interaction = Array.from({ length: 10 }, (_, index) => rawRun(index));
+  const startup = Array.from({ length: 10 }, (_, index) => rawRun(index + 10));
+  for (const run of startup) {
+    run.meta.receipt.comparabilityCohort = 'sha256:startup-cohort';
+    run.records = run.records.filter((record) => record.suite === 'startup');
+  }
+  for (const run of interaction) {
+    run.records = run.records.filter((record) => record.suite === 'table');
+  }
+
+  const result = qualifyRawSuiteRuns({
+    runsBySuite: { interaction, startup },
+    candidate,
+    comparator,
+  });
+
+  assert.equal(result.comparabilityCohorts.interaction, 'sha256:one-cohort');
+  assert.equal(result.comparabilityCohorts.startup, 'sha256:startup-cohort');
+  assert.equal(result.sessions.interaction.length, 10);
+  assert.equal(result.sessions.startup.length, 10);
+  assert.equal(result.suites.interaction.pairCount, 10);
+  assert.equal(result.suites.startup.pairCount, 10);
+  assert.equal(result.pass, true);
 });

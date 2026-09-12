@@ -1,0 +1,82 @@
+{
+  "kind": "m4-rejected-hypothesis",
+  "candidate": "octane-m4-listener-identity-exp",
+  "comparator": "octane-m4-final",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Elide acknowledgement-journal writes only when a compiler-stable listener and priority exactly match the published binding and the attempt has no earlier write for that listener id.",
+  "disposition": "rejected-and-reverted",
+  "recoveryPath": "/data00/home/xuan.huang/.codex/tmp/issue291-rejected-listener-identity-20260912/entry",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": {
+      "AB": 5,
+      "BA": 5
+    },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "confidence": 0.95,
+    "unit": "session median"
+  },
+  "result": {
+    "aggregate": {
+      "point": 1.006491320520049,
+      "lower": 0.979191855027283,
+      "upper": 1.0331731544591976
+    },
+    "cells": {
+      "swap@1000": {
+        "point": 1.023952669479132,
+        "lower": 0.9665443925834405,
+        "upper": 1.078040986979822
+      },
+      "remove@1000": {
+        "point": 0.9893277379681045,
+        "lower": 0.9690381659896834,
+        "upper": 1.0113628381500261
+      }
+    }
+  },
+  "sourceRuns": [
+    {
+      "file": "results/runs/2026-09-12T02-22-49-65160668d8d9.json",
+      "sha256": "6cd232f400c9b890118ab75061b04f65b6cdcbb620e40dffb5f168d6d9b15631"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-24-42-65160668d8d9.json",
+      "sha256": "8d4e16b687a0b5ae98119adc11f5d4f1212679472596be7b2f457c752c5cbb5c"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-26-34-65160668d8d9.json",
+      "sha256": "3efcf19c6eee456d217ed669336c598fd72114e9cce8cc84e83b880c51d76f9e"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-28-24-65160668d8d9.json",
+      "sha256": "8d6fb523361003ef5cd416cfb9d6868e072a8dce75ed77e50a60843b3e5afc5f"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-30-16-65160668d8d9.json",
+      "sha256": "cc41bb6a8ea4154d4c7cea1e462e32ebee9c20ee05a33743010df58f100f75fe"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-32-06-65160668d8d9.json",
+      "sha256": "4b24054e019e5b9bd6c09533fe66ad22929a68a64ee3e582b5b50837dae367bc"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-33-57-65160668d8d9.json",
+      "sha256": "c542a496ec69bf7420bad566ff5c613fa0ea69a7caff9fb0422db668290b8d00"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-35-49-65160668d8d9.json",
+      "sha256": "f7d4db090b1e7e821c8fedce26ecd4e42584609de7b21a0fdee8985dbeae17bf"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-37-40-65160668d8d9.json",
+      "sha256": "e7e6f86fd53986464a2ee146db78dca2c66808afd85f49bfbed1a02bcefa1eab"
+    },
+    {
+      "file": "results/runs/2026-09-12T02-39-31-65160668d8d9.json",
+      "sha256": "fcb109070bf7196c970d41e3321ae293e7b33b4802b35cabd9fb5c21f024e0e9"
+    }
+  ]
+}

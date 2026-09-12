@@ -1,0 +1,305 @@
+{
+  "scorecardVersion": 1,
+  "candidate": "octane-m4-final",
+  "comparator": "vue-lynx-m4-vdom-default",
+  "harness": "web",
+  "machine": {
+    "id": "65160668d8d9",
+    "hostname": "n251-227-236",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+    "cores": 32,
+    "memGB": 67,
+    "node": "v22.22.2"
+  },
+  "comparabilityCohorts": {
+    "interaction": "sha256:a2c39557c41af5bbcb68fe67d361388327f32c84c079644f9ac4c216f484eaaa",
+    "startup": "sha256:a2c39557c41af5bbcb68fe67d361388327f32c84c079644f9ac4c216f484eaaa"
+  },
+  "entryCommits": {
+    "candidate": "805fd9ed861eec7ca8d113039f6722699b6cce1c",
+    "comparator": "8e02c0e4e25cd216df080c339cf1ccab855d2c71"
+  },
+  "sessions": {
+    "interaction": [
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ab-01",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ba-02",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ab-03",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ba-04",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ab-05",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ba-06",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ab-07",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ba-08",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ab-09",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-table-only-ba-10",
+        "order": "BA"
+      }
+    ],
+    "startup": [
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ab-01",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ba-02",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ab-03",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ba-04",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ab-05",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ba-06",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ab-07",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ba-08",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ab-09",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vdom-default-web-jit-startup-only-ba-10",
+        "order": "BA"
+      }
+    ]
+  },
+  "suites": {
+    "interaction": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.7833316287002197,
+        "lower": 0.7695628199218282,
+        "upper": 0.7991551512055189,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "create@1000": {
+          "point": 0.5787963533279815,
+          "lower": 0.573218409333665,
+          "upper": 0.5847126467147935,
+          "nonInferior": true
+        },
+        "replace@1000": {
+          "point": 0.7844989046386928,
+          "lower": 0.7719851592922983,
+          "upper": 0.7963002945204963,
+          "nonInferior": true
+        },
+        "update10th@1000": {
+          "point": 0.8450321917478537,
+          "lower": 0.7641304261081041,
+          "upper": 0.9255115703026606,
+          "nonInferior": true
+        },
+        "select@1000": {
+          "point": 1.181852862611507,
+          "lower": 1.078077688785196,
+          "upper": 1.2964335309443276,
+          "nonInferior": false
+        },
+        "swap@1000": {
+          "point": 0.8864662183052627,
+          "lower": 0.8125447176478147,
+          "upper": 0.9751222706782525,
+          "nonInferior": true
+        },
+        "remove@1000": {
+          "point": 1.0061781140760824,
+          "lower": 0.9567824584956378,
+          "upper": 1.0558797333265157,
+          "nonInferior": false
+        },
+        "create@10000": {
+          "point": 0.5862818839987847,
+          "lower": 0.577726801122685,
+          "upper": 0.5946021765637703,
+          "nonInferior": true
+        },
+        "append1k@1000": {
+          "point": 0.7554559386205545,
+          "lower": 0.7437764204864105,
+          "upper": 0.7687085015945349,
+          "nonInferior": true
+        },
+        "clear@1000": {
+          "point": 1.008469750325152,
+          "lower": 0.9616235561268687,
+          "upper": 1.0552895932145587,
+          "nonInferior": false
+        }
+      },
+      "pass": false
+    },
+    "startup": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.5529005926366225,
+        "lower": 0.5392194421564773,
+        "upper": 0.5646243002698247,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "fcp@0": {
+          "point": 0.48925546790651286,
+          "lower": 0.46240996199797696,
+          "upper": 0.5159852555545946,
+          "nonInferior": true
+        },
+        "fcp@1000": {
+          "point": 0.5932629221495491,
+          "lower": 0.5780610685081675,
+          "upper": 0.608504954446799,
+          "nonInferior": true
+        },
+        "fcp@10000": {
+          "point": 0.5823153947252139,
+          "lower": 0.5725773908317832,
+          "upper": 0.592057171583962,
+          "nonInferior": true
+        }
+      },
+      "pass": true
+    }
+  },
+  "pass": false,
+  "sourceRuns": {
+    "interaction": [
+      {
+        "file": "results/runs/2026-09-11T21-32-33-65160668d8d9.json",
+        "sha256": "ee6136c13320378b2be4d3108445f1531c771bfe871762c170dc0a0b2e74b981"
+      },
+      {
+        "file": "results/runs/2026-09-11T21-38-52-65160668d8d9.json",
+        "sha256": "27e5bab4a294528ad2e22696b5c3b6eb1897fc0f58607234108a0c6eab0d61c5"
+      },
+      {
+        "file": "results/runs/2026-09-11T21-45-11-65160668d8d9.json",
+        "sha256": "ca8ae56eb333d91502fedb863cf5f34f83129ea230af5d6968a12883d97f9c5c"
+      },
+      {
+        "file": "results/runs/2026-09-11T21-51-30-65160668d8d9.json",
+        "sha256": "0690df3953d8e42052d42c380cbef5866669dafbe5064948dec411c73baf20fe"
+      },
+      {
+        "file": "results/runs/2026-09-11T21-57-49-65160668d8d9.json",
+        "sha256": "efd5e768365bb734df4f0141c54bcc96755b49cc01134a020e5b97d9998708ad"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-04-11-65160668d8d9.json",
+        "sha256": "e3380ff90335308f61f76bbabdb0985ab57d56db0cf5b9f1553904bb57595591"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-10-30-65160668d8d9.json",
+        "sha256": "b859c6787b79b2415a59ea734f47af9c69ac8c5d2638e68ddaa32a29902a1038"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-16-48-65160668d8d9.json",
+        "sha256": "de437188a1dc1c7648dfb7eb39c60437aeb8b6f10a89f60cde1cc48282380031"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-23-06-65160668d8d9.json",
+        "sha256": "f93a56cdd6a62d219c41c369fafbd336747cdbd71313e9d42986eda4d85567f0"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-29-26-65160668d8d9.json",
+        "sha256": "fde68074683ddc655276c87ac4d0d4918fe8dba5c1591f51bacc2b6f3c77adde"
+      }
+    ],
+    "startup": [
+      {
+        "file": "results/runs/2026-09-11T22-31-09-65160668d8d9.json",
+        "sha256": "0e2da7954fd3e844fa71435f9add9d93979a3b9c70d5523c5306a58a471ed25d"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-32-03-65160668d8d9.json",
+        "sha256": "f96b6ce5c5f41aa9308b69870c50fb16250234600d4e4ed913e760572763c05e"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-32-58-65160668d8d9.json",
+        "sha256": "f911a0c8112ab735cb8a919b2e8f91e31e489466575f07755a19cd76bbefc2e1"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-33-52-65160668d8d9.json",
+        "sha256": "3fa6c02d1af629bdb276d5f2499e4858e94a1b9b51db68118328e020804cff65"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-34-47-65160668d8d9.json",
+        "sha256": "19db3e20250107b8ea4a6e24c5e8e8a1d534d315c28c091e0806e4a495426fcd"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-35-42-65160668d8d9.json",
+        "sha256": "9bff79e2461dade9c62a5d1590c4f7080f3f183acd825cdac94ae4f44b0402fd"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-36-37-65160668d8d9.json",
+        "sha256": "3476c21f46327bca847982c4aac080a6091c8762ed9605b503c2d3a378dab5c2"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-37-32-65160668d8d9.json",
+        "sha256": "0e8fd1a2d1ad604f6653c0534ba48393e7573ea7ef39983e0952fec66a2d98db"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-38-25-65160668d8d9.json",
+        "sha256": "610d3f9c7c5ccfa0d2a297d4358528a123093d806f191f769dee8c7a9b30ee4e"
+      },
+      {
+        "file": "results/runs/2026-09-11T22-39-19-65160668d8d9.json",
+        "sha256": "d8ae5f6698deebb07d7d39f6862475732f141f60c3c76b93bb09d74db2502b54"
+      }
+    ]
+  }
+}

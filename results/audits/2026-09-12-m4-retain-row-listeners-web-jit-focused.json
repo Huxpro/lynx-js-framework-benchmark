@@ -1,0 +1,129 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "octane-m4-retain-row-listeners-experiment",
+  "candidateCommit": "eda005a520294fdfc4aa1ff2846eff5b90a3c93e",
+  "comparator": "octane-m4-retain-unchanged-values-experiment",
+  "comparatorCommit": "f1d2036f6fa30f1e2334502505f8e513e9275f17",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "After structural keyed reconciliation, retain listener bindings for component rows whose complete descriptor was reused and bind only changed or newly mounted rows by key.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 20,
+    "orderCounts": { "AB": 10, "BA": 10 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x291eda0 plus metric index",
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "comparabilityCohort": "sha256:ebdbee269dfb24377058996394b21cd5d3ccf643127be738fdc8984fd3ef6b04",
+    "extensionDisclosure": {
+      "stage1": "The first fixed 10-session cohort was inconclusive on latency and MTS non-inferiority despite a strict BTS win.",
+      "decision": "Before any additional observations, a second independent balanced 10-session confirmation cohort and a fixed 20-session combined analysis were declared.",
+      "stage2": "The confirmation cohort independently retained the strict BTS win and MTS non-inferiority, while latency remained inconclusive.",
+      "qualificationPopulation": "All 20 sessions; no session was removed or replaced."
+    }
+  },
+  "subcohorts": {
+    "stage1": {
+      "sessions": 10,
+      "latency": { "point": 1.0028536455253363, "lower": 0.9519316444905478, "upper": 1.0622097465610396 },
+      "backgroundCpu": { "point": 0.9141698802106768, "lower": 0.8857702900371743, "upper": 0.9441512244107443 },
+      "mainThreadCpu": { "point": 1.0225179611636015, "lower": 0.9742334939112895, "upper": 1.07089840738259 }
+    },
+    "confirmation": {
+      "sessions": 10,
+      "latency": { "point": 1.010214207587313, "lower": 0.9572613347127922, "upper": 1.071909449139484 },
+      "backgroundCpu": { "point": 0.9005272854326749, "lower": 0.8658682781994285, "upper": 0.9367635687358926 },
+      "mainThreadCpu": { "point": 1.0086730262654324, "lower": 0.9868360593512724, "upper": 1.0303884803008594 }
+    }
+  },
+  "removeAt1000": {
+    "latency": {
+      "point": 1.0065271982616395,
+      "lower": 0.969730911076855,
+      "upper": 1.0481944821444287,
+      "sessionRatios": [0.8964946911767641, 0.9633303289550563, 1.1922230318904592, 1.0982320501655247, 0.9399525691992189, 0.9054128525613622, 1.0934355929961737, 0.950598128512409, 1.0198601064865624, 1.008596922552984, 1.119884460772361, 0.951147972328455, 0.9115740282566533, 1.0754529162816815, 1.0340790124057417, 1.2218150970036012, 0.9199866404938645, 0.9188750476424532, 0.9757882923760998, 1.017131907475013],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "backgroundCpu": {
+      "point": 0.9073229417635346,
+      "lower": 0.884833676008161,
+      "upper": 0.9309014755172915,
+      "sessionRatios": [0.8974786413836218, 0.9557724252491694, 0.8840222085132634, 0.9085402786190189, 0.9118805722579306, 0.9993784959602238, 0.9814626196781422, 0.881904369332234, 0.9004703668861712, 0.833010461061604, 0.9382614082180468, 0.8953781512605044, 0.8776903973509933, 0.8816199376947041, 0.9852277390233892, 0.8047370384185004, 0.8974145120934114, 0.9206947060054406, 0.993993371996686, 0.8285769009768245],
+      "nonInferior": true,
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 1.0155719010969384,
+      "lower": 0.9894576727621861,
+      "upper": 1.0426506495315169,
+      "sessionRatios": [1.0767368675865407, 1.1223093193977853, 0.8974358974358976, 0.9819779229556206, 1.1299616668727588, 1.0788482834994462, 1.0864066193853426, 0.9500443066016836, 0.9787939032471835, 0.9526437796666298, 1.0050422138836772, 1.0028011204481793, 0.9909470752089137, 1.007233487489624, 1.004767996278637, 0.934601664684899, 1.033325698579936, 1.0510677808727948, 1.071128703370517, 0.9920244728504317],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "wireToBtsBytes": { "point": 1.000040470266677, "lower": 0.9997975749056571, "upper": 1.0002834246377985, "nonInferior": true },
+    "wireToMtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": { "point": 0.9997844392073041, "lower": 0.9993067472901169, "upper": 1.0002431922071502, "nonInferior": true },
+    "heapBts": { "point": 0.9998468337750325, "lower": 0.9997643689224024, "upper": 0.9999496254283726, "nonInferior": true },
+    "heapMtsAfterClear": { "point": 0.9999763544988838, "lower": 0.9998126043332205, "upper": 1.0001470633366927, "nonInferior": true },
+    "heapBtsAfterClear": { "point": 0.9989943856236805, "lower": 0.9984296086737936, "upper": 0.9996972127447995, "nonInferior": true }
+  },
+  "bundle": {
+    "web": { "comparatorBytes": 184460, "candidateBytes": 184466, "deltaBytes": 6, "candidateSha256": "80e35fb41bfbebc8b1c91404f721e085cb2a721649ee47edaf968bedd6ac5c7f" },
+    "native": { "comparatorBytes": 184580, "candidateBytes": 184586, "deltaBytes": 6, "candidateSha256": "7258787b4d1dacb75800afa4b368bd0f858a20d8694f48f04aee7d6dbc253a51" }
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-retain-row-listeners-remove-profile.json",
+    "sha256": "6fb38d0a2701b64099473539dfc20cb5c691e09895945c5295598bcb47c34f0f",
+    "pairs": 5,
+    "runsPerArm": 10,
+    "purpose": "CPU attribution only; profiler-perturbed wall time is not used for qualification.",
+    "means": {
+      "retainedValues": { "latencyMs": 21.547000122070312, "backgroundCpuMs": 2.5587, "mainThreadCpuMs": 4.4326, "reconcileForSlotSelfMs": 4.606, "bindListenersSelfMs": 0.47 },
+      "retainedListeners": { "latencyMs": 23.95649995803833, "backgroundCpuMs": 2.5038, "mainThreadCpuMs": 4.6422, "reconcileForSlotSelfMs": 4.294, "bindListenersSelfMs": 0 }
+    },
+    "attribution": "The explicit bindListeners frame disappears (0.470 ms aggregate to no sampled self time), and reconcileForSlot aggregate self time falls 6.8%. The formal unprofiled sampler, not this profile, establishes the 9.3% BTS CPU result."
+  },
+  "validation": {
+    "focusedTests": "1 file, 53 tests passed",
+    "fullLynxProject": "57 files, 995 tests passed",
+    "typecheck": "production, testing, and typetest tsconfigs passed",
+    "sync": "passed",
+    "manifestAndBundles": "all 16 candidate SHA-256 receipts verified"
+  },
+  "benchmarkReceipt": {
+    "commit": "f79df1f18cf3e392c5efa66bbf115019562119d9",
+    "dirty": true,
+    "diffSha256": "f18cc69a532011120a04cef43a5c81193498c2ef02b0b28b4a20f3db10e62aca",
+    "ignoredGeneratedPaths": ["results/runs/**", "results/audits/**", "results/latest.json", "site/dist/**"]
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T06-53-00-65160668d8d9.json", "sha256": "6cba7b57f1d2575e38e6505593bc912595dd7dbf80c54342bea5a83a8ef1c408", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-1", "calibration": 2362.1 },
+    { "file": "results/runs/2026-09-12T06-54-00-65160668d8d9.json", "sha256": "49596f38d92ceb4a0053911e81ff351e4553e8626ab0d23419b2e662bc3c54fe", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-1", "calibration": 2382.8 },
+    { "file": "results/runs/2026-09-12T06-54-59-65160668d8d9.json", "sha256": "4bd3ec01fcb11e48379db107fe04b9926f5c74f64d873a82d07f585cd3218c0d", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-2", "calibration": 2371.8 },
+    { "file": "results/runs/2026-09-12T06-55-58-65160668d8d9.json", "sha256": "2752740b1be95ee7b8e2085a1af41cc62d7913f57581c32d4e79831f991e229a", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-2", "calibration": 2383.3 },
+    { "file": "results/runs/2026-09-12T06-56-58-65160668d8d9.json", "sha256": "72b3d6e8e1eb6007c058fd8de60b460618dea7ddecfd8c39a9e7f05b0f822138", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-3", "calibration": 2455.5 },
+    { "file": "results/runs/2026-09-12T06-57-59-65160668d8d9.json", "sha256": "9d74cc6c2bd1ad8ba0e7cf62eebe25b875d016b4afbc26e333a89a5373027342", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-3", "calibration": 2277.3 },
+    { "file": "results/runs/2026-09-12T06-58-59-65160668d8d9.json", "sha256": "3fc03d96c60ff88aefa2479bf107696076bea205363900bde2cec00dfa26defc", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-4", "calibration": 2318 },
+    { "file": "results/runs/2026-09-12T06-59-59-65160668d8d9.json", "sha256": "2ef6fcdfddc8ee3c7eb6b5b631c626ee70e9a971da1c19deb6ab37ad3c7378ee", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-4", "calibration": 2392.5 },
+    { "file": "results/runs/2026-09-12T07-00-59-65160668d8d9.json", "sha256": "5ba31641cd85b3de68ef0bed6d9f41097228e6e5df0be3f08f3eebd45379d6de", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-5", "calibration": 2191.8 },
+    { "file": "results/runs/2026-09-12T07-01-59-65160668d8d9.json", "sha256": "8a4915d6cf72cbcda551b101a5b69fd21aa76d28943f15559e6b447fbedad867", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-5", "calibration": 2366.3 },
+    { "file": "results/runs/2026-09-12T07-04-00-65160668d8d9.json", "sha256": "d1c3376f469e04905d20278c8d3aa7ca2d9c386c37ddb65a24f73cf6a2ddfb68", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-6", "calibration": 2408.8 },
+    { "file": "results/runs/2026-09-12T07-04-59-65160668d8d9.json", "sha256": "9f34da250e9d201bc096feef81ca1aa30db7a302cc61ddfd682ad043ce8a58ee", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-6", "calibration": 2357.8 },
+    { "file": "results/runs/2026-09-12T07-05-59-65160668d8d9.json", "sha256": "04c681a1b6275ceb3d9823822264f7447920a74cb5f1edb53debe4dbb8a74480", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-7", "calibration": 2342.3 },
+    { "file": "results/runs/2026-09-12T07-06-58-65160668d8d9.json", "sha256": "7e6998be29712be2859c283d8528a60841a238e62108939548d9e99992692e5e", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-7", "calibration": 2352.8 },
+    { "file": "results/runs/2026-09-12T07-07-58-65160668d8d9.json", "sha256": "20eaa6083a38a94f241ffa1e27d235701b1e2211e90d79752959ebce6c36df8f", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-8", "calibration": 2353.5 },
+    { "file": "results/runs/2026-09-12T07-08-57-65160668d8d9.json", "sha256": "1e3f81e2884b10a69e5d0ed3db03bee07807615ed61b3690bf3a08e734574dc4", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-8", "calibration": 2385.5 },
+    { "file": "results/runs/2026-09-12T07-09-58-65160668d8d9.json", "sha256": "a810e23c0cdc3f9d8c77714760390c2003c3ae508b22d2eb06a7abf7f50bd07c", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-9", "calibration": 2392 },
+    { "file": "results/runs/2026-09-12T07-10-57-65160668d8d9.json", "sha256": "9c93288987f9221e4b62edfa7ef86300ea34d2af7e355d0cb58e1e3adfbae23d", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-9", "calibration": 2333 },
+    { "file": "results/runs/2026-09-12T07-11-57-65160668d8d9.json", "sha256": "c2f1faa358f6ab72f2904e6fce1feddce13b7ab6950bbe4d966baeea343f4276", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ab-10", "calibration": 2373.3 },
+    { "file": "results/runs/2026-09-12T07-12-57-65160668d8d9.json", "sha256": "1ce3ff39ac6a1f7c62895336cb0d88626095b73290a422236c840949529e53ea", "sessionId": "issue291-retain-row-listeners-remove-web-jit-ba-10", "calibration": 2393.8 }
+  ]
+}

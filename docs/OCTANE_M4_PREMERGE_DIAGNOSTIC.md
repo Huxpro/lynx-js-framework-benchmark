@@ -1,0 +1,393 @@
+# Octane M4 pre-merge Web diagnostic
+
+This is an owner-finding run for
+[Huxpro/octane#291](https://github.com/Huxpro/octane/issues/291), not a formal
+M4 verdict. It intentionally precedes the merge of the final default-core
+candidate and contains one fixed entry order rather than the required ten
+balanced AB/BA pairs. Point ratios below must not be cited as confidence
+intervals or release claims.
+
+## Frozen inputs and execution
+
+- Candidate: `octane-m4-final` at
+  `cf1018a051cd14b2c384ed0541b0ee5ee1789970` (pre-merge PR head).
+- Latest upstream at measurement start: `octane-m4-upstream` at
+  `55a9aa3acd3ffad847d5604ffbdc4342a30a861d`, rebuilt from source with the
+  same Node 22.22.2, pnpm 11.15.1, and Rspeedy 0.16.0 toolchain.
+- Comparator producer: `Huxpro/vue-lynx@8e02c0e4e25cd216df080c339cf1ccab855d2c71`;
+  ReactLynx 0.126, Vue VDOM 0.5, and Vue Vapor 0.5 are separate default and
+  applicable optimized identities.
+- Runner: clean `1d81c77a3ca314cc971a921d4f8a67654fff335f`.
+- Machine: `65160668d8d9`, Chromium 149.0.7827.55, Web JIT, no throttle.
+- Sampling: seven observations per interaction cell and five per startup
+  cell, no outlier removal. All 909 records completed with zero DNF.
+- Raw run:
+  `results/runs/2026-09-11T11-32-34-65160668d8d9.json`, SHA-256
+  `5a4c3c42745ef6dec95ef1b7edd36843fb9c77a67d58a6b7a1cfbb2f95477795`.
+
+```bash
+pnpm bench run --harness web \
+  --entry octane-m4-final,octane-m4-upstream,reactlynx-m4-default,vue-lynx-m4-vdom-default,vue-lynx-m4-vdom-ifr-et,vue-lynx-m4-vapor-default,vue-lynx-m4-vapor-ifr \
+  --suite table,startup --scale 1000,10000 \
+  --startup-scale 0,1000,10000 --reps 7 --startup-reps 5 \
+  --session-id issue291-premerge-diagnostic-all-web-jit --no-collect
+```
+
+## Diagnostic point estimates
+
+Ratios are candidate/comparator. Interaction uses the frozen weighted
+geometric mean; startup gives equal weight to FCP@0/1k/10k. These are medians
+from one ordered diagnostic window, so no strict-win or non-inferiority
+decision is made.
+
+| Comparator        | interaction | startup FCP | point-risk core cells above 1.05                           |
+| ----------------- | ----------: | ----------: | ---------------------------------------------------------- |
+| latest upstream   |       0.716 |       0.749 | FCP@0 1.094                                                |
+| ReactLynx default |       0.840 |       1.105 | replace 1.217; append1k 1.194; FCP@0 1.462                 |
+| Vue VDOM default  |       0.834 |       0.715 | replace 1.239; remove 1.197                                |
+| Vue VDOM +IFR +ET |       0.837 |       0.810 | replace 1.213; remove 1.196; FCP@0 1.080                   |
+| Vue Vapor default |       0.848 |       0.684 | replace 1.132; update10th 1.109; remove 1.057; clear 1.082 |
+| Vue Vapor +IFR    |       0.806 |       0.719 | replace 1.086; clear 1.085                                 |
+
+The run identifies three concrete owners for the next measurement/engineering
+loop:
+
+1. Empty-page startup versus ReactLynx, consistent with the large publication
+   artifact gap (the candidate rows-0 Web bundle is about 433 kB versus about
+   106 kB for ReactLynx).
+2. Whole-table replace, which repeats against every peer despite strong bulk
+   create results.
+3. Short remove/clear and Vapor sparse-update cells close to or above the 1.05
+   point boundary, where balanced pairs are required before choosing a code
+   target.
+
+The first owner was then checked in ten independent, order-balanced FCP@0-only
+pairs (five AB and five BA). The same frozen paired bootstrap implementation
+reports candidate/ReactLynx 1.6990, 95% CI [1.6050, 1.8011]. This is a
+conclusive diagnostic failure for that cell, but still not a full-scorecard M4
+verdict. The machine-readable result and all ten raw-run hashes are in
+results/audits/2026-09-11-m4-premerge-react-fcp0-diagnostic.json.
+
+## Compact candidate versus ReactLynx: failure retained
+
+The later compact candidate `805fd9ed861eec7ca8d113039f6722699b6cce1c`
+was measured against ReactLynx default at
+`8e02c0e4e25cd216df080c339cf1ccab855d2c71`. Twenty complete combined
+table-then-startup sessions (ten AB and ten BA, 4,920 records, zero DNF) passed
+the interaction suite at 0.78979, 95% CI [0.77979, 0.79975]. The startup
+aggregate also met the engineering target at 0.92091, 95% CI
+[0.90224, 0.94060], but the run failed overall because FCP@0 was 1.04041,
+95% CI [0.98890, 1.09704].
+
+That combined order is not a cold-start isolation boundary: each framework's
+startup pages follow its complete table campaign in the same browser process.
+The benchmark therefore added a fail-closed M4 qualifier that accepts separate
+prospective interaction and startup windows while still requiring every window
+to be complete, same-machine, one-cohort, order-balanced, DNF-free, and exact
+commit pinned. It also requires the candidate, comparator, harness, machine,
+and source commits to match across windows.
+
+Twenty new startup-only sessions (ten AB and ten BA, 1,400 records, zero DNF)
+removed that cross-suite workload without changing the production bundles or
+FCP endpoint. Combined with the original interaction window, the frozen 10,000
+resample qualification result is:
+
+| suite/cell            | point ratio |             95% CI | gate     |
+| --------------------- | ----------: | -----------------: | -------- |
+| interaction aggregate |     0.78979 | [0.77979, 0.79975] | pass     |
+| startup aggregate     |     0.90815 | [0.89481, 0.92092] | pass     |
+| FCP@0                 |     1.01309 | [0.97181, 1.05098] | **fail** |
+| FCP@1k                |     0.88640 | [0.87313, 0.89982] | pass     |
+| FCP@10k               |     0.83405 | [0.82735, 0.84092] | pass     |
+
+The exact machine-readable verdict, suite-specific cohort IDs, session IDs,
+and all 40 raw-run SHA-256 hashes are in
+`results/audits/2026-09-11-m4-premerge-react-web-jit-independent-windows.json`
+(SHA-256 `18d4aab010e482f6a859908f976ccffd6d3b95c59cc1563c6d88ed799f919721`).
+The FCP@0 upper bound misses the 1.05 non-inferiority gate by 0.00098, so this
+remains a failure; no rounding, survivor reweighting, or post-hoc sample
+extension changes that verdict.
+
+An independent ten-sweep AB/BA CPU profile found no Octane-specific self-time
+owner: sampled CPU geometric means were 30.684 ms for Octane and 30.866 ms for
+ReactLynx, while observed FCP geometric means in that diagnostic were 30.243 ms
+and 33.312 ms. Shared harness tree walking and Lynx WebCore dominated both
+profiles. The raw profiles and top-self tables are retained in
+`results/audits/2026-09-11-m4-premerge-react-fcp0-cpu-profile.json` (SHA-256
+`ab86abf2c9c39c2ffbdf2de0ebf39584bb62d624a600145c6d718b15de57f98f`).
+This profile explains why there is no justified cost-transfer change to make;
+it does not override the failed scorecard. The final merged identity will use
+a prospectively fixed higher-power cohort rather than appending samples to
+this observed failure.
+
+## Compact candidate versus Vue VDOM default: startup passes, interaction fails
+
+The same compact candidate was next measured against Vue VDOM default at
+`8e02c0e4e25cd216df080c339cf1ccab855d2c71`. Ten table-only sessions and ten
+startup-only sessions (five AB and five BA in each independent window) produced
+3,100 records with zero DNF. The frozen 10,000-resample result is:
+
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.78333 | [0.76956, 0.79916] | aggregate passes |
+| select@1k             |     1.18185 | [1.07808, 1.29643] | **fail**         |
+| remove@1k             |     1.00618 | [0.95678, 1.05588] | **fail**         |
+| clear@1k              |     1.00847 | [0.96162, 1.05529] | **fail**         |
+| startup aggregate     |     0.55290 | [0.53922, 0.56462] | pass             |
+| FCP@0                 |     0.48926 | [0.46241, 0.51599] | pass             |
+| FCP@1k                |     0.59326 | [0.57806, 0.60850] | pass             |
+| FCP@10k               |     0.58232 | [0.57258, 0.59206] | pass             |
+
+Every other interaction cell passes its 1.05 upper-bound gate, but the three
+listed cells make the complete scorecard a failure. The exact verdict and all
+20 formal raw-run hashes are in
+`results/audits/2026-09-11-m4-premerge-vue-vdom-default-web-jit-independent-windows.json`
+(SHA-256 `fdf650478ebad5e0d07af0db9559dc1bbe77fbe11fc45879f6800dcf24f5010a`).
+
+Attribution does not support a semantics-changing runtime cut for this
+pre-merge failure. Across the 70 formal select samples per arm, Octane used
+1.11 ms mean BTS sampled CPU versus Vue's 4.60 ms, while MTS CPU was 4.45 ms
+versus 4.46 ms. Octane's pooled select p95 was also lower (27.35 ms versus
+29.43 ms), despite the adverse session-median ratio. A framework-neutral
+two-order pipeline diagnostic made Octane select faster (14.22 ms mean versus
+21.26 ms) and showed that remove/clear differences move between synchronous
+PAPI work and outside-PAPI frame observation. Its raw runs are
+`2026-09-11T22-41-29-65160668d8d9.json` (SHA-256
+`dd5e003eda0a1fe0be9caeb5edb94f444a8896f1f5aeab41eaa7a10210c5e2f8`) and
+`2026-09-11T22-42-47-65160668d8d9.json` (SHA-256
+`c2fbf61819c01aea0f557b6f4d4a10eff7771d558004bf828f061aee76a0ecde`).
+
+Two 20-repetition, uninstrumented focused table orders likewise moved remove
+from slightly adverse to slightly favorable and left clear within about 3%,
+while select remained frame-phase sensitive. An explicit-flush experiment was
+then rejected: ten independent five-AB/five-BA select sessions gave
+flush/baseline 1.07263, 95% CI [0.93504, 1.20269]. It did not improve the cell
+and would add a new failure boundary. The source experiment was fully reverted;
+the accepted candidate bundle and formal failure evidence are unchanged.
+
+## Compact candidate versus Vue VDOM +IFR +ET: startup passes, interaction fails
+
+The next prospectively fixed comparator was Vue VDOM with initial full render
+and event-prop teardown enabled, still from commit
+`8e02c0e4e25cd216df080c339cf1ccab855d2c71`. Its independent table-only and
+startup-only windows each contain ten sessions with five AB and five BA orders.
+All 3,100 observations completed with zero DNF. The frozen 10,000-resample
+scorecard is:
+
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.79894 | [0.78324, 0.81584] | aggregate passes |
+| select@1k             |     1.06089 | [0.94695, 1.17013] | **fail**         |
+| swap@1k               |     0.90884 | [0.76131, 1.08816] | **fail**         |
+| remove@1k             |     1.05247 | [1.02286, 1.08249] | **fail**         |
+| clear@1k              |     1.10437 | [1.05288, 1.15759] | **fail**         |
+| startup aggregate     |     0.60470 | [0.59083, 0.61829] | pass             |
+| FCP@0                 |     0.61883 | [0.58595, 0.65103] | pass             |
+| FCP@1k                |     0.70106 | [0.68886, 0.71406] | pass             |
+| FCP@10k               |     0.50968 | [0.49947, 0.51862] | pass             |
+
+Every other interaction cell passes. The formal verdict, exact commands, and
+all 20 source-run hashes are retained in
+`results/audits/2026-09-12-m4-premerge-vue-vdom-ifr-et-web-jit-independent-windows.json`
+(SHA-256 `e7a0906a3a021d5093ff2f284a5f1104f73408ce40ca334f620fe815497df18a`).
+
+The failed select and swap cells remain phase-sensitive rather than CPU-owner
+regressions: across 70 samples per arm, Octane's pooled select mean/p95 was
+20.91/27.43 ms versus Vue's 21.27/28.08 ms, with 1.07 versus 4.24 ms background
+JS CPU and 4.52 versus 4.55 ms main-thread JS CPU. Swap was likewise faster in
+pooled mean/p95 (19.12/25.72 ms versus 21.21/28.94 ms). Remove and clear are
+different: Octane used 7.16 versus 5.86 ms background JS CPU for remove and
+2.99 versus 2.38 ms for clear, so their adverse ratios were investigated as a
+real Block listener-journal hypothesis.
+
+That source hypothesis was rejected rather than shipped. Replacing the Block
+root listener `Map` with dense indexed slots preserved acknowledgement and
+synchronous teardown semantics, passed 100 focused tests, and was measured in
+ten new five-AB/five-BA focused sessions with 20 repetitions per cell. The
+patch/baseline aggregate was 0.99935, 95% CI [0.97192, 1.02608]; remove was
+1.00454 [0.97192, 1.03710] and clear was 0.99658 [0.96860, 1.02391]. With no
+stable benefit, the source was fully reverted and the experimental entry moved
+to a recoverable temporary directory. The complete rejection receipt and ten
+raw hashes are in
+`results/audits/2026-09-12-m4-rejected-dense-listener-web-jit-focused.json`
+(SHA-256 `938ecebcde3919375951d6d54fb2d802b3cd6f980d79f681361611f4181a46ce`).
+
+## Compact candidate versus Vue Vapor default: startup passes, interaction fails
+
+Vue Vapor default was measured next at the same comparator commit. Ten
+table-only and ten startup-only sessions, independently balanced five AB and
+five BA, again produced 3,100 observations with zero DNF:
+
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.76096 | [0.74755, 0.77430] | aggregate passes |
+| swap@1k               |     0.99710 | [0.87454, 1.13028] | **fail**         |
+| remove@1k             |     1.08669 | [1.02482, 1.16219] | **fail**         |
+| startup aggregate     |     0.53104 | [0.52319, 0.53890] | pass             |
+| FCP@0                 |     0.47132 | [0.45737, 0.48449] | pass             |
+| FCP@1k                |     0.55680 | [0.54363, 0.57239] | pass             |
+| FCP@10k               |     0.57064 | [0.56124, 0.58102] | pass             |
+
+Every other frozen interaction cell passes. The formal scorecard and all raw
+hashes are in
+`results/audits/2026-09-12-m4-premerge-vue-vapor-default-web-jit-independent-windows.json`
+(SHA-256 `e57a4d7a1d5c053fd8507cfe7a2f649e0c59b1f4d485cfad4ac282e2b5348e2e`).
+Unlike the VDOM select variance, these structural cells have a real background
+owner: pooled swap background JS CPU was 4.74 ms for Octane versus 1.62 ms for
+Vapor, and remove was 7.32 versus 1.31 ms. Remove main-thread JS CPU was
+effectively identical (4.56 versus 4.55 ms), locating the gap before transport.
+
+An exact-listener-identity journal elision was tested because structural Block
+renders rebind their survivor events. The implementation preserved attempt
+ordering by refusing to elide any listener ID already written in that attempt,
+passed 85 focused tests, and was measured in ten new five-AB/five-BA sessions
+with 20 repetitions per cell. It did not explain the owner: patch/baseline was
+1.02395 [0.96654, 1.07804] for swap and 0.98933 [0.96904, 1.01136] for remove,
+with aggregate 1.00649 [0.97919, 1.03317]. The source was fully reverted. The
+rejection receipt is
+`results/audits/2026-09-12-m4-rejected-listener-identity-web-jit-focused.json`
+(SHA-256 `65995fb6cc1dcd76f4040be8759452a64b29beb797f6fa2fd687ac4e9a154d39`).
+
+## Compact candidate versus Vue Vapor +IFR: startup passes, interaction cells fail
+
+The optimized Vue Vapor configuration with `enableFiber` and
+`enableElementThread` was measured in a fresh pair of independent windows. Ten
+table-only and ten startup-only sessions, each balanced five AB and five BA,
+produced 3,100 observations with zero DNF:
+
+| suite/cell            | point ratio |             95% CI | gate             |
+| --------------------- | ----------: | -----------------: | ---------------- |
+| interaction aggregate |     0.76439 | [0.75071, 0.77988] | aggregate passes |
+| update10th@1k         |     0.97209 | [0.87358, 1.08885] | **fail**         |
+| select@1k             |     1.08905 | [0.95526, 1.25887] | **fail**         |
+| swap@1k               |     1.04731 | [0.89654, 1.19179] | **fail**         |
+| remove@1k             |     1.04271 | [0.96731, 1.11952] | **fail**         |
+| startup aggregate     |     0.55036 | [0.54040, 0.56091] | pass             |
+| FCP@0                 |     0.58350 | [0.56313, 0.60580] | pass             |
+| FCP@1k                |     0.62948 | [0.61534, 0.64300] | pass             |
+| FCP@10k               |     0.45384 | [0.44603, 0.46143] | pass             |
+
+Every other frozen interaction cell passes. The formal scorecard and all raw
+hashes are in
+`results/audits/2026-09-12-m4-premerge-vue-vapor-ifr-web-jit-independent-windows.json`
+(SHA-256 `c40496e31c5b27ea0c850f364693d135e7e971d4988ef93abae95965693afa42`).
+The pooled phase records identify background work rather than main-thread
+transport as the common owner. Octane versus Vapor +IFR background JS CPU was
+4.47 versus 1.11 ms for update, 1.10 versus 0.56 ms for select, 4.61 versus
+1.71 ms for swap, and 7.36 versus 1.42 ms for remove. Remove main-thread JS CPU
+was 4.47 versus 4.61 ms, so the structural gap is again before transport. The
+earlier listener-container and exact-listener-identity experiments are not
+repeated because their focused receipts rejected those mechanisms.
+
+### Retained owner cut: compiler-proven keyed component rows
+
+The Block component lowering was then changed to reuse a retained component-row
+descriptor when the compiler proof establishes the same key, item identity,
+index, non-selection captures, and selected state. This removes descriptor
+construction for 900 of 1,000 update rows and 998 of 1,000 swap rows without
+changing the wire or skipping rows whose item or index moved.
+
+Ten focused sessions, balanced five AB and five BA with 20 repetitions per arm,
+measured patch versus the compact candidate. Aggregate latency was 0.98328,
+95% CI [0.96777, 0.99650]. The direct owner moved more strongly: aggregate BTS
+CPU was 0.89386 [0.88236, 0.90609], update was 0.78610 [0.76923, 0.80495], and
+swap was 0.79013 [0.77441, 0.80481]. Transport bytes were identical. The Web
+and Native rows-zero bundles each grew by 197 bytes. The patch is retained for
+formal comparator validation because it removes more than 20% of the measured
+owner without moving cost to MTS or the wire. It does not itself pass the final
+gate: patch/baseline swap latency was 1.01710 [0.95740, 1.07638], so the formal
+comparator matrix must be rerun rather than inferred. The complete receipt is
+`results/audits/2026-09-12-m4-keyed-row-retention-web-jit-focused.json`
+(SHA-256 `784f9216b5150529fec691f98aac7092785f29489e242d5d53a6ea1373fa1ac9`).
+
+### Retained owner cut: publish shifted row indices after commit
+
+A remove profile then separated the remaining background owner. Across ten
+balanced raw profiler runs per arm, the retained-row candidate used 7.51 ms
+mean BTS sampled CPU for remove while `reconcileForSlot` accounted for about
+0.94 ms per run. Object-spread helpers used to copy the retained record for
+every shifted survivor were a larger owner. The follow-up stages the new order
+in the completed range render and publishes it in Map insertion order only
+after the frame commits. A rejected frame therefore cannot change the indices
+used by a later sparse selection.
+
+Ten independent focused sessions, five AB and five BA with 20 repetitions per
+arm, gave remove latency 0.95316, 95% CI [0.92134, 0.98813], and BTS CPU
+0.64576 [0.63194, 0.66102]. MTS CPU was non-inferior at 0.99923
+[0.96494, 1.03996]; BTS→MTS bytes were identical. All four 10k GC snapshot
+ratios had upper bounds below 1.003, and the Web and Native rows-zero bundles
+each grew by 13 bytes. The patch is retained as a measured owner cut, not a
+final scorecard claim. Its complete focused receipt is
+`results/audits/2026-09-12-m4-stage-row-indices-web-jit-focused.json` (SHA-256
+`93202fae7aec526584c5da753e209ed17b3a7d06fd63027d999848f694bcdab9`); the raw profile is
+`results/audits/2026-09-12-m4-stage-row-indices-remove-profile.json` (SHA-256
+`b8d45348763db5cb47d1ff6c30c87e215f0b16651f6551ce9326b9575f6a6061`).
+
+### Retained owner cut: replace descriptors when a range becomes empty
+
+The later deletion-descriptor shortcut improved partial removals but also made
+`clear` retain the committed descriptor Map, allocate every old key, and delete
+those keys individually after acknowledgement. The empty-range follow-up keeps
+the acknowledgement boundary and instead lets the ordinary empty render publish
+its fresh empty Map. It does not skip user work that would otherwise run: an
+empty range has no key or row producer calls.
+
+Ten independent focused sessions, five AB and five BA with 20 repetitions per
+arm, measured the patch against the deletion-descriptor candidate. Clear wall
+latency was non-inferior at 1.01212 [0.98952, 1.03322]. The direct BTS owner was
+0.92390 [0.90588, 0.94369], while MTS CPU was 1.00229
+[0.98747, 1.01739]. Wire bytes were identical, all four 10k GC snapshot upper
+bounds were below 1.002, and the Web and Native rows-zero bundles each grew by
+14 bytes. The patch is retained as an owner cut, not a final scorecard claim.
+The complete receipt is
+`results/audits/2026-09-12-m4-empty-range-fresh-map-web-jit-focused.json`
+(SHA-256 `556fcc4b10a23f60f46f799d5e78fa65d57c9bcdab2bf415bef8378790d032f3`).
+
+A same-window comparison against Vue Vapor IFR preserved two remaining failures:
+`select@1000` was 1.02067 [0.92839, 1.13905] and `remove@1000` was 1.01387
+[0.95615, 1.08488]. The other three focused interactions were non-inferior.
+The owner split isolated the failures to background CPU: select was 1.90615
+[1.68602, 2.11534] and remove was 1.37311 [1.29621, 1.44737], while their MTS
+ratios were 0.98459 [0.94610, 1.02391] and 0.96831 [0.94473, 0.99077]. The
+failure-preserving receipt is
+`results/audits/2026-09-12-m4-post370-vue-vapor-ifr-focused.json` (SHA-256
+`e837d0344463b8e30e102f8059cdd3c11cafd6f8e42c4b69fabd74dc85d7611b`), and
+the remove CPU profile is
+`results/audits/2026-09-12-m4-post370-vapor-ifr-remove-profile.json` (SHA-256
+`1bafc2dd9ae186ed75884535550fe5ed2dc40c39d0db128494c656e379a0e64d`).
+
+### Retained owner cut: apply compiler-proven deletions directly
+
+The component layer already proved the next range was a strict item-identity
+subsequence and identified every departed key, but the Block core still cloned
+the full rollback state and rebuilt keys, survivors, sequence, and duplicate
+sets. The direct-deletion follow-up emits teardown only for those departed keys
+and publishes logical Map/list membership at ACK. A rejected frame discards the
+pending publication, so rollback needs no full-range snapshot.
+
+Ten independent focused sessions, five AB and five BA with 20 repetitions per
+arm, gave remove latency 0.98122 [0.92135, 1.03980] and BTS CPU 0.78606
+[0.74862, 0.82293]. MTS CPU was non-inferior at 1.00476
+[0.97292, 1.03870], wire did not increase, and all four 10k GC snapshot upper
+bounds were below 1.002. Deterministic block lookups fell from 999 to 1. The
+Web and Native rows-zero bundles each grew by 619 bytes. The complete receipt
+is `results/audits/2026-09-12-m4-direct-proven-deletion-web-jit-focused.json`
+(SHA-256 `0e11e888df07960a58bbbbf8015e538907591f07fcc727789d84685a8bac1f29`).
+
+## Memory snapshot is not the memory gate
+
+The existing runner captured one GC-forced 10k snapshot and one after-clear
+snapshot per entry. Candidate MTS+BTS used heap was 48,330,744 bytes with rows
+and 7,141,200 bytes after clear, versus 76,807,236 and 9,553,080 bytes for
+upstream. This is useful owner evidence only. It does not provide peak memory,
+a confidence interval, or the required twenty create→clear→recreate cycles,
+so it cannot satisfy #291's memory/leak gate.
+
+## Required follow-up
+
+The final campaign must rebuild the candidate from the exact `new-lynx` merge
+SHA, re-check latest upstream, repeat every formal comparator in at least ten
+balanced same-window AB/BA pairs, and apply the paired/session-aware bootstrap.
+It must also supply the independent tail, memory-cycle, Native, list, floor,
+and platform receipts. This diagnostic remains failure-preserving input to
+owner analysis only.

@@ -122,14 +122,17 @@ function assertRunIdentity(run, { candidate, comparator, runIndex }) {
   };
 }
 
-export function qualifyRawRuns({ runs, candidate, comparator }) {
-  if (!Array.isArray(runs) || runs.length === 0) {
-    throw new Error('qualification requires raw runs.');
-  }
+function assertDistinctEntries(candidate, comparator) {
   if (typeof candidate !== 'string' || candidate.length === 0
     || typeof comparator !== 'string' || comparator.length === 0
     || candidate === comparator) {
     throw new Error('qualification requires distinct candidate and comparator entry IDs.');
+  }
+}
+
+function qualifySuiteRuns({ runs, candidate, comparator, suiteName }) {
+  if (!Array.isArray(runs) || runs.length === 0) {
+    throw new Error(`${suiteName} qualification requires raw runs.`);
   }
 
   const identities = runs.map((run, runIndex) =>
@@ -140,31 +143,32 @@ export function qualifyRawRuns({ runs, candidate, comparator }) {
     }
   }
 
-  const suiteResults = {};
-  for (const [suiteName, suite] of Object.entries(SUITES)) {
-    const pairs = runs.map((run, runIndex) => {
-      const expectedRepetitions = run.meta.receipt.sampling?.repetitions?.[suite.repetitions];
-      if (!Number.isSafeInteger(expectedRepetitions) || expectedRepetitions <= 0) {
-        throw new Error(`run ${runIndex} has no valid ${suite.repetitions} repetition receipt.`);
+  const suite = SUITES[suiteName];
+  const pairs = runs.map((run, runIndex) => {
+    const expectedRepetitions = run.meta.receipt.sampling?.repetitions?.[suite.repetitions];
+    if (!Number.isSafeInteger(expectedRepetitions) || expectedRepetitions <= 0) {
+      throw new Error(`run ${runIndex} has no valid ${suite.repetitions} repetition receipt.`);
+    }
+    const cells = Object.fromEntries(suite.cells.map((cell) => {
+      const candidateRecord = oneCellRecord(
+        run, candidate, suite, cell, expectedRepetitions, runIndex,
+      );
+      const comparatorRecord = oneCellRecord(
+        run, comparator, suite, cell, expectedRepetitions, runIndex,
+      );
+      if (recordContract(candidateRecord.source) !== recordContract(comparatorRecord.source)) {
+        throw new Error(`run ${runIndex} ${cell.key} arms have different measurement contracts.`);
       }
-      const cells = Object.fromEntries(suite.cells.map((cell) => {
-        const candidateRecord = oneCellRecord(
-          run, candidate, suite, cell, expectedRepetitions, runIndex,
-        );
-        const comparatorRecord = oneCellRecord(
-          run, comparator, suite, cell, expectedRepetitions, runIndex,
-        );
-        if (recordContract(candidateRecord.source) !== recordContract(comparatorRecord.source)) {
-          throw new Error(`run ${runIndex} ${cell.key} arms have different measurement contracts.`);
-        }
-        return [cell.key, {
-          candidate: candidateRecord.value,
-          comparator: comparatorRecord.value,
-        }];
-      }));
-      return { session: identities[runIndex].session, order: identities[runIndex].order, cells };
-    });
-    suiteResults[suiteName] = qualifyPairedScorecard({
+      return [cell.key, {
+        candidate: candidateRecord.value,
+        comparator: comparatorRecord.value,
+      }];
+    }));
+    return { session: identities[runIndex].session, order: identities[runIndex].order, cells };
+  });
+  return {
+    identities,
+    result: qualifyPairedScorecard({
       pairs,
       cells: suite.cells,
       minimumPairs: ROADMAP_SCORECARD.statistics.minimumPairs,
@@ -176,22 +180,70 @@ export function qualifyRawRuns({ runs, candidate, comparator }) {
         ROADMAP_SCORECARD.statistics.coreCellNonInferiorityUpperRatio,
       orderBalanceMaximumDifference:
         ROADMAP_SCORECARD.statistics.orderBalanceMaximumDifference,
-    });
+    }),
+  };
+}
+
+export function qualifyRawSuiteRuns({ runsBySuite, candidate, comparator }) {
+  assertDistinctEntries(candidate, comparator);
+  if (runsBySuite == null || typeof runsBySuite !== 'object') {
+    throw new Error('qualification requires raw runs grouped by suite.');
   }
 
+  const qualified = Object.fromEntries(Object.keys(SUITES).map((suiteName) => [
+    suiteName,
+    qualifySuiteRuns({
+      runs: runsBySuite[suiteName], candidate, comparator, suiteName,
+    }),
+  ]));
+  for (const field of ['machine', 'harness', 'commits']) {
+    const suiteValues = Object.values(qualified).map(({ identities }) => identities[0][field]);
+    if (new Set(suiteValues).size !== 1) {
+      throw new Error(`qualification suites do not share one ${field}.`);
+    }
+  }
+
+  const firstRuns = runsBySuite.interaction;
   return {
     scorecardVersion: ROADMAP_SCORECARD.version,
     candidate,
     comparator,
-    harness: identities[0].harness,
-    machine: runs[0].meta.machine,
-    comparabilityCohort: identities[0].cohort,
+    harness: qualified.interaction.identities[0].harness,
+    machine: firstRuns[0].meta.machine,
+    comparabilityCohorts: Object.fromEntries(Object.entries(qualified).map(
+      ([suiteName, { identities }]) => [suiteName, identities[0].cohort],
+    )),
     entryCommits: {
-      candidate: runs[0].meta.entryCommits[candidate],
-      comparator: runs[0].meta.entryCommits[comparator],
+      candidate: firstRuns[0].meta.entryCommits[candidate],
+      comparator: firstRuns[0].meta.entryCommits[comparator],
     },
-    sessions: identities.map(({ session, order }) => ({ session, order })),
-    suites: suiteResults,
-    pass: Object.values(suiteResults).every((suite) => suite.pass),
+    sessions: Object.fromEntries(Object.entries(qualified).map(
+      ([suiteName, { identities }]) => [
+        suiteName,
+        identities.map(({ session, order }) => ({ session, order })),
+      ],
+    )),
+    suites: Object.fromEntries(Object.entries(qualified).map(
+      ([suiteName, { result }]) => [suiteName, result],
+    )),
+    pass: Object.values(qualified).every(({ result }) => result.pass),
+  };
+}
+
+export function qualifyRawRuns({ runs, candidate, comparator }) {
+  assertDistinctEntries(candidate, comparator);
+  if (!Array.isArray(runs) || runs.length === 0) {
+    throw new Error('qualification requires raw runs.');
+  }
+  const result = qualifyRawSuiteRuns({
+    runsBySuite: { interaction: runs, startup: runs },
+    candidate,
+    comparator,
+  });
+  const { comparabilityCohorts, sessions, ...sharedResult } = result;
+  return {
+    ...sharedResult,
+    comparabilityCohort: comparabilityCohorts.interaction,
+    sessions: sessions.interaction,
   };
 }

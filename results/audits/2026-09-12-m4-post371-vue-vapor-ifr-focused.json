@@ -1,0 +1,64 @@
+{
+  "kind": "m4-comparator-focused-diagnostic",
+  "candidate": "z-octane-m4-direct-delete-candidate",
+  "candidateCommit": "090cf87405306b7c58de67b1600a1735f8d771ef",
+  "comparator": "vue-lynx-m4-vapor-ifr",
+  "comparatorCommit": "8e02c0e4e25cd216df080c339cf1ccab855d2c71",
+  "harness": "web",
+  "environment": "jit",
+  "disposition": "focused-select-and-remove-latency-noninferior-background-owner-remains",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": { "AB": 5, "BA": 5 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "dnf": 0,
+    "comparabilityCohort": "sha256:ec54b41f05f17b28c648caba22c9fa7e2e46a82dba43a1b0995d4470a753e51d"
+  },
+  "latency": {
+    "select@1000": { "point": 0.957378, "lower": 0.87605, "upper": 1.046676, "nonInferior": true },
+    "remove@1000": { "point": 0.999463, "lower": 0.96036, "upper": 1.046443, "nonInferior": true }
+  },
+  "owner": {
+    "selectBackgroundCpu": { "point": 1.854129, "lower": 1.699981, "upper": 1.980618 },
+    "selectMainThreadCpu": { "point": 0.970479, "lower": 0.935876, "upper": 1.006426 },
+    "removeBackgroundCpu": { "point": 1.182544, "lower": 1.157726, "upper": 1.205735 },
+    "removeMainThreadCpu": { "point": 0.94127, "lower": 0.919863, "upper": 0.958735 }
+  },
+  "wire": {
+    "selectToBackgroundBytes": 1.1592,
+    "selectToBackgroundMessages": 0.6,
+    "selectToMainBytes": 0.4489,
+    "selectToMainMessages": 0.25,
+    "removeToBackgroundBytes": 1.478,
+    "removeToBackgroundMessages": 1,
+    "removeToMainBytes": 0.7673,
+    "removeToMainMessages": 0.5
+  },
+  "memory": {
+    "heapMts": 0.94465,
+    "heapBts": 0.10722,
+    "heapMtsAfterClear": 0.89187,
+    "heapBtsAfterClear": 0.92953
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-post371-vapor-ifr-select-profile.json",
+    "sha256": "6f57dcfe2d5a9108dfb6a24d1282194a643516d2467428a078fc72fef2cda394"
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T10-44-22-65160668d8d9-issue291-post371-vapor-ifr-ab-1.json", "sha256": "85390ae32d97e211d3edb1f10f1879e016afa052e88df0fdb706b622cbb7d97c" },
+    { "file": "results/runs/2026-09-12T10-46-25-65160668d8d9-issue291-post371-vapor-ifr-ba-1.json", "sha256": "2cac204e2a002fcb8bf19640ccde8e106b30f6eebc0a0db8b82bfc58ef758108" },
+    { "file": "results/runs/2026-09-12T10-48-27-65160668d8d9-issue291-post371-vapor-ifr-ab-2.json", "sha256": "e62b64dfcae96269a082d5bef068930de6d0d3cd71467cfcdd946e123f5c2675" },
+    { "file": "results/runs/2026-09-12T10-50-32-65160668d8d9-issue291-post371-vapor-ifr-ba-2.json", "sha256": "2df36c0c514c55951b351619c310aad1e6dda2cc45eb44fb363c5be1d7a7ba7b" },
+    { "file": "results/runs/2026-09-12T10-52-35-65160668d8d9-issue291-post371-vapor-ifr-ab-3.json", "sha256": "a63a9d97b21bd77fc2e5db23d329d92907872b07f05689b3405a120a7c3d4b6c" },
+    { "file": "results/runs/2026-09-12T10-54-37-65160668d8d9-issue291-post371-vapor-ifr-ba-3.json", "sha256": "cb42db1191710651a750f18c8936b1d455871183998603a252c4f583c9c6e971" },
+    { "file": "results/runs/2026-09-12T10-56-40-65160668d8d9-issue291-post371-vapor-ifr-ab-4.json", "sha256": "a7bf62cee0e835131f9db483a78e6ace2b13750efd63743d11f9f5256b6679e4" },
+    { "file": "results/runs/2026-09-12T10-58-43-65160668d8d9-issue291-post371-vapor-ifr-ba-4.json", "sha256": "3084c7c769a94dbc25d1c08cd0b6399bc40de81501ee6b45387c7daf95c7100f" },
+    { "file": "results/runs/2026-09-12T11-00-47-65160668d8d9-issue291-post371-vapor-ifr-ab-5.json", "sha256": "d0b0c0a144a68850b986a92f33610305ece298f5ee6190573d66970f847264ac" },
+    { "file": "results/runs/2026-09-12T11-02-49-65160668d8d9-issue291-post371-vapor-ifr-ba-5.json", "sha256": "542e563cfccb94d5d4dc876172092b620bf9b55f85c240f5d9ac2e34624f13ef" }
+  ]
+}

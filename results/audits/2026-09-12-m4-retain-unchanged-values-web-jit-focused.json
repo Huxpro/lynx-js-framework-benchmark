@@ -1,0 +1,350 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "octane-m4-retain-unchanged-values-experiment",
+  "candidateCommit": "f1d2036f6fa30f1e2334502505f8e513e9275f17",
+  "comparator": "octane-m4-indexed-block-order-experiment",
+  "comparatorCommit": "e1e5ab099fa6af3454e1ed980b7b62b006d0953e",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Pass the component layer's existing ascending changed-row proof into structural keyed reconciliation so compiler-proven unchanged survivors skip value callbacks and slot comparisons.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": {
+      "AB": 5,
+      "BA": 5
+    },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x291f1d2",
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "comparabilityCohort": "sha256:1f7b4df1bc96320ed7def05a9879a36340e0c08c3726f8ca2cb385bbe5372c78"
+  },
+  "removeAt1000": {
+    "latency": {
+      "point": 0.9756901595626022,
+      "lower": 0.9379136032360683,
+      "upper": 1.010789846003654,
+      "sessionRatios": [
+        1.0392601308263612,
+        0.9539673592005872,
+        1.0757691895551809,
+        0.9702653840941353,
+        1.0092480415964475,
+        0.9682191613602311,
+        1.0065559788662468,
+        0.8579790506993759,
+        0.9133866606757747,
+        0.9801915577528677
+      ],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "backgroundCpu": {
+      "point": 0.8364529342815894,
+      "lower": 0.8202650204294583,
+      "upper": 0.8552980863892089,
+      "sessionRatios": [
+        0.8881913810654903,
+        0.8480392156862744,
+        0.8318860715526223,
+        0.8192281651997291,
+        0.8906068162926016,
+        0.8036163522012579,
+        0.8293314907583348,
+        0.8153636518480667,
+        0.8266781411359724,
+        0.8163438668025823
+      ],
+      "nonInferior": true,
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 0.991387854535624,
+      "lower": 0.965080818225759,
+      "upper": 1.0194233163747854,
+      "sessionRatios": [
+        1.0395609421449805,
+        1.0026847204388933,
+        0.9341094032549728,
+        1.0441024463075685,
+        1.0712705252125307,
+        0.954645901294328,
+        0.9403543523715198,
+        1.0002222469163242,
+        0.9610994126122133,
+        0.9758496339197902
+      ],
+      "nonInferior": true
+    },
+    "wireToMtsBytes": {
+      "point": 1,
+      "lower": 1,
+      "upper": 1,
+      "sessionRatios": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "nonInferior": true
+    },
+    "wireToBtsBytes": {
+      "point": 1,
+      "lower": 1,
+      "upper": 1,
+      "sessionRatios": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "nonInferior": true
+    },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": {
+      "point": 1.0005838115498227,
+      "lower": 0.9996890052528212,
+      "upper": 1.0013856609737606,
+      "sessionRatios": [
+        1.0001892768720098,
+        1.0000596460868474,
+        1.002381782586547,
+        1.0015743163154904,
+        1.0023682134101337,
+        0.9999782733057361,
+        1.0013004959112743,
+        0.9998610692303214,
+        0.9975373204377633,
+        1.0005969775012815
+      ],
+      "nonInferior": true
+    },
+    "heapBts": {
+      "point": 0.999869597946999,
+      "lower": 0.9997110619395863,
+      "upper": 1.000035606258353,
+      "sessionRatios": [
+        1.0000060925484215,
+        1.000029593228025,
+        1.0004388550411296,
+        0.9996474884421905,
+        0.9996444460691707,
+        0.9996231215372116,
+        0.9996218159536222,
+        1.0000596216505797,
+        0.9996231215372116,
+        1.0000021759101505
+      ],
+      "nonInferior": true
+    },
+    "heapMtsAfterClear": {
+      "point": 1.0001848200429995,
+      "lower": 1.0000249851593097,
+      "upper": 1.000356264438139,
+      "sessionRatios": [
+        1.0001041598094793,
+        1.0000866398805035,
+        1.0005937985115896,
+        0.9999725100796375,
+        1.0005455187508536,
+        1.0006259105289652,
+        0.9999508518048633,
+        0.9998500587269986,
+        0.9999791748231942,
+        1.0001399595283698
+      ],
+      "nonInferior": true
+    },
+    "heapBtsAfterClear": {
+      "point": 0.999104535571643,
+      "lower": 0.9979977292398158,
+      "upper": 1.000253005227428,
+      "sessionRatios": [
+        1.000084469396436,
+        1.0002262975903833,
+        1.0030803493079805,
+        0.9975016670639458,
+        0.9975620206262711,
+        0.9973780206318699,
+        0.9974171901684258,
+        1.0003711202097583,
+        0.9973780206318699,
+        1.0000633537674373
+      ],
+      "nonInferior": true
+    }
+  },
+  "bundle": {
+    "web": {
+      "comparatorBytes": 184345,
+      "candidateBytes": 184460,
+      "deltaBytes": 115,
+      "candidateSha256": "d94e202f2f99d12f01c5fe4314000e1cfa51744683418ac0d0a69a4d503ba766"
+    },
+    "native": {
+      "comparatorBytes": 184465,
+      "candidateBytes": 184580,
+      "deltaBytes": 115,
+      "candidateSha256": "5e03521162432903db4ffc7b817988cfb51026f8f3133e862a3507b3973381a2"
+    }
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-retain-unchanged-values-remove-profile.json",
+    "sha256": "8b87e91ae74de418ecdfaaf4c959d8ca3ad6d3fc95edb458816349b54bb6ce2f",
+    "pairs": 5,
+    "runsPerArm": 10,
+    "purpose": "CPU attribution only; profiler-perturbed wall time is not used for qualification.",
+    "means": {
+      "indexed-block-order": {
+        "latencyMs": 22.992999839782716,
+        "backgroundCpuMs": 3.1779,
+        "mainThreadCpuMs": 4.2985,
+        "reconcileForSlotSelfMs": 6.928
+      },
+      "retain-unchanged-values": {
+        "latencyMs": 24.714999771118165,
+        "backgroundCpuMs": 2.5104999999999995,
+        "mainThreadCpuMs": 4.3559,
+        "reconcileForSlotSelfMs": 4.597
+      }
+    }
+  },
+  "validation": {
+    "focusedTests": "97 passed",
+    "fullLynxProject": "57 files, 994 tests passed",
+    "typecheck": "production and testing tsconfig passed",
+    "sync": "passed",
+    "manifestAndBundles": "all 16 candidate SHA-256 receipts verified"
+  },
+  "benchmarkReceipt": {
+    "commit": "a3b430337445e0557ffece4180676321192ff467",
+    "dirty": true,
+    "diffSha256": "75a88d294c0e9745eae8c1464921086cf556f3790a645199c24823765425f6af",
+    "ignoredGeneratedPaths": [
+      "results/runs/**",
+      "results/audits/**",
+      "results/latest.json",
+      "site/dist/**"
+    ]
+  },
+  "sourceRuns": [
+    {
+      "file": "results/runs/2026-09-12T06-30-06-65160668d8d9.json",
+      "sha256": "7d361c8808e8d469d1f5c8d0ff646557ac5f11f6cd06e5cea6cd55563b9ee779",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ab-1",
+      "calibration": 2342,
+      "entryOrder": [
+        "octane-m4-indexed-block-order-experiment",
+        "octane-m4-retain-unchanged-values-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-31-06-65160668d8d9.json",
+      "sha256": "a778e7f164ffc7bb72be647ea1e2b9d4f889605f107b6eba728582eaca4ace80",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ba-2",
+      "calibration": 2353.5,
+      "entryOrder": [
+        "octane-m4-retain-unchanged-values-experiment",
+        "octane-m4-indexed-block-order-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-32-06-65160668d8d9.json",
+      "sha256": "e5034e3f53f2a48ea26f79849fa4f481e636f6e9fbc52dafccc3b6d4a4163d6f",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ab-3",
+      "calibration": 2390.3,
+      "entryOrder": [
+        "octane-m4-indexed-block-order-experiment",
+        "octane-m4-retain-unchanged-values-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-33-05-65160668d8d9.json",
+      "sha256": "425b8819c6bc81c5bfc19833122d86b7f41afe88c9f8fc26556031b2931cf65a",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ba-4",
+      "calibration": 1993,
+      "entryOrder": [
+        "octane-m4-retain-unchanged-values-experiment",
+        "octane-m4-indexed-block-order-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-34-06-65160668d8d9.json",
+      "sha256": "92805d73a31e9b886f71c09076d139864c48d47fd83d7b2f8ee63deb98df9b0f",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ab-5",
+      "calibration": 2387.8,
+      "entryOrder": [
+        "octane-m4-indexed-block-order-experiment",
+        "octane-m4-retain-unchanged-values-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-35-07-65160668d8d9.json",
+      "sha256": "ddbc7737a6a2d1692c586b64148636053f969b10d767e7e3b03e15b7751adbee",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ba-6",
+      "calibration": 2374.3,
+      "entryOrder": [
+        "octane-m4-retain-unchanged-values-experiment",
+        "octane-m4-indexed-block-order-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-36-06-65160668d8d9.json",
+      "sha256": "d2f5aa2d67bb39b9200bc0f76079a12aa9e2c7829552167622774ebe1ef4a6ca",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ab-7",
+      "calibration": 2387.8,
+      "entryOrder": [
+        "octane-m4-indexed-block-order-experiment",
+        "octane-m4-retain-unchanged-values-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-37-05-65160668d8d9.json",
+      "sha256": "c3e38f00e9721cced914976b7a61cc7e7316f9525473e7217ffa84a597f18c80",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ba-8",
+      "calibration": 2388.3,
+      "entryOrder": [
+        "octane-m4-retain-unchanged-values-experiment",
+        "octane-m4-indexed-block-order-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-38-05-65160668d8d9.json",
+      "sha256": "dca2f2928e75b7a90888d4457fccabe08851119a155ff99d8b0896e341410713",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ab-9",
+      "calibration": 2388.8,
+      "entryOrder": [
+        "octane-m4-indexed-block-order-experiment",
+        "octane-m4-retain-unchanged-values-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T06-39-05-65160668d8d9.json",
+      "sha256": "c1c39145b0e13e4c77c71d8125b9fd8c5fcfca8fa3962e87cbc0c86c43e88475",
+      "sessionId": "issue291-retain-unchanged-values-remove-web-jit-ba-10",
+      "calibration": 2315.3,
+      "entryOrder": [
+        "octane-m4-retain-unchanged-values-experiment",
+        "octane-m4-indexed-block-order-experiment"
+      ]
+    }
+  ]
+}
