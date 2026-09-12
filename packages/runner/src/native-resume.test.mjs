@@ -49,6 +49,9 @@ test('Octane tap mode does not require the legacy DevTool driver readiness contr
     framework: 'octane', suite: 'startup', triggerMode: 'driver',
   }), false);
   assert.equal(requiresOctaneDriverReadiness({
+    framework: 'octane', suite: 'list', triggerMode: 'driver',
+  }), false);
+  assert.equal(requiresOctaneDriverReadiness({
     framework: 'reactlynx', suite: 'table', triggerMode: 'driver',
   }), false);
 });
