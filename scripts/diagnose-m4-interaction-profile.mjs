@@ -19,14 +19,16 @@ const option = (name, fallback = null) => {
 const outputArg = option("--output");
 const pairs = Number(option("--pairs", "5"));
 const targetsArg = option("--targets");
+const workload = option("--workload", "remove");
 if (
   outputArg == null ||
   targetsArg == null ||
   !Number.isSafeInteger(pairs) ||
-  pairs < 1
+  pairs < 1 ||
+  !["remove", "select"].includes(workload)
 ) {
   throw new Error(
-    "usage: diagnose-m4-interaction-profile --output <file.json> --targets <id=dist,id=dist> [--pairs N]",
+    "usage: diagnose-m4-interaction-profile --output <file.json> --targets <id=dist,id=dist> [--pairs N] [--workload remove|select]",
   );
 }
 
@@ -144,6 +146,12 @@ async function profileTarget({ browser, cdp, origin, target, pair, order }) {
       await clearRows(page);
     }
     await createRows(page);
+    if (workload === "select") {
+      await clickCell(page, 5, "col-label");
+      await page.evaluate(() =>
+        globalThis.__x.until({ type: "dangerAt", index: 5 }, 120000),
+      );
+    }
     await settle(page);
     await page.evaluate(() => globalThis.gc?.());
 
@@ -172,13 +180,24 @@ async function profileTarget({ browser, cdp, origin, target, pair, order }) {
       await cdp.send("Profiler.start", {}, session.sessionId);
     }
 
-    const armed = page.evaluate(() =>
-      globalThis.__x.arm({ type: "rowCount", value: 999 }, 120000),
+    const armed = page.evaluate(
+      ({ selectedWorkload }) =>
+        globalThis.__x.arm(
+          selectedWorkload === "select"
+            ? { type: "dangerAt", index: 1 }
+            : { type: "rowCount", value: 999 },
+          120000,
+        ),
+      { selectedWorkload: workload },
     );
     await page.evaluate(
       () => new Promise((resolve) => requestAnimationFrame(resolve)),
     );
-    await clickCell(page, 2, "col-remove");
+    if (workload === "select") {
+      await clickCell(page, 1, "col-label");
+    } else {
+      await clickCell(page, 2, "col-remove");
+    }
     const observed = await armed;
     const profiles = {};
     for (const session of sessions) {
@@ -244,12 +263,17 @@ fs.writeFileSync(
       targets: targets.map(({ id, dist, bundle }) => ({ id, dist, bundle })),
       pairs,
       policy: {
-        workload: "remove@1000",
-        removedRow: 2,
+        workload: `${workload}@1000`,
+        ...(workload === "select"
+          ? { preselectedRow: 5, selectedRow: 1 }
+          : { removedRow: 2 }),
         order: "paired AB/BA",
         outliersRemoved: false,
         warmup: "two create/clear cycles on a fresh page per sample",
-        endpoint: "pointer-click-to-first-rAF-with-999-rows",
+        endpoint:
+          workload === "select"
+            ? "pointer-click-to-first-rAF-with-row-1-selected"
+            : "pointer-click-to-first-rAF-with-999-rows",
         profilerSamplingIntervalMicros: 100,
       },
       runs,

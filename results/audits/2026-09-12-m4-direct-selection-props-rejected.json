@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "kind": "m4-owner-cut-rejection",
+  "generatedAt": "2026-09-12T11:32:00.000Z",
+  "candidate": {
+    "entry": "z-octane-m4-direct-selection-candidate",
+    "sourceCommit": "d9c9d0b776c1601ddf87a437f1df8c00334294d8",
+    "description": "Reconstruct the compiler-proved selection prop from committed row props instead of reevaluating the @for body."
+  },
+  "control": {
+    "entry": "z-octane-m4-direct-delete-candidate",
+    "sourceCommit": "090cf87405306b7c58de67b1600a1735f8d771ef"
+  },
+  "policy": {
+    "harness": "web",
+    "jsRegime": "jit",
+    "workload": "select@1000",
+    "repetitionsPerEntryPerSession": 20,
+    "sessionOrder": ["AB", "BA"],
+    "outliersRemoved": false,
+    "decision": "reject before formal bootstrap because both exact-source sessions regress BTS CPU and the paired CPU profile identifies a cost shift"
+  },
+  "sessionMeanRatiosCandidateOverControl": [
+    {
+      "order": "AB",
+      "latency": 0.9918471125395439,
+      "btsCpu": 1.0620585066049408,
+      "mtsCpu": 0.8807639453121081,
+      "wireToBtsBytes": 0.99844695111983,
+      "wireToMtsBytes": 1,
+      "dnf": 0
+    },
+    {
+      "order": "BA",
+      "latency": 1.0787328959803268,
+      "btsCpu": 1.1650380473200548,
+      "mtsCpu": 0.9928251025744596,
+      "wireToBtsBytes": 0.998201879852881,
+      "wireToMtsBytes": 1,
+      "dnf": 0
+    }
+  ],
+  "pairedCpuProfile": {
+    "pairs": 5,
+    "samplesPerEntry": 10,
+    "controlMean": {
+      "latencyMs": 21.439999866485596,
+      "btsCpuMs": 0.9684,
+      "mtsCpuMs": 4.6412
+    },
+    "candidateMean": {
+      "latencyMs": 19.539000034332275,
+      "btsCpuMs": 1.3253,
+      "mtsCpuMs": 4.4997
+    },
+    "ratiosCandidateOverControl": {
+      "latency": 0.9113339625003958,
+      "btsCpu": 1.3685460553490292,
+      "mtsCpu": 0.9695121951219511
+    }
+  },
+  "bundleBytesRows0": {
+    "web": { "control": 185870, "candidate": 186403, "delta": 533 },
+    "native": { "control": 185990, "candidate": 186515, "delta": 525 }
+  },
+  "conclusion": {
+    "status": "rejected",
+    "reason": "The shortcut removes authored range-body evaluation but replaces it with validation and prop cloning on the same hot path. Both AB and BA exact-source sessions regress BTS CPU (6.2% and 16.5%), the paired CPU profile regresses BTS CPU by 36.9%, and the bundle grows. The apparent profile latency win is therefore a cross-boundary cost shift, not an acceptable owner cut."
+  },
+  "sources": [
+    {
+      "path": "results/audits/2026-09-12-m4-post372b-vs-post371-select-profile.json",
+      "sha256": "f491b11be2991376279503b66ce9b534e702aff7ce7c94d1d14de1166dcab8df"
+    },
+    {
+      "path": "results/runs/2026-09-12T11-29-27-65160668d8d9-issue291-post372b-vs-post371-select-ab-1.json",
+      "sha256": "b886a2a90fc4a45d701f73a5afb5c8a16a38e51383a257c9b2173e7bd46164a2"
+    },
+    {
+      "path": "results/runs/2026-09-12T11-30-34-65160668d8d9-issue291-post372b-vs-post371-select-ba-1.json",
+      "sha256": "e3c0b9a15d933e94e6275936677aadb6f4f6294b540c0d809f604c1029ff8e55"
+    }
+  ]
+}
