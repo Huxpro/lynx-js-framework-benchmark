@@ -6,6 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+} from '../packages/shared/src/list-workloads.mjs';
+
+import {
   hashFiles,
   M0_BUILD_DRIVER_FILES,
   M0_CAMPAIGN,
@@ -99,6 +104,41 @@ const M4_CONFIGURATIONS = Object.fromEntries(M4_ENTRY_IDS.map((id) => [
     ? 'explicit-optimized'
     : 'production-default',
 ]));
+const M4_LIST_ROWS = [1000, 10000];
+const M4_OCTANE_LIST_SOURCE_FILES = [
+  'benchmarks/lynx-table/app/src/ListApp.lynx.tsrx',
+  'benchmarks/lynx-table/app/src/list-index.ts',
+  'benchmarks/lynx-table/app/src/list.css',
+].sort();
+const M4_COMPARATOR_APPS = {
+  'reactlynx-m4-default': 'ui-react',
+  'reactlynx-m4-et': 'ui-react',
+  'vue-lynx-m4-vdom-default': 'ui-vdom',
+  'vue-lynx-m4-vdom-ifr-et': 'ui-vdom',
+  'vue-lynx-m4-vapor-default': 'ui-vapor',
+  'vue-lynx-m4-vapor-ifr': 'ui-vapor',
+};
+const M4_LIST_CONTRACT_SHA256 = crypto
+  .createHash('sha256')
+  .update(JSON.stringify(LIST_WORKLOAD_CONTRACT))
+  .digest('hex');
+
+function listSourceFilesFor(id) {
+  if (id.startsWith('octane-')) return M4_OCTANE_LIST_SOURCE_FILES;
+  const app = M4_COMPARATOR_APPS[id];
+  const extension = app === 'ui-react' ? 'tsx' : 'vue';
+  return [
+    `packages/benchmark/apps/${app}/src/ListApp.${extension}`,
+    `packages/benchmark/apps/${app}/src/list-index.${app === 'ui-react' ? 'tsx' : 'ts'}`,
+    ...(app === 'ui-react' ? ['packages/benchmark/apps/ui-react/src/List.css'] : []),
+  ].sort();
+}
+
+function receiptHasShape(receipt, expectedFiles) {
+  return receipt?.algorithm === 'sha256-path-content-v1'
+    && JSON.stringify(receipt.files) === JSON.stringify(expectedFiles)
+    && /^[\da-f]{64}$/.test(receipt.sha256 ?? '');
+}
 
 let failures = 0;
 const fail = (msg) => {
@@ -473,9 +513,62 @@ for (const id of M4_ENTRY_IDS) {
   const workload = receipts?.workloadContract;
   if (workload?.runner?.sha256 !== M4_RUNNER_RECEIPT.sha256
     || JSON.stringify(workload?.runner?.files) !== JSON.stringify(M4_RUNNER_RECEIPT.files)
-    || !/^[\da-f]{64}$/.test(workload?.source?.sha256 ?? '')
-    || !/^[\da-f]{64}$/.test(workload?.sha256 ?? '')) {
+    || workload?.algorithm !== 'sha256-runner-source-v1'
+    || workload?.source?.algorithm !== 'sha256-primary-list-fixture-v1'
+    || !/^[\da-f]{64}$/.test(workload?.source?.primary?.sha256 ?? '')
+    || !/^[\da-f]{64}$/.test(workload?.source?.listFixture?.sha256 ?? '')
+    || workload?.source?.sha256 !== crypto.createHash('sha256').update(
+      `${workload?.source?.primary?.sha256}\0${workload?.source?.listFixture?.sha256}`,
+    ).digest('hex')
+    || workload?.sha256 !== crypto.createHash('sha256').update(
+      `${workload?.runner?.sha256}\0${workload?.source?.sha256}`,
+    ).digest('hex')) {
     fail(`${id}: M4 workload-contract receipt is incomplete or stale`);
+  }
+  const listFixture = manifest.listFixture;
+  const expectedListPin = id.startsWith('octane-')
+    ? M4_PINNED_SOURCES['octane-m4-final']
+    : M4_PINNED_SOURCES.comparators;
+  const expectedListMode = id === 'octane-m4-upstream'
+    ? 'external-frozen-workload'
+    : 'same-checkout';
+  const expectedListFiles = listSourceFilesFor(id);
+  if (listFixture?.protocol !== LIST_FIXTURE_PROTOCOL
+    || listFixture?.contractSha256 !== M4_LIST_CONTRACT_SHA256
+    || listFixture?.source?.source !== expectedListPin.source
+    || listFixture?.source?.ref !== expectedListPin.ref
+    || listFixture?.source?.commit !== expectedListPin.commit
+    || listFixture?.source?.producerPull !== (expectedListPin.producerPull ?? null)
+    || listFixture?.source?.mode !== expectedListMode
+    || !receiptHasShape(listFixture?.source?.receipt, expectedListFiles)
+    || JSON.stringify(workload?.source?.listFixture)
+      !== JSON.stringify(listFixture?.source?.receipt)) {
+    fail(`${id}: frozen list fixture identity or source receipt mismatch`);
+  }
+  for (const [harness, bundle] of [
+    ['web', 'main.web.bundle'],
+    ['native', 'main.lynx.bundle'],
+  ]) {
+    const expectedPaths = Object.fromEntries(M4_LIST_ROWS.map((rows) => [
+      rows,
+      `dist/list/rows-${rows}/${bundle}`,
+    ]));
+    if (JSON.stringify(listFixture?.bundles?.[harness]) !== JSON.stringify(expectedPaths)
+      || Object.keys(listFixture?.sha256?.[harness] ?? {}).length !== M4_LIST_ROWS.length) {
+      fail(`${id}: ${harness} list bundle matrix is incomplete`);
+      continue;
+    }
+    for (const rows of M4_LIST_ROWS) {
+      const relative = expectedPaths[rows];
+      const expected = listFixture.sha256[harness][rows];
+      const file = path.join(entriesDir, id, relative);
+      if (!/^[\da-f]{64}$/.test(expected ?? '') || !fs.existsSync(file)) {
+        fail(`${id}: missing checksummed ${harness} list bundle at ${relative}`);
+        continue;
+      }
+      const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+      if (actual !== expected) fail(`${id}: list bundle sha256 mismatch for ${relative}`);
+    }
   }
   const expectedBundleKeys = M4_ROWS.flatMap((rows) => [
     `rows-${rows}/main.web.bundle`,

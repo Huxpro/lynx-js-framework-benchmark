@@ -24,7 +24,7 @@
   "roadmap": {
     "issue": 291,
     "milestone": "M4",
-    "campaign": "octane-roadmap-m4-final-4.1-v1",
+    "campaign": "octane-roadmap-m4-final-4.1-v2",
     "role": "vue-vapor",
     "configuration": "explicit-optimized"
   },
@@ -47,14 +47,14 @@
   "provenance": {
     "source": "https://github.com/Huxpro/vue-lynx",
     "ref": "feat/unified-benchmark-framework-ui",
-    "commit": "8e02c0e4e25cd216df080c339cf1ccab855d2c71",
-    "producerPull": 395,
+    "commit": "0da216caf3b474347423a8cd694d5449fa4e4215",
+    "producerPull": 396,
     "patched": false,
     "patchFile": null,
     "buildCommand": "BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-vue-m4.mjs <vue-lynx-checkout>",
-    "builtAt": "2026-09-07T22:38:51-07:00",
+    "builtAt": "2026-09-12T07:48:55-07:00",
     "receipts": {
-      "sourceCommit": "8e02c0e4e25cd216df080c339cf1ccab855d2c71",
+      "sourceCommit": "0da216caf3b474347423a8cd694d5449fa4e4215",
       "sourcePatch": {
         "present": false,
         "path": null,
@@ -80,7 +80,7 @@
             "scripts/m4-artifact-contract.mjs",
             "scripts/vendor-m4-entries.mjs"
           ],
-          "sha256": "fa01aa1880651c45ff8ccc68d1cddb97e56163efa4cd5031c0eb2355f42ed2ed"
+          "sha256": "e8f327058ee35ef4a1b6c9b9179baafc337c47db8f11299b0d3d2bda8aa74bb3"
         }
       },
       "platformLane": {
@@ -104,34 +104,60 @@
         "runner": {
           "algorithm": "sha256-path-content-v1",
           "files": [
+            "packages/runner/adapters/lynx-sandbox-android.mjs",
+            "packages/runner/src/cli.mjs",
+            "packages/runner/src/connector-receipt.mjs",
             "packages/runner/src/entries.mjs",
             "packages/runner/src/entry-cohorts.mjs",
+            "packages/runner/src/harness-native-list.mjs",
             "packages/runner/src/harness-native.mjs",
+            "packages/runner/src/harness-web-list.mjs",
             "packages/runner/src/harness-web.mjs",
+            "packages/runner/src/list-coverage.mjs",
+            "packages/runner/src/list-derivation.mjs",
+            "packages/runner/src/list-native-inputs.mjs",
+            "packages/runner/src/list-observation.mjs",
             "packages/runner/src/native-coverage.mjs",
             "packages/runner/src/native-inputs.mjs",
             "packages/runner/src/native-protocol.mjs",
+            "packages/runner/src/native-resume.mjs",
             "packages/runner/src/qualification-runs.mjs",
             "packages/runner/src/run-matrix.mjs",
+            "packages/runner/src/server.mjs",
+            "packages/shared/src/driver-client.mjs",
+            "packages/shared/src/list-workloads.mjs",
             "packages/shared/src/qualification.mjs",
+            "packages/shared/src/schema.mjs",
             "packages/shared/src/scorecard.mjs",
             "packages/shared/src/workloads.mjs"
           ],
-          "sha256": "7e3b4fbad248bb4ec98bc058ebb774b03342cc5bafb094f2270536d0e5b2f4b6"
+          "sha256": "dba3cedeece7b282cd85ae65f2f82666c87b5245b795315c0b58cc63048a20aa"
         },
         "source": {
-          "algorithm": "sha256-path-content-v1",
-          "files": [
-            "packages/benchmark/apps/ui-vapor/lynx.config.ts",
-            "packages/benchmark/apps/ui-vapor/src/App.vue",
-            "packages/benchmark/apps/ui-vapor/src/index.ts",
-            "packages/benchmark/package.json",
-            "packages/benchmark/shared/native-protocol.ts",
-            "packages/vue-lynx/package.json"
-          ],
-          "sha256": "79317c19b77761b25216534b3276ac3bc98c999a2c48d6bc77bf6dd1b862dc24"
+          "algorithm": "sha256-primary-list-fixture-v1",
+          "primary": {
+            "algorithm": "sha256-path-content-v1",
+            "files": [
+              "packages/benchmark/apps/ui-vapor/lynx.config.ts",
+              "packages/benchmark/apps/ui-vapor/src/App.vue",
+              "packages/benchmark/apps/ui-vapor/src/index.ts",
+              "packages/benchmark/package.json",
+              "packages/benchmark/shared/native-protocol.ts",
+              "packages/vue-lynx/package.json"
+            ],
+            "sha256": "ca1910d5b1e51e172de223b4f997e7130f3013e08c727203b59904e6a35fccce"
+          },
+          "listFixture": {
+            "algorithm": "sha256-path-content-v1",
+            "files": [
+              "packages/benchmark/apps/ui-vapor/src/ListApp.vue",
+              "packages/benchmark/apps/ui-vapor/src/list-index.ts"
+            ],
+            "sha256": "731dad4fe0cbd5aef39fafe8ce974cb6b3f5462deda257d7d3fe516934744d4e"
+          },
+          "sha256": "66788c2284f5310ae3409876c06b02ab1d3845421542d1c6080a33f0c3bc4fc0"
         },
-        "sha256": "ddd3ca4b564d501f71f89fe6e9147f04d8b9ba83ef6f2e3318415e0967281a86"
+        "sha256": "9a1bb80f7e80cd2883862e1933b8a8e2473abcc2d28a1708085167ff81b9fbf1"
       },
       "bundleSha256": {
         "rows-0/main.web.bundle": "1d7028d3a61b891ae2b5cfb00232a8a782fa7267d6200d114658d9c7032126e5",
@@ -174,5 +200,44 @@
   "bundles": {
     "web": "dist/rows-0/main.web.bundle",
     "lynx": "dist/rows-0/main.lynx.bundle"
+  },
+  "listFixture": {
+    "protocol": "lynx-list-fixture-v2",
+    "contractSha256": "41a98a22508609f1e9444a0c03d3f2261f212312921e196d386b21bd4362f78b",
+    "source": {
+      "source": "https://github.com/Huxpro/vue-lynx",
+      "ref": "feat/unified-benchmark-framework-ui",
+      "commit": "0da216caf3b474347423a8cd694d5449fa4e4215",
+      "producerPull": 396,
+      "mode": "same-checkout",
+      "receipt": {
+        "algorithm": "sha256-path-content-v1",
+        "files": [
+          "packages/benchmark/apps/ui-vapor/src/ListApp.vue",
+          "packages/benchmark/apps/ui-vapor/src/list-index.ts"
+        ],
+        "sha256": "731dad4fe0cbd5aef39fafe8ce974cb6b3f5462deda257d7d3fe516934744d4e"
+      }
+    },
+    "bundles": {
+      "web": {
+        "1000": "dist/list/rows-1000/main.web.bundle",
+        "10000": "dist/list/rows-10000/main.web.bundle"
+      },
+      "native": {
+        "1000": "dist/list/rows-1000/main.lynx.bundle",
+        "10000": "dist/list/rows-10000/main.lynx.bundle"
+      }
+    },
+    "sha256": {
+      "web": {
+        "1000": "bd48f7b9d0752a12e099901be811fac1609c3fd2392c92e0ae69c555ea81667e",
+        "10000": "91820b371c14b9a831d1f73d096477ea0d38861a977ddef97f74e820f46f105d"
+      },
+      "native": {
+        "1000": "be52c9e0a4ee5d79e3ab2e3b883d38b0159c9e8fbc74ebfa4bc75e5c4cc10f32",
+        "10000": "be1729a0ac365b4f9c862b4b19adbe3883a4b6ba9abcc4b3c9fdeb3b50de9207"
+      }
+    }
   }
 }

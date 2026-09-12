@@ -58,10 +58,24 @@ function generateVapor() {
     vaporPath,
     `<!-- GENERATED from apps/ui-vdom/src/App.vue — do not edit -->\n${source.replace(marker, '<script setup vapor lang="ts">')}`,
   );
+  const listVdomPath = path.join(benchmark, 'apps/ui-vdom/src/ListApp.vue');
+  const listVaporPath = path.join(benchmark, 'apps/ui-vapor/src/ListApp.vue');
+  const listMarker = '<!-- BENCH_LIST_MODE_SCRIPT --><script setup lang="ts">';
+  const listSource = fs.readFileSync(listVdomPath, 'utf8');
+  if (!listSource.startsWith(listMarker)) {
+    throw new Error('ui-vdom ListApp.vue lost BENCH_LIST_MODE_SCRIPT marker');
+  }
+  fs.writeFileSync(
+    listVaporPath,
+    `<!-- GENERATED from apps/ui-vdom/src/ListApp.vue — do not edit -->\n${listSource.replace(
+      listMarker,
+      '<script setup vapor lang="ts">',
+    )}`,
+  );
 }
 
-function stage(id, source, rows) {
-  const target = path.join(out, id, `rows-${rows}`);
+function stage(id, source, rows, suite = 'table') {
+  const target = path.join(out, id, suite === 'list' ? `list/rows-${rows}` : `rows-${rows}`);
   fs.rmSync(target, { recursive: true, force: true });
   fs.mkdirSync(target, { recursive: true });
   for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
@@ -87,6 +101,7 @@ function buildApp({ id, app, rows, ifr = false, elementTemplates = false, cell }
   }
   run(rspeedy, ['build'], cwd, {
     BENCH_AUTOROWS: String(rows),
+    BENCH_LIST_ROWS: '0',
     BENCH_ENABLE_IFR: ifr ? '1' : '0',
     BENCH_ENABLE_ET: elementTemplates ? '1' : '0',
     BENCH_CELL: resolvedCell,
@@ -102,6 +117,32 @@ function buildApp({ id, app, rows, ifr = false, elementTemplates = false, cell }
     );
   }
   stage(id, outputs[0], rows);
+}
+
+function buildListApp({ id, app, rows, ifr = false, elementTemplates = false, cell }) {
+  const cwd = path.join(benchmark, `apps/${app}`);
+  const rspeedy =
+    app === 'ui-react'
+      ? path.join(cwd, 'node_modules/.bin/rspeedy')
+      : path.join(benchmark, 'node_modules/.bin/rspeedy');
+  const resolvedCell =
+    cell ?? (ifr ? (elementTemplates ? 'ifr-et' : 'ifr') : elementTemplates ? 'et' : 'off');
+  const baseDist = app === 'ui-react' || resolvedCell === 'off' ? 'dist' : `dist-${resolvedCell}`;
+  const expectedDist = path.join(cwd, `${baseDist}-list-rows${rows}`);
+  fs.rmSync(expectedDist, { recursive: true, force: true });
+  run(rspeedy, ['build'], cwd, {
+    BENCH_AUTOROWS: '0',
+    BENCH_LIST_ROWS: String(rows),
+    BENCH_ENABLE_IFR: ifr ? '1' : '0',
+    BENCH_ENABLE_ET: elementTemplates ? '1' : '0',
+    BENCH_CELL: resolvedCell,
+  });
+  for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
+    if (!fs.existsSync(path.join(expectedDist, file))) {
+      throw new Error(`${id}: missing ${expectedDist}/${file}`);
+    }
+  }
+  stage(id, expectedDist, rows, 'list');
 }
 
 ensureSourceSelfLink();
@@ -128,5 +169,8 @@ const configurations = [
 for (const rows of rowsMatrix) {
   for (const configuration of configurations) buildApp({ ...configuration, rows });
 }
+for (const rows of [1000, 10000]) {
+  for (const configuration of configurations) buildListApp({ ...configuration, rows });
+}
 
-console.log(`[build-vue-m4] ${configurations.length * rowsMatrix.length} cells → ${out}`);
+console.log(`[build-vue-m4] ${configurations.length * (rowsMatrix.length + 2)} cells → ${out}`);

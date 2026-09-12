@@ -10,19 +10,24 @@ import {
 } from './m4-artifact-contract.mjs';
 
 test('M4 freezes a distinct final qualification cohort', () => {
-  assert.equal(M4_CAMPAIGN, 'octane-roadmap-m4-final-4.1-v1');
+  assert.equal(M4_CAMPAIGN, 'octane-roadmap-m4-final-4.1-v2');
   assert.deepEqual(M4_ROWS, [0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
   assert.equal(new Set(M4_ENTRY_IDS).size, 8);
   assert.equal(M4_ENTRY_IDS.every((id) => id.includes('m4')), true);
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-final'].ref,
-    'huxcx/m4-main-thread-capability-payload-291',
+    'new-lynx',
+  );
+  assert.equal(
+    M4_PINNED_SOURCES['octane-m4-final'].commit,
+    '23ed94d8efe51cb9ff86832903e5f5a8fbca66dd',
   );
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-upstream'].commit,
-    '55a9aa3acd3ffad847d5604ffbdc4342a30a861d',
+    'fa11c10556338420dc686a2e93bf1b5787099b30',
   );
-  assert.equal(M4_PINNED_SOURCES.comparators.commit, '8e02c0e4e25cd216df080c339cf1ccab855d2c71');
+  assert.equal(M4_PINNED_SOURCES.comparators.commit, '0da216caf3b474347423a8cd694d5449fa4e4215');
+  assert.equal(M4_PINNED_SOURCES.comparators.producerPull, 396);
   assert.equal(M4_PLATFORM_LANE.sdk, 'Lynx 4.1.0');
   assert.match(M4_PLATFORM_LANE.explorerSha256, /^[\da-f]{64}$/);
   assert.equal(M4_PLATFORM_LANE.explorerBytes, 173293606);

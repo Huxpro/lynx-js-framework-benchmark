@@ -9,6 +9,18 @@ if (!checkout || !fs.existsSync(buildScript)) {
   throw new Error('usage: node scripts/build-octane-m4.mjs <octane-checkout>');
 }
 
+const externalListFixture = process.env.OCTANE_M4_LIST_FIXTURE_BUILD;
+const listFixtureCheckout = externalListFixture == null || externalListFixture === ''
+  ? null
+  : path.resolve(externalListFixture);
+const listFixtureFiles = ['ListApp.lynx.tsrx', 'list-index.ts', 'list.css'];
+if (listFixtureCheckout != null) {
+  for (const file of listFixtureFiles) {
+    const source = path.join(listFixtureCheckout, 'benchmarks/lynx-table/app/src', file);
+    if (!fs.existsSync(source)) throw new Error(`missing frozen list fixture source ${source}`);
+  }
+}
+
 const requestedCore = process.env.BENCH_CORE ?? 'universal';
 if (!['automatic', 'universal', 'block'].includes(requestedCore)) {
   throw new Error(`BENCH_CORE must be automatic, universal, or block; received ${requestedCore}`);
@@ -35,6 +47,67 @@ function rowsFromEnvironment() {
 }
 
 const rowsMatrix = rowsFromEnvironment();
+const listRowsMatrix = [1000, 10000];
+
+function buildExternalListFixture(rows) {
+  const pluginDir = path.join(checkout, 'packages/rspeedy-plugin-octane');
+  const stageName = 'lynx-m4-list-bench';
+  const stage = path.join(pluginDir, 'examples', stageName);
+  const stageSource = path.join(stage, 'src');
+  const sourceRoot = path.join(listFixtureCheckout, 'benchmarks/lynx-table/app');
+  const output = path.join(stage, `dist-list-rows${rows}`);
+  const destination = path.join(
+    checkout,
+    'benchmarks/lynx-table/app',
+    `dist${coreSuffix}-list-rows${rows}`,
+  );
+  const config = `import { defineConfig } from '@lynx-js/rspeedy';
+import { pluginOctane } from '@octanejs/rspeedy-plugin';
+
+const listRows = Number(process.env.BENCH_LIST_ROWS);
+export default defineConfig({
+  mode: 'production',
+  environments: { lynx: {}, web: {} },
+  output: {
+    cleanDistPath: true,
+    filename: { bundle: '[name].[platform].bundle' },
+    filenameHash: false,
+    distPath: { root: 'dist-list-rows' + listRows },
+  },
+  source: {
+    entry: { main: './src/list-index.ts' },
+    define: { __BENCH_LIST_ROWS__: JSON.stringify(listRows) },
+  },
+  splitChunks: false,
+  plugins: [pluginOctane({ dev: false, hmr: false })],
+});
+`;
+
+  fs.rmSync(stage, { recursive: true, force: true });
+  try {
+    fs.mkdirSync(stageSource, { recursive: true });
+    fs.copyFileSync(
+      path.join(checkout, 'benchmarks/lynx-table/app/tsconfig.json'),
+      path.join(stage, 'tsconfig.json'),
+    );
+    fs.writeFileSync(path.join(stage, 'lynx.config.mjs'), config);
+    for (const file of listFixtureFiles) {
+      fs.copyFileSync(path.join(sourceRoot, 'src', file), path.join(stageSource, file));
+    }
+    execFileSync('npx', ['rspeedy', 'build', '--root', `examples/${stageName}`], {
+      cwd: pluginDir,
+      stdio: 'inherit',
+      env: { ...process.env, NODE_ENV: 'production', BENCH_LIST_ROWS: String(rows) },
+    });
+    for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
+      if (!fs.existsSync(path.join(output, file))) throw new Error(`missing ${output}/${file}`);
+    }
+    fs.rmSync(destination, { recursive: true, force: true });
+    fs.cpSync(output, destination, { recursive: true });
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
+  }
+}
 
 for (const rows of rowsMatrix) {
   execFileSync(process.execPath, [buildScript], {
@@ -44,6 +117,7 @@ for (const rows of rowsMatrix) {
       ...process.env,
       NODE_ENV: 'production',
       BENCH_AUTOROWS: String(rows),
+      BENCH_LIST_ROWS: '0',
       BENCH_CORE: requestedCore,
       BENCH_BLOCK_MODE: blockMode,
     },
@@ -55,4 +129,29 @@ for (const rows of rowsMatrix) {
   }
 }
 
-console.log(`[build-octane-m4] ${requestedCore}/${blockMode} rows ${rowsMatrix.join('/')} complete`);
+for (const rows of listRowsMatrix) {
+  if (listFixtureCheckout == null) {
+    execFileSync(process.execPath, [buildScript], {
+      cwd: checkout,
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        BENCH_AUTOROWS: '0',
+        BENCH_LIST_ROWS: String(rows),
+        BENCH_CORE: requestedCore,
+        BENCH_BLOCK_MODE: blockMode,
+      },
+    });
+  } else {
+    buildExternalListFixture(rows);
+  }
+  const dist = path.join(checkout, `benchmarks/lynx-table/app/dist${coreSuffix}-list-rows${rows}`);
+  for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
+    if (!fs.existsSync(path.join(dist, file))) throw new Error(`missing ${dist}/${file}`);
+  }
+}
+
+console.log(
+  `[build-octane-m4] ${requestedCore}/${blockMode} table ${rowsMatrix.join('/')} list ${listRowsMatrix.join('/')} complete`,
+);

@@ -2,7 +2,7 @@
   "id": "octane-m4-upstream",
   "label": "Octane latest upstream",
   "framework": "octane",
-  "frameworkVersion": "0.2.8",
+  "frameworkVersion": "0.2.10",
   "config": ".tsrx keyed table; compiled JS PAPI; production universal core",
   "tags": [
     "roadmap-m4",
@@ -24,7 +24,7 @@
   "roadmap": {
     "issue": 291,
     "milestone": "M4",
-    "campaign": "octane-roadmap-m4-final-4.1-v1",
+    "campaign": "octane-roadmap-m4-final-4.1-v2",
     "role": "latest-upstream",
     "configuration": "production-default"
   },
@@ -46,13 +46,13 @@
   "provenance": {
     "source": "https://github.com/octanejs/octane",
     "ref": "main",
-    "commit": "55a9aa3acd3ffad847d5604ffbdc4342a30a861d",
+    "commit": "fa11c10556338420dc686a2e93bf1b5787099b30",
     "patched": false,
     "patchFile": null,
-    "buildCommand": "BENCH_CORE=universal BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>",
-    "builtAt": "2026-09-11T11:46:47+01:00",
+    "buildCommand": "OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=universal BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>",
+    "builtAt": "2026-09-12T10:18:42+01:00",
     "receipts": {
-      "sourceCommit": "55a9aa3acd3ffad847d5604ffbdc4342a30a861d",
+      "sourceCommit": "fa11c10556338420dc686a2e93bf1b5787099b30",
       "sourcePatch": {
         "present": false,
         "path": null,
@@ -78,7 +78,7 @@
             "scripts/m4-artifact-contract.mjs",
             "scripts/vendor-m4-entries.mjs"
           ],
-          "sha256": "fa01aa1880651c45ff8ccc68d1cddb97e56163efa4cd5031c0eb2355f42ed2ed"
+          "sha256": "e8f327058ee35ef4a1b6c9b9179baafc337c47db8f11299b0d3d2bda8aa74bb3"
         }
       },
       "platformLane": {
@@ -101,34 +101,61 @@
         "runner": {
           "algorithm": "sha256-path-content-v1",
           "files": [
+            "packages/runner/adapters/lynx-sandbox-android.mjs",
+            "packages/runner/src/cli.mjs",
+            "packages/runner/src/connector-receipt.mjs",
             "packages/runner/src/entries.mjs",
             "packages/runner/src/entry-cohorts.mjs",
+            "packages/runner/src/harness-native-list.mjs",
             "packages/runner/src/harness-native.mjs",
+            "packages/runner/src/harness-web-list.mjs",
             "packages/runner/src/harness-web.mjs",
+            "packages/runner/src/list-coverage.mjs",
+            "packages/runner/src/list-derivation.mjs",
+            "packages/runner/src/list-native-inputs.mjs",
+            "packages/runner/src/list-observation.mjs",
             "packages/runner/src/native-coverage.mjs",
             "packages/runner/src/native-inputs.mjs",
             "packages/runner/src/native-protocol.mjs",
+            "packages/runner/src/native-resume.mjs",
             "packages/runner/src/qualification-runs.mjs",
             "packages/runner/src/run-matrix.mjs",
+            "packages/runner/src/server.mjs",
+            "packages/shared/src/driver-client.mjs",
+            "packages/shared/src/list-workloads.mjs",
             "packages/shared/src/qualification.mjs",
+            "packages/shared/src/schema.mjs",
             "packages/shared/src/scorecard.mjs",
             "packages/shared/src/workloads.mjs"
           ],
-          "sha256": "7e3b4fbad248bb4ec98bc058ebb774b03342cc5bafb094f2270536d0e5b2f4b6"
+          "sha256": "dba3cedeece7b282cd85ae65f2f82666c87b5245b795315c0b58cc63048a20aa"
         },
         "source": {
-          "algorithm": "sha256-path-content-v1",
-          "files": [
-            "benchmarks/lynx-table/app/lynx.config.mjs",
-            "benchmarks/lynx-table/app/src/App.lynx.tsrx",
-            "benchmarks/lynx-table/app/src/app.css",
-            "benchmarks/lynx-table/app/src/data.ts",
-            "benchmarks/lynx-table/app/src/index.ts",
-            "benchmarks/lynx-table/scripts/build-app.mjs"
-          ],
-          "sha256": "b4176cfcde16cc30afc63a48f5440bdf69da70bee5f20abe6e08d76fd868f177"
+          "algorithm": "sha256-primary-list-fixture-v1",
+          "primary": {
+            "algorithm": "sha256-path-content-v1",
+            "files": [
+              "benchmarks/lynx-table/app/lynx.config.mjs",
+              "benchmarks/lynx-table/app/src/App.lynx.tsrx",
+              "benchmarks/lynx-table/app/src/app.css",
+              "benchmarks/lynx-table/app/src/data.ts",
+              "benchmarks/lynx-table/app/src/index.ts",
+              "benchmarks/lynx-table/scripts/build-app.mjs"
+            ],
+            "sha256": "b4176cfcde16cc30afc63a48f5440bdf69da70bee5f20abe6e08d76fd868f177"
+          },
+          "listFixture": {
+            "algorithm": "sha256-path-content-v1",
+            "files": [
+              "benchmarks/lynx-table/app/src/ListApp.lynx.tsrx",
+              "benchmarks/lynx-table/app/src/list-index.ts",
+              "benchmarks/lynx-table/app/src/list.css"
+            ],
+            "sha256": "771da79a75cc4bdeaaa2b06d91f5c01cf1bc64ccde0655a11cc44dd9aaf60f84"
+          },
+          "sha256": "083352373f6cd5419095942ebb0cd152fd9f6662e7666f9583d804214bf21762"
         },
-        "sha256": "60c599b844e7e87727ef2c8e70c3d5213051b757459203bfb9082ab715c9c066"
+        "sha256": "50f9fea28ea1ce2640497fd2f155874f9ddc7ff13e86c3475f4df3237f35be00"
       },
       "bundleSha256": {
         "rows-0/main.web.bundle": "a99cdbfc20e5532d00f00fe2d92f09d672435ffbc495f63ab1ca1e8dd1651636",
@@ -171,5 +198,45 @@
   "bundles": {
     "web": "dist/rows-0/main.web.bundle",
     "lynx": "dist/rows-0/main.lynx.bundle"
+  },
+  "listFixture": {
+    "protocol": "lynx-list-fixture-v2",
+    "contractSha256": "41a98a22508609f1e9444a0c03d3f2261f212312921e196d386b21bd4362f78b",
+    "source": {
+      "source": "https://github.com/Huxpro/octane",
+      "ref": "new-lynx",
+      "commit": "23ed94d8efe51cb9ff86832903e5f5a8fbca66dd",
+      "producerPull": null,
+      "mode": "external-frozen-workload",
+      "receipt": {
+        "algorithm": "sha256-path-content-v1",
+        "files": [
+          "benchmarks/lynx-table/app/src/ListApp.lynx.tsrx",
+          "benchmarks/lynx-table/app/src/list-index.ts",
+          "benchmarks/lynx-table/app/src/list.css"
+        ],
+        "sha256": "771da79a75cc4bdeaaa2b06d91f5c01cf1bc64ccde0655a11cc44dd9aaf60f84"
+      }
+    },
+    "bundles": {
+      "web": {
+        "1000": "dist/list/rows-1000/main.web.bundle",
+        "10000": "dist/list/rows-10000/main.web.bundle"
+      },
+      "native": {
+        "1000": "dist/list/rows-1000/main.lynx.bundle",
+        "10000": "dist/list/rows-10000/main.lynx.bundle"
+      }
+    },
+    "sha256": {
+      "web": {
+        "1000": "808943702cc58cb245b43678a1147c135379f872abfa306615522d44743628c6",
+        "10000": "5b06b10b0f86c0044bd758aa9e97b8db8c1258a246c6085a85c0d6e38113b793"
+      },
+      "native": {
+        "1000": "b25bf4c9bbf0b53a61c9e3fae22d9dc88a1b273f55d7c3d07ef74554101f812a",
+        "10000": "6e8827d4709b5885eeee745f8e9f639e3955f45fdedf54c25f26b661d0a0888a"
+      }
+    }
   }
 }

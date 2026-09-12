@@ -6,6 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+} from '../packages/shared/src/list-workloads.mjs';
+
+import {
   combineWorkloadReceipts,
   hashFiles,
   M4_BUILD_DRIVER_FILES,
@@ -30,6 +35,11 @@ const checkouts = {
 };
 const runnerReceipt = hashFiles(root, M4_RUNNER_CONTRACT_FILES);
 const buildDriverReceipt = hashFiles(root, M4_BUILD_DRIVER_FILES);
+
+const listContractSha256 = crypto
+  .createHash('sha256')
+  .update(JSON.stringify(LIST_WORKLOAD_CONTRACT))
+  .digest('hex');
 
 const presentation = Object.fromEntries(
   M4_ENTRY_IDS.map((id, index) => [
@@ -113,6 +123,18 @@ function receiptFor(checkout, rspeedyDirectory, pnpmVersion) {
   };
 }
 
+function combineSourceReceipts(primary, listFixture) {
+  return {
+    algorithm: 'sha256-primary-list-fixture-v1',
+    primary,
+    listFixture,
+    sha256: crypto
+      .createHash('sha256')
+      .update(`${primary.sha256}\0${listFixture.sha256}`)
+      .digest('hex'),
+  };
+}
+
 function octaneCells(checkout, core) {
   const coreSuffix = core === 'automatic' ? '-automatic' : '';
   return M4_ROWS.map((rows) => ({
@@ -125,10 +147,25 @@ function octaneCells(checkout, core) {
   }));
 }
 
+function octaneListCells(checkout, core) {
+  const coreSuffix = core === 'automatic' ? '-automatic' : '';
+  return [1000, 10000].map((rows) => ({
+    rows,
+    from: path.join(checkout, 'benchmarks/lynx-table/app', `dist${coreSuffix}-list-rows${rows}`),
+  }));
+}
+
 function comparatorCells(checkout, id) {
   return M4_ROWS.map((rows) => ({
     rows,
     from: path.join(checkout, 'bench-out', id, `rows-${rows}`),
+  }));
+}
+
+function comparatorListCells(checkout, id) {
+  return [1000, 10000].map((rows) => ({
+    rows,
+    from: path.join(checkout, 'bench-out', id, 'list', `rows-${rows}`),
   }));
 }
 
@@ -148,6 +185,8 @@ function vendor({
   pnpmVersion,
   buildCommand,
   cells,
+  listCells,
+  listSource,
   harnesses = ['web', 'native'],
   unsupportedHarnessReasons,
 }) {
@@ -175,7 +214,34 @@ function vendor({
       throw new Error(`${id}: ${bundle} does not encode every frozen startup scale`);
     }
   }
-  const sourceWorkload = hashFiles(sourceCheckout, sourceFiles);
+  const listChecks = { web: {}, native: {} };
+  const listBundles = { web: {}, native: {} };
+  for (const { rows, from } of listCells ?? []) {
+    const target = path.join(dist, 'list', `rows-${rows}`);
+    fs.mkdirSync(target, { recursive: true });
+    for (const [harness, bundle] of [
+      ['web', 'main.web.bundle'],
+      ['native', 'main.lynx.bundle'],
+    ]) {
+      const input = path.join(from, bundle);
+      if (!fs.existsSync(input)) throw new Error(`${id}: missing ${input}`);
+      const relative = path.join('dist', 'list', `rows-${rows}`, bundle);
+      const output = path.join(dir, relative);
+      fs.copyFileSync(input, output);
+      listBundles[harness][rows] = relative;
+      listChecks[harness][rows] = sha256(output);
+    }
+  }
+  const primarySourceWorkload = hashFiles(sourceCheckout, sourceFiles);
+  const listSourceCheckout = listSource == null
+    ? null
+    : requirePinnedCleanCheckout(`${id} list fixture`, listSource.checkout, listSource.pin);
+  const listSourceReceipt = listSourceCheckout == null
+    ? null
+    : hashFiles(listSourceCheckout, listSource.files);
+  const sourceWorkload = listSourceReceipt == null
+    ? primarySourceWorkload
+    : combineSourceReceipts(primarySourceWorkload, listSourceReceipt);
   const receipts = {
     sourceCommit: pin.commit,
     sourcePatch: { present: false, path: null, sha256: null },
@@ -227,6 +293,24 @@ function vendor({
       web: 'dist/rows-0/main.web.bundle',
       lynx: 'dist/rows-0/main.lynx.bundle',
     },
+    ...(listCells == null
+      ? {}
+      : {
+          listFixture: {
+            protocol: LIST_FIXTURE_PROTOCOL,
+            contractSha256: listContractSha256,
+            source: {
+              source: listSource.pin.source,
+              ref: listSource.pin.ref,
+              commit: listSource.pin.commit,
+              producerPull: listSource.pin.producerPull ?? null,
+              mode: listSource.mode,
+              receipt: listSourceReceipt,
+            },
+            bundles: listBundles,
+            sha256: listChecks,
+          },
+        }),
   };
   fs.writeFileSync(path.join(dir, 'entry.json'), `${JSON.stringify(manifest, null, 2)}\n`);
   console.log(`[vendor-m4] ${id}: ${Object.keys(checks).length} immutable bundles`);
@@ -239,6 +323,11 @@ const octaneSourceFiles = [
   'benchmarks/lynx-table/app/src/data.ts',
   'benchmarks/lynx-table/app/src/index.ts',
   'benchmarks/lynx-table/scripts/build-app.mjs',
+];
+const octaneListSourceFiles = [
+  'benchmarks/lynx-table/app/src/ListApp.lynx.tsrx',
+  'benchmarks/lynx-table/app/src/list-index.ts',
+  'benchmarks/lynx-table/app/src/list.css',
 ];
 
 for (const spec of [
@@ -277,9 +366,18 @@ for (const spec of [
       elementTemplates: false,
     },
     sourceFiles: octaneSourceFiles,
+    listSource: {
+      checkout: checkouts.current,
+      pin: M4_PINNED_SOURCES['octane-m4-final'],
+      files: octaneListSourceFiles,
+      mode: spec.id === 'octane-m4-final' ? 'same-checkout' : 'external-frozen-workload',
+    },
     toolchainDirectory: 'packages/rspeedy-plugin-octane',
-    buildCommand: `BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`,
+    buildCommand: spec.id === 'octane-m4-final'
+      ? `BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`
+      : `OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`,
     cells: octaneCells(spec.checkout, spec.core),
+    listCells: octaneListCells(spec.checkout, spec.core),
   });
 }
 
@@ -419,12 +517,25 @@ for (const spec of comparatorSpecs) {
           ]
         : []),
     ],
+    listSource: {
+      checkout: comparatorCheckout,
+      pin: comparatorPin,
+      files: [
+        `packages/benchmark/apps/${spec.app}/src/ListApp.${spec.app === 'ui-react' ? 'tsx' : 'vue'}`,
+        `packages/benchmark/apps/${spec.app}/src/list-index.${spec.app === 'ui-react' ? 'tsx' : 'ts'}`,
+        ...(spec.app === 'ui-react'
+          ? ['packages/benchmark/apps/ui-react/src/List.css']
+          : []),
+      ],
+      mode: 'same-checkout',
+    },
     toolchainDirectory:
       spec.app === 'ui-react' ? 'packages/benchmark/apps/ui-react' : 'packages/benchmark',
     pnpmVersion: '10.28.2',
     buildCommand:
       'BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-vue-m4.mjs <vue-lynx-checkout>',
     cells: comparatorCells(comparatorCheckout, spec.id),
+    listCells: comparatorListCells(comparatorCheckout, spec.id),
   });
 }
 

@@ -2,7 +2,7 @@ import { combineWorkloadReceipts, hashFiles } from './m0-artifact-contract.mjs';
 
 export { combineWorkloadReceipts, hashFiles };
 
-export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v1';
+export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v2';
 export const M4_ROWS = Object.freeze([0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
 export const M4_ENTRY_IDS = Object.freeze([
   'octane-m4-final',
@@ -18,21 +18,19 @@ export const M4_ENTRY_IDS = Object.freeze([
 export const M4_PINNED_SOURCES = Object.freeze({
   'octane-m4-final': Object.freeze({
     source: 'https://github.com/Huxpro/octane',
-    ref: 'huxcx/m4-main-thread-capability-payload-291',
-    // Pre-merge identity only. The M4 evidence PR must update this to the exact
-    // new-lynx merge SHA before any result is accepted as final.
-    commit: '805fd9ed861eec7ca8d113039f6722699b6cce1c',
+    ref: 'new-lynx',
+    commit: '23ed94d8efe51cb9ff86832903e5f5a8fbca66dd',
   }),
   'octane-m4-upstream': Object.freeze({
     source: 'https://github.com/octanejs/octane',
     ref: 'main',
-    commit: '55a9aa3acd3ffad847d5604ffbdc4342a30a861d',
+    commit: 'fa11c10556338420dc686a2e93bf1b5787099b30',
   }),
   comparators: Object.freeze({
     source: 'https://github.com/Huxpro/vue-lynx',
     ref: 'feat/unified-benchmark-framework-ui',
-    commit: '8e02c0e4e25cd216df080c339cf1ccab855d2c71',
-    producerPull: 395,
+    commit: '0da216caf3b474347423a8cd694d5449fa4e4215',
+    producerPull: 396,
   }),
 });
 
@@ -46,16 +44,30 @@ export const M4_PLATFORM_LANE = Object.freeze({
 });
 
 export const M4_RUNNER_CONTRACT_FILES = Object.freeze([
+  'packages/runner/adapters/lynx-sandbox-android.mjs',
+  'packages/runner/src/cli.mjs',
+  'packages/runner/src/connector-receipt.mjs',
   'packages/runner/src/entry-cohorts.mjs',
   'packages/runner/src/entries.mjs',
+  'packages/runner/src/harness-native-list.mjs',
   'packages/runner/src/harness-native.mjs',
+  'packages/runner/src/harness-web-list.mjs',
   'packages/runner/src/harness-web.mjs',
+  'packages/runner/src/list-coverage.mjs',
+  'packages/runner/src/list-derivation.mjs',
+  'packages/runner/src/list-native-inputs.mjs',
+  'packages/runner/src/list-observation.mjs',
   'packages/runner/src/native-coverage.mjs',
   'packages/runner/src/native-inputs.mjs',
   'packages/runner/src/native-protocol.mjs',
+  'packages/runner/src/native-resume.mjs',
   'packages/runner/src/qualification-runs.mjs',
   'packages/runner/src/run-matrix.mjs',
+  'packages/runner/src/server.mjs',
+  'packages/shared/src/driver-client.mjs',
+  'packages/shared/src/list-workloads.mjs',
   'packages/shared/src/qualification.mjs',
+  'packages/shared/src/schema.mjs',
   'packages/shared/src/scorecard.mjs',
   'packages/shared/src/workloads.mjs',
 ]);
