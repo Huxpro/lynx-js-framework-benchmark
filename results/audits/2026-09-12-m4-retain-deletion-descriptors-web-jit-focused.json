@@ -1,0 +1,99 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "z-octane-m4-deletion-descriptors-candidate",
+  "candidateCommit": "d80d63caac26121b6d0a05e0d6aad7b4dd44d8ad",
+  "comparator": "z-octane-m4-deletion-descriptors-base",
+  "comparatorCommit": "eda005a520294fdfc4aa1ff2846eff5b90a3c93e",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "For a compiler-proven index-independent keyed component range, a deletion-only item-identity subsequence can retain committed keys, values, listeners, and the row descriptor map without rerunning key or row producers.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": { "AB": 5, "BA": 5 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x291d80 plus metric index",
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "comparabilityCohort": "sha256:59cc19dc68542e3fda4f93cd871fbeef37a68c8e1c3195f578d63b99ab9bf1d8"
+  },
+  "removeAt1000": {
+    "latency": {
+      "point": 0.9601108043120313,
+      "lower": 0.9110482487455894,
+      "upper": 1.0136888318960784,
+      "sessionRatios": [0.9937203955938124, 0.9591812842874197, 1.0892565988595504, 0.8700081305203154, 1.117366439240059, 0.8550190042505829, 0.8919835353276934, 0.9769809871369219, 0.8937779751915437, 0.9902644066602964],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "backgroundCpu": {
+      "point": 0.9228937367938075,
+      "lower": 0.8959166370238925,
+      "upper": 0.9526237699843678,
+      "sessionRatios": [0.9922716627634661, 0.8899024183283836, 0.870336013193156, 0.9293541618092797, 0.9950657894736841, 0.9774349527976054, 0.8872912801484232, 0.8700228832951944, 0.9013395704869234, 0.9273652556095304],
+      "nonInferior": true,
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 0.9977668160935981,
+      "lower": 0.9757903055159558,
+      "upper": 1.0185522279807802,
+      "sessionRatios": [1.0066217472118957, 0.9846254497873734, 0.932356257046223, 0.9997677389385669, 1.0462058149354567, 1.0466291489606063, 0.9955834495583449, 0.9626857077047104, 1.0315528243913967, 0.9777066422773522],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "wireToBtsBytes": { "point": 0.9999999344358835, "lower": 0.9995951907872331, "upper": 1.0003238079967183, "nonInferior": true },
+    "wireToMtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": { "point": 0.9999133142712553, "lower": 0.9993517721364438, "upper": 1.0003764331723077, "nonInferior": true },
+    "heapBts": { "point": 1.0007388945349516, "lower": 1.0006142448984563, "upper": 1.0008620790934921, "nonInferior": true },
+    "heapMtsAfterClear": { "point": 0.9999360382241492, "lower": 0.9996800891220115, "upper": 1.0001821000856028, "nonInferior": true },
+    "heapBtsAfterClear": { "point": 1.0052759239404958, "lower": 1.0044158580571345, "upper": 1.0061243794778303, "nonInferior": true }
+  },
+  "bundle": {
+    "web": { "comparatorBytes": 184466, "candidateBytes": 185237, "deltaBytes": 771, "candidateSha256": "f609d4d57bb2c2ba9313c2e6f41666d810e33563d9a9043c972cd645a1496693" },
+    "native": { "comparatorBytes": 184586, "candidateBytes": 185357, "deltaBytes": 771, "candidateSha256": "ef8769eb8890a18301222f6beacb0b6ef0b5df5f80001d2448e69c7d813d29e8" }
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-retain-deletion-descriptors-remove-profile.json",
+    "sha256": "b3aca567a7499e5d65f1f0d0fa7d1a1be8c6e3c73d8775359ff58d23eae091d9",
+    "pairs": 5,
+    "runsPerArm": 10,
+    "purpose": "CPU attribution only; profiler-perturbed wall time is not used for qualification.",
+    "means": {
+      "base": { "latencyMs": 22.265499687194826, "backgroundCpuMs": 2.2177, "mainThreadCpuMs": 4.3589 },
+      "candidate": { "latencyMs": 22.036000156402586, "backgroundCpuMs": 1.9241, "mainThreadCpuMs": 4.1296 }
+    },
+    "attribution": "The profiler independently shows 13.2% lower aggregate background CPU. The deterministic regression pins the mechanism more precisely: the accepted deletion runs neither key nor row producer, while a rejected frame leaves the committed descriptor map intact for retry."
+  },
+  "validation": {
+    "focusedTests": "1 file, 53 tests passed",
+    "fullLynxProject": "57 files, 995 tests passed",
+    "typecheck": "production, testing, and typetest tsconfigs passed",
+    "sync": "passed",
+    "manifestAndBundles": "all 16 candidate and 16 comparator SHA-256 receipts verified"
+  },
+  "benchmarkReceipt": {
+    "commit": "2665e621c110e3a3e7d94b1d07d5426358b1de69",
+    "dirty": true,
+    "experimentTreeSha256": "d27d81d267c6823821003cb73758998ec8610a2e53fa25e9b38ffdf680c8d505",
+    "ignoredGeneratedPaths": ["results/runs/**", "results/audits/**", "results/latest.json", "site/dist/**"]
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T08-28-25-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ab-1.json", "sha256": "bfcf3710d4c155ffff16f74f0d84873a51cbc9fc41056ed80d416dfd09bf1c18", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ab-1", "calibration": 2265.8 },
+    { "file": "results/runs/2026-09-12T08-29-25-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ba-1.json", "sha256": "c4b4b9092b8e8a1dd3450a71ffc80fe6d342cc41e0c3f25c1199f8b7709f36f4", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ba-1", "calibration": 2343.8 },
+    { "file": "results/runs/2026-09-12T08-30-25-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ab-2.json", "sha256": "ee2584156926a863deb84a03b583e5af34407d0f7e166660aad6a7ecb0357af9", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ab-2", "calibration": 2241 },
+    { "file": "results/runs/2026-09-12T08-31-25-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ba-2.json", "sha256": "cac7c7bd3b725b676388bc070902a1dbb8f8f215f60cb79d0014d7c7f20e7745", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ba-2", "calibration": 2095.8 },
+    { "file": "results/runs/2026-09-12T08-32-25-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ab-3.json", "sha256": "291107a47f3b946086cc54d292bbba706a22fcffd89022eb9aaeac5fbffb63b5", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ab-3", "calibration": 2330.3 },
+    { "file": "results/runs/2026-09-12T08-33-26-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ba-3.json", "sha256": "29a42e0f4bcaeff694d0126c3a0444d01b44831945980186c1b31ef0ca07c180", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ba-3", "calibration": 2252.5 },
+    { "file": "results/runs/2026-09-12T08-34-26-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ab-4.json", "sha256": "e2913fc048046ed54345400f6aaefd9af8c63e4b087e78d268a5c327f40db6fe", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ab-4", "calibration": 2271.8 },
+    { "file": "results/runs/2026-09-12T08-35-26-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ba-4.json", "sha256": "550d532338a8bc44fee07d9233d2f825763b344011190d01533af88fb5238299", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ba-4", "calibration": 2370.8 },
+    { "file": "results/runs/2026-09-12T08-36-26-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ab-5.json", "sha256": "35351981afdc20f2412105af415fc7e4367dc32bc55d0bb7854a98b84b7fe709", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ab-5", "calibration": 2009.8 },
+    { "file": "results/runs/2026-09-12T08-37-26-65160668d8d9-issue291-retain-deletion-descriptors-web-jit-ba-5.json", "sha256": "c8b0f11d1befe5a52c02599274e00496cef74a1e0b504f0bf93eb337f7794bbf", "sessionId": "issue291-retain-deletion-descriptors-web-jit-ba-5", "calibration": 2313.8 }
+  ]
+}
