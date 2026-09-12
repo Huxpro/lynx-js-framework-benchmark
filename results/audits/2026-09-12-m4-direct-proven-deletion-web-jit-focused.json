@@ -1,0 +1,70 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "z-octane-m4-direct-delete-candidate",
+  "candidateCommit": "090cf87405306b7c58de67b1600a1735f8d771ef",
+  "comparator": "z-octane-m4-clear-map-candidate",
+  "comparatorCommit": "2bec72926aa9ce8b4cc52f57bb7b73ad1473ab3f",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "A compiler-proven strict deletion can emit teardown for only the departed keys and publish logical Map/list membership at acknowledgement, avoiding the generic reconciler's O(range size) rollback snapshot and survivor reconstruction.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": { "AB": 5, "BA": 5 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "comparabilityCohort": "sha256:75ecaaaaac22f6de50ac762d3d9f4d4f01d35f8441cf6cef91c3c5f9d6b828bd"
+  },
+  "removeAt1000": {
+    "latency": { "point": 0.981220936, "lower": 0.921347997, "upper": 1.039796368, "nonInferior": true, "strictWin": false },
+    "backgroundCpu": { "point": 0.786058611, "lower": 0.748621434, "upper": 0.822930205, "nonInferior": true, "strictWin": true },
+    "mainThreadCpu": { "point": 1.004757844, "lower": 0.972920256, "upper": 1.038697509, "nonInferior": true, "strictWin": false },
+    "wireToBtsBytes": { "point": 0.999919064, "lower": 0.999757213, "upper": 1, "nonInferior": true },
+    "wireToMtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "deterministicBlockLookups": { "comparator": 999, "candidate": 1 },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": { "point": 1.000264371, "lower": 0.999495713, "upper": 1.001049238, "nonInferior": true },
+    "heapBts": { "point": 1.00010313, "lower": 0.999983755, "upper": 1.000185331, "nonInferior": true },
+    "heapMtsAfterClear": { "point": 1.000109513, "lower": 0.999847763, "upper": 1.000368155, "nonInferior": true },
+    "heapBtsAfterClear": { "point": 1.000706715, "lower": 0.999904524, "upper": 1.001273288, "nonInferior": true }
+  },
+  "bundle": {
+    "web": { "comparatorBytes": 185251, "candidateBytes": 185870, "deltaBytes": 619, "candidateSha256": "5b4505cf157bf7cb0ed47f8957d3c8e7369ee49b998e449cc98af086e343f09f" },
+    "native": { "comparatorBytes": 185371, "candidateBytes": 185990, "deltaBytes": 619, "candidateSha256": "96ca6ec5cbef32cf9f2317a90d889d845b1e0890aea3ec1c0cee0b4005fec2cd" }
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-direct-proven-deletion-remove-profile.json",
+    "sha256": "33a0ff2844338b71fcdad70f3181b435283b157eccecddfa18447c6ad4cd920f",
+    "pairs": 5,
+    "runsPerArm": 10,
+    "means": {
+      "candidate": { "latencyMs": 19.836999893, "backgroundCpuMs": 1.6113, "mainThreadCpuMs": 4.1855 },
+      "comparator": { "latencyMs": 22.080500031, "backgroundCpuMs": 1.8932, "mainThreadCpuMs": 4.3064 }
+    }
+  },
+  "validation": {
+    "focusedTests": "2 files, 88 tests passed",
+    "fullLynxProject": "57 files, 995 tests passed",
+    "typecheck": "changed Lynx production and test files passed",
+    "sync": "passed",
+    "format": "passed"
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T10-24-59-65160668d8d9-issue291-direct-delete-ab-1.json", "sha256": "20fe2a3f00e52ed32cabc7b504b7f6c33f92036e469f01c8acc374955c24755b" },
+    { "file": "results/runs/2026-09-12T10-25-59-65160668d8d9-issue291-direct-delete-ba-1.json", "sha256": "df6e54434ad657151d2d206e808c5e628b256a48641a7b757bbb34a49238d601" },
+    { "file": "results/runs/2026-09-12T10-26-59-65160668d8d9-issue291-direct-delete-ab-2.json", "sha256": "e2d385ab259b55fcd1cdbc121f3ea487925a8a3c4701387a285a609d5babd2e7" },
+    { "file": "results/runs/2026-09-12T10-27-58-65160668d8d9-issue291-direct-delete-ba-2.json", "sha256": "0c840f30e700a582c4fbfbf148c683ae2dbbb2bb54efdd650f4cbd2da4913e0b" },
+    { "file": "results/runs/2026-09-12T10-28-58-65160668d8d9-issue291-direct-delete-ab-3.json", "sha256": "82fda8320d3e221316f0fee6ebe4431c6541ec9276335f97d69676f7dc42e871" },
+    { "file": "results/runs/2026-09-12T10-29-57-65160668d8d9-issue291-direct-delete-ba-3.json", "sha256": "16ac9c1df41985c44d1b6489af709671a8e5874f002f21e4048d0ee4340593da" },
+    { "file": "results/runs/2026-09-12T10-30-58-65160668d8d9-issue291-direct-delete-ab-4.json", "sha256": "89bb8c5512bada94c79e5913d9f3ee8d4316a3159394b9ecfb91a6fbd764cbbc" },
+    { "file": "results/runs/2026-09-12T10-31-58-65160668d8d9-issue291-direct-delete-ba-4.json", "sha256": "ec12595ff07afcae03c682db2a529dab993e79925c1e9bd369b5c84b518f728a" },
+    { "file": "results/runs/2026-09-12T10-32-58-65160668d8d9-issue291-direct-delete-ab-5.json", "sha256": "f74680653085417a294c325997b0f3393d9f93709ac3516038549547f7d02459" },
+    { "file": "results/runs/2026-09-12T10-33-58-65160668d8d9-issue291-direct-delete-ba-5.json", "sha256": "f53637d50cb0e7422422e28e7310f74eaf9d21e3d018c46fe118a654181351ff" }
+  ]
+}

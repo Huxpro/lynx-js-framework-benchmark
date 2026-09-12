@@ -343,6 +343,37 @@ The complete receipt is
 `results/audits/2026-09-12-m4-empty-range-fresh-map-web-jit-focused.json`
 (SHA-256 `556fcc4b10a23f60f46f799d5e78fa65d57c9bcdab2bf415bef8378790d032f3`).
 
+A same-window comparison against Vue Vapor IFR preserved two remaining failures:
+`select@1000` was 1.02067 [0.92839, 1.13905] and `remove@1000` was 1.01387
+[0.95615, 1.08488]. The other three focused interactions were non-inferior.
+The owner split isolated the failures to background CPU: select was 1.90615
+[1.68602, 2.11534] and remove was 1.37311 [1.29621, 1.44737], while their MTS
+ratios were 0.98459 [0.94610, 1.02391] and 0.96831 [0.94473, 0.99077]. The
+failure-preserving receipt is
+`results/audits/2026-09-12-m4-post370-vue-vapor-ifr-focused.json` (SHA-256
+`e837d0344463b8e30e102f8059cdd3c11cafd6f8e42c4b69fabd74dc85d7611b`), and
+the remove CPU profile is
+`results/audits/2026-09-12-m4-post370-vapor-ifr-remove-profile.json` (SHA-256
+`1bafc2dd9ae186ed75884535550fe5ed2dc40c39d0db128494c656e379a0e64d`).
+
+### Retained owner cut: apply compiler-proven deletions directly
+
+The component layer already proved the next range was a strict item-identity
+subsequence and identified every departed key, but the Block core still cloned
+the full rollback state and rebuilt keys, survivors, sequence, and duplicate
+sets. The direct-deletion follow-up emits teardown only for those departed keys
+and publishes logical Map/list membership at ACK. A rejected frame discards the
+pending publication, so rollback needs no full-range snapshot.
+
+Ten independent focused sessions, five AB and five BA with 20 repetitions per
+arm, gave remove latency 0.98122 [0.92135, 1.03980] and BTS CPU 0.78606
+[0.74862, 0.82293]. MTS CPU was non-inferior at 1.00476
+[0.97292, 1.03870], wire did not increase, and all four 10k GC snapshot upper
+bounds were below 1.002. Deterministic block lookups fell from 999 to 1. The
+Web and Native rows-zero bundles each grew by 619 bytes. The complete receipt
+is `results/audits/2026-09-12-m4-direct-proven-deletion-web-jit-focused.json`
+(SHA-256 `0e11e888df07960a58bbbbf8015e538907591f07fcc727789d84685a8bac1f29`).
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear
