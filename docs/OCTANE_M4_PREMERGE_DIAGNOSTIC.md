@@ -212,6 +212,42 @@ raw hashes are in
 `results/audits/2026-09-12-m4-rejected-dense-listener-web-jit-focused.json`
 (SHA-256 `938ecebcde3919375951d6d54fb2d802b3cd6f980d79f681361611f4181a46ce`).
 
+## Compact candidate versus Vue Vapor default: startup passes, interaction fails
+
+Vue Vapor default was measured next at the same comparator commit. Ten
+table-only and ten startup-only sessions, independently balanced five AB and
+five BA, again produced 3,100 observations with zero DNF:
+
+| suite/cell | point ratio | 95% CI | gate |
+| --- | ---: | ---: | --- |
+| interaction aggregate | 0.76096 | [0.74755, 0.77430] | aggregate passes |
+| swap@1k | 0.99710 | [0.87454, 1.13028] | **fail** |
+| remove@1k | 1.08669 | [1.02482, 1.16219] | **fail** |
+| startup aggregate | 0.53104 | [0.52319, 0.53890] | pass |
+| FCP@0 | 0.47132 | [0.45737, 0.48449] | pass |
+| FCP@1k | 0.55680 | [0.54363, 0.57239] | pass |
+| FCP@10k | 0.57064 | [0.56124, 0.58102] | pass |
+
+Every other frozen interaction cell passes. The formal scorecard and all raw
+hashes are in
+`results/audits/2026-09-12-m4-premerge-vue-vapor-default-web-jit-independent-windows.json`
+(SHA-256 `e57a4d7a1d5c053fd8507cfe7a2f649e0c59b1f4d485cfad4ac282e2b5348e2e`).
+Unlike the VDOM select variance, these structural cells have a real background
+owner: pooled swap background JS CPU was 4.74 ms for Octane versus 1.62 ms for
+Vapor, and remove was 7.32 versus 1.31 ms. Remove main-thread JS CPU was
+effectively identical (4.56 versus 4.55 ms), locating the gap before transport.
+
+An exact-listener-identity journal elision was tested because structural Block
+renders rebind their survivor events. The implementation preserved attempt
+ordering by refusing to elide any listener ID already written in that attempt,
+passed 85 focused tests, and was measured in ten new five-AB/five-BA sessions
+with 20 repetitions per cell. It did not explain the owner: patch/baseline was
+1.02395 [0.96654, 1.07804] for swap and 0.98933 [0.96904, 1.01136] for remove,
+with aggregate 1.00649 [0.97919, 1.03317]. The source was fully reverted. The
+rejection receipt is
+`results/audits/2026-09-12-m4-rejected-listener-identity-web-jit-focused.json`
+(SHA-256 `65995fb6cc1dcd76f4040be8759452a64b29beb797f6fa2fd687ac4e9a154d39`).
+
 ## Memory snapshot is not the memory gate
 
 The existing runner captured one GC-forced 10k snapshot and one after-clear

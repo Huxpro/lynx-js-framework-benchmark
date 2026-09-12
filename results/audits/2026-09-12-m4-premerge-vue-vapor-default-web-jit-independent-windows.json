@@ -1,0 +1,305 @@
+{
+  "scorecardVersion": 1,
+  "candidate": "octane-m4-final",
+  "comparator": "vue-lynx-m4-vapor-default",
+  "harness": "web",
+  "machine": {
+    "id": "65160668d8d9",
+    "hostname": "n251-227-236",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+    "cores": 32,
+    "memGB": 67,
+    "node": "v22.22.2"
+  },
+  "comparabilityCohorts": {
+    "interaction": "sha256:bd42d81128b1a225a57c85c6413135cb29a86d2ed88e6c8e0be4fbb40cc567b4",
+    "startup": "sha256:bd42d81128b1a225a57c85c6413135cb29a86d2ed88e6c8e0be4fbb40cc567b4"
+  },
+  "entryCommits": {
+    "candidate": "805fd9ed861eec7ca8d113039f6722699b6cce1c",
+    "comparator": "8e02c0e4e25cd216df080c339cf1ccab855d2c71"
+  },
+  "sessions": {
+    "interaction": [
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ab-01",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ba-02",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ab-03",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ba-04",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ab-05",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ba-06",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ab-07",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ba-08",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ab-09",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-table-only-ba-10",
+        "order": "BA"
+      }
+    ],
+    "startup": [
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ab-01",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ba-02",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ab-03",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ba-04",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ab-05",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ba-06",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ab-07",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ba-08",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ab-09",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-vue-vapor-default-web-jit-startup-only-ba-10",
+        "order": "BA"
+      }
+    ]
+  },
+  "suites": {
+    "interaction": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.7609601381087785,
+        "lower": 0.7475450796101556,
+        "upper": 0.7742979925992455,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "create@1000": {
+          "point": 0.5442150989889556,
+          "lower": 0.5338831539870544,
+          "upper": 0.554131774513374,
+          "nonInferior": true
+        },
+        "replace@1000": {
+          "point": 0.7085057250241389,
+          "lower": 0.6926294407366063,
+          "upper": 0.7250949319555025,
+          "nonInferior": true
+        },
+        "update10th@1000": {
+          "point": 0.962602300297931,
+          "lower": 0.8843948736324075,
+          "upper": 1.041225815218649,
+          "nonInferior": true
+        },
+        "select@1000": {
+          "point": 0.9363701866564471,
+          "lower": 0.8674922769562651,
+          "upper": 1.0137192972105746,
+          "nonInferior": true
+        },
+        "swap@1000": {
+          "point": 0.9970953967519484,
+          "lower": 0.8745373652387687,
+          "upper": 1.130282131865458,
+          "nonInferior": false
+        },
+        "remove@1000": {
+          "point": 1.0866882499541182,
+          "lower": 1.0248224774543138,
+          "upper": 1.1621928340311232,
+          "nonInferior": false
+        },
+        "create@10000": {
+          "point": 0.5458658437969313,
+          "lower": 0.5371446460363637,
+          "upper": 0.5546128146377614,
+          "nonInferior": true
+        },
+        "append1k@1000": {
+          "point": 0.6822916845199509,
+          "lower": 0.6710094402946363,
+          "upper": 0.6964322335715971,
+          "nonInferior": true
+        },
+        "clear@1000": {
+          "point": 0.979881544872791,
+          "lower": 0.9305529018799483,
+          "upper": 1.024671964841162,
+          "nonInferior": true
+        }
+      },
+      "pass": false
+    },
+    "startup": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.5310374248674076,
+        "lower": 0.523187009833032,
+        "upper": 0.5388956156772619,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "fcp@0": {
+          "point": 0.47131562609184824,
+          "lower": 0.4573670175410176,
+          "upper": 0.4844938340650141,
+          "nonInferior": true
+        },
+        "fcp@1000": {
+          "point": 0.5567989003230859,
+          "lower": 0.5436257748219981,
+          "upper": 0.5723883789994697,
+          "nonInferior": true
+        },
+        "fcp@10000": {
+          "point": 0.5706439006415674,
+          "lower": 0.561238993014011,
+          "upper": 0.5810236050956101,
+          "nonInferior": true
+        }
+      },
+      "pass": true
+    }
+  },
+  "pass": false,
+  "sourceRuns": {
+    "interaction": [
+      {
+        "file": "results/runs/2026-09-12T01-09-53-65160668d8d9.json",
+        "sha256": "160404fb5cc77792e7fc15ff0b94b8d51a9b3e3b0863ed8025926783dda8022b"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-16-24-65160668d8d9.json",
+        "sha256": "edd5d494820d8086770d05b43511df42408270099b0a3a1f518b3240d46e0128"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-22-57-65160668d8d9.json",
+        "sha256": "40128dbad4c7ca466a8a58674297c6bbaa30b0da1937b9b2a95702133abba286"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-29-26-65160668d8d9.json",
+        "sha256": "6e08836b6368578fd83280e150a608bd24c300f0f9531357e249a34d43b13c09"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-35-58-65160668d8d9.json",
+        "sha256": "ae0e7e9d2c0c2d4d429f5dda10ffff1086135233fa694a2443cdd7143e05ed15"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-42-29-65160668d8d9.json",
+        "sha256": "1dcbb9ba7fd38232f2d3edaed50ec4f2df75ff23f41927b9ab2be2187b0a44b9"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-49-05-65160668d8d9.json",
+        "sha256": "005ba975f76836379a03cf946130e41c2a0ef82fccc251aabc440e7d8786a8d3"
+      },
+      {
+        "file": "results/runs/2026-09-12T01-55-37-65160668d8d9.json",
+        "sha256": "ccfd17de467b57e72ad0866899c1f688deb9bf84d1ca85795c5d3de2927556e8"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-02-10-65160668d8d9.json",
+        "sha256": "9873035a52d11f82d42bd7df65ea01073f2e048bbd1a1e134c04a500f79ae66d"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-08-43-65160668d8d9.json",
+        "sha256": "fddfb7eaf55addf528aed08006134780cddc57db828d8b8d12068f447360069b"
+      }
+    ],
+    "startup": [
+      {
+        "file": "results/runs/2026-09-12T02-09-44-65160668d8d9.json",
+        "sha256": "7ca1f1f5b62095aa0e2fb7ad3eb5793f20f930b6269d30d8698ffac65aba5aec"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-10-39-65160668d8d9.json",
+        "sha256": "eaa2e3cf867691f2aa2b11394b8a44a411963944bac1fd27d7633090dde5eaba"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-11-33-65160668d8d9.json",
+        "sha256": "700e719f86b1df671047ae33073cc91e4480a0d433e5d58188cd538a476b11d3"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-12-30-65160668d8d9.json",
+        "sha256": "d0a4826f0af5d56553597b883814511ba1c5fabcb4ec3782cedf49f2d375d306"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-13-24-65160668d8d9.json",
+        "sha256": "ff4244151d8775520a517dca53f8f565dfac1edef53af95ec6bea6eb3a2cf54a"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-14-18-65160668d8d9.json",
+        "sha256": "df76268d4188ad15c82c388bfab1c81d62fb39e29c5b5213c1568c6f448e042c"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-15-13-65160668d8d9.json",
+        "sha256": "3cc96ae15df8ea8d02c1efcc9d606564844077fed558ff385c563d5de438f640"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-16-08-65160668d8d9.json",
+        "sha256": "cd1b3c13b55f2dad09df4f9fd93eaecbe7eaadb908504f8875a536205bfd6b23"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-17-02-65160668d8d9.json",
+        "sha256": "2118a70f15b5d5810a6abe331e733c128839e58f1443a0a754291591fd875d1a"
+      },
+      {
+        "file": "results/runs/2026-09-12T02-17-58-65160668d8d9.json",
+        "sha256": "4c15c0191a71c6a04621a1ab3062af7a682a25866dde67af0684c82ee28bc136"
+      }
+    ]
+  }
+}
