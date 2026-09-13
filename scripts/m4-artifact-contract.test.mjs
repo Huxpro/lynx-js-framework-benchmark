@@ -20,11 +20,11 @@ test('M4 freezes a distinct final qualification cohort', () => {
   );
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-final'].commit,
-    '23ed94d8efe51cb9ff86832903e5f5a8fbca66dd',
+    '7a523bf20d04578c39fe0b5fe532cdef6dab3e9e',
   );
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-upstream'].commit,
-    'fa11c10556338420dc686a2e93bf1b5787099b30',
+    '6284156ce290f757712d9ec617a229a092bf8b00',
   );
   assert.equal(M4_PINNED_SOURCES.comparators.commit, '0da216caf3b474347423a8cd694d5449fa4e4215');
   assert.equal(M4_PINNED_SOURCES.comparators.producerPull, 396);

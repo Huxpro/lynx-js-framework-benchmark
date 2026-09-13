@@ -19,12 +19,12 @@ export const M4_PINNED_SOURCES = Object.freeze({
   'octane-m4-final': Object.freeze({
     source: 'https://github.com/Huxpro/octane',
     ref: 'new-lynx',
-    commit: '23ed94d8efe51cb9ff86832903e5f5a8fbca66dd',
+    commit: '7a523bf20d04578c39fe0b5fe532cdef6dab3e9e',
   }),
   'octane-m4-upstream': Object.freeze({
     source: 'https://github.com/octanejs/octane',
     ref: 'main',
-    commit: 'fa11c10556338420dc686a2e93bf1b5787099b30',
+    commit: '6284156ce290f757712d9ec617a229a092bf8b00',
   }),
   comparators: Object.freeze({
     source: 'https://github.com/Huxpro/vue-lynx',
