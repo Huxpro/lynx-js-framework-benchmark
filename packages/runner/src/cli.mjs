@@ -7,6 +7,7 @@
 //                  [--harness web|native]
 //                  [--jit jit|interp] [--cpu-throttle N]
 //                  [--throttle-scope none|process-cgroup]
+//                  [--no-memory]
 //   lynx-bench preflight
 //   lynx-bench collect
 //   lynx-bench list
@@ -375,6 +376,10 @@ async function cmdRun(args) {
   const unknownSuites = suites.filter((suite) =>
     !['table', 'startup', 'pipeline', 'storm', 'list'].includes(suite));
   if (unknownSuites.length) throw new Error(`unknown suite(s): ${unknownSuites.join(', ')}`);
+  const includeMemory = args['no-memory'] !== true;
+  if (!includeMemory && (harness !== 'web' || !suites.includes('table') || suites.includes('list'))) {
+    throw new Error('--no-memory is only valid for focused Web table runs.');
+  }
 
   if (harness === 'web' && suites.includes('list')
     && (suites.length !== 1 || suites[0] !== 'list')) {
@@ -719,7 +724,7 @@ async function cmdRun(args) {
     listReps,
     execution: {
       harness: 'web', browser: preflight.browser, jsRegime: jit, jsFlags, cpuThrottle,
-      throttleScope,
+      throttleScope, includeMemory,
       entryOrder: entries.map((entry) => entry.id),
       ...(sessionId == null ? {} : { sessionId }),
       ...(preflight.processQuotaPercent == null
@@ -738,6 +743,7 @@ async function cmdRun(args) {
     stormCases,
     suites, scales, startupScales, reps, stormReps, startupReps,
     listReps,
+    includeMemory,
     jit, cpuThrottle, throttleScope,
     processThrottleControl: preflight.processThrottleVerification?.control ?? null,
     processQuotaPercent: preflight.processQuotaPercent,
