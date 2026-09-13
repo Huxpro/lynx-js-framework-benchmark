@@ -1,0 +1,319 @@
+[33mdiff --git a/packages/lynx/src/core/delta-shadow.ts b/packages/lynx/src/core/delta-shadow.ts[m
+[33mindex 9e1a1e0ba..a1e284f01 100644[m
+[33m--- a/packages/lynx/src/core/delta-shadow.ts[m
+[33m+++ b/packages/lynx/src/core/delta-shadow.ts[m
+[35m@@ -31,6 +31,16 @@[m [minterface ShadowInstance {[m
+ 	values: unknown[];[m
+ }[m
+ [m
+[32m+[m[32m/** A mount-time proof that remains valid until any instance in the run leaves. */[m
+[32m+[m[32minterface ShadowRun {[m
+[32m+[m	[32mreadonly firstId: number;[m
+[32m+[m	[32mreadonly firstHandle: number;[m
+[32m+[m	[32mreadonly count: number;[m
+[32m+[m	[32mreadonly width: number;[m
+[32m+[m	[32mreadonly parent: number | null;[m
+[32m+[m	[32mreadonly parentSlot: number;[m
+[32m+[m[32m}[m
+[32m+[m
+ interface ShadowHost {[m
+ 	readonly firstId: number;[m
+ 	readonly nodeIndex: number;[m
+[35m@@ -69,6 +79,7 @@[m [minterface ShadowState {[m
+ 	nextTemplateId: number;[m
+ 	nextInstance: number;[m
+ 	instances: ShadowMap<number, ShadowInstance>;[m
+[32m+[m	[32mruns: ShadowMap<number, ShadowRun>;[m
+ 	hosts: ShadowMap<number, ShadowHost>;[m
+ 	order: ShadowMap<number | null, Map<number, number[]>>;[m
+ 	/** Range arrays already detached from the committed map in this draft. */[m
+[35m@@ -95,12 +106,17 @@[m [minterface ShadowMap<Key, Value> extends Iterable<readonly [Key, Value]> {[m
+ class DraftMap<Key, Value> implements ShadowMap<Key, Value> {[m
+ 	readonly writes = new Map<Key, Value>();[m
+ 	readonly deletions = new Set<Key>();[m
+[32m+[m	[32mreadonly numericDeletionRuns: {[m
+[32m+[m		[32mreadonly first: number;[m
+[32m+[m		[32mreadonly count: number;[m
+[32m+[m		[32mreadonly stride: number;[m
+[32m+[m	[32m}[] = [];[m
+ [m
+ 	constructor(readonly base: Map<Key, Value>) {}[m
+ [m
+ 	get(key: Key): Value | undefined {[m
+ 		if (this.writes.has(key)) return this.writes.get(key);[m
+[31m-		return this.deletions.has(key) ? undefined : this.base.get(key);[m
+[32m+[m		[32mreturn this.isDeleted(key) ? undefined : this.base.get(key);[m
+ 	}[m
+ [m
+ 	set(key: Key, value: Value): this {[m
+[35m@@ -116,9 +132,35 @@[m [mclass DraftMap<Key, Value> implements ShadowMap<Key, Value> {[m
+ 		return present;[m
+ 	}[m
+ [m
+[32m+[m	[32m/**[m
+[32m+[m	[32m * Stages an arithmetic run of numeric keys without allocating one Set entry[m
+[32m+[m	[32m * per host. The committed map is still compacted synchronously on acceptance;[m
+[32m+[m	[32m * this only keeps the rollback draft proportional to the command count.[m
+[32m+[m	[32m */[m
+[32m+[m	[32mdeleteNumericRun(first: number, count: number, stride: number): void {[m
+[32m+[m		[32mthis.numericDeletionRuns.push({ first, count, stride });[m
+[32m+[m		[32mfor (const key of this.writes.keys()) {[m
+[32m+[m			[32mif (this.numericRunContains(key, first, count, stride)) this.writes.delete(key);[m
+[32m+[m		[32m}[m
+[32m+[m	[32m}[m
+[32m+[m
+[32m+[m	[32mprivate numericRunContains(key: Key, first: number, count: number, stride: number): boolean {[m
+[32m+[m		[32mif (typeof key !== 'number') return false;[m
+[32m+[m		[32mconst offset = key - first;[m
+[32m+[m		[32mreturn offset >= 0 && offset % stride === 0 && offset / stride < count;[m
+[32m+[m	[32m}[m
+[32m+[m
+[32m+[m	[32mprivate isDeleted(key: Key): boolean {[m
+[32m+[m		[32mif (this.deletions.has(key)) return true;[m
+[32m+[m		[32mfor (const run of this.numericDeletionRuns) {[m
+[32m+[m			[32mif (this.numericRunContains(key, run.first, run.count, run.stride)) return true;[m
+[32m+[m		[32m}[m
+[32m+[m		[32mreturn false;[m
+[32m+[m	[32m}[m
+[32m+[m
+ 	*[Symbol.iterator](): IterableIterator<readonly [Key, Value]> {[m
+ 		for (const entry of this.base) {[m
+[31m-			if (!this.deletions.has(entry[0]) && !this.writes.has(entry[0])) yield entry;[m
+[32m+[m			[32mif (!this.isDeleted(entry[0]) && !this.writes.has(entry[0])) yield entry;[m
+ 		}[m
+ 		yield* this.writes;[m
+ 	}[m
+[35m@@ -129,6 +171,9 @@[m [mclass DraftMap<Key, Value> implements ShadowMap<Key, Value> {[m
+ [m
+ 	commit(): void {[m
+ 		for (const key of this.deletions) this.base.delete(key);[m
+[32m+[m		[32mfor (const { first, count, stride } of this.numericDeletionRuns) {[m
+[32m+[m			[32mfor (let index = 0; index < count; index++) this.base.delete((first + index * stride) as Key);[m
+[32m+[m		[32m}[m
+ 		for (const [key, value] of this.writes) this.base.set(key, value);[m
+ 	}[m
+ }[m
+[35m@@ -139,6 +184,7 @@[m [mfunction draftState(source: ShadowState): ShadowState {[m
+ 		nextTemplateId: source.nextTemplateId,[m
+ 		nextInstance: source.nextInstance,[m
+ 		instances: new DraftMap(source.instances as Map<number, ShadowInstance>),[m
+[32m+[m		[32mruns: new DraftMap(source.runs as Map<number, ShadowRun>),[m
+ 		hosts: new DraftMap(source.hosts as Map<number, ShadowHost>),[m
+ 		order: new DraftMap(source.order as Map<number | null, Map<number, number[]>>),[m
+ 		writableOrderSlots: new Map(),[m
+[35m@@ -148,6 +194,7 @@[m [mfunction draftState(source: ShadowState): ShadowState {[m
+ function commitDraft(target: ShadowState, draft: ShadowState): void {[m
+ 	(draft.templates as DraftMap<string, number>).commit();[m
+ 	(draft.instances as DraftMap<number, ShadowInstance>).commit();[m
+[32m+[m	[32m(draft.runs as DraftMap<number, ShadowRun>).commit();[m
+ 	(draft.hosts as DraftMap<number, ShadowHost>).commit();[m
+ 	(draft.order as DraftMap<number | null, Map<number, number[]>>).commit();[m
+ 	target.nextTemplateId = draft.nextTemplateId;[m
+[35m@@ -226,6 +273,7 @@[m [mfunction snapshotState(state: ShadowState): LynxDeltaShadowSnapshot {[m
+ function removeInstance(state: ShadowState, firstId: number): void {[m
+ 	const instance = state.instances.get(firstId);[m
+ 	if (instance === undefined) return;[m
+[32m+[m	[32minvalidateRuns(state, firstId, 1, 1);[m
+ 	state.instances.delete(firstId);[m
+ 	for (let index = 0; index < instance.program.nodes.length; index++) {[m
+ 		state.hosts.delete(firstId + index);[m
+[35m@@ -237,6 +285,54 @@[m [mfunction removeInstance(state: ShadowState, firstId: number): void {[m
+ 	}[m
+ }[m
+ [m
+[32m+[m[32m/** Invalidates any mount proof whose numeric extent could contain a departure. */[m
+[32m+[m[32mfunction invalidateRuns(state: ShadowState, firstId: number, count: number, width: number): void {[m
+[32m+[m	[32mconst finalId = firstId + (count - 1) * width;[m
+[32m+[m	[32mconst invalidated: number[] = [];[m
+[32m+[m	[32mfor (const run of state.runs.values()) {[m
+[32m+[m		[32mconst runFinalId = run.firstId + (run.count - 1) * run.width;[m
+[32m+[m		[32m// Closed-range overlap is intentionally conservative when two strides[m
+[32m+[m		[32m// differ: dropping an optimization proof cannot change wire semantics.[m
+[32m+[m		[32mif (firstId <= runFinalId && run.firstId <= finalId) invalidated.push(run.firstId);[m
+[32m+[m	[32m}[m
+[32m+[m	[32mfor (const runFirstId of invalidated) state.runs.delete(runFirstId);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m/**[m
+[32m+[m[32m * Removes a command-proved fixed-width run as one rollback draft. Validation[m
+[32m+[m[32m * happens before this helper, so it can update each shadow index by range and[m
+[32m+[m[32m * compact the physical order once even when the instances were reordered.[m
+[32m+[m[32m */[m
+[32m+[m[32mfunction removeInstanceRun([m
+[32m+[m	[32mstate: ShadowState,[m
+[32m+[m	[32mproof: Pick<ShadowRun, 'firstId' | 'parent' | 'parentSlot'>,[m
+[32m+[m	[32mcount: number,[m
+[32m+[m	[32mwidth: number,[m
+[32m+[m[32m): boolean {[m
+[32m+[m	[32mconst instances = state.instances as DraftMap<number, ShadowInstance>;[m
+[32m+[m	[32mconst hosts = state.hosts as DraftMap<number, ShadowHost>;[m
+[32m+[m	[32minvalidateRuns(state, proof.firstId, count, width);[m
+[32m+[m	[32minstances.deleteNumericRun(proof.firstId, count, width);[m
+[32m+[m	[32mhosts.deleteNumericRun(proof.firstId, count * width, 1);[m
+[32m+[m
+[32m+[m	[32mconst currentOrder = state.order.get(proof.parent)?.get(proof.parentSlot);[m
+[32m+[m	[32mif (currentOrder === undefined) return false;[m
+[32m+[m	[32mconst order = writableOrder(state, proof.parent, proof.parentSlot);[m
+[32m+[m	[32mlet write = 0;[m
+[32m+[m	[32mlet removed = 0;[m
+[32m+[m	[32mconst finalId = proof.firstId + (count - 1) * width;[m
+[32m+[m	[32mfor (const firstId of order) {[m
+[32m+[m		[32mconst offset = firstId - proof.firstId;[m
+[32m+[m		[32mif (firstId <= finalId && offset >= 0 && offset % width === 0) {[m
+[32m+[m			[32mremoved++;[m
+[32m+[m			[32mcontinue;[m
+[32m+[m		[32m}[m
+[32m+[m		[32morder[write++] = firstId;[m
+[32m+[m	[32m}[m
+[32m+[m	[32morder.length = write;[m
+[32m+[m	[32mreturn removed === count;[m
+[32m+[m[32m}[m
+[32m+[m
+ /**[m
+  * Resolves a command-batch host id to the instance/slot pair the wire needs.[m
+  *[m
+[35m@@ -292,6 +388,7 @@[m [mexport function createLynxDeltaShadow(): LynxDeltaShadow {[m
+ 		nextTemplateId: 1,[m
+ 		nextInstance: ROOT_INSTANCE + 1,[m
+ 		instances: new Map(),[m
+[32m+[m		[32mruns: new Map(),[m
+ 		hosts: new Map(),[m
+ 		order: new Map(),[m
+ 		writableOrderSlots: new Map(),[m
+[35m@@ -367,6 +464,14 @@[m [mexport function createLynxDeltaShadow(): LynxDeltaShadow {[m
+ 						}[m
+ 						order.splice(insertAt + instanceIndex, 0, firstId);[m
+ 					}[m
+[32m+[m					[32mnext.runs.set(command.firstId, {[m
+[32m+[m						[32mfirstId: command.firstId,[m
+[32m+[m						[32mfirstHandle: firstInstance,[m
+[32m+[m						[32mcount: command.count,[m
+[32m+[m						[32mwidth: instanceStride,[m
+[32m+[m						[32mparent,[m
+[32m+[m						[32mparentSlot: parentSite.slot,[m
+[32m+[m					[32m});[m
+ 					operations.push({[m
+ 						op: 'run',[m
+ 						templateId,[m
+[35m@@ -467,31 +572,53 @@[m [mexport function createLynxDeltaShadow(): LynxDeltaShadow {[m
+ 					}[m
+ 					const finalId = command.firstId + (command.count - 1) * command.width;[m
+ 					if (!Number.isSafeInteger(finalId)) return null;[m
+[31m-					const first = next.instances.get(command.firstId);[m
+[32m+[m					[32mconst intact = next.runs.get(command.firstId);[m
+[32m+[m					[32mlet proof: ShadowRun;[m
+ 					if ([m
+[31m-						first === undefined ||[m
+[31m-						first.parent !== command.parent ||[m
+[31m-						first.program.nodes.length !== command.width[m
+[32m+[m						[32mintact !== undefined &&[m
+[32m+[m						[32mintact.count === command.count &&[m
+[32m+[m						[32mintact.width === command.width &&[m
+[32m+[m						[32mintact.parent === command.parent &&[m
+[32m+[m						[32mnext.instances.get(command.firstId)?.program.nodes.length === command.width[m
+ 					) {[m
+[31m-						return null;[m
+[31m-					}[m
+[31m-					for (let offset = 0; offset < command.count; offset++) {[m
+[31m-						const instance = next.instances.get(command.firstId + offset * command.width);[m
+[32m+[m						[32mproof = intact;[m
+[32m+[m					[32m} else {[m
+[32m+[m						[32mconst first = next.instances.get(command.firstId);[m
+ 						if ([m
+[31m-							instance === undefined ||[m
+[31m-							instance.handle !== first.handle + offset ||[m
+[31m-							instance.parent !== first.parent ||[m
+[31m-							instance.parentSlot !== first.parentSlot ||[m
+[31m-							instance.templateId !== first.templateId ||[m
+[31m-							instance.program !== first.program[m
+[32m+[m							[32mfirst === undefined ||[m
+[32m+[m							[32mfirst.parent !== command.parent ||[m
+[32m+[m							[32mfirst.program.nodes.length !== command.width[m
+ 						) {[m
+ 							return null;[m
+ 						}[m
+[32m+[m						[32mfor (let offset = 0; offset < command.count; offset++) {[m
+[32m+[m							[32mconst instance = next.instances.get(command.firstId + offset * command.width);[m
+[32m+[m							[32mif ([m
+[32m+[m								[32minstance === undefined ||[m
+[32m+[m								[32minstance.handle !== first.handle + offset ||[m
+[32m+[m								[32minstance.parent !== first.parent ||[m
+[32m+[m								[32minstance.parentSlot !== first.parentSlot ||[m
+[32m+[m								[32minstance.templateId !== first.templateId ||[m
+[32m+[m								[32minstance.program !== first.program[m
+[32m+[m							[32m) {[m
+[32m+[m								[32mreturn null;[m
+[32m+[m							[32m}[m
+[32m+[m						[32m}[m
+[32m+[m						[32mproof = {[m
+[32m+[m							[32mfirstId: first.firstId,[m
+[32m+[m							[32mfirstHandle: first.handle,[m
+[32m+[m							[32mcount: command.count,[m
+[32m+[m							[32mwidth: command.width,[m
+[32m+[m							[32mparent: first.parent,[m
+[32m+[m							[32mparentSlot: first.parentSlot,[m
+[32m+[m						[32m};[m
+ 					}[m
+[31m-					operations.push({ op: 'remove', firstInstance: first.handle, count: command.count });[m
+[31m-					for (let offset = 0; offset < command.count; offset++) {[m
+[31m-						removeInstance(next, command.firstId + offset * command.width);[m
+[31m-					}[m
+[32m+[m					[32moperations.push({[m
+[32m+[m						[32mop: 'remove',[m
+[32m+[m						[32mfirstInstance: proof.firstHandle,[m
+[32m+[m						[32mcount: command.count,[m
+[32m+[m					[32m});[m
+[32m+[m					[32mif (!removeInstanceRun(next, proof, command.count, command.width)) return null;[m
+ 					continue;[m
+ 				}[m
+ 				if (command.op === 'destroy' && removedHosts.has(command.id)) {[m
+[33mdiff --git a/packages/lynx/tests/delta-shadow.test.ts b/packages/lynx/tests/delta-shadow.test.ts[m
+[33mindex 6f9d677cf..c2e6b985e 100644[m
+[33m--- a/packages/lynx/tests/delta-shadow.test.ts[m
+[33m+++ b/packages/lynx/tests/delta-shadow.test.ts[m
+[35m@@ -209,6 +209,45 @@[m [mdescribe('Lynx delta shadow', () => {[m
+ 		expect(shadow.snapshot().instances).toEqual([]);[m
+ 	});[m
+ [m
+[32m+[m	[32mit('bulk-removes a partial run without changing survivor order or aborted state', () => {[m
+[32m+[m		[32mconst shadow = createLynxDeltaShadow();[m
+[32m+[m		[32mshadow[m
+[32m+[m			[32m.prepare([m
+[32m+[m				[32mbatch(1, [[m
+[32m+[m					[32maddressedRun({[m
+[32m+[m						[32mparent: null,[m
+[32m+[m						[32mbefore: null,[m
+[32m+[m						[32mfirstId: 10,[m
+[32m+[m						[32mfirstListenerId: null,[m
+[32m+[m						[32mcount: 5,[m
+[32m+[m						[32mvalues: ['row', 'A', 'row', 'B', 'row', 'C', 'row', 'D', 'row', 'E'],[m
+[32m+[m					[32m}),[m
+[32m+[m				[32m]),[m
+[32m+[m			[32m)![m
+[32m+[m			[32m.commit();[m
+[32m+[m		[32mshadow.prepare(batch(2, [{ op: 'move', parent: null, id: 18, before: 10 }]))!.commit();[m
+[32m+[m
+[32m+[m		[32mconst accepted = shadow.snapshot();[m
+[32m+[m		[32mconst aborted = shadow.prepare([m
+[32m+[m			[32mbatch(3, [[m
+[32m+[m				[32m{ op: 'destroy-run', parent: null, firstId: 12, count: 3, width: 2 },[m
+[32m+[m				[32m{ op: 'update', id: 12, props: { class: 'removed', value: 'B' } },[m
+[32m+[m			[32m]),[m
+[32m+[m		[32m);[m
+[32m+[m		[32mexpect(aborted).toBeNull();[m
+[32m+[m		[32mexpect(shadow.snapshot()).toEqual(accepted);[m
+[32m+[m
+[32m+[m		[32mconst removed = shadow.prepare([m
+[32m+[m			[32mbatch(3, [{ op: 'destroy-run', parent: null, firstId: 12, count: 3, width: 2 }]),[m
+[32m+[m		[32m)!;[m
+[32m+[m		[32mexpect(decodeLynxDeltaMessage(removed.encoded).operations).toEqual([[m
+[32m+[m			[32m{ op: 'remove', firstInstance: 3, count: 3 },[m
+[32m+[m		[32m]);[m
+[32m+[m		[32mremoved.commit();[m
+[32m+[m		[32mexpect(shadow.snapshot().instances.map(({ firstId }) => firstId)).toEqual([10, 18]);[m
+[32m+[m		[32mexpect(shadow.snapshot().order).toEqual([{ parent: null, slot: 0, instances: [6, 2] }]);[m
+[32m+[m	[32m});[m
+[32m+[m
+ 	it('declines a destroy-run whose dense proof does not match accepted instances', () => {[m
+ 		const shadow = createLynxDeltaShadow();[m
+ 		shadow[m

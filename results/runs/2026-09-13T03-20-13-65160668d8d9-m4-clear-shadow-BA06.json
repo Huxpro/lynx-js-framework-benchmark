@@ -1,0 +1,2829 @@
+{
+ "schemaVersion": 4,
+ "meta": {
+  "generatedAt": "2026-09-13T03:20:13.031Z",
+  "machine": {
+   "id": "65160668d8d9",
+   "hostname": "n251-227-236",
+   "platform": "linux",
+   "arch": "x64",
+   "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+   "cores": 32,
+   "memGB": 67,
+   "node": "v22.22.2"
+  },
+  "calibration": {
+   "probeVersion": 1,
+   "score": 2413,
+   "iterations": 2413
+  },
+  "chromium": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+  "browser": {
+   "name": "chromium",
+   "version": "149.0.7827.55",
+   "executablePath": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome"
+  },
+  "environment": {
+   "jsRegime": "jit",
+   "jsFlags": "--expose-gc",
+   "cpuThrottle": 1,
+   "throttleScope": "none"
+  },
+  "entryOrder": [
+   "z-octane-m4-clear-candidate",
+   "a-octane-m4-clear-base"
+  ],
+  "sessionId": "BA06",
+  "argv": [
+   "run",
+   "--entry",
+   "z-octane-m4-clear-candidate,a-octane-m4-clear-base",
+   "--suite",
+   "table",
+   "--case",
+   "clear",
+   "--scale",
+   "1000",
+   "--reps",
+   "20",
+   "--label",
+   "m4-clear-shadow-BA06",
+   "--session-id",
+   "BA06",
+   "--no-collect"
+  ],
+  "entryCommits": {
+   "z-octane-m4-clear-candidate": "23ed94d8efe51cb9ff86832903e5f5a8fbca66dd+working-tree",
+   "a-octane-m4-clear-base": "23ed94d8efe51cb9ff86832903e5f5a8fbca66dd"
+  },
+  "receipt": {
+   "repository": {
+    "commit": "d2ca285c64811dad75d8836d54e6ecadc2d4a622",
+    "dirty": true,
+    "diffSha256": "02d4fdaacfe78975818582e851e876bb1a90e354577c06e1e445b480ca19dd04",
+    "ignoredGeneratedPaths": [
+     "results/runs/**",
+     "results/audits/**",
+     "results/latest.json",
+     "site/dist/**"
+    ]
+   },
+   "runtime": {
+    "lockfile": "pnpm-lock.yaml",
+    "lockfileSha256": "0a3c203095f8d43350d15db005b02a825fff187883f9af2d34b9ddae3b1d3758",
+    "packages": [
+     {
+      "name": "@lynx-js/web-core",
+      "version": "0.22.1",
+      "integrity": "sha512-B5XLDjPTU+aO6fq6ylHt7mf3rYxcQAuKHSD86ifoWweO3WI2io6xUSPjnY+MThp8xCihu+NocpmGTi/puRDHxw=="
+     },
+     {
+      "name": "@lynx-js/web-elements",
+      "version": "0.12.5",
+      "integrity": "sha512-plNOkiI/AvdSqTmsN8jDBtll3SOqfrnLUuqicn3DrMUT7tizUhX6569dLNae8dk9KQqnS1pukUK9d/P/Nw9edg=="
+     },
+     {
+      "name": "@lynx-js/web-elements",
+      "version": "0.8.11",
+      "integrity": "sha512-iLI+HMbtVRu/TxT6TQ+pxa3Mz9xdoKCRnXN1n/u0AxoXy0FsL4yBVgElieRX2T9st9/flvb/CXfezIb0BFmg1Q=="
+     },
+     {
+      "name": "@lynx-js/web-worker-rpc",
+      "version": "0.22.1",
+      "integrity": "sha512-nvC0axgTFJbpc8QcXbMVEG4EQcF3GCfdoDTmSAIE0J6bOOfvx2hK1ztG6MpRERU5dzMSfaHn425QpbPrume9QQ=="
+     },
+     {
+      "name": "playwright-core",
+      "version": "1.62.1",
+      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw=="
+     }
+    ]
+   },
+   "workload": {
+    "files": {
+     "packages/shared/src/workloads.mjs": "0eef1e168c2d12c4f503d0835d1baacc3222760a352e9811fe2db1cd9ecc55a1",
+     "packages/shared/src/driver-client.mjs": "a2526adee631ab1d866b2604ea10872a30552c9875fa89b13b03722c512a92d2",
+     "packages/shared/src/page-instrument.mjs": "1bba567b77eb113c9b271c26e763635dbe80e03fab6f7315293f69fae819a14a",
+     "packages/shared/src/pipeline.mjs": "9b5dcd542a819e1a3b1045e0b3a013ed610905148990fc990e128ab3e59c99ee",
+     "packages/shared/src/list-workloads.mjs": "f17a3243e34e95d8f31431583cfebb2efe787b64840b2309f570d83e8f8653a1",
+     "packages/shared/src/scorecard.mjs": "4f53ca39e32d2dbc931fe8a9caaee80de9534de6f964644eb8f42ab1d31bb5d2",
+     "packages/shared/src/qualification.mjs": "029397b12e6de6945ff058d6d6bc4c75f00966667eececc76399ad16149fe85a",
+     "packages/runner/src/pipeline-attribution.mjs": "7e7f0dad092caecf0bf54910e8250be7c07c1ad70bd283b9d06a66e26138297d",
+     "packages/runner/src/list-coverage.mjs": "09172327eee0cc33dfd6140e27cbabb80e029dbde532dc4a26f9147c6f9f5590",
+     "packages/runner/src/list-derivation.mjs": "e2a83e8fef9e50e8b21351d366671bab6000f6822ca55d2fbaab1e5c6b701416",
+     "packages/runner/src/storm-contract.mjs": "a94ce589a5d07ee1515ce8634ab9ed495312a20c78d345bcf21718904443bc62"
+    },
+    "sha256": "73fa23ae2302bc52c9e3030fb00e856876e04f3189744347cc4ece924b0ba462",
+    "roadmapScorecardVersion": 1,
+    "stormTicks": {
+     "updateStorm": 50,
+     "selectStorm": 30
+    },
+    "stormContract": {
+     "version": 1,
+     "cases": [
+      {
+       "name": "updateStorm",
+       "commitPolicy": "every-tick",
+       "ticks": 50,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "row-stride",
+        "stride": 10,
+        "field": "label"
+       },
+       "observation": {
+        "kind": "label-suffix",
+        "rowIndex": 0,
+        "suffix": " !!!"
+       },
+       "action": {
+        "kind": "button",
+        "label": "Update every 10th row"
+       }
+      },
+      {
+       "name": "updateStorm",
+       "commitPolicy": "final-state",
+       "ticks": 50,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "row-stride",
+        "stride": 10,
+        "field": "label"
+       },
+       "observation": {
+        "kind": "label-suffix",
+        "rowIndex": 0,
+        "suffix": " !!!"
+       },
+       "action": {
+        "kind": "button",
+        "label": "Update every 10th row"
+       }
+      },
+      {
+       "name": "selectStorm",
+       "commitPolicy": "every-tick",
+       "ticks": 30,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "single-row-selection"
+       },
+       "observation": {
+        "kind": "alternating-selection",
+        "rowIndices": [
+         1,
+         2
+        ]
+       },
+       "action": {
+        "kind": "alternating-cells",
+        "rowIndices": [
+         1,
+         2
+        ],
+        "cls": "col-label"
+       }
+      },
+      {
+       "name": "selectStorm",
+       "commitPolicy": "final-state",
+       "ticks": 30,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "single-row-selection"
+       },
+       "observation": {
+        "kind": "alternating-selection",
+        "rowIndices": [
+         1,
+         2
+        ]
+       },
+       "action": {
+        "kind": "alternating-cells",
+        "rowIndices": [
+         1,
+         2
+        ],
+        "cls": "col-label"
+       }
+      }
+     ]
+    }
+   },
+   "execution": {
+    "harness": "web",
+    "browser": {
+     "name": "chromium",
+     "version": "149.0.7827.55",
+     "executablePath": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome"
+    },
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none",
+    "entryOrder": [
+     "z-octane-m4-clear-candidate",
+     "a-octane-m4-clear-base"
+    ],
+    "sessionId": "BA06"
+   },
+   "sampling": {
+    "repetitions": {
+     "table": 20,
+     "storm": 3,
+     "startup": 5
+    },
+    "warmup": {
+     "table": {
+      "createClearCycles": 2,
+      "page": "shared-per-entry"
+     },
+     "storm": {
+      "cycles": 0,
+      "page": "fresh-per-attempt"
+     },
+     "startup": {
+      "cycles": 0,
+      "page": "fresh-per-attempt"
+     }
+    },
+    "acceptance": {
+     "table": "dom-predicate-completed-before-timeout",
+     "pipeline": "dom-predicate-completed-with-tree-and-call-multiset-controls",
+     "storm": "terminal-state-observed-with-explicit-commit-outcome-and-input-schedule-controls",
+     "startup": "first-content-observed-before-timeout"
+    },
+    "aggregation": "median-with-t-distribution-ci95",
+    "outliers": "none-removed"
+   },
+   "entryBundles": {
+    "z-octane-m4-clear-candidate": {
+     "rows-0/main.web.bundle": "5ff4ec9f4c0b92ca0f73bf09a5d90f96a4aadeb70045d3a8e6d6411770bffc33"
+    },
+    "a-octane-m4-clear-base": {
+     "rows-0/main.web.bundle": "b6b399147819e46727f8193fc9481276e670b9c3207974be5c398c291e0d7124"
+    }
+   },
+   "comparabilityCohort": "sha256:d12dcb6bc616fc901cd5c12db5b9680694e2b5d0025e4a3e5499aee4186d0806"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    17.589999198913574,
+    19.1899995803833,
+    19.045000076293945,
+    18.019999504089355,
+    19.585000038146973,
+    26.550000190734863,
+    20.15999984741211,
+    21.100000381469727,
+    24.140000343322754,
+    19.454999923706055,
+    21.489999771118164,
+    28.59500026702881,
+    19.9350004196167,
+    20.010000228881836,
+    21.344999313354492,
+    22.889999389648438,
+    20.170000076293945,
+    22.75,
+    25.155000686645508,
+    20.9350004196167
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 20.552500247955322,
+   "mean": 21.405499982833863,
+   "std": 2.8546749734854724,
+   "min": 17.589999198913574,
+   "max": 28.59500026702881,
+   "p95": 26.550000190734863,
+   "ci95": 1.3360136587139277,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    1.844,
+    2.152,
+    2.408,
+    2.244,
+    1.849,
+    2.532,
+    2.477,
+    2.417,
+    2.403,
+    2.109,
+    2.426,
+    1.824,
+    1.897,
+    2.393,
+    1.839,
+    1.975,
+    1.91,
+    2.361,
+    2.225,
+    1.87
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 2.1885000000000003,
+   "mean": 2.15775,
+   "std": 0.25826075664152426,
+   "min": 1.824,
+   "max": 2.532,
+   "p95": 2.477,
+   "ci95": 0.1208683656064658,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    34.998,
+    38.278,
+    38.222,
+    37.149,
+    39.525,
+    36.644,
+    38.817,
+    38.837,
+    39.623,
+    38.078,
+    40.383,
+    53.472,
+    39.291,
+    40.129,
+    39.201,
+    44.888,
+    39.646,
+    41.399,
+    42,
+    38.902
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 39.245999999999995,
+   "mean": 39.9741,
+   "std": 3.7788737517385984,
+   "min": 34.998,
+   "max": 53.472,
+   "p95": 44.888,
+   "ci95": 1.7685470303171118,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    663,
+    662,
+    663,
+    663,
+    663,
+    663,
+    663,
+    662,
+    662,
+    663,
+    662,
+    663,
+    662,
+    663,
+    663,
+    663,
+    662,
+    663,
+    662,
+    663
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 284
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 323
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 663,
+   "mean": 662.65,
+   "std": 0.4893604849295929,
+   "min": 662,
+   "max": 663,
+   "p95": 663,
+   "ci95": 0.22902512474215111,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "max": 4,
+   "p95": 4,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 158
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 224,
+   "mean": 224,
+   "std": 0,
+   "min": 224,
+   "max": 224,
+   "p95": 224,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "memory",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapMts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 36821160,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 36821160,
+   "mean": 36821160,
+   "std": 0,
+   "min": 36821160,
+   "max": 36821160,
+   "p95": 36821160,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "memory",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapBts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9208112,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9208112,
+   "mean": 9208112,
+   "std": 0,
+   "min": 9208112,
+   "max": 9208112,
+   "p95": 9208112,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "memoryAfterClear",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapMtsAfterClear",
+   "boundary": "gc-heap-after-clearing-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 4802340,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 4802340,
+   "mean": 4802340,
+   "std": 0,
+   "min": 4802340,
+   "max": 4802340,
+   "p95": 4802340,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "memoryAfterClear",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapBtsAfterClear",
+   "boundary": "gc-heap-after-clearing-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 1344636,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 1344636,
+   "mean": 1344636,
+   "std": 0,
+   "min": 1344636,
+   "max": 1344636,
+   "p95": 1344636,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    21.489999771118164,
+    19.68000030517578,
+    19.274999618530273,
+    20.510000228881836,
+    23.039999961853027,
+    19.8149995803833,
+    21.960000038146973,
+    19.989999771118164,
+    21.239999771118164,
+    24.100000381469727,
+    20.30500030517578,
+    19.949999809265137,
+    23.824999809265137,
+    19.899999618530273,
+    21.90000057220459,
+    31.59000015258789,
+    22.295000076293945,
+    21.4399995803833,
+    19.710000038146973,
+    20.96500015258789
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 21.102499961853027,
+   "mean": 21.648999977111817,
+   "std": 2.7262808482253833,
+   "min": 19.274999618530273,
+   "max": 31.59000015258789,
+   "p95": 24.100000381469727,
+   "ci95": 1.2759240489897548,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    3.207,
+    2.934,
+    3.217,
+    3.22,
+    2.949,
+    2.96,
+    2.689,
+    3.174,
+    4.074,
+    2.762,
+    2.699,
+    3.673,
+    3.22,
+    2.64,
+    3.225,
+    3.222,
+    3.185,
+    3.036,
+    2.913,
+    2.891
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 3.105,
+   "mean": 3.0945000000000005,
+   "std": 0.3388694050577752,
+   "min": 2.64,
+   "max": 4.074,
+   "p95": 3.673,
+   "ci95": 0.15859394077521738,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    40.281,
+    43.996,
+    37.507,
+    38.005,
+    35.958,
+    36.924,
+    36.799,
+    38.315,
+    38.221,
+    37.905,
+    37.859,
+    37.713,
+    38.509,
+    33.256,
+    37.074,
+    60.986,
+    41.142,
+    38.379,
+    38.968,
+    37.865
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 37.955,
+   "mean": 39.2831,
+   "std": 5.517673822411607,
+   "min": 33.256,
+   "max": 60.986,
+   "p95": 43.996,
+   "ci95": 2.582321160741317,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    662,
+    663,
+    663,
+    662,
+    663,
+    663,
+    662,
+    662,
+    663,
+    663,
+    663,
+    662,
+    663,
+    662,
+    662,
+    662,
+    663,
+    663,
+    663,
+    663
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 322
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 323
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 284
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 323
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 663,
+   "mean": 662.6,
+   "std": 0.5026246899500346,
+   "min": 662,
+   "max": 663,
+   "p95": 663,
+   "ci95": 0.23523289243685824,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "max": 4,
+   "p95": 4,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224,
+    224
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 158
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 158
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 224,
+   "mean": 224,
+   "std": 0,
+   "min": 224,
+   "max": 224,
+   "p95": 224,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "clear",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "memory",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapMts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 36822200,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 36822200,
+   "mean": 36822200,
+   "std": 0,
+   "min": 36822200,
+   "max": 36822200,
+   "p95": 36822200,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "memory",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapBts",
+   "boundary": "gc-heap-with-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9198200,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9198200,
+   "mean": 9198200,
+   "std": 0,
+   "min": 9198200,
+   "max": 9198200,
+   "p95": 9198200,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "memoryAfterClear",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapMtsAfterClear",
+   "boundary": "gc-heap-after-clearing-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 4807204,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 4807204,
+   "mean": 4807204,
+   "std": 0,
+   "min": 4807204,
+   "max": 4807204,
+   "p95": 4807204,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "memoryAfterClear",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "heapBtsAfterClear",
+   "boundary": "gc-heap-after-clearing-10k-rows",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 1332728,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 1332728,
+   "mean": 1332728,
+   "std": 0,
+   "min": 1332728,
+   "max": 1332728,
+   "p95": 1332728,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 187726,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 187726,
+   "mean": 187726,
+   "std": 0,
+   "min": 187726,
+   "max": 187726,
+   "p95": 187726,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 55571,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 55571,
+   "mean": 55571,
+   "std": 0,
+   "min": 55571,
+   "max": 55571,
+   "p95": 55571,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 187726,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 187726,
+   "mean": 187726,
+   "std": 0,
+   "min": 187726,
+   "max": 187726,
+   "p95": 187726,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "5ff4ec9f4c0b92ca0f73bf09a5d90f96a4aadeb70045d3a8e6d6411770bffc33",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "z-octane-m4-clear-candidate",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 55571,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 55571,
+   "mean": 55571,
+   "std": 0,
+   "min": 55571,
+   "max": 55571,
+   "p95": 55571,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "5ff4ec9f4c0b92ca0f73bf09a5d90f96a4aadeb70045d3a8e6d6411770bffc33",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 186078,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 186078,
+   "mean": 186078,
+   "std": 0,
+   "min": 186078,
+   "max": 186078,
+   "p95": 186078,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 55074,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 55074,
+   "mean": 55074,
+   "std": 0,
+   "min": 55074,
+   "max": 55074,
+   "p95": 55074,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 186078,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 186078,
+   "mean": 186078,
+   "std": 0,
+   "min": 186078,
+   "max": 186078,
+   "p95": 186078,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "b6b399147819e46727f8193fc9481276e670b9c3207974be5c398c291e0d7124",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "a-octane-m4-clear-base",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 55074,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 55074,
+   "mean": 55074,
+   "std": 0,
+   "min": 55074,
+   "max": 55074,
+   "p95": 55074,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "b6b399147819e46727f8193fc9481276e670b9c3207974be5c398c291e0d7124",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  }
+ ]
+}
