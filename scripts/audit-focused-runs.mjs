@@ -10,6 +10,7 @@ const options = {
   candidate: null,
   comparator: null,
   output: null,
+  suite: 'table',
   workload: null,
   scale: null,
   runs: [],
@@ -23,13 +24,14 @@ for (let index = 0; index < args.length; index += 2) {
   if (name === '--candidate') options.candidate = value;
   else if (name === '--comparator') options.comparator = value;
   else if (name === '--output') options.output = value;
+  else if (name === '--suite') options.suite = value;
   else if (name === '--workload') options.workload = value;
   else if (name === '--scale') options.scale = Number(value);
   else if (name === '--run') options.runs.push(value);
   else throw new Error(`unknown option: ${name}`);
 }
 
-const { candidate, comparator, output, workload, scale } = options;
+const { candidate, comparator, output, suite, workload, scale } = options;
 if (
   candidate == null
   || comparator == null
@@ -46,6 +48,9 @@ if (
   );
 }
 if (candidate === comparator) throw new Error('candidate and comparator must differ.');
+if (suite !== 'table' && suite !== 'startup') {
+  throw new Error('--suite must be table or startup.');
+}
 
 const sources = options.runs.map((file) => {
   const contents = fs.readFileSync(path.resolve(file));
@@ -81,7 +86,7 @@ for (const { run } of sources) {
   }
   orderCounts[order[0] === candidate ? 'AB' : 'BA']++;
   const selected = run.records.filter(
-    (record) => record.suite === 'table'
+    (record) => record.suite === suite
       && record.workload === workload
       && record.scale === scale,
   );
@@ -93,7 +98,7 @@ if (Math.abs(orderCounts.AB - orderCounts.BA) > 1) {
   throw new Error(`focused runs have imbalanced order ${orderCounts.AB}/${orderCounts.BA}.`);
 }
 
-const metricSpecs = [
+const tableMetricSpecs = [
   ['latencyMedian', 'latency', 'median'],
   ['latencyP95', 'latency', 'p95'],
   ['btsCpuMedian', 'btsCpu', 'median'],
@@ -103,9 +108,19 @@ const metricSpecs = [
   ['wireToMtsBytesMedian', 'wireToMtsBytes', 'median'],
   ['wireToMtsMsgsMedian', 'wireToMtsMsgs', 'median'],
 ];
+const startupMetricSpecs = [
+  ['fcpMedian', 'fcp', 'median'],
+  ['fcpP95', 'fcp', 'p95'],
+  ['settledMedian', 'settled', 'median'],
+  ['settledP95', 'settled', 'p95'],
+  ['mtsCpuMedian', 'mtsCpu', 'median'],
+  ['wireToBtsBytesMedian', 'wireToBtsBytes', 'median'],
+  ['wireToMtsBytesMedian', 'wireToMtsBytes', 'median'],
+];
+const metricSpecs = suite === 'table' ? tableMetricSpecs : startupMetricSpecs;
 function metric(run, entry, name, field) {
   const record = run.records.find(
-    (item) => item.suite === 'table'
+    (item) => item.suite === suite
       && item.entry === entry
       && item.workload === workload
       && item.scale === scale
@@ -152,11 +167,11 @@ const results = Object.fromEntries(metricSpecs.map(([label, name, field]) => {
 
 const repetitions = sources.map(({ run }) => {
   const record = run.records.find(
-    (item) => item.suite === 'table'
+    (item) => item.suite === suite
       && item.entry === candidate
       && item.workload === workload
       && item.scale === scale
-      && item.metric === 'latency',
+      && item.metric === (suite === 'table' ? 'latency' : 'fcp'),
   );
   return record.n;
 });
@@ -165,13 +180,15 @@ if (new Set(repetitions).size !== 1) {
 }
 
 const audit = {
-  kind: 'm4-final-independent-core-cell-replication',
+  kind: suite === 'table'
+    ? 'm4-final-independent-core-cell-replication'
+    : 'm4-final-independent-startup-cell-replication',
   generatedAt: new Date().toISOString(),
   candidate,
   comparator,
   harness: first.records[0].harness,
   environment: first.meta.environment,
-  cell: `${workload}@${scale}`,
+  cell: `${suite}:${workload}@${scale}`,
   identities: {
     candidateCommit: first.meta.entryCommits[candidate],
     comparatorCommit: first.meta.entryCommits[comparator],
@@ -195,13 +212,24 @@ const audit = {
     failures: 0,
   },
   results,
-  decision: {
+  decision: suite === 'table' ? {
     wallNonInferior: results.latencyMedian.upper <= 1.05,
     wallStrictWin: results.latencyMedian.upper < 1,
     tailNonInferior: results.latencyP95.upper <= 1.05,
     pass:
       results.latencyMedian.upper <= 1.05
       && results.latencyP95.upper <= 1.05,
+  } : {
+    fcpNonInferior: results.fcpMedian.upper <= 1.05,
+    fcpStrictWin: results.fcpMedian.upper < 1,
+    fcpTailNonInferior: results.fcpP95.upper <= 1.05,
+    settledNonInferior: results.settledMedian.upper <= 1.05,
+    settledTailNonInferior: results.settledP95.upper <= 1.05,
+    pass:
+      results.fcpMedian.upper <= 1.05
+      && results.fcpP95.upper <= 1.05
+      && results.settledMedian.upper <= 1.05
+      && results.settledP95.upper <= 1.05,
   },
   sourceRuns: sources.map(({ file, sha256, run }) => ({
     session: run.meta.sessionId,
