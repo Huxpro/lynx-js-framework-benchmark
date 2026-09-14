@@ -9,6 +9,12 @@ import {
   LIST_FIXTURE_PROTOCOL,
   LIST_WORKLOAD_CONTRACT,
 } from '../packages/shared/src/list-workloads.mjs';
+import {
+  NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  NATIVE_COMPARATOR_TABLE_PROTOCOL,
+  NATIVE_STARTUP_PROTOCOL,
+  NATIVE_TABLE_PROTOCOL,
+} from '../packages/runner/src/native-inputs.mjs';
 
 import {
   combineWorkloadReceipts,
@@ -263,6 +269,7 @@ function vendor({
     config,
     tags: ['roadmap-m4', 'lynx-4.1', configuration],
     tier: 'archive',
+    tiers: { native: 'featured' },
     harnesses,
     ...(unsupportedHarnessReasons == null ? {} : { unsupportedHarnessReasons }),
     color: presentation[id].colorLight,
@@ -361,8 +368,9 @@ for (const spec of [
       production: true,
       sourcePatches: false,
       core: spec.core,
-      nativeTableProtocol: spec.producerProtocol ? 'lynx-native-bench-v2' : 'legacy-public-source',
+      nativeTableProtocol: spec.producerProtocol ? NATIVE_TABLE_PROTOCOL : 'legacy-public-source',
       nativeStartupReceipt: spec.producerProtocol,
+      nativeStartupProtocol: NATIVE_STARTUP_PROTOCOL,
       elementTemplates: false,
     },
     sourceFiles: octaneSourceFiles,
@@ -500,8 +508,9 @@ for (const spec of comparatorSpecs) {
     ...spec,
     capabilities: {
       ...capabilities,
-      nativeTableProtocol: 'lynx-native-bench-v2',
+      nativeTableProtocol: NATIVE_COMPARATOR_TABLE_PROTOCOL,
       nativeStartupReceipt: true,
+      nativeStartupProtocol: NATIVE_COMPARATOR_STARTUP_PROTOCOL,
     },
     pin: comparatorPin,
     checkout: comparatorCheckout,

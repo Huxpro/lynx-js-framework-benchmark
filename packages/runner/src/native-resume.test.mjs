@@ -79,6 +79,169 @@ test('startup polling waits for asynchronously completed producer payloads', () 
     postState: { rowCount: 0 },
   }, { entryId: 'octane-hux' }), false);
   assert.equal(isNativeStartupPayloadPending({ protocol: 'bad' }, { entryId: 'react' }), false);
+
+  const comparatorPartial = {
+    ...partial,
+    protocol: 'lynx-native-startup-v2',
+    firstFrameMs: 2,
+    secondFrameMs: 3,
+    postState: { rowCount: 0 },
+  };
+  assert.equal(isNativeStartupPayloadPending(comparatorPartial, {
+    entryId: 'reactlynx-m4-default',
+    expectedProtocol: 'lynx-native-startup-v2',
+  }), true);
+  assert.equal(isNativeStartupPayloadPending({
+    ...comparatorPartial,
+    commitAckMs: 1.5,
+    transportEvidence: {
+      kind: 'framework-host-commit-callback',
+      method: 'rLynxChange',
+      acknowledged: true,
+      acknowledgedAtMs: 1.5,
+    },
+  }, {
+    entryId: 'reactlynx-m4-default',
+    expectedProtocol: 'lynx-native-startup-v2',
+  }), false);
+});
+
+const nativeState = (rowCount) => ({
+  rowCount,
+  firstId: rowCount > 0 ? 1 : null,
+  secondId: rowCount > 1 ? 2 : null,
+  thirdId: rowCount > 2 ? 3 : null,
+  row998Id: rowCount > 998 ? 999 : null,
+  firstLabel: rowCount > 0 ? 'pretty red table' : null,
+  selectedId: null,
+});
+
+test('comparator v3 table payloads require real host-commit acknowledgements', () => {
+  const payload = {
+    protocol: 'lynx-native-bench-v3',
+    name: 'create',
+    source: 'native-tap',
+    boundary: 'native-input-handler-through-host-commit-to-second-native-frame',
+    startMs: 100,
+    commitAckMs: 130,
+    firstFrameMs: 146,
+    endMs: 162,
+    latencyMs: 62,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    transportEvidence: {
+      kind: 'framework-host-commit-callback',
+      method: 'rLynxChange',
+      acknowledged: true,
+      acknowledgedAtMs: 130,
+    },
+    preState: nativeState(0),
+    postState: nativeState(1000),
+  };
+  const expectations = {
+    entryId: 'reactlynx-m4-default',
+    expectedName: 'create',
+    expectedSource: 'native-tap',
+    expectedProtocol: 'lynx-native-bench-v3',
+  };
+  assert.equal(validateNativeTablePayload(payload, expectations), payload);
+  assert.throws(
+    () => validateNativeTablePayload({
+      ...payload,
+      boundary: 'native-input-handler-to-second-native-frame',
+      transportEvidence: { kind: 'not-exposed', acknowledged: false },
+    }, expectations),
+    /boundary/,
+  );
+  assert.throws(
+    () => validateNativeTablePayload({
+      ...payload,
+      transportEvidence: {
+        ...payload.transportEvidence,
+        method: 'vuePatchUpdate',
+      },
+    }, expectations),
+    /real rLynxChange/,
+  );
+});
+
+test('comparator v3 storms require one consistent host commit per tick', () => {
+  const transportEvidence = {
+    kind: 'per-tick-framework-host-commit-callbacks',
+    methods: ['vuePatchUpdate'],
+    acknowledged: true,
+    count: 50,
+    lastAcknowledgedAtMs: 180,
+  };
+  const payload = {
+    protocol: 'lynx-native-bench-v3',
+    name: 'updateStorm',
+    source: 'native-tap',
+    boundary: 'native-input-handler-through-host-commit-to-second-native-frame',
+    startMs: 100,
+    commitAckMs: 180,
+    firstFrameMs: 196,
+    endMs: 212,
+    latencyMs: 112,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    transportEvidence,
+    stormEvidence: {
+      expectedTicks: 50,
+      completedTicks: 50,
+      renderBarriers: 50,
+      hostCommitBarriers: 50,
+      transportEvidence,
+    },
+    preState: nativeState(1000),
+    postState: nativeState(1000),
+  };
+  const expectations = {
+    entryId: 'vue-lynx-m4-vdom-default',
+    expectedName: 'updateStorm',
+    expectedSource: 'native-tap',
+    expectedProtocol: 'lynx-native-bench-v3',
+  };
+  assert.equal(validateNativeTablePayload(payload, expectations), payload);
+  assert.throws(
+    () => validateNativeTablePayload({
+      ...payload,
+      transportEvidence: { ...transportEvidence, count: 19 },
+    }, expectations),
+    /lacks 50 host-commit callbacks/,
+  );
+});
+
+test('comparator v2 startup validates the framework-specific completion callback', () => {
+  const payload = {
+    protocol: 'lynx-native-startup-v2',
+    moduleStartMs: 100,
+    commitAckMs: 140,
+    firstFrameMs: 156,
+    secondFrameMs: 172,
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    transportEvidence: {
+      kind: 'framework-host-commit-callback',
+      method: 'vueIfrHydrationComplete',
+      acknowledged: true,
+      acknowledgedAtMs: 140,
+    },
+    postState: nativeState(1000),
+  };
+  const expectations = {
+    entryId: 'vue-lynx-m4-vdom-ifr-et',
+    expectedRows: 1000,
+    expectedProtocol: 'lynx-native-startup-v2',
+  };
+  assert.equal(validateNativeStartupPayload(payload, expectations), payload);
+  assert.throws(
+    () => validateNativeStartupPayload({
+      ...payload,
+      transportEvidence: {
+        ...payload.transportEvidence,
+        method: 'vuePatchUpdate',
+      },
+    }, expectations),
+    /real vueIfrHydrationComplete/,
+  );
 });
 
 test('startup pipeline selection prefers FCP but accepts the exact public timing flag', () => {

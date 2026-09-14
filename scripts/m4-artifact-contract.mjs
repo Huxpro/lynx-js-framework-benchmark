@@ -2,7 +2,7 @@ import { combineWorkloadReceipts, hashFiles } from './m0-artifact-contract.mjs';
 
 export { combineWorkloadReceipts, hashFiles };
 
-export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v2';
+export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v3';
 export const M4_ROWS = Object.freeze([0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
 export const M4_ENTRY_IDS = Object.freeze([
   'octane-m4-final',
@@ -28,9 +28,9 @@ export const M4_PINNED_SOURCES = Object.freeze({
   }),
   comparators: Object.freeze({
     source: 'https://github.com/Huxpro/vue-lynx',
-    ref: 'feat/unified-benchmark-framework-ui',
-    commit: '0da216caf3b474347423a8cd694d5449fa4e4215',
-    producerPull: 396,
+    ref: 'huxcx/native-benchmark-commit-ack-291',
+    commit: 'f43b859f70519fda37fd155741bef66b9dc544e0',
+    producerPull: 397,
   }),
 });
 

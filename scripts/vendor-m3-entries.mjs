@@ -195,7 +195,6 @@ function vendor({
     config,
     tags: ['roadmap-m3', 'lynx-4.1', configuration],
     tier: 'archive',
-    tiers: { native: 'featured' },
     harnesses,
     ...(unsupportedHarnessReasons == null ? {} : { unsupportedHarnessReasons }),
     color: presentation[id].colorLight,

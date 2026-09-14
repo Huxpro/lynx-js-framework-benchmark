@@ -12,7 +12,20 @@ import { repoRoot } from './entries.mjs';
 export const NATIVE_INPUT_RECEIPT_VERSION = 'native-input-receipt-v3';
 export const NATIVE_TABLE_PROTOCOL = 'lynx-native-bench-v2';
 export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
+export const NATIVE_COMPARATOR_TABLE_PROTOCOL = 'lynx-native-bench-v3';
+export const NATIVE_COMPARATOR_STARTUP_PROTOCOL = 'lynx-native-startup-v2';
 export const NATIVE_STARTUP_TIMING_FLAG = 'lynx-native-bench-startup';
+
+export function nativeTableProtocolForEntry(entry) {
+  const declared = entry?.capabilities?.nativeTableProtocol;
+  return declared === 'legacy-public-source' || declared == null
+    ? NATIVE_TABLE_PROTOCOL
+    : declared;
+}
+
+export function nativeStartupProtocolForEntry(entry) {
+  return entry?.capabilities?.nativeStartupProtocol ?? NATIVE_STARTUP_PROTOCOL;
+}
 
 const sha256 = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
@@ -63,6 +76,8 @@ export function snapshotNativeInputs({
     const tableProtocolUnavailable =
       entry.capabilities?.nativeTableProtocol === 'legacy-public-source';
     const startupProtocolUnavailable = entry.capabilities?.nativeStartupReceipt === false;
+    const tableProtocol = nativeTableProtocolForEntry(entry);
+    const startupProtocol = nativeStartupProtocolForEntry(entry);
     const manifestPath = path.join(entry.dir, 'entry.json');
     const manifest = pinFile(manifestPath, `${entry.id}:manifest`);
     const bundles = {};
@@ -82,16 +97,16 @@ export function snapshotNativeInputs({
         );
       }
       const protocols = {
-        table: bytes.includes(Buffer.from(NATIVE_TABLE_PROTOCOL)),
-        startup: bytes.includes(Buffer.from(NATIVE_STARTUP_PROTOCOL)),
+        table: bytes.includes(Buffer.from(tableProtocol)),
+        startup: bytes.includes(Buffer.from(startupProtocol)),
         startupTimingFlag: bytes.includes(Buffer.from(NATIVE_STARTUP_TIMING_FLAG)),
       };
       if (requireProtocols && suites.includes('table') && rows === 0) {
         if (!protocols.table && !tableProtocolUnavailable) {
-          throw new Error(`${entry.id}: rows-0 Native bundle lacks ${NATIVE_TABLE_PROTOCOL}.`);
+          throw new Error(`${entry.id}: rows-0 Native bundle lacks ${tableProtocol}.`);
         }
         if (!protocols.startup && !startupProtocolUnavailable) {
-          throw new Error(`${entry.id}: rows-0 Native bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
+          throw new Error(`${entry.id}: rows-0 Native bundle lacks ${startupProtocol}.`);
         }
       }
       if (
@@ -101,7 +116,7 @@ export function snapshotNativeInputs({
         && !protocols.startup
         && !startupProtocolUnavailable
       ) {
-        throw new Error(`${entry.id}: rows-${rows} Native bundle lacks ${NATIVE_STARTUP_PROTOCOL}.`);
+        throw new Error(`${entry.id}: rows-${rows} Native bundle lacks ${startupProtocol}.`);
       }
       if (
         requireProtocols

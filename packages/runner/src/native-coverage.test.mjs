@@ -23,7 +23,16 @@ import {
   classifyNativeCoverage,
   NATIVE_MATRIX_CELL_COUNT_PER_ENTRY,
 } from './native-coverage.mjs';
-import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
+import {
+  NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  NATIVE_COMPARATOR_TABLE_PROTOCOL,
+  NATIVE_STARTUP_PROTOCOL,
+  NATIVE_TABLE_PROTOCOL,
+  assertNativeInputsUnchanged,
+  nativeStartupProtocolForEntry,
+  nativeTableProtocolForEntry,
+  snapshotNativeInputs,
+} from './native-inputs.mjs';
 import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
 
@@ -39,6 +48,26 @@ const ENTRIES = [
   { id: 'vue-vdom-ifr-et', framework: 'vue-lynx' },
 ];
 const NATIVE_TABLE_CASES = tableCasesForHarness('native');
+
+test('Native producer protocols are selected from each frozen entry capability', () => {
+  assert.equal(nativeTableProtocolForEntry({ framework: 'octane' }), NATIVE_TABLE_PROTOCOL);
+  assert.equal(nativeStartupProtocolForEntry({ framework: 'octane' }), NATIVE_STARTUP_PROTOCOL);
+  const comparator = {
+    framework: 'reactlynx',
+    capabilities: {
+      nativeTableProtocol: NATIVE_COMPARATOR_TABLE_PROTOCOL,
+      nativeStartupProtocol: NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+    },
+  };
+  assert.equal(
+    nativeTableProtocolForEntry(comparator),
+    NATIVE_COMPARATOR_TABLE_PROTOCOL,
+  );
+  assert.equal(
+    nativeStartupProtocolForEntry(comparator),
+    NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  );
+});
 
 function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   const failure = unsupported

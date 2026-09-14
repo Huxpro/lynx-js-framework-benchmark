@@ -27,7 +27,7 @@
   "roadmap": {
     "issue": 291,
     "milestone": "M4",
-    "campaign": "octane-roadmap-m4-final-4.1-v2",
+    "campaign": "octane-roadmap-m4-final-4.1-v3",
     "role": "vue-vapor",
     "configuration": "explicit-optimized"
   },
@@ -37,8 +37,9 @@
     "rendering": "vapor",
     "enableIFR": true,
     "enableElementTemplates": false,
-    "nativeTableProtocol": "lynx-native-bench-v2",
-    "nativeStartupReceipt": true
+    "nativeTableProtocol": "lynx-native-bench-v3",
+    "nativeStartupReceipt": true,
+    "nativeStartupProtocol": "lynx-native-startup-v2"
   },
   "platformLane": {
     "sdk": "Lynx 4.1.0",
@@ -49,15 +50,15 @@
   },
   "provenance": {
     "source": "https://github.com/Huxpro/vue-lynx",
-    "ref": "feat/unified-benchmark-framework-ui",
-    "commit": "0da216caf3b474347423a8cd694d5449fa4e4215",
-    "producerPull": 396,
+    "ref": "huxcx/native-benchmark-commit-ack-291",
+    "commit": "f43b859f70519fda37fd155741bef66b9dc544e0",
+    "producerPull": 397,
     "patched": false,
     "patchFile": null,
     "buildCommand": "BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-vue-m4.mjs <vue-lynx-checkout>",
-    "builtAt": "2026-09-12T07:48:55-07:00",
+    "builtAt": "2026-09-14T09:35:04+00:00",
     "receipts": {
-      "sourceCommit": "0da216caf3b474347423a8cd694d5449fa4e4215",
+      "sourceCommit": "f43b859f70519fda37fd155741bef66b9dc544e0",
       "sourcePatch": {
         "present": false,
         "path": null,
@@ -83,7 +84,7 @@
             "scripts/m4-artifact-contract.mjs",
             "scripts/vendor-m4-entries.mjs"
           ],
-          "sha256": "43cbf90e59d7121643b43b425f48e1320314df50a88620c4ec8fe4ccf87f56c0"
+          "sha256": "f047a6a25d26ae71b7f06c6b5de347c2becf92827b4bdbf3f2a585c8d5d8fc76"
         }
       },
       "platformLane": {
@@ -99,8 +100,9 @@
         "rendering": "vapor",
         "enableIFR": true,
         "enableElementTemplates": false,
-        "nativeTableProtocol": "lynx-native-bench-v2",
-        "nativeStartupReceipt": true
+        "nativeTableProtocol": "lynx-native-bench-v3",
+        "nativeStartupReceipt": true,
+        "nativeStartupProtocol": "lynx-native-startup-v2"
       },
       "workloadContract": {
         "algorithm": "sha256-runner-source-v1",
@@ -134,7 +136,7 @@
             "packages/shared/src/scorecard.mjs",
             "packages/shared/src/workloads.mjs"
           ],
-          "sha256": "d0bba7e9ea87a4317394e04aced32118e6e3191d9b8f1b9f534a7382a356ae94"
+          "sha256": "0cce96f2154ee655a2ff25aff6af533b192c81db092f4a0c3ee282aa76454620"
         },
         "source": {
           "algorithm": "sha256-primary-list-fixture-v1",
@@ -148,7 +150,7 @@
               "packages/benchmark/shared/native-protocol.ts",
               "packages/vue-lynx/package.json"
             ],
-            "sha256": "ca1910d5b1e51e172de223b4f997e7130f3013e08c727203b59904e6a35fccce"
+            "sha256": "576edcae7ec2c752c915d0e346bba6a8e099cff2b94c069fed75795dfcb0e1d2"
           },
           "listFixture": {
             "algorithm": "sha256-path-content-v1",
@@ -158,46 +160,46 @@
             ],
             "sha256": "731dad4fe0cbd5aef39fafe8ce974cb6b3f5462deda257d7d3fe516934744d4e"
           },
-          "sha256": "66788c2284f5310ae3409876c06b02ab1d3845421542d1c6080a33f0c3bc4fc0"
+          "sha256": "481faea289ef5a42a110c24156e934a473490d3401defeae1f9588f443506730"
         },
-        "sha256": "10e34808f7fc3d4a65e4f87f337e4a8ade460499d94c3cc689092d5ce765d76c"
+        "sha256": "ddc5626e38bd4fedabcb11534a7d050afb47fb585aa2a72fc97046b0ff28e219"
       },
       "bundleSha256": {
-        "rows-0/main.web.bundle": "1d7028d3a61b891ae2b5cfb00232a8a782fa7267d6200d114658d9c7032126e5",
-        "rows-0/main.lynx.bundle": "976daa914360822a43a69ac6bfe0bf6b2f9c480d0ecab9d4e7ff69e35757598e",
-        "rows-1000/main.web.bundle": "212a84a7097afbaeef4d1e6dbe55219347d85efd156cf4e68628c87a90f507bc",
-        "rows-1000/main.lynx.bundle": "7d8da891fffaf2e013430617bf631ced932cd8f62c15bff5c44de260acd6d248",
-        "rows-2000/main.web.bundle": "b37467f9ffebbd0e84fad260145f9bc0c911c72f0737afff17826821edaa9a86",
-        "rows-2000/main.lynx.bundle": "b43ab3b8093253f4f871e3dad44d9a733760e97a8f628095c0897f022a33270e",
-        "rows-3000/main.web.bundle": "dddc47d2aba74df070bee59129eb636c1d69cfc13f9567e19c0fddc39b3a558c",
-        "rows-3000/main.lynx.bundle": "0a474ca2bf5a629ed16731a44d807e64b3e177e1dea73892cc748bb62cb0fc37",
-        "rows-5000/main.web.bundle": "bc944246347c845c8088c51bd480e110a7334402ce8c64d9461d254ecee3d3ce",
-        "rows-5000/main.lynx.bundle": "94e1e92542b9b1b007d550eec82aafc3f22f808c7f00966637810888e0c4eb4f",
-        "rows-10000/main.web.bundle": "b00e215a62391d3381bdce8842bc711b8fbfad835843abaa30597862ec91b0aa",
-        "rows-10000/main.lynx.bundle": "7593a5e406fd967e3c8d338638a7281b5611d2cb94614635b1a84047bcfb31ba",
-        "rows-20000/main.web.bundle": "f9426a5e7c1a04d75bd8736e0f67c873b891464a107b8ca4f83c42f1bccd4fee",
-        "rows-20000/main.lynx.bundle": "1e0fbb4b9847baca6fcb263ba112e5d0303526f26709fe498da803261ca75bc2",
-        "rows-30000/main.web.bundle": "79f0662e6e531b5df96bf41ea060087b7e63c1fb9e06f308b4e3431761f8b2bf",
-        "rows-30000/main.lynx.bundle": "552724fcd20b1c898dee6f68b3dfd8df56a40b82c98542968d18545de4b91304"
+        "rows-0/main.web.bundle": "ab7366d48edab27c2f07eeec0952292035e6d16db011311737068dea7b369224",
+        "rows-0/main.lynx.bundle": "5d892a63b4967f23122e3fce70f0042e758624c899e758a5147ac380df7abaa5",
+        "rows-1000/main.web.bundle": "ceb360ae0d1c314adafabb5c12d5c0c7e5bde6099a5a780f3cec14ef67aaa168",
+        "rows-1000/main.lynx.bundle": "8758a77d63afca438cd495a12f18df39318afc4577063e63206e7e6c1848aee8",
+        "rows-2000/main.web.bundle": "f825f6c15476ca3b46a1afb468672ad2406dde6dde2a235ee2d26536bd4702f5",
+        "rows-2000/main.lynx.bundle": "e79ef73be29d2f98dc1f86aea2e57c122dddd6606028c0e7262ff25ab49edec5",
+        "rows-3000/main.web.bundle": "94b70904bf2b33d9448741cac9f90ec6e742807fed9744e82ed11923f76873bc",
+        "rows-3000/main.lynx.bundle": "70a0e35964fdc18fb29466f76ac067fa608f8d0b7d73af23e982c41901b0f203",
+        "rows-5000/main.web.bundle": "9b323c76896e8afbbe2ab2b9f19de632aece26ced6f785caee60fdc5a70ad488",
+        "rows-5000/main.lynx.bundle": "ca17e8d880ba38344626ab146fb17a817032bf405a3cddfa6ce6fc45980d345e",
+        "rows-10000/main.web.bundle": "4e0f492499b9545d263455e82edd97a7522a90f0d98e30e0970f68b442b2d31a",
+        "rows-10000/main.lynx.bundle": "95b32784d6eb86b25abfcd8cd22f30530eca5db2ad8711ce555f91e046054bd2",
+        "rows-20000/main.web.bundle": "2e584194b5724f5693381ac0809dd83c6f2002b32e709a5be106fc8639366b89",
+        "rows-20000/main.lynx.bundle": "8c99bc3cc94c5dcbfa08a4fd44b1fe9f5f209ee7221a09320feab78311e48e4d",
+        "rows-30000/main.web.bundle": "45ebc49c1dbed7002620edf9071671f0f667b8b1787e3f2a61eca335c7218a7d",
+        "rows-30000/main.lynx.bundle": "ba1a6b73762b1efbc0b475119cbfb089e9dc293ccd199c9544da37629b45441b"
       }
     },
     "sha256": {
-      "rows-0/main.web.bundle": "1d7028d3a61b891ae2b5cfb00232a8a782fa7267d6200d114658d9c7032126e5",
-      "rows-0/main.lynx.bundle": "976daa914360822a43a69ac6bfe0bf6b2f9c480d0ecab9d4e7ff69e35757598e",
-      "rows-1000/main.web.bundle": "212a84a7097afbaeef4d1e6dbe55219347d85efd156cf4e68628c87a90f507bc",
-      "rows-1000/main.lynx.bundle": "7d8da891fffaf2e013430617bf631ced932cd8f62c15bff5c44de260acd6d248",
-      "rows-2000/main.web.bundle": "b37467f9ffebbd0e84fad260145f9bc0c911c72f0737afff17826821edaa9a86",
-      "rows-2000/main.lynx.bundle": "b43ab3b8093253f4f871e3dad44d9a733760e97a8f628095c0897f022a33270e",
-      "rows-3000/main.web.bundle": "dddc47d2aba74df070bee59129eb636c1d69cfc13f9567e19c0fddc39b3a558c",
-      "rows-3000/main.lynx.bundle": "0a474ca2bf5a629ed16731a44d807e64b3e177e1dea73892cc748bb62cb0fc37",
-      "rows-5000/main.web.bundle": "bc944246347c845c8088c51bd480e110a7334402ce8c64d9461d254ecee3d3ce",
-      "rows-5000/main.lynx.bundle": "94e1e92542b9b1b007d550eec82aafc3f22f808c7f00966637810888e0c4eb4f",
-      "rows-10000/main.web.bundle": "b00e215a62391d3381bdce8842bc711b8fbfad835843abaa30597862ec91b0aa",
-      "rows-10000/main.lynx.bundle": "7593a5e406fd967e3c8d338638a7281b5611d2cb94614635b1a84047bcfb31ba",
-      "rows-20000/main.web.bundle": "f9426a5e7c1a04d75bd8736e0f67c873b891464a107b8ca4f83c42f1bccd4fee",
-      "rows-20000/main.lynx.bundle": "1e0fbb4b9847baca6fcb263ba112e5d0303526f26709fe498da803261ca75bc2",
-      "rows-30000/main.web.bundle": "79f0662e6e531b5df96bf41ea060087b7e63c1fb9e06f308b4e3431761f8b2bf",
-      "rows-30000/main.lynx.bundle": "552724fcd20b1c898dee6f68b3dfd8df56a40b82c98542968d18545de4b91304"
+      "rows-0/main.web.bundle": "ab7366d48edab27c2f07eeec0952292035e6d16db011311737068dea7b369224",
+      "rows-0/main.lynx.bundle": "5d892a63b4967f23122e3fce70f0042e758624c899e758a5147ac380df7abaa5",
+      "rows-1000/main.web.bundle": "ceb360ae0d1c314adafabb5c12d5c0c7e5bde6099a5a780f3cec14ef67aaa168",
+      "rows-1000/main.lynx.bundle": "8758a77d63afca438cd495a12f18df39318afc4577063e63206e7e6c1848aee8",
+      "rows-2000/main.web.bundle": "f825f6c15476ca3b46a1afb468672ad2406dde6dde2a235ee2d26536bd4702f5",
+      "rows-2000/main.lynx.bundle": "e79ef73be29d2f98dc1f86aea2e57c122dddd6606028c0e7262ff25ab49edec5",
+      "rows-3000/main.web.bundle": "94b70904bf2b33d9448741cac9f90ec6e742807fed9744e82ed11923f76873bc",
+      "rows-3000/main.lynx.bundle": "70a0e35964fdc18fb29466f76ac067fa608f8d0b7d73af23e982c41901b0f203",
+      "rows-5000/main.web.bundle": "9b323c76896e8afbbe2ab2b9f19de632aece26ced6f785caee60fdc5a70ad488",
+      "rows-5000/main.lynx.bundle": "ca17e8d880ba38344626ab146fb17a817032bf405a3cddfa6ce6fc45980d345e",
+      "rows-10000/main.web.bundle": "4e0f492499b9545d263455e82edd97a7522a90f0d98e30e0970f68b442b2d31a",
+      "rows-10000/main.lynx.bundle": "95b32784d6eb86b25abfcd8cd22f30530eca5db2ad8711ce555f91e046054bd2",
+      "rows-20000/main.web.bundle": "2e584194b5724f5693381ac0809dd83c6f2002b32e709a5be106fc8639366b89",
+      "rows-20000/main.lynx.bundle": "8c99bc3cc94c5dcbfa08a4fd44b1fe9f5f209ee7221a09320feab78311e48e4d",
+      "rows-30000/main.web.bundle": "45ebc49c1dbed7002620edf9071671f0f667b8b1787e3f2a61eca335c7218a7d",
+      "rows-30000/main.lynx.bundle": "ba1a6b73762b1efbc0b475119cbfb089e9dc293ccd199c9544da37629b45441b"
     }
   },
   "bundles": {
@@ -209,9 +211,9 @@
     "contractSha256": "41a98a22508609f1e9444a0c03d3f2261f212312921e196d386b21bd4362f78b",
     "source": {
       "source": "https://github.com/Huxpro/vue-lynx",
-      "ref": "feat/unified-benchmark-framework-ui",
-      "commit": "0da216caf3b474347423a8cd694d5449fa4e4215",
-      "producerPull": 396,
+      "ref": "huxcx/native-benchmark-commit-ack-291",
+      "commit": "f43b859f70519fda37fd155741bef66b9dc544e0",
+      "producerPull": 397,
       "mode": "same-checkout",
       "receipt": {
         "algorithm": "sha256-path-content-v1",

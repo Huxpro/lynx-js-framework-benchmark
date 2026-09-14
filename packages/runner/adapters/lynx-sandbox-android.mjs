@@ -11,9 +11,13 @@ import {
   STORM_UPDATE_TICKS,
 } from '@lynx-bench/shared/workloads';
 import {
+  NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  NATIVE_COMPARATOR_TABLE_PROTOCOL,
   NATIVE_STARTUP_PROTOCOL,
   NATIVE_STARTUP_TIMING_FLAG,
   NATIVE_TABLE_PROTOCOL,
+  nativeStartupProtocolForEntry,
+  nativeTableProtocolForEntry,
 } from '../src/native-inputs.mjs';
 import { analyzeListFling, analyzeListRecycle } from '../src/list-observation.mjs';
 import { LIST_CONFIG } from '../../shared/src/list-workloads.mjs';
@@ -301,11 +305,19 @@ export function requiresOctaneDriverReadiness({ framework, suite, triggerMode })
   return framework === 'octane' && suite === 'table' && triggerMode === 'driver';
 }
 
-export function isNativeStartupPayloadPending(payload, { entryId } = {}) {
+export function isNativeStartupPayloadPending(payload, {
+  entryId,
+  expectedProtocol = NATIVE_STARTUP_PROTOCOL,
+} = {}) {
   if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return false;
-  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) return false;
+  if (payload.protocol !== expectedProtocol) return false;
   const deferredFields = ['firstFrameMs', 'secondFrameMs', 'postState'];
-  if (isOctaneEntryId(entryId)) deferredFields.push('commitAckMs', 'transportEvidence');
+  if (
+    isOctaneEntryId(entryId)
+    || expectedProtocol === NATIVE_COMPARATOR_STARTUP_PROTOCOL
+  ) {
+    deferredFields.push('commitAckMs', 'transportEvidence');
+  }
   return deferredFields.some((key) => payload[key] === undefined);
 }
 
@@ -331,12 +343,13 @@ function validateNativeTablePayloadUnchecked(payload, {
   entryId,
   expectedName,
   expectedSource,
+  expectedProtocol = NATIVE_TABLE_PROTOCOL,
   renderGraceFrames = RENDER_GRACE_FRAMES,
 } = {}) {
   assertObject(payload, 'Native table payload');
-  if (payload.protocol !== NATIVE_TABLE_PROTOCOL) {
+  if (payload.protocol !== expectedProtocol) {
     throw new Error(
-      `Native table payload protocol ${JSON.stringify(payload.protocol)} does not match ${NATIVE_TABLE_PROTOCOL}.`,
+      `Native table payload protocol ${JSON.stringify(payload.protocol)} does not match ${expectedProtocol}.`,
     );
   }
   if (payload.name !== expectedName) {
@@ -348,7 +361,9 @@ function validateNativeTablePayloadUnchecked(payload, {
     );
   }
   const expectedBoundary = expectedSource === 'native-tap'
-    ? 'native-input-handler-to-second-native-frame'
+    ? expectedProtocol === NATIVE_COMPARATOR_TABLE_PROTOCOL
+      ? 'native-input-handler-through-host-commit-to-second-native-frame'
+      : 'native-input-handler-to-second-native-frame'
     : 'native-devtool-driver-handler-to-second-native-frame';
   if (payload.boundary !== expectedBoundary) {
     throw new Error(`Native table payload boundary ${JSON.stringify(payload.boundary)} is invalid.`);
@@ -371,8 +386,9 @@ function validateNativeTablePayloadUnchecked(payload, {
   validateState(payload.preState, 'Native table payload.preState');
   validateState(payload.postState, 'Native table payload.postState');
   const stormTicks = expectedStormTicks(expectedName);
+  let storm = null;
   if (stormTicks !== null) {
-    const storm = assertObject(payload.stormEvidence, 'Native table payload.stormEvidence');
+    storm = assertObject(payload.stormEvidence, 'Native table payload.stormEvidence');
     if (storm.expectedTicks !== stormTicks || storm.completedTicks !== stormTicks) {
       throw new Error(`Native ${expectedName} payload did not complete all ${stormTicks} ticks.`);
     }
@@ -395,6 +411,58 @@ function validateNativeTablePayloadUnchecked(payload, {
     if (stormTicks !== null && transport.tickAcknowledgements !== stormTicks) {
       throw new Error(`Octane Native ${expectedName} lacks ${stormTicks} per-tick transport acknowledgements.`);
     }
+  } else if (expectedProtocol === NATIVE_COMPARATOR_TABLE_PROTOCOL) {
+    assertFinite(payload.commitAckMs, 'Native table payload.commitAckMs');
+    if (!(payload.startMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
+      throw new Error('Comparator transport acknowledgement is outside the measured interval.');
+    }
+    const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
+    if (stormTicks === null) {
+      const expectedMethod = entryId?.startsWith('reactlynx-')
+        ? 'rLynxChange'
+        : 'vuePatchUpdate';
+      if (
+        transport.kind !== 'framework-host-commit-callback'
+        || transport.method !== expectedMethod
+        || transport.acknowledged !== true
+        || transport.acknowledgedAtMs !== payload.commitAckMs
+      ) {
+        throw new Error(
+          `Comparator Native table payload lacks a real ${expectedMethod} host-commit callback.`,
+        );
+      }
+    } else {
+      if (
+        transport.kind !== 'per-tick-framework-host-commit-callbacks'
+        || transport.acknowledged !== true
+        || transport.count !== stormTicks
+        || transport.lastAcknowledgedAtMs !== payload.commitAckMs
+      ) {
+        throw new Error(
+          `Comparator Native ${expectedName} lacks ${stormTicks} host-commit callbacks.`,
+        );
+      }
+      const expectedMethod = entryId?.startsWith('reactlynx-')
+        ? 'rLynxChange'
+        : 'vuePatchUpdate';
+      if (
+        !Array.isArray(transport.methods)
+        || transport.methods.length !== 1
+        || transport.methods[0] !== expectedMethod
+      ) {
+        throw new Error(
+          `Comparator Native ${expectedName} host-commit method is invalid.`,
+        );
+      }
+      if (
+        storm.hostCommitBarriers !== stormTicks
+        || JSON.stringify(storm.transportEvidence) !== JSON.stringify(transport)
+      ) {
+        throw new Error(
+          `Comparator Native ${expectedName} storm evidence is inconsistent.`,
+        );
+      }
+    }
   } else {
     const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
     if (transport.kind !== 'not-exposed' || transport.acknowledged !== false) {
@@ -409,12 +477,13 @@ function validateNativeTablePayloadUnchecked(payload, {
 function validateNativeStartupPayloadUnchecked(payload, {
   entryId,
   expectedRows,
+  expectedProtocol = NATIVE_STARTUP_PROTOCOL,
   renderGraceFrames = RENDER_GRACE_FRAMES,
 } = {}) {
   assertObject(payload, 'Native startup payload');
-  if (payload.protocol !== NATIVE_STARTUP_PROTOCOL) {
+  if (payload.protocol !== expectedProtocol) {
     throw new Error(
-      `Native startup payload protocol ${JSON.stringify(payload.protocol)} does not match ${NATIVE_STARTUP_PROTOCOL}.`,
+      `Native startup payload protocol ${JSON.stringify(payload.protocol)} does not match ${expectedProtocol}.`,
     );
   }
   for (const key of ['moduleStartMs', 'firstFrameMs', 'secondFrameMs']) {
@@ -447,6 +516,27 @@ function validateNativeStartupPayloadUnchecked(payload, {
       || transport.ackMs !== payload.commitAckMs
     ) {
       throw new Error('Octane Native startup payload lacks a root-render acknowledgement.');
+    }
+  } else if (expectedProtocol === NATIVE_COMPARATOR_STARTUP_PROTOCOL) {
+    assertFinite(payload.commitAckMs, 'Native startup payload.commitAckMs');
+    if (!(payload.moduleStartMs <= payload.commitAckMs && payload.commitAckMs <= payload.firstFrameMs)) {
+      throw new Error('Comparator startup transport acknowledgement is outside the render interval.');
+    }
+    const transport = assertObject(payload.transportEvidence, 'Native startup payload.transportEvidence');
+    const expectedMethod = entryId?.startsWith('reactlynx-')
+      ? 'rLynxChange'
+      : entryId?.includes('-ifr')
+        ? 'vueIfrHydrationComplete'
+        : 'vuePatchUpdate';
+    if (
+      transport.kind !== 'framework-host-commit-callback'
+      || transport.method !== expectedMethod
+      || transport.acknowledged !== true
+      || transport.acknowledgedAtMs !== payload.commitAckMs
+    ) {
+      throw new Error(
+        `Comparator Native startup lacks a real ${expectedMethod} host-commit callback.`,
+      );
     }
   } else if (payload.transportEvidence != null) {
     throw new Error('Non-Octane startup payload must not claim an Octane transport acknowledgement.');
@@ -671,6 +761,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   let pageCount = 0;
   let currentEntryId = null;
   let currentEntryFramework = null;
+  let currentTableProtocol = NATIVE_TABLE_PROTOCOL;
+  let currentStartupProtocol = NATIVE_STARTUP_PROTOCOL;
   const isCurrentOctane = () => currentEntryFramework === 'octane';
   let currentRows = null;
   let currentOpenTime = null;
@@ -768,6 +860,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     ...NATIVE_SANDBOX_POLICY,
     tableProtocol: NATIVE_TABLE_PROTOCOL,
     startupProtocol: NATIVE_STARTUP_PROTOCOL,
+    comparatorTableProtocol: NATIVE_COMPARATOR_TABLE_PROTOCOL,
+    comparatorStartupProtocol: NATIVE_COMPARATOR_STARTUP_PROTOCOL,
     campaignId: campaignIdentity.campaignId,
     matrixContractSha256: campaignIdentity.matrixContractSha256,
     inputReceiptSha256: campaignIdentity.inputReceiptSha256,
@@ -1391,6 +1485,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       entryId: currentEntryId,
       expectedName,
       expectedSource,
+      expectedProtocol: currentTableProtocol,
     });
   }
 
@@ -1534,10 +1629,17 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         nextFrameDebugAt = Date.now() + 1000;
         log(`  [sandbox:startup-frame-state] ${JSON.stringify({ openTime, startupEvents })}`);
       }
-      if (startup != null && !isNativeStartupPayloadPending(startup, { entryId: currentEntryId })) {
+      if (
+        startup != null
+        && !isNativeStartupPayloadPending(startup, {
+          entryId: currentEntryId,
+          expectedProtocol: currentStartupProtocol,
+        })
+      ) {
         validateNativeStartupPayload(startup, {
           entryId: currentEntryId,
           expectedRows: currentRows,
+          expectedProtocol: currentStartupProtocol,
         });
         if (!Number.isFinite(openTime) || startup.moduleStartMs < openTime) {
           throw new Error('Native startup payload predates the adapter open request.');
@@ -1710,6 +1812,8 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       }
       currentEntryId = entry.id;
       currentEntryFramework = entry.framework;
+      currentTableProtocol = nativeTableProtocolForEntry(entry);
+      currentStartupProtocol = nativeStartupProtocolForEntry(entry);
       currentRows = rows;
       startupPayloadLogged = false;
       lastObserved = null;
@@ -1993,7 +2097,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
             evidence: {
               ...(error.evidence ?? { lastStartupProbe }),
               capabilityProven: false,
-              producerProtocolExpected: NATIVE_STARTUP_PROTOCOL,
+              producerProtocolExpected: currentStartupProtocol,
             },
           };
           unsupportedStartupCells.set(`${currentEntryId}:${currentRows}`, failure);
