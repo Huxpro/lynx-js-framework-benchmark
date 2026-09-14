@@ -1,0 +1,2829 @@
+{
+  "protocol": "octane-issue-291-element-template-settled-memory-screen-v1",
+  "capturedAt": "2026-09-14T23:26:17.067Z",
+  "qualification": "diagnostic-only-not-formal-performance-evidence",
+  "decision": "fail-closed-element-template-and-automatic-native-settled-memory; frozen-m0-current-native-comparator-unavailable",
+  "reason": "At a fixed 30-second post-trigger boundary on fresh Explorer processes, Element Template retains 6.5655x the latest-upstream Native heap allocation and 1.1492x the merged automatic-core allocation. The exact frozen M0-current bundle mounts no Native controls on either Explorer 4.1 or source-built Lynx develop, so it cannot provide an unpatched Native memory baseline. These findings block default/formal qualification; no latency score is assigned to latest upstream because that artifact has only legacy-public-source timing capability.",
+  "provenance": {
+    "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
+    "implementationIssue": "https://github.com/Huxpro/octane/issues/383",
+    "octane": {
+      "elementTemplate": {
+        "commit": "101c6a1ba9adb547a944a118f3ad704fbf8a278e",
+        "bundleSha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+        "bundleBytes": 262802
+      },
+      "mergedAutomatic": {
+        "commit": "7a523bf20d04578c39fe0b5fe532cdef6dab3e9e",
+        "bundleSha256": "58790f90fd40f80403469c31415a638743dfcc5b1a349a041395266b085a4fca",
+        "bundleBytes": 186581
+      },
+      "latestUpstream": {
+        "commit": "8e5ca22a6e17582b4293232406a2c0420509f4a4",
+        "bundleSha256": "3507aecec61f23f01a039d72e7eafbd32223013442bf7a085cb4d30740032d69",
+        "bundleBytes": 510445,
+        "capability": "legacy-public-source"
+      },
+      "m0Current": {
+        "commit": "e82160fc0e663f52848e2181d83c6203d633bc86",
+        "bundleSha256": "a06754481efcc2c71834d4a3b95c8417dd08fe9e2438f6989e2516b4c727b28a",
+        "bundleBytes": 551511
+      }
+    },
+    "lynxDevelop": {
+      "commit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+      "apkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+      "apkBytes": 55073821
+    },
+    "explorer410": {
+      "apkSha256": "6ae29787a2166974c29c2f23d87f3b20a137abcf9a8c17903ad19f3fb7f00cb6",
+      "apkBytes": 173293606
+    },
+    "deviceSerialSha256": [
+      "a8e352160cdf08a36ed9aefdcf360160b92636936a6b29895c91d73ebc4f31cf",
+      "8b8094eb326cc803f8c9d4a4d088bf126de7f516cce50e85e8af99cf372a65fe",
+      "bc37f8409450ce1d6d9b513329eaec0ed542828a2aea0d23aacb5d6d71b814ad"
+    ],
+    "localRawArtifactSha256": {
+      "immediateMerged": "a5a17f741c59966f713a0b7166b5b2ae3f53ec24eba22a383e9f7d52e984846c",
+      "m0Develop5k": "b5b33911878e4aa1ab94ea38a94b37db9ac594fcb1af04b71c4db75f0fcb2001",
+      "m0Develop1k": "ec6c6bbfb33666684cce380ab88af77d205d889d111b6106b105cb0c2df151fe",
+      "invalidUpstream": "1c291936a4357894ebb0f8b02e3c2d7c878b6ca57552f865db5aceb5ecb97c0b",
+      "fixedUpstream": "ee4dd5297f14ca5727eb69d493bf11fc6e726fca434cff2f92db72aca74942ea",
+      "fixedMerged": "49f28057e5d7188ffd309b1b989e449f1eb93c3c120aaebb1012afb9b9841a06",
+      "m0Release": "c8234c78ee5cfe9263ba4aea49fafd148f22b4132f3414d5f9ee1128b5459971",
+      "runner": "82e6bc9c4dbbc7ca5aeb991e9a284f47e07cf041116695116ace1f15a8c2deb6"
+    }
+  },
+  "method": {
+    "processBoundary": "fresh Explorer process before every arm",
+    "order": "balanced AB/BA; no outlier removal",
+    "memoryBoundary": "dumpsys meminfo at a fixed 30,000 ms after the Native input trigger",
+    "semantics": "native col-label census must equal 5,000 before a memory sample is eligible",
+    "latencyPolicy": "latest upstream remains DNF because its frozen legacy-public-source artifact publishes no current timing ACK; semantic completion does not manufacture latency",
+    "incrementPolicy": "startup-to-post deltas are not ratioed when startup memory falls during the 30-second window; fixed-boundary absolute post values remain paired"
+  },
+  "fixed30s": {
+    "elementTemplateVsLatestUpstream": {
+      "pairs": 10,
+      "summary": {
+        "totalPssKb": {
+          "candidateMedianKb": 492375.5,
+          "comparatorMedianKb": 117523,
+          "pairedGeometricMean": 4.199802522574006,
+          "pairedRatios": [
+            4.275045661130697,
+            4.415485444292028,
+            4.195489683033469,
+            4.034356816163226,
+            4.333198423312451,
+            4.28892558003543,
+            4.245628290127672,
+            4.122906153704061,
+            4.073258289732121,
+            4.032441415988034
+          ]
+        },
+        "nativePssKb": {
+          "candidateMedianKb": 313482,
+          "comparatorMedianKb": 45612.5,
+          "pairedGeometricMean": 6.965921326573706,
+          "pairedRatios": [
+            6.719051464026178,
+            7.589706415367887,
+            7.618016351956395,
+            7.2736942779164435,
+            6.594496300033636,
+            6.923214871514489,
+            7.116380086424199,
+            6.877714285714286,
+            6.450143095390064,
+            6.605317664961745
+          ]
+        },
+        "nativeHeapAllocKb": {
+          "candidateMedianKb": 301268.5,
+          "comparatorMedianKb": 45705.5,
+          "pairedGeometricMean": 6.565500365915585,
+          "pairedRatios": [
+            6.9068137868274375,
+            6.855802300421364,
+            6.738425408186088,
+            6.678146635895615,
+            6.5202518499285995,
+            6.663086477049217,
+            6.548828040379533,
+            6.327685872238455,
+            6.249211749087288,
+            6.20803748348745
+          ]
+        },
+        "dalvikPssKb": {
+          "candidateMedianKb": 59731,
+          "comparatorMedianKb": 10834.5,
+          "pairedGeometricMean": 5.55178618324098,
+          "pairedRatios": [
+            5.854584588893672,
+            5.560960029202409,
+            3.6529264265182557,
+            3.086147986332829,
+            13.875261324041812,
+            6.525437778468553,
+            5.749306767998357,
+            5.01257113734817,
+            5.775479361481062,
+            5.029315656801419
+          ]
+        }
+      },
+      "expectedTimingDnfs": 10,
+      "raw": {
+        "capturedAt": "2026-09-14T23:15:57.161Z",
+        "device": {
+          "serialSha256": "8b8094eb326cc803f8c9d4a4d088bf126de7f516cce50e85e8af99cf372a65fe"
+        },
+        "explorer": {
+          "release": "develop-3a954f0",
+          "sha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+          "localSourceCommit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+          "localApkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+          "localApkBytes": 55073821
+        },
+        "method": {
+          "boundary": "native-input-handler-to-second-native-frame",
+          "order": "balanced AB/BA within scale; 10 samples per variant/scale",
+          "scales": [
+            5000
+          ],
+          "workloads": [
+            "create"
+          ],
+          "cycles": 1,
+          "memoryFixedAfterTriggerMs": 30000,
+          "trimMemoryLevel": null,
+          "trimMemoryAt": 0
+        },
+        "samples": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "latencyMs": 2805
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "latencyMs": 2797
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "latencyMs": 2738
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "latencyMs": 2781
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "latencyMs": 2796
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "latencyMs": 2711
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "latencyMs": 2729
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "latencyMs": 2721
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "latencyMs": 2696
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "latencyMs": 2893
+          }
+        ],
+        "semanticChecks": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true,
+            "timingDnf": true
+          }
+        ],
+        "preMemorySamples": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 140012,
+              "totalPrivateDirtyKb": 118232,
+              "totalPrivateCleanKb": 6340,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 51370,
+              "nativePrivateDirtyKb": 50516,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 58172,
+              "nativeHeapAllocKb": 52168,
+              "nativeHeapFreeKb": 6003,
+              "dalvikPssKb": 16149,
+              "dalvikPrivateDirtyKb": 15340,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7109,
+              "dalvikHeapAllocKb": 3555,
+              "dalvikHeapFreeKb": 3554
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 147321,
+              "totalPrivateDirtyKb": 107700,
+              "totalPrivateCleanKb": 24136,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 50097,
+              "nativePrivateDirtyKb": 49284,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 53508,
+              "nativeHeapAllocKb": 51586,
+              "nativeHeapFreeKb": 1921,
+              "dalvikPssKb": 15569,
+              "dalvikPrivateDirtyKb": 14700,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7492,
+              "dalvikHeapAllocKb": 3746,
+              "dalvikHeapFreeKb": 3746
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 151597,
+              "totalPrivateDirtyKb": 112728,
+              "totalPrivateCleanKb": 23356,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 52671,
+              "nativePrivateDirtyKb": 51816,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 53256,
+              "nativeHeapAllocKb": 52024,
+              "nativeHeapFreeKb": 1231,
+              "dalvikPssKb": 17717,
+              "dalvikPrivateDirtyKb": 16796,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7591,
+              "dalvikHeapAllocKb": 3796,
+              "dalvikHeapFreeKb": 3795
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 143084,
+              "totalPrivateDirtyKb": 103684,
+              "totalPrivateCleanKb": 24084,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 50603,
+              "nativePrivateDirtyKb": 49752,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 58252,
+              "nativeHeapAllocKb": 51679,
+              "nativeHeapFreeKb": 6572,
+              "dalvikPssKb": 19423,
+              "dalvikPrivateDirtyKb": 18600,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7090,
+              "dalvikHeapAllocKb": 3545,
+              "dalvikHeapFreeKb": 3545
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 148034,
+              "totalPrivateDirtyKb": 108476,
+              "totalPrivateCleanKb": 24188,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 53345,
+              "nativePrivateDirtyKb": 52528,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 58612,
+              "nativeHeapAllocKb": 52577,
+              "nativeHeapFreeKb": 6034,
+              "dalvikPssKb": 21185,
+              "dalvikPrivateDirtyKb": 20328,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7166,
+              "dalvikHeapAllocKb": 3583,
+              "dalvikHeapFreeKb": 3583
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 157376,
+              "totalPrivateDirtyKb": 118388,
+              "totalPrivateCleanKb": 23540,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54745,
+              "nativePrivateDirtyKb": 53900,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 54728,
+              "nativeHeapAllocKb": 53391,
+              "nativeHeapFreeKb": 1336,
+              "dalvikPssKb": 20643,
+              "dalvikPrivateDirtyKb": 19744,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7782,
+              "dalvikHeapAllocKb": 3891,
+              "dalvikHeapFreeKb": 3891
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 159030,
+              "totalPrivateDirtyKb": 119672,
+              "totalPrivateCleanKb": 23908,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 53830,
+              "nativePrivateDirtyKb": 52996,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 55112,
+              "nativeHeapAllocKb": 53384,
+              "nativeHeapFreeKb": 1727,
+              "dalvikPssKb": 22737,
+              "dalvikPrivateDirtyKb": 21840,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7837,
+              "dalvikHeapAllocKb": 3919,
+              "dalvikHeapFreeKb": 3918
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 148997,
+              "totalPrivateDirtyKb": 109688,
+              "totalPrivateCleanKb": 23912,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 51525,
+              "nativePrivateDirtyKb": 50700,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 59508,
+              "nativeHeapAllocKb": 52215,
+              "nativeHeapFreeKb": 7292,
+              "dalvikPssKb": 23577,
+              "dalvikPrivateDirtyKb": 22684,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7439,
+              "dalvikHeapAllocKb": 3720,
+              "dalvikHeapFreeKb": 3719
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 150364,
+              "totalPrivateDirtyKb": 111096,
+              "totalPrivateCleanKb": 23644,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 51648,
+              "nativePrivateDirtyKb": 50804,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 55736,
+              "nativeHeapAllocKb": 52365,
+              "nativeHeapFreeKb": 3370,
+              "dalvikPssKb": 25128,
+              "dalvikPrivateDirtyKb": 24196,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7384,
+              "dalvikHeapAllocKb": 3692,
+              "dalvikHeapFreeKb": 3692
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 162985,
+              "totalPrivateDirtyKb": 123656,
+              "totalPrivateCleanKb": 23872,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 55050,
+              "nativePrivateDirtyKb": 54220,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 55308,
+              "nativeHeapAllocKb": 53251,
+              "nativeHeapFreeKb": 2056,
+              "dalvikPssKb": 24997,
+              "dalvikPrivateDirtyKb": 24080,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7878,
+              "dalvikHeapAllocKb": 3939,
+              "dalvikHeapFreeKb": 3939
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 148951,
+              "totalPrivateDirtyKb": 109932,
+              "totalPrivateCleanKb": 24064,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54348,
+              "nativePrivateDirtyKb": 53524,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 55684,
+              "nativeHeapAllocKb": 54099,
+              "nativeHeapFreeKb": 1584,
+              "dalvikPssKb": 11281,
+              "dalvikPrivateDirtyKb": 10792,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7927,
+              "dalvikHeapAllocKb": 3964,
+              "dalvikHeapFreeKb": 3963
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 142010,
+              "totalPrivateDirtyKb": 102968,
+              "totalPrivateCleanKb": 23948,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 56623,
+              "nativePrivateDirtyKb": 55784,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 59168,
+              "nativeHeapAllocKb": 52919,
+              "nativeHeapFreeKb": 6248,
+              "dalvikPssKb": 10875,
+              "dalvikPrivateDirtyKb": 10368,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7466,
+              "dalvikHeapAllocKb": 3733,
+              "dalvikHeapFreeKb": 3733
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 139823,
+              "totalPrivateDirtyKb": 100864,
+              "totalPrivateCleanKb": 23936,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 53471,
+              "nativePrivateDirtyKb": 52656,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 55780,
+              "nativeHeapAllocKb": 54401,
+              "nativeHeapFreeKb": 1378,
+              "dalvikPssKb": 11741,
+              "dalvikPrivateDirtyKb": 11224,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7695,
+              "dalvikHeapAllocKb": 3848,
+              "dalvikHeapFreeKb": 3847
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 151504,
+              "totalPrivateDirtyKb": 112540,
+              "totalPrivateCleanKb": 23876,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 55153,
+              "nativePrivateDirtyKb": 54332,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 56784,
+              "nativeHeapAllocKb": 54988,
+              "nativeHeapFreeKb": 1795,
+              "dalvikPssKb": 12563,
+              "dalvikPrivateDirtyKb": 12036,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8267,
+              "dalvikHeapAllocKb": 4134,
+              "dalvikHeapFreeKb": 4133
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 147720,
+              "totalPrivateDirtyKb": 108604,
+              "totalPrivateCleanKb": 24040,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 52439,
+              "nativePrivateDirtyKb": 51640,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 59184,
+              "nativeHeapAllocKb": 53824,
+              "nativeHeapFreeKb": 5359,
+              "dalvikPssKb": 11263,
+              "dalvikPrivateDirtyKb": 10716,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8127,
+              "dalvikHeapAllocKb": 4064,
+              "dalvikHeapFreeKb": 4063
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 138826,
+              "totalPrivateDirtyKb": 99828,
+              "totalPrivateCleanKb": 23872,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 52355,
+              "nativePrivateDirtyKb": 51540,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 57268,
+              "nativeHeapAllocKb": 55035,
+              "nativeHeapFreeKb": 2232,
+              "dalvikPssKb": 11435,
+              "dalvikPrivateDirtyKb": 10868,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7809,
+              "dalvikHeapAllocKb": 3905,
+              "dalvikHeapFreeKb": 3904
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 141158,
+              "totalPrivateDirtyKb": 102092,
+              "totalPrivateCleanKb": 23932,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54313,
+              "nativePrivateDirtyKb": 53504,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 57124,
+              "nativeHeapAllocKb": 55241,
+              "nativeHeapFreeKb": 1882,
+              "dalvikPssKb": 11555,
+              "dalvikPrivateDirtyKb": 10980,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8108,
+              "dalvikHeapAllocKb": 4070,
+              "dalvikHeapFreeKb": 4038
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 151947,
+              "totalPrivateDirtyKb": 112556,
+              "totalPrivateCleanKb": 24200,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 55159,
+              "nativePrivateDirtyKb": 54320,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 57632,
+              "nativeHeapAllocKb": 56128,
+              "nativeHeapFreeKb": 1503,
+              "dalvikPssKb": 12145,
+              "dalvikPrivateDirtyKb": 11560,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8498,
+              "dalvikHeapAllocKb": 4249,
+              "dalvikHeapFreeKb": 4249
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 150677,
+              "totalPrivateDirtyKb": 111492,
+              "totalPrivateCleanKb": 23936,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 53899,
+              "nativePrivateDirtyKb": 53092,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 56580,
+              "nativeHeapAllocKb": 54888,
+              "nativeHeapFreeKb": 1691,
+              "dalvikPssKb": 12021,
+              "dalvikPrivateDirtyKb": 11416,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8318,
+              "dalvikHeapAllocKb": 4159,
+              "dalvikHeapFreeKb": 4159
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 141561,
+              "totalPrivateDirtyKb": 102712,
+              "totalPrivateCleanKb": 23640,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54467,
+              "nativePrivateDirtyKb": 53632,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 56912,
+              "nativeHeapAllocKb": 54252,
+              "nativeHeapFreeKb": 2659,
+              "dalvikPssKb": 11447,
+              "dalvikPrivateDirtyKb": 10824,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7860,
+              "dalvikHeapAllocKb": 3930,
+              "dalvikHeapFreeKb": 3930
+            }
+          }
+        ],
+        "memorySamples": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 503237,
+              "totalPrivateDirtyKb": 465824,
+              "totalPrivateCleanKb": 23760,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 316212,
+              "nativePrivateDirtyKb": 315760,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 308040,
+              "nativeHeapAllocKb": 303589,
+              "nativeHeapFreeKb": 4450,
+              "dalvikPssKb": 68001,
+              "dalvikPrivateDirtyKb": 67900,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 75450,
+              "dalvikHeapAllocKb": 50874,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 117715,
+              "totalPrivateDirtyKb": 78804,
+              "totalPrivateCleanKb": 23788,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 47062,
+              "nativePrivateDirtyKb": 46204,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 46224,
+              "nativeHeapAllocKb": 43955,
+              "nativeHeapFreeKb": 2268,
+              "dalvikPssKb": 11615,
+              "dalvikPrivateDirtyKb": 10724,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 5759,
+              "dalvikHeapAllocKb": 2880,
+              "dalvikHeapFreeKb": 2879
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 111537,
+              "totalPrivateDirtyKb": 72720,
+              "totalPrivateCleanKb": 23720,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 41385,
+              "nativePrivateDirtyKb": 40532,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 45976,
+              "nativeHeapAllocKb": 43905,
+              "nativeHeapFreeKb": 2070,
+              "dalvikPssKb": 10958,
+              "dalvikPrivateDirtyKb": 10116,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 5813,
+              "dalvikHeapAllocKb": 2907,
+              "dalvikHeapFreeKb": 2906
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 492490,
+              "totalPrivateDirtyKb": 454792,
+              "totalPrivateCleanKb": 24176,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 314100,
+              "nativePrivateDirtyKb": 313644,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 306940,
+              "nativeHeapAllocKb": 301004,
+              "nativeHeapFreeKb": 5935,
+              "dalvikPssKb": 60937,
+              "dalvikPrivateDirtyKb": 60836,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74605,
+              "dalvikHeapAllocKb": 50029,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 492261,
+              "totalPrivateDirtyKb": 454460,
+              "totalPrivateCleanKb": 24236,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 313070,
+              "nativePrivateDirtyKb": 312592,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 306956,
+              "nativeHeapAllocKb": 301275,
+              "nativeHeapFreeKb": 5680,
+              "dalvikPssKb": 59729,
+              "dalvikPrivateDirtyKb": 59628,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74539,
+              "dalvikHeapAllocKb": 49963,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 117331,
+              "totalPrivateDirtyKb": 78316,
+              "totalPrivateCleanKb": 23756,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 41096,
+              "nativePrivateDirtyKb": 40252,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 50864,
+              "nativeHeapAllocKb": 44710,
+              "nativeHeapFreeKb": 6153,
+              "dalvikPssKb": 16351,
+              "dalvikPrivateDirtyKb": 15472,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 5990,
+              "dalvikHeapAllocKb": 3011,
+              "dalvikHeapFreeKb": 2979
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 120471,
+              "totalPrivateDirtyKb": 81560,
+              "totalPrivateCleanKb": 23736,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 42869,
+              "nativePrivateDirtyKb": 42024,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 46588,
+              "nativeHeapAllocKb": 45064,
+              "nativeHeapFreeKb": 1523,
+              "dalvikPssKb": 17853,
+              "dalvikPrivateDirtyKb": 16984,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6049,
+              "dalvikHeapAllocKb": 3025,
+              "dalvikHeapFreeKb": 3024
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 486023,
+              "totalPrivateDirtyKb": 448520,
+              "totalPrivateCleanKb": 23940,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 311816,
+              "nativePrivateDirtyKb": 311344,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 306584,
+              "nativeHeapAllocKb": 300944,
+              "nativeHeapFreeKb": 5639,
+              "dalvikPssKb": 55097,
+              "dalvikPrivateDirtyKb": 54996,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74577,
+              "dalvikHeapAllocKb": 50001,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 492494,
+              "totalPrivateDirtyKb": 455128,
+              "totalPrivateCleanKb": 23672,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 313687,
+              "nativePrivateDirtyKb": 313252,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 307372,
+              "nativeHeapAllocKb": 301353,
+              "nativeHeapFreeKb": 6018,
+              "dalvikPssKb": 59733,
+              "dalvikPrivateDirtyKb": 59632,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74595,
+              "dalvikHeapAllocKb": 50019,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 113656,
+              "totalPrivateDirtyKb": 76344,
+              "totalPrivateCleanKb": 23888,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 47568,
+              "nativePrivateDirtyKb": 46760,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 53648,
+              "nativeHeapAllocKb": 46218,
+              "nativeHeapFreeKb": 7429,
+              "dalvikPssKb": 4305,
+              "dalvikPrivateDirtyKb": 4152,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6125,
+              "dalvikHeapAllocKb": 3063,
+              "dalvikHeapFreeKb": 3062
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 116286,
+              "totalPrivateDirtyKb": 77488,
+              "totalPrivateCleanKb": 23900,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 45725,
+              "nativePrivateDirtyKb": 44892,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 47648,
+              "nativeHeapAllocKb": 45249,
+              "nativeHeapFreeKb": 2398,
+              "dalvikPssKb": 9651,
+              "dalvikPrivateDirtyKb": 9152,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6155,
+              "dalvikHeapAllocKb": 3078,
+              "dalvikHeapFreeKb": 3077
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 498742,
+              "totalPrivateDirtyKb": 461128,
+              "totalPrivateCleanKb": 23976,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 316564,
+              "nativePrivateDirtyKb": 316052,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 308012,
+              "nativeHeapAllocKb": 301498,
+              "nativeHeapFreeKb": 6513,
+              "dalvikPssKb": 62977,
+              "dalvikPrivateDirtyKb": 62876,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74629,
+              "dalvikHeapAllocKb": 50053,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 491164,
+              "totalPrivateDirtyKb": 453696,
+              "totalPrivateCleanKb": 23964,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 316195,
+              "nativePrivateDirtyKb": 315728,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 308016,
+              "nativeHeapAllocKb": 302307,
+              "nativeHeapFreeKb": 5708,
+              "dalvikPssKb": 55981,
+              "dalvikPrivateDirtyKb": 55880,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74593,
+              "dalvikHeapAllocKb": 50017,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 115687,
+              "totalPrivateDirtyKb": 76992,
+              "totalPrivateCleanKb": 23696,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 44432,
+              "nativePrivateDirtyKb": 43588,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 48444,
+              "nativeHeapAllocKb": 46162,
+              "nativeHeapFreeKb": 2281,
+              "dalvikPssKb": 9737,
+              "dalvikPrivateDirtyKb": 9200,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6268,
+              "dalvikHeapAllocKb": 3134,
+              "dalvikHeapFreeKb": 3134
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 119099,
+              "totalPrivateDirtyKb": 80368,
+              "totalPrivateCleanKb": 23816,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 45500,
+              "nativePrivateDirtyKb": 44692,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 49624,
+              "nativeHeapAllocKb": 47573,
+              "nativeHeapFreeKb": 2050,
+              "dalvikPssKb": 11773,
+              "dalvikPrivateDirtyKb": 11216,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6524,
+              "dalvikHeapAllocKb": 3262,
+              "dalvikHeapFreeKb": 3262
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 491034,
+              "totalPrivateDirtyKb": 453548,
+              "totalPrivateCleanKb": 23920,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 312936,
+              "nativePrivateDirtyKb": 312472,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 307064,
+              "nativeHeapAllocKb": 301027,
+              "nativeHeapFreeKb": 6036,
+              "dalvikPssKb": 59013,
+              "dalvikPrivateDirtyKb": 58912,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74550,
+              "dalvikHeapAllocKb": 49974,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 493573,
+              "totalPrivateDirtyKb": 456068,
+              "totalPrivateCleanKb": 23960,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 313277,
+              "nativePrivateDirtyKb": 312820,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 307344,
+              "nativeHeapAllocKb": 301262,
+              "nativeHeapFreeKb": 6081,
+              "dalvikPssKb": 61145,
+              "dalvikPrivateDirtyKb": 61044,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74609,
+              "dalvikHeapAllocKb": 50033,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "memory": {
+              "totalPssKb": 121174,
+              "totalPrivateDirtyKb": 82376,
+              "totalPrivateCleanKb": 23836,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 48569,
+              "nativePrivateDirtyKb": 47752,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 50004,
+              "nativeHeapAllocKb": 48208,
+              "nativeHeapFreeKb": 1795,
+              "dalvikPssKb": 10587,
+              "dalvikPrivateDirtyKb": 9992,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6702,
+              "dalvikHeapAllocKb": 3351,
+              "dalvikHeapFreeKb": 3351
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 120340,
+              "totalPrivateDirtyKb": 81568,
+              "totalPrivateCleanKb": 23760,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 47314,
+              "nativePrivateDirtyKb": 46488,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 50108,
+              "nativeHeapAllocKb": 48448,
+              "nativeHeapFreeKb": 1659,
+              "dalvikPssKb": 10711,
+              "dalvikPrivateDirtyKb": 10096,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 6763,
+              "dalvikHeapAllocKb": 3382,
+              "dalvikHeapFreeKb": 3381
+            },
+            "timingDnf": true
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "memory": {
+              "totalPssKb": 485264,
+              "totalPrivateDirtyKb": 447956,
+              "totalPrivateCleanKb": 23732,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 312524,
+              "nativePrivateDirtyKb": 312052,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 306792,
+              "nativeHeapAllocKb": 300767,
+              "nativeHeapFreeKb": 6024,
+              "dalvikPssKb": 53869,
+              "dalvikPrivateDirtyKb": 53768,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74596,
+              "dalvikHeapAllocKb": 50020,
+              "dalvikHeapFreeKb": 24576
+            }
+          }
+        ],
+        "failures": [
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"516201442464\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"515707815952\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"516409209120\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"515351573920\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"515353508960\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"514917585744\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 6,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"515333521888\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 7,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"514966868816\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 8,
+            "cycle": 0,
+            "order": "cleanEt->m4Upstream",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"514949057680\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          },
+          {
+            "variant": "m4Upstream",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 9,
+            "cycle": 0,
+            "order": "m4Upstream->cleanEt",
+            "failure": {
+              "category": "timeout",
+              "entry": "octane-m4Upstream",
+              "workload": "create",
+              "scale": 5000,
+              "timeoutMs": 30000,
+              "phase": "operation",
+              "triggerMode": "tap",
+              "message": "Error: timeout waiting for Native timing create.",
+              "evidence": {
+                "backgroundSnapshot": null,
+                "mainLabelNodeCount": 5000,
+                "timingEvents": [],
+                "errors": [
+                  "background snapshot: Error: Octane Native snapshot failed: {\"className\":\"TypeError: cannot read property 'drive' of undefined\",\"description\":\"TypeError: cannot read property 'drive' of undefined    at <eval> (:1:50)\\n\",\"objectId\":\"514963715200\",\"subtype\":\"error\",\"type\":\"object\"}"
+                ]
+              }
+            }
+          }
+        ],
+        "fatalError": null
+      },
+      "interpretation": "All 10 upstream arms reached exactly 5,000 Native labels but emitted no timing event. Element Template fails the settled Native memory screen by a wide margin; this is memory-only evidence."
+    },
+    "elementTemplateVsMergedAutomatic": {
+      "pairs": 6,
+      "summary": {
+        "totalPssKb": {
+          "candidateMedianKb": 492768,
+          "comparatorMedianKb": 452941.5,
+          "pairedGeometricMean": 1.098702487544619,
+          "pairedRatios": [
+            1.1429601203252107,
+            1.0631748947767887,
+            1.0876224568359012,
+            1.0783195713531848,
+            1.1274335593305835,
+            1.0947835033830007
+          ]
+        },
+        "nativePssKb": {
+          "candidateMedianKb": 314205.5,
+          "comparatorMedianKb": 277366.5,
+          "pairedGeometricMean": 1.1357263941059401,
+          "pairedRatios": [
+            1.1357267887886013,
+            1.1451651603615132,
+            1.1319657724830108,
+            1.1271305645861591,
+            1.1439135629772104,
+            1.1305755395683452
+          ]
+        },
+        "nativeHeapAllocKb": {
+          "candidateMedianKb": 301288,
+          "comparatorMedianKb": 262643,
+          "pairedGeometricMean": 1.1491521502108943,
+          "pairedRatios": [
+            1.1529211454516368,
+            1.1553322496051037,
+            1.146961212549753,
+            1.1394609448038062,
+            1.1538623722030337,
+            1.1464536901717208
+          ]
+        },
+        "dalvikPssKb": {
+          "candidateMedianKb": 59001,
+          "comparatorMedianKb": 66045,
+          "pairedGeometricMean": 0.9993128231924697,
+          "pairedRatios": [
+            1.276528557804387,
+            0.909350364850897,
+            0.8757823068575421,
+            0.8372010603762351,
+            1.2667587218710221,
+            0.9236919133815841
+          ]
+        }
+      },
+      "latencyPairedGeometricMean": 0.3654340560786298,
+      "raw": {
+        "capturedAt": "2026-09-14T23:22:49.399Z",
+        "device": {
+          "serialSha256": "8b8094eb326cc803f8c9d4a4d088bf126de7f516cce50e85e8af99cf372a65fe"
+        },
+        "explorer": {
+          "release": "develop-3a954f0",
+          "sha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+          "localSourceCommit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+          "localApkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+          "localApkBytes": 55073821
+        },
+        "method": {
+          "boundary": "native-input-handler-to-second-native-frame",
+          "order": "balanced AB/BA within scale; 6 samples per variant/scale",
+          "scales": [
+            5000
+          ],
+          "workloads": [
+            "create"
+          ],
+          "cycles": 1,
+          "memoryFixedAfterTriggerMs": 30000,
+          "trimMemoryLevel": null,
+          "trimMemoryAt": 0
+        },
+        "samples": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "latencyMs": 2713
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "latencyMs": 7850
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "latencyMs": 7598
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "latencyMs": 2704
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "latencyMs": 2772
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "latencyMs": 7292
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "latencyMs": 7282
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "latencyMs": 2693
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "latencyMs": 2845
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "latencyMs": 7452
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "latencyMs": 7473
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "latencyMs": 2696
+          }
+        ],
+        "semanticChecks": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "nativeLabelCount": 5000,
+            "expected": 5000,
+            "pass": true
+          }
+        ],
+        "preMemorySamples": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 143841,
+              "totalPrivateDirtyKb": 122504,
+              "totalPrivateCleanKb": 6144,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54722,
+              "nativePrivateDirtyKb": 53900,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 58972,
+              "nativeHeapAllocKb": 57560,
+              "nativeHeapFreeKb": 1411,
+              "dalvikPssKb": 13025,
+              "dalvikPrivateDirtyKb": 12392,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8297,
+              "dalvikHeapAllocKb": 4149,
+              "dalvikHeapFreeKb": 4148
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 142717,
+              "totalPrivateDirtyKb": 103592,
+              "totalPrivateCleanKb": 23960,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 55546,
+              "nativePrivateDirtyKb": 54752,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 57580,
+              "nativeHeapAllocKb": 55866,
+              "nativeHeapFreeKb": 1713,
+              "dalvikPssKb": 12323,
+              "dalvikPrivateDirtyKb": 11680,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7957,
+              "dalvikHeapAllocKb": 3979,
+              "dalvikHeapFreeKb": 3978
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 140587,
+              "totalPrivateDirtyKb": 101552,
+              "totalPrivateCleanKb": 23764,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 53938,
+              "nativePrivateDirtyKb": 53128,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 55892,
+              "nativeHeapAllocKb": 54067,
+              "nativeHeapFreeKb": 1824,
+              "dalvikPssKb": 11933,
+              "dalvikPrivateDirtyKb": 11280,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7747,
+              "dalvikHeapAllocKb": 3874,
+              "dalvikHeapFreeKb": 3873
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 141339,
+              "totalPrivateDirtyKb": 102180,
+              "totalPrivateCleanKb": 23976,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 53434,
+              "nativePrivateDirtyKb": 52596,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 57228,
+              "nativeHeapAllocKb": 54611,
+              "nativeHeapFreeKb": 2616,
+              "dalvikPssKb": 11651,
+              "dalvikPrivateDirtyKb": 10988,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7864,
+              "dalvikHeapAllocKb": 3932,
+              "dalvikHeapFreeKb": 3932
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 147057,
+              "totalPrivateDirtyKb": 108008,
+              "totalPrivateCleanKb": 23904,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 58769,
+              "nativePrivateDirtyKb": 57956,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 61440,
+              "nativeHeapAllocKb": 55145,
+              "nativeHeapFreeKb": 6294,
+              "dalvikPssKb": 12141,
+              "dalvikPrivateDirtyKb": 11468,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7853,
+              "dalvikHeapAllocKb": 3927,
+              "dalvikHeapFreeKb": 3926
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 143248,
+              "totalPrivateDirtyKb": 104072,
+              "totalPrivateCleanKb": 23948,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 56108,
+              "nativePrivateDirtyKb": 55276,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 58492,
+              "nativeHeapAllocKb": 55911,
+              "nativeHeapFreeKb": 2580,
+              "dalvikPssKb": 12331,
+              "dalvikPrivateDirtyKb": 11648,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8006,
+              "dalvikHeapAllocKb": 4003,
+              "dalvikHeapFreeKb": 4003
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 146325,
+              "totalPrivateDirtyKb": 106920,
+              "totalPrivateCleanKb": 24052,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 58752,
+              "nativePrivateDirtyKb": 57936,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 62392,
+              "nativeHeapAllocKb": 55860,
+              "nativeHeapFreeKb": 6531,
+              "dalvikPssKb": 12537,
+              "dalvikPrivateDirtyKb": 11840,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8072,
+              "dalvikHeapAllocKb": 4036,
+              "dalvikHeapFreeKb": 4036
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 145183,
+              "totalPrivateDirtyKb": 105884,
+              "totalPrivateCleanKb": 24080,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 56379,
+              "nativePrivateDirtyKb": 55564,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 63548,
+              "nativeHeapAllocKb": 56449,
+              "nativeHeapFreeKb": 7098,
+              "dalvikPssKb": 12459,
+              "dalvikPrivateDirtyKb": 11752,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8156,
+              "dalvikHeapAllocKb": 4078,
+              "dalvikHeapFreeKb": 4078
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 146759,
+              "totalPrivateDirtyKb": 107696,
+              "totalPrivateCleanKb": 23800,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 58589,
+              "nativePrivateDirtyKb": 57776,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 59240,
+              "nativeHeapAllocKb": 56535,
+              "nativeHeapFreeKb": 2704,
+              "dalvikPssKb": 12133,
+              "dalvikPrivateDirtyKb": 11416,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 8141,
+              "dalvikHeapAllocKb": 4071,
+              "dalvikHeapFreeKb": 4070
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 137738,
+              "totalPrivateDirtyKb": 98580,
+              "totalPrivateCleanKb": 23952,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 51004,
+              "nativePrivateDirtyKb": 50188,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 57196,
+              "nativeHeapAllocKb": 54096,
+              "nativeHeapFreeKb": 3099,
+              "dalvikPssKb": 12003,
+              "dalvikPrivateDirtyKb": 11276,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7700,
+              "dalvikHeapAllocKb": 3850,
+              "dalvikHeapFreeKb": 3850
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 141193,
+              "totalPrivateDirtyKb": 102008,
+              "totalPrivateCleanKb": 23932,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54465,
+              "nativePrivateDirtyKb": 53656,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 56680,
+              "nativeHeapAllocKb": 54243,
+              "nativeHeapFreeKb": 2436,
+              "dalvikPssKb": 12023,
+              "dalvikPrivateDirtyKb": 11288,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7747,
+              "dalvikHeapAllocKb": 3874,
+              "dalvikHeapFreeKb": 3873
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 142587,
+              "totalPrivateDirtyKb": 103292,
+              "totalPrivateCleanKb": 23976,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 54412,
+              "nativePrivateDirtyKb": 53596,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 56824,
+              "nativeHeapAllocKb": 54521,
+              "nativeHeapFreeKb": 2302,
+              "dalvikPssKb": 11955,
+              "dalvikPrivateDirtyKb": 11208,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 7905,
+              "dalvikHeapAllocKb": 3953,
+              "dalvikHeapFreeKb": 3952
+            }
+          }
+        ],
+        "memorySamples": [
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 494704,
+              "totalPrivateDirtyKb": 457236,
+              "totalPrivateCleanKb": 23896,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 315330,
+              "nativePrivateDirtyKb": 314872,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 308972,
+              "nativeHeapAllocKb": 302681,
+              "nativeHeapFreeKb": 6290,
+              "dalvikPssKb": 60233,
+              "dalvikPrivateDirtyKb": 60132,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 75174,
+              "dalvikHeapAllocKb": 50598,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 0,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 432827,
+              "totalPrivateDirtyKb": 395336,
+              "totalPrivateCleanKb": 23988,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 277646,
+              "nativePrivateDirtyKb": 277156,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 276672,
+              "nativeHeapAllocKb": 262534,
+              "nativeHeapFreeKb": 14137,
+              "dalvikPssKb": 47185,
+              "dalvikPrivateDirtyKb": 47084,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 68449,
+              "dalvikHeapAllocKb": 43905,
+              "dalvikHeapFreeKb": 24544
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 463776,
+              "totalPrivateDirtyKb": 426408,
+              "totalPrivateCleanKb": 23792,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 275066,
+              "nativePrivateDirtyKb": 274620,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 268364,
+              "nativeHeapAllocKb": 260828,
+              "nativeHeapFreeKb": 7535,
+              "dalvikPssKb": 64821,
+              "dalvikPrivateDirtyKb": 64720,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 68448,
+              "dalvikHeapAllocKb": 43872,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 1,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 493075,
+              "totalPrivateDirtyKb": 455584,
+              "totalPrivateCleanKb": 24004,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 314996,
+              "nativePrivateDirtyKb": 314524,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 306864,
+              "nativeHeapAllocKb": 301343,
+              "nativeHeapFreeKb": 5520,
+              "dalvikPssKb": 58945,
+              "dalvikPrivateDirtyKb": 58844,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74610,
+              "dalvikHeapAllocKb": 50034,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 491601,
+              "totalPrivateDirtyKb": 454144,
+              "totalPrivateCleanKb": 23944,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 313653,
+              "nativePrivateDirtyKb": 313148,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 307140,
+              "nativeHeapAllocKb": 301707,
+              "nativeHeapFreeKb": 5432,
+              "dalvikPssKb": 58913,
+              "dalvikPrivateDirtyKb": 58812,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74578,
+              "dalvikHeapAllocKb": 50002,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 2,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 451996,
+              "totalPrivateDirtyKb": 414468,
+              "totalPrivateCleanKb": 24040,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 277087,
+              "nativePrivateDirtyKb": 276588,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 273000,
+              "nativeHeapAllocKb": 263049,
+              "nativeHeapFreeKb": 9950,
+              "dalvikPssKb": 67269,
+              "dalvikPrivateDirtyKb": 67168,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 69087,
+              "dalvikHeapAllocKb": 44511,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 456693,
+              "totalPrivateDirtyKb": 419000,
+              "totalPrivateCleanKb": 24080,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 278682,
+              "nativePrivateDirtyKb": 278192,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 270772,
+              "nativeHeapAllocKb": 264203,
+              "nativeHeapFreeKb": 6568,
+              "dalvikPssKb": 70541,
+              "dalvikPrivateDirtyKb": 70440,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 69690,
+              "dalvikHeapAllocKb": 45114,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 3,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 492461,
+              "totalPrivateDirtyKb": 454780,
+              "totalPrivateCleanKb": 24172,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 314111,
+              "nativePrivateDirtyKb": 313612,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 306720,
+              "nativeHeapAllocKb": 301049,
+              "nativeHeapFreeKb": 5670,
+              "dalvikPssKb": 59057,
+              "dalvikPrivateDirtyKb": 58956,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74600,
+              "dalvikHeapAllocKb": 50024,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 491720,
+              "totalPrivateDirtyKb": 454400,
+              "totalPrivateCleanKb": 23828,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 314018,
+              "nativePrivateDirtyKb": 313564,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 307112,
+              "nativeHeapAllocKb": 301000,
+              "nativeHeapFreeKb": 6111,
+              "dalvikPssKb": 58713,
+              "dalvikPrivateDirtyKb": 58612,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74574,
+              "dalvikHeapAllocKb": 49998,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 4,
+            "cycle": 0,
+            "order": "cleanEt->mergedCurrent",
+            "memory": {
+              "totalPssKb": 436141,
+              "totalPrivateDirtyKb": 398664,
+              "totalPrivateCleanKb": 24044,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 274512,
+              "nativePrivateDirtyKb": 274068,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 269304,
+              "nativeHeapAllocKb": 260863,
+              "nativeHeapFreeKb": 8440,
+              "dalvikPssKb": 46349,
+              "dalvikPrivateDirtyKb": 46248,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 68417,
+              "dalvikHeapAllocKb": 43841,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "mergedCurrent",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 453887,
+              "totalPrivateDirtyKb": 416452,
+              "totalPrivateCleanKb": 23960,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 278000,
+              "nativePrivateDirtyKb": 277536,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 271592,
+              "nativeHeapAllocKb": 262752,
+              "nativeHeapFreeKb": 8839,
+              "dalvikPssKb": 68669,
+              "dalvikPrivateDirtyKb": 68568,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 69146,
+              "dalvikHeapAllocKb": 44570,
+              "dalvikHeapFreeKb": 24576
+            }
+          },
+          {
+            "variant": "cleanEt",
+            "workload": "create",
+            "scale": 5000,
+            "repetition": 5,
+            "cycle": 0,
+            "order": "mergedCurrent->cleanEt",
+            "memory": {
+              "totalPssKb": 496908,
+              "totalPrivateDirtyKb": 459380,
+              "totalPrivateCleanKb": 24004,
+              "totalSwapDirtyKb": 24,
+              "nativePssKb": 314300,
+              "nativePrivateDirtyKb": 313880,
+              "nativePrivateCleanKb": 0,
+              "nativeHeapSizeKb": 307004,
+              "nativeHeapAllocKb": 301233,
+              "nativeHeapFreeKb": 5770,
+              "dalvikPssKb": 63429,
+              "dalvikPrivateDirtyKb": 63328,
+              "dalvikPrivateCleanKb": 0,
+              "dalvikHeapSizeKb": 74637,
+              "dalvikHeapAllocKb": 50061,
+              "dalvikHeapFreeKb": 24576
+            }
+          }
+        ],
+        "failures": [],
+        "fatalError": null
+      },
+      "interpretation": "The Element Template route is faster on create5k but adds about 15% settled Native heap allocation over the already-high merged automatic path. Six pairs are diagnostic, below the formal ten-pair minimum."
+    }
+  },
+  "m0CurrentNativeDnf": {
+    "develop5k": {
+      "capturedAt": "2026-09-14T22:46:44.190Z",
+      "device": {
+        "serialSha256": "a8e352160cdf08a36ed9aefdcf360160b92636936a6b29895c91d73ebc4f31cf"
+      },
+      "explorer": {
+        "release": "develop-3a954f0",
+        "sha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+        "localSourceCommit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+        "localApkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+        "localApkBytes": 55073821
+      },
+      "method": {
+        "boundary": "native-input-handler-to-second-native-frame",
+        "order": "balanced AB/BA within scale; 10 samples per variant/scale",
+        "scales": [
+          5000
+        ],
+        "workloads": [
+          "create"
+        ],
+        "cycles": 1,
+        "trimMemoryLevel": null,
+        "trimMemoryAt": 0
+      },
+      "sampleCounts": {
+        "cleanEt": 10,
+        "m0Current": 0
+      },
+      "semanticChecks": [
+        {
+          "variant": "cleanEt",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 0,
+          "cycle": 0,
+          "nativeLabelCount": 5000,
+          "expected": 5000,
+          "pass": true
+        }
+      ],
+      "failures": [
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 0,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 1,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 2,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 3,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 4,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 5,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 6,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 7,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 8,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 9,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        }
+      ],
+      "fatalError": null
+    },
+    "develop1k": {
+      "capturedAt": "2026-09-14T22:48:17.073Z",
+      "device": {
+        "serialSha256": "a8e352160cdf08a36ed9aefdcf360160b92636936a6b29895c91d73ebc4f31cf"
+      },
+      "explorer": {
+        "release": "develop-3a954f0",
+        "sha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+        "localSourceCommit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+        "localApkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+        "localApkBytes": 55073821
+      },
+      "method": {
+        "boundary": "native-input-handler-to-second-native-frame",
+        "order": "balanced AB/BA within scale; 10 samples per variant/scale",
+        "scales": [
+          1000
+        ],
+        "workloads": [
+          "create"
+        ],
+        "cycles": 1,
+        "trimMemoryLevel": null,
+        "trimMemoryAt": 0
+      },
+      "sampleCounts": {
+        "cleanEt": 10,
+        "m0Current": 0
+      },
+      "semanticChecks": [
+        {
+          "variant": "cleanEt",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 0,
+          "cycle": 0,
+          "nativeLabelCount": 1000,
+          "expected": 1000,
+          "pass": true
+        }
+      ],
+      "failures": [
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 0,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 1,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 2,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 3,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 4,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 5,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 6,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 7,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 8,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 1000,
+          "repetition": 9,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 1,000 rows\", found 0."
+        }
+      ],
+      "fatalError": null
+    },
+    "explorer4105k": {
+      "capturedAt": "2026-09-14T23:25:08.650Z",
+      "device": {
+        "serialSha256": "bc37f8409450ce1d6d9b513329eaec0ed542828a2aea0d23aacb5d6d71b814ad"
+      },
+      "sampleCounts": {
+        "cleanEt": 2,
+        "m0Current": 0
+      },
+      "semanticChecks": [
+        {
+          "variant": "cleanEt",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 0,
+          "cycle": 0,
+          "nativeLabelCount": 5000,
+          "expected": 5000,
+          "pass": true
+        }
+      ],
+      "failures": [
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 0,
+          "order": "cleanEt->m0Current",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        },
+        {
+          "variant": "m0Current",
+          "workload": "create",
+          "scale": 5000,
+          "repetition": 1,
+          "order": "m0Current->cleanEt",
+          "error": "Error: expected one Native node for \"Create 5,000 rows\", found 0."
+        }
+      ]
+    },
+    "sourceInference": "The frozen e82160f benchmark module constructs MessageChannel unconditionally at module scope, while the later upstream fixture added a Native setTimeout fallback. The repeated blank page is consistent with that source difference, but no console exception was captured, so this remains an inference rather than a verified error string.",
+    "interpretation": "The exact unpatched M0-current Native comparator is unavailable on both tested runtimes. A patched/rebuilt fixture would be a separate identity and cannot silently replace it."
+  },
+  "invalidScreens": [
+    {
+      "artifactSha256": "1c291936a4357894ebb0f8b02e3c2d7c878b6ca57552f865db5aceb5ecb97c0b",
+      "reason": "ET memory was sampled immediately after ACK while upstream memory was sampled after a 30-second timing timeout; excluded because the settle boundary differed."
+    },
+    {
+      "artifactSha256": "a5a17f741c59966f713a0b7166b5b2ae3f53ec24eba22a383e9f7d52e984846c",
+      "reason": "Valid immediate post-ACK ET-vs-merged screen, retained only as peak-direction guidance; not mixed with fixed-30-second settled values."
+    }
+  ],
+  "gates": {
+    "elementTemplateVsMergedSettledNativeHeapAllocationUpperAtMost1_05": false,
+    "elementTemplateVsLatestUpstreamSettledNativeHeapAllocationUpperAtMost1_05": false,
+    "m0CurrentNativeComparatorRunnable": false,
+    "latestUpstreamLatencyComparable": false,
+    "defaultSwitchEligible": false
+  },
+  "nextGate": "Attribute and reduce the compiled-program/automatic resident Native allocation plus the Element Template-specific settled overhead without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
+}
