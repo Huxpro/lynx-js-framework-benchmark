@@ -3,12 +3,18 @@
   "capturedAt": "2026-09-14T17:47:02.414Z",
   "qualification": "diagnostic-only-not-formal-performance-evidence",
   "decision": "promote-element-template-route-to-formal-qualification",
-  "reason": "The local Octane Element Template diagnostic bundle is directionally faster than both exact M4 ReactLynx default and Vue Vapor comparator bundles at create 1k and 5k, with exact native row-count checks. The Octane bundle is an ignored artifact from an unmerged working-tree commit, the samples are small, and memory/full-matrix evidence is absent, so no #291 acceptance claim is made.",
+  "reason": "The Octane Element Template diagnostic bundle is directionally faster than both exact M4 ReactLynx default and Vue Vapor comparator bundles at create 1k and 5k, with exact native row-count checks. A clean rebuild from the named unmerged commit reproduces the measured Native bundle byte-for-byte, but the samples are small and memory/full-matrix evidence is absent, so no #291 acceptance claim is made.",
   "provenance": {
     "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
     "successorIssue": "https://github.com/Huxpro/octane/issues/383",
     "elementTemplateImplementationCommit": "101c6a1ba9adb547a944a118f3ad704fbf8a278e",
-    "octaneBundleBuildState": "ignored local build artifact from the Element Template development lineage; identified by immutable SHA-256, but not claimed as a clean reproduction of the named commit and excluded from formal acceptance",
+    "octaneBundleBuildState": "measured ignored artifact reproduced byte-for-byte by a clean production build from the named unmerged commit; excluded from formal acceptance because this audit is only a small-sample partial matrix",
+    "cleanRebuild": {
+      "command": "BENCH_CORE=automatic BENCH_ELEMENT_TEMPLATE=1 BENCH_DIST_TAG=clean101c pnpm --dir benchmarks/lynx-table build:app",
+      "nativeBundleSha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+      "nativeBundleBytes": 262802,
+      "matchedMeasuredArtifact": true
+    },
     "comparatorSourceCommit": "736708bc068a0dbeabefb740ba76d62194371ef2",
     "runnerHead": "62678d1",
     "connectorPackageTreesSha256": "695ac20033d427c7219b41b878a428820c02ff073783f8f409a506e2b76abe8c",
