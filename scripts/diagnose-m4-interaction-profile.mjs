@@ -25,10 +25,10 @@ if (
   targetsArg == null ||
   !Number.isSafeInteger(pairs) ||
   pairs < 1 ||
-  !["remove", "select"].includes(workload)
+  !["clear", "remove", "select"].includes(workload)
 ) {
   throw new Error(
-    "usage: diagnose-m4-interaction-profile --output <file.json> --targets <id=dist,id=dist> [--pairs N] [--workload remove|select]",
+    "usage: diagnose-m4-interaction-profile --output <file.json> --targets <id=dist,id=dist> [--pairs N] [--workload clear|remove|select]",
   );
 }
 
@@ -185,7 +185,10 @@ async function profileTarget({ browser, cdp, origin, target, pair, order }) {
         globalThis.__x.arm(
           selectedWorkload === "select"
             ? { type: "dangerAt", index: 1 }
-            : { type: "rowCount", value: 999 },
+            : {
+                type: "rowCount",
+                value: selectedWorkload === "clear" ? 0 : 999,
+              },
           120000,
         ),
       { selectedWorkload: workload },
@@ -195,6 +198,8 @@ async function profileTarget({ browser, cdp, origin, target, pair, order }) {
     );
     if (workload === "select") {
       await clickCell(page, 1, "col-label");
+    } else if (workload === "clear") {
+      await clickButton(page, "Clear");
     } else {
       await clickCell(page, 2, "col-remove");
     }
@@ -266,14 +271,18 @@ fs.writeFileSync(
         workload: `${workload}@1000`,
         ...(workload === "select"
           ? { preselectedRow: 5, selectedRow: 1 }
-          : { removedRow: 2 }),
+          : workload === "clear"
+            ? { clearedRows: 1000 }
+            : { removedRow: 2 }),
         order: "paired AB/BA",
         outliersRemoved: false,
         warmup: "two create/clear cycles on a fresh page per sample",
         endpoint:
           workload === "select"
             ? "pointer-click-to-first-rAF-with-row-1-selected"
-            : "pointer-click-to-first-rAF-with-999-rows",
+            : workload === "clear"
+              ? "pointer-click-to-first-rAF-with-zero-rows"
+              : "pointer-click-to-first-rAF-with-999-rows",
         profilerSamplingIntervalMicros: 100,
       },
       runs,
