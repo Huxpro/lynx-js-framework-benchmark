@@ -2,8 +2,8 @@
   "protocol": "octane-issue-291-element-template-settled-memory-screen-v1",
   "capturedAt": "2026-09-14T23:26:17.067Z",
   "qualification": "diagnostic-only-not-formal-performance-evidence",
-  "decision": "fail-closed-element-template-vs-merged-settled-memory; latest-upstream-and-frozen-m0-current-native-comparators-unavailable",
-  "reason": "At a fixed 30-second post-trigger boundary on fresh Explorer processes, Element Template retains 1.1492x the merged automatic-core Native heap allocation. The attempted latest-upstream memory comparison is invalid because the timeout recovery restarted Explorer before the memory sample, so its apparent ratio is excluded. The exact frozen M0-current bundle mounts no Native controls on either Explorer 4.1 or source-built Lynx develop, so it cannot provide an unpatched Native memory baseline. These findings block default/formal qualification; no latency score is assigned to latest upstream because that artifact has only legacy-public-source timing capability.",
+  "decision": "fail-closed-element-template-vs-merged-settled-memory; latest-upstream-memory-cohort-incomplete-and-latency-unavailable; frozen-m0-current-native-comparator-unavailable",
+  "reason": "At a fixed 30-second post-trigger boundary on fresh Explorer processes, Element Template retains 1.1492x the merged automatic-core Native heap allocation. A corrected latest-upstream screen that preserves the timed-out page before sampling has nine eligible pairs and directionally favors Element Template at 0.9024x Native heap allocation, but one of ten upstream arms lost its CDP channel before the required semantic census, so the cohort is incomplete and cannot pass a formal gate. The prior apparent 6.5655x regression is invalid because timeout recovery restarted Explorer before the memory sample and is excluded. The exact frozen M0-current bundle mounts no Native controls on either Explorer 4.1 or source-built Lynx develop, so it cannot provide an unpatched Native memory baseline. These findings block default/formal qualification; no latency score is assigned to latest upstream because that artifact has only legacy-public-source timing capability.",
   "provenance": {
     "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
     "implementationIssue": "https://github.com/Huxpro/octane/issues/383",
@@ -51,6 +51,7 @@
       "invalidUpstream": "1c291936a4357894ebb0f8b02e3c2d7c878b6ca57552f865db5aceb5ecb97c0b",
       "fixedUpstream": "ee4dd5297f14ca5727eb69d493bf11fc6e726fca434cff2f92db72aca74942ea",
       "fixedMerged": "49f28057e5d7188ffd309b1b989e449f1eb93c3c120aaebb1012afb9b9841a06",
+      "preservedTimeoutUpstream": "5454ce651ea1ce27b9363ffb35162ba193713b73c5841085b5cbc1d243dc324a",
       "m0Release": "c8234c78ee5cfe9263ba4aea49fafd148f22b4132f3414d5f9ee1128b5459971",
       "runner": "82e6bc9c4dbbc7ca5aeb991e9a284f47e07cf041116695116ace1f15a8c2deb6"
     }
@@ -64,6 +65,89 @@
     "incrementPolicy": "startup-to-post deltas are not ratioed when startup memory falls during the 30-second window; fixed-boundary absolute post values remain paired"
   },
   "fixed30s": {
+    "elementTemplateVsLatestUpstreamPreservedTimeoutPage": {
+      "formalGateEligible": false,
+      "attemptedPairs": 10,
+      "eligiblePairs": 9,
+      "eligibleRepetitions": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        8,
+        9
+      ],
+      "ineligibleRepetitions": [
+        7
+      ],
+      "method": {
+        "longTimeoutMs": 30000,
+        "memoryFixedAfterTriggerMs": 30000,
+        "preserveTimeoutPage": true,
+        "freshExplorerProcessBeforeEveryArm": true,
+        "order": "balanced AB/BA",
+        "outlierRemoval": false
+      },
+      "summary": {
+        "totalPssKb": {
+          "candidateMedianKb": 496783,
+          "comparatorMedianKb": 625522,
+          "pairedGeometricMean": 0.7974173901380703,
+          "approximateT95Interval": [
+            0.7894723191731465,
+            0.805442418501252
+          ]
+        },
+        "nativePssKb": {
+          "candidateMedianKb": 317243,
+          "comparatorMedianKb": 357870,
+          "pairedGeometricMean": 0.8905832895483026,
+          "approximateT95Interval": [
+            0.8850935314719899,
+            0.8961070976347723
+          ]
+        },
+        "nativeHeapAllocKb": {
+          "candidateMedianKb": 301657,
+          "comparatorMedianKb": 334005,
+          "pairedGeometricMean": 0.902374532654136,
+          "approximateT95Interval": [
+            0.9004810323532384,
+            0.9042720145418307
+          ]
+        },
+        "dalvikPssKb": {
+          "candidateMedianKb": 57680,
+          "comparatorMedianKb": 64064,
+          "pairedGeometricMean": 0.9547866731872493,
+          "approximateT95Interval": [
+            0.8641592886057302,
+            1.0549184662087194
+          ]
+        },
+        "dalvikHeapAllocKb": {
+          "candidateMedianKb": 50046,
+          "comparatorMedianKb": 46755,
+          "pairedGeometricMean": 1.0686243099188613,
+          "approximateT95Interval": [
+            1.0634852693052819,
+            1.0737881837287155
+          ]
+        }
+      },
+      "observations": {
+        "elementTemplateTimingSamples": 10,
+        "latestUpstreamTimingDnf": 10,
+        "memorySamples": 19,
+        "eligibleSemanticPairs": 9,
+        "ineligibleAttempt": "repetition 7 latest-upstream CDP channel closed before the Native label census; DOM.performSearch then timed out",
+        "fatalError": null
+      },
+      "interpretation": "The corrected same-process screen reverses the invalid restarted-process direction: all nine eligible pairs favor Element Template for Native heap allocation. It remains diagnostic because the tenth pair lacks required semantic evidence, and latest upstream still exposes no comparable timing acknowledgement. No failed arm or sample is silently dropped."
+    },
     "elementTemplateVsLatestUpstream": {
       "valid": false,
       "invalidReason": "The adapter captured the 5,000-label timeout evidence, then restarted Explorer before returning DNF; the caller's subsequent memory sample therefore measured the restarted process rather than the rendered upstream page. All ratios in this section are preserved as raw observations but excluded from every gate and conclusion.",
@@ -2831,5 +2915,5 @@
     "latestUpstreamLatencyComparable": false,
     "defaultSwitchEligible": false
   },
-  "nextGate": "Capture latest-upstream memory before any timeout recovery restart; attribute and reduce the Element Template-specific settled allocation over merged automatic without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
+  "nextGate": "Repeat the preserve-before-restart latest-upstream screen until a complete ten-pair semantic cohort is obtained; attribute and reduce the Element Template-specific settled allocation over merged automatic without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
 }
