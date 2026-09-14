@@ -2,8 +2,8 @@
   "protocol": "octane-issue-291-element-template-comparator-screen-v1",
   "capturedAt": "2026-09-14T17:47:02.414Z",
   "qualification": "diagnostic-only-not-formal-performance-evidence",
-  "decision": "promote-element-template-route-to-formal-qualification",
-  "reason": "The Octane Element Template diagnostic bundle is directionally faster than both exact M4 ReactLynx default and Vue Vapor comparator bundles at create 1k and 5k, with exact native row-count checks. A clean rebuild from the named unmerged commit reproduces the measured Native bundle byte-for-byte, but the samples are small and memory/full-matrix evidence is absent, so no #291 acceptance claim is made.",
+  "decision": "block-element-template-route-on-native-lifecycle",
+  "reason": "The cleanly reproduced Octane Element Template bundle is directionally faster than both exact M4 ReactLynx default and Vue Vapor comparators on bulk creation, but fresh-process memory is higher than merged Octane and a repeated create-clear lifecycle deterministically exhausts Android's weak JNI global-reference table before the required 20 cycles. This is a qualification failure, not an acceptance result.",
   "provenance": {
     "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
     "successorIssue": "https://github.com/Huxpro/octane/issues/383",
@@ -18,7 +18,10 @@
     "comparatorSourceCommit": "736708bc068a0dbeabefb740ba76d62194371ef2",
     "runnerHead": "62678d1",
     "connectorPackageTreesSha256": "695ac20033d427c7219b41b878a428820c02ff073783f8f409a506e2b76abe8c",
-    "deviceSerialSha256": "7ac0879fc7db050eb93e0363d6d85f41654f264ce604639837da78f3b2460a9e",
+    "deviceSerialSha256": [
+      "7ac0879fc7db050eb93e0363d6d85f41654f264ce604639837da78f3b2460a9e",
+      "bc37f8409450ce1d6d9b513329eaec0ed542828a2aea0d23aacb5d6d71b814ad"
+    ],
     "explorer": {
       "release": "4.1.0",
       "sha256": "6ae29787a2166974c29c2f23d87f3b20a137abcf9a8c17903ad19f3fb7f00cb6"
@@ -98,6 +101,94 @@
         "create@1000": "Octane -45.1%",
         "create@5000": "Octane -72.1%"
       }
+    },
+    {
+      "pair": "octaneElementTemplate-vs-vueVapor-supported-table-screen",
+      "samplesPerArmCell": 2,
+      "zeroDnf": true,
+      "allNativeRowCountsExact": true,
+      "mediansMs": {
+        "create@1000": { "octane": 491.5, "peer": 1088.5, "ratio": 0.4515 },
+        "create@3000": { "octane": 1505.5, "peer": 3151.5, "ratio": 0.4777 },
+        "create@5000": { "octane": 2696, "peer": 5435, "ratio": 0.4960 },
+        "replace@1000": { "octane": 724.5, "peer": 1184.5, "ratio": 0.6117 },
+        "append1k@1000": { "octane": 753, "peer": 1126.5, "ratio": 0.6684 },
+        "update10th@1000": { "octane": 55.5, "peer": 43, "ratio": 1.2907 },
+        "select@1000": { "octane": 27, "peer": 29, "ratio": 0.9310 },
+        "swap@1000": { "octane": 45.5, "peer": 30, "ratio": 1.5167 },
+        "remove@1000": { "octane": 39.5, "peer": 39.5, "ratio": 1.0000 },
+        "clear@1000": { "octane": 84, "peer": 99, "ratio": 0.8485 }
+      },
+      "interpretation": "Bulk cells justify further work, but update and swap do not satisfy the core-cell non-inferiority screen and require powered qualification if the lifecycle failure is fixed."
+    },
+    {
+      "pair": "octaneElementTemplate-vs-mergedOctane-local-cell-screen",
+      "mergedOctaneCommit": "7a523bf20d04578c39fe0b5fe532cdef6dab3e9e",
+      "mergedOctaneBundleSha256": "58790f90fd40f80403469c31415a638743dfcc5b1a349a041395266b085a4fca",
+      "samplesPerArmCell": 4,
+      "zeroDnf": true,
+      "allNativeRowCountsExact": true,
+      "mediansMs": {
+        "update10th@1000": { "octaneElementTemplate": 59.5, "mergedOctane": 56, "ratio": 1.0625 },
+        "select@1000": { "octaneElementTemplate": 27.5, "mergedOctane": 33, "ratio": 0.8333 },
+        "swap@1000": { "octaneElementTemplate": 44.5, "mergedOctane": 42.5, "ratio": 1.0471 },
+        "remove@1000": { "octaneElementTemplate": 39, "mergedOctane": 42, "ratio": 0.9286 },
+        "clear@1000": { "octaneElementTemplate": 79, "mergedOctane": 98, "ratio": 0.8061 }
+      },
+      "interpretation": "The two-sample Vue losses are not explained by a large regression against merged Octane; update and swap remain borderline and ineligible for inference at this sample size."
+    },
+    {
+      "pair": "octaneElementTemplate-vs-mergedOctane-fresh-process-create5k-memory",
+      "lifecycle": "Explorer recycled before every arm",
+      "samplesPerArm": 4,
+      "latencyMs": {
+        "octaneElementTemplate": [2360, 2371, 2409, 2475],
+        "mergedOctane": [7196, 7341, 7153, 7189]
+      },
+      "memoryKb": {
+        "totalPss": {
+          "octaneElementTemplate": [439704, 444975, 428920, 439351],
+          "mergedOctane": [416632, 422818, 422710, 439231],
+          "medianRatio": 1.0397
+        },
+        "nativePss": {
+          "octaneElementTemplate": [264035, 253971, 261288, 265376],
+          "mergedOctane": [235687, 235812, 240162, 234216],
+          "medianRatio": 1.1142
+        },
+        "nativeHeapAlloc": {
+          "octaneElementTemplate": [266989, 255010, 258814, 264705],
+          "mergedOctane": [224551, 227611, 233749, 221957],
+          "medianRatio": 1.1578
+        }
+      },
+      "interpretation": "The speedup carries a real native-allocation cost. This screen compares merged Octane rather than the formal M0 memory arm and therefore cannot pass or fail the frozen M0 ratio by itself."
+    },
+    {
+      "pair": "octaneElementTemplate-vs-mergedOctane-create-clear-retention",
+      "lifecycle": "fresh process per arm, empty-page pre-checkpoint, create1k then clear post-checkpoint",
+      "samplesPerArm": 4,
+      "postClearMedianRatio": {
+        "totalPss": 1.0942,
+        "nativePss": 1.1319,
+        "nativeHeapAlloc": 1.1450
+      },
+      "medianIncrementAboveEmptyKb": {
+        "totalPss": { "octaneElementTemplate": 71209.5, "mergedOctane": 59341 },
+        "nativePss": { "octaneElementTemplate": 55030, "mergedOctane": 42196 },
+        "nativeHeapAlloc": { "octaneElementTemplate": 48889.5, "mergedOctane": 36952.5 }
+      }
+    },
+    {
+      "variant": "octaneElementTemplate",
+      "workload": "20 consecutive create1k-clear cycles on one page",
+      "outcome": "DNF",
+      "completedCycles": 17,
+      "failedAttemptZeroBasedIndex": 17,
+      "lastCompletedLatencyMs": 131,
+      "nativeFatalAtDeviceLocalTime": "09-15 02:04:57.756",
+      "nativeFatal": "JNI ERROR (app bug): weak global reference table overflow (max=51200); SIGABRT",
+      "interpretation": "The required 20-cycle lifecycle gate fails before completion; removed template subtrees are not reclaimed soon enough to keep the Native process reachable."
     }
   ],
   "nativeSemanticChecks": [
@@ -110,6 +201,14 @@
     { "pair": "reactlynxDefault", "variant": "octaneElementTemplate", "scale": 5000, "observed": 5000, "pass": true },
     { "pair": "reactlynxDefault", "variant": "reactlynxDefault", "scale": 5000, "observed": 5000, "pass": true }
   ],
-  "failures": [],
-  "nextGate": "Reproduce the Element Template bundle from a clean independent branch, then run complete semantics, all workloads/scales, startup, bundle, memory, and current-head CI before any #291 acceptance claim."
+  "failures": [
+    {
+      "category": "native-lifecycle-resource-exhaustion",
+      "workload": "create1k-clear repeated",
+      "requiredCycles": 20,
+      "completedCycles": 17,
+      "processSurvived": false
+    }
+  ],
+  "nextGate": "Release removed Element Template subtree handles within the public lifecycle, prove 20/20 create-clear-recreate cycles return live records/listeners/handles to baseline without native-process failure, then rerun powered local-cell, M0/upstream memory, full scorecard, and current-head CI gates."
 }
