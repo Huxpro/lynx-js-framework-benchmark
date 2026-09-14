@@ -1,0 +1,689 @@
+{
+  "kind": "m4-final-production-web-lifecycle-audit",
+  "generatedAt": "2026-09-14T04:24:57.871Z",
+  "entry": "octane-m4-final",
+  "decision": {
+    "pass": true
+  },
+  "identities": {
+    "entryCommit": "7a523bf20d04578c39fe0b5fe532cdef6dab3e9e",
+    "benchmarkHarnessCommit": "1daf8f265282e428064e7aad03061d622574e1ce",
+    "bundle": "rows-0/main.web.bundle",
+    "bundleSha256": "c49dc2d081e72176efab785d03333b90f3f9c803699ec62e9a98bf9a09a3ee49",
+    "sourcePatches": false,
+    "production": true,
+    "machine": {
+      "hostname": "n251-227-236",
+      "platform": "linux",
+      "arch": "x64",
+      "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz"
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "149.0.7827.55",
+      "executablePath": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome"
+    }
+  },
+  "protocol": {
+    "cycles": 20,
+    "sequence": "create 1k -> deliver fresh row listener -> clear -> replay stale listener; next cycle is recreate",
+    "recordBoundary": "composed Lynx Web native element census (X-* hosts)",
+    "listenerBoundary": "fresh row event must commit; the exact captured token must not mutate BTS state after clear",
+    "handleBoundary": "compact clear acknowledgement tuples must contain no member beyond protocol/op/root/version",
+    "profileInstrumentation": false,
+    "productionBundleMutated": false
+  },
+  "baseline": {
+    "rows": 0,
+    "selectedId": null,
+    "physicalHostElements": 28
+  },
+  "totals": {
+    "cycles": 20,
+    "physicalHostBaseline": 28,
+    "staleListenerDeliveriesAccepted": 0,
+    "acknowledgementHandlePayloadMembers": 0
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 1,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 4,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 4,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 2,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 1001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 7,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 7,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 3,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 2001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 10,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 10,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 4,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 3001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 13,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 13,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 5,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 4001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 16,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 16,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 6,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 5001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 19,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 19,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 7,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 6001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 22,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 22,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 8,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 7001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 25,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 25,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 9,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 8001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 28,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 28,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 10,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 9001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 31,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 31,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 11,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 10001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 34,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 34,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 12,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 11001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 37,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 37,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 13,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 12001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 40,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 40,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 14,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 13001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 43,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 43,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 15,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 14001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 46,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 46,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 16,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 15001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 49,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 49,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 17,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 16001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 52,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 52,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 18,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 17001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 55,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 55,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 19,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 18001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 58,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 58,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    },
+    {
+      "cycle": 20,
+      "rows": 1000,
+      "afterCreate": {
+        "rows": 1000,
+        "selectedId": 19001,
+        "physicalHostElements": 4028
+      },
+      "afterClear": {
+        "rows": 0,
+        "selectedId": null,
+        "physicalHostElements": 28
+      },
+      "activeListenerDeliveries": 1,
+      "staleListenerDeliveriesAccepted": 0,
+      "acknowledgements": [
+        {
+          "opcode": 7,
+          "root": 1,
+          "version": 61,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        },
+        {
+          "opcode": 8,
+          "root": 1,
+          "version": 61,
+          "tupleLength": 4,
+          "handlePayloadMembers": 0
+        }
+      ]
+    }
+  ]
+}
