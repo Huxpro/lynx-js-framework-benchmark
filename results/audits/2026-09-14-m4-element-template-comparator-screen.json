@@ -1,0 +1,109 @@
+{
+  "protocol": "octane-issue-291-element-template-comparator-screen-v1",
+  "capturedAt": "2026-09-14T17:47:02.414Z",
+  "qualification": "diagnostic-only-not-formal-performance-evidence",
+  "decision": "promote-element-template-route-to-formal-qualification",
+  "reason": "The local Octane Element Template diagnostic bundle is directionally faster than both exact M4 ReactLynx default and Vue Vapor comparator bundles at create 1k and 5k, with exact native row-count checks. The Octane bundle is an ignored artifact from an unmerged working-tree commit, the samples are small, and memory/full-matrix evidence is absent, so no #291 acceptance claim is made.",
+  "provenance": {
+    "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
+    "successorIssue": "https://github.com/Huxpro/octane/issues/383",
+    "octaneWorkingTreeHead": "a89cb6680bafa26b5397701ceeba4d8c27dcb0fb",
+    "octaneBundleStatus": "ignored local build artifact; identified by immutable SHA-256 and excluded from formal acceptance",
+    "comparatorSourceCommit": "736708bc068a0dbeabefb740ba76d62194371ef2",
+    "runnerHead": "62678d1",
+    "connectorPackageTreesSha256": "695ac20033d427c7219b41b878a428820c02ff073783f8f409a506e2b76abe8c",
+    "deviceSerialSha256": "7ac0879fc7db050eb93e0363d6d85f41654f264ce604639837da78f3b2460a9e",
+    "explorer": {
+      "release": "4.1.0",
+      "sha256": "6ae29787a2166974c29c2f23d87f3b20a137abcf9a8c17903ad19f3fb7f00cb6"
+    }
+  },
+  "method": {
+    "harness": "Lynx Sandbox Android through the benchmark Native adapter",
+    "trigger": "native tap",
+    "octaneBoundary": "native-input-handler-to-second-native-frame",
+    "comparatorBoundary": "native-input-handler-through-host-commit-to-second-native-frame",
+    "order": "balanced AB/BA within scale; two samples per framework/scale",
+    "screeningPolicy": "small-sample route selection only; no confidence interval, memory, startup, complete workload, or acceptance inference",
+    "semanticCheck": "DOM.performSearch('col-label') after the measured boundary",
+    "thermalGate": "adapter-enforced before every bundle load",
+    "explorerRecycleEveryPages": 5
+  },
+  "inputs": {
+    "octaneElementTemplate": {
+      "sha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+      "bytes": 262802,
+      "protocol": "lynx-native-bench-v2"
+    },
+    "reactlynxDefault": {
+      "sha256": "e1a626dfed1e0a38380991edb0bd127c45e167d932d9282fe5f6d4f3c3680346",
+      "bytes": 114904,
+      "protocol": "lynx-native-bench-v3"
+    },
+    "vueVapor": {
+      "sha256": "2d7f21fcc8afd038b7edee8454432651f21960bc9384cc34cadf622d06fca9b5",
+      "bytes": 151141,
+      "protocol": "lynx-native-bench-v3"
+    }
+  },
+  "screens": [
+    {
+      "pair": "octaneElementTemplate-vs-vueVapor",
+      "samples": [
+        { "variant": "octaneElementTemplate", "scale": 1000, "repetition": 0, "order": "octaneElementTemplate->vueVapor", "latencyMs": 532 },
+        { "variant": "vueVapor", "scale": 1000, "repetition": 0, "order": "octaneElementTemplate->vueVapor", "latencyMs": 1085 },
+        { "variant": "vueVapor", "scale": 1000, "repetition": 1, "order": "vueVapor->octaneElementTemplate", "latencyMs": 1062 },
+        { "variant": "octaneElementTemplate", "scale": 1000, "repetition": 1, "order": "vueVapor->octaneElementTemplate", "latencyMs": 491 },
+        { "variant": "octaneElementTemplate", "scale": 5000, "repetition": 0, "order": "octaneElementTemplate->vueVapor", "latencyMs": 2457 },
+        { "variant": "vueVapor", "scale": 5000, "repetition": 0, "order": "octaneElementTemplate->vueVapor", "latencyMs": 5574 },
+        { "variant": "vueVapor", "scale": 5000, "repetition": 1, "order": "vueVapor->octaneElementTemplate", "latencyMs": 5596 },
+        { "variant": "octaneElementTemplate", "scale": 5000, "repetition": 1, "order": "vueVapor->octaneElementTemplate", "latencyMs": 2636 }
+      ],
+      "mediansMs": {
+        "octaneElementTemplate@1000": 511.5,
+        "vueVapor@1000": 1073.5,
+        "octaneElementTemplate@5000": 2546.5,
+        "vueVapor@5000": 5585
+      },
+      "directionalDelta": {
+        "create@1000": "Octane -52.4%",
+        "create@5000": "Octane -54.4%"
+      }
+    },
+    {
+      "pair": "octaneElementTemplate-vs-reactlynxDefault",
+      "samples": [
+        { "variant": "octaneElementTemplate", "scale": 1000, "repetition": 0, "order": "octaneElementTemplate->reactlynxDefault", "latencyMs": 535 },
+        { "variant": "reactlynxDefault", "scale": 1000, "repetition": 0, "order": "octaneElementTemplate->reactlynxDefault", "latencyMs": 1028 },
+        { "variant": "reactlynxDefault", "scale": 1000, "repetition": 1, "order": "reactlynxDefault->octaneElementTemplate", "latencyMs": 1046 },
+        { "variant": "octaneElementTemplate", "scale": 1000, "repetition": 1, "order": "reactlynxDefault->octaneElementTemplate", "latencyMs": 603 },
+        { "variant": "octaneElementTemplate", "scale": 5000, "repetition": 0, "order": "octaneElementTemplate->reactlynxDefault", "latencyMs": 2399 },
+        { "variant": "reactlynxDefault", "scale": 5000, "repetition": 0, "order": "octaneElementTemplate->reactlynxDefault", "latencyMs": 8751 },
+        { "variant": "reactlynxDefault", "scale": 5000, "repetition": 1, "order": "reactlynxDefault->octaneElementTemplate", "latencyMs": 9807 },
+        { "variant": "octaneElementTemplate", "scale": 5000, "repetition": 1, "order": "reactlynxDefault->octaneElementTemplate", "latencyMs": 2771 }
+      ],
+      "mediansMs": {
+        "octaneElementTemplate@1000": 569,
+        "reactlynxDefault@1000": 1037,
+        "octaneElementTemplate@5000": 2585,
+        "reactlynxDefault@5000": 9279
+      },
+      "directionalDelta": {
+        "create@1000": "Octane -45.1%",
+        "create@5000": "Octane -72.1%"
+      }
+    }
+  ],
+  "nativeSemanticChecks": [
+    { "pair": "vueVapor", "variant": "octaneElementTemplate", "scale": 1000, "observed": 1000, "pass": true },
+    { "pair": "vueVapor", "variant": "vueVapor", "scale": 1000, "observed": 1000, "pass": true },
+    { "pair": "vueVapor", "variant": "octaneElementTemplate", "scale": 5000, "observed": 5000, "pass": true },
+    { "pair": "vueVapor", "variant": "vueVapor", "scale": 5000, "observed": 5000, "pass": true },
+    { "pair": "reactlynxDefault", "variant": "octaneElementTemplate", "scale": 1000, "observed": 1000, "pass": true },
+    { "pair": "reactlynxDefault", "variant": "reactlynxDefault", "scale": 1000, "observed": 1000, "pass": true },
+    { "pair": "reactlynxDefault", "variant": "octaneElementTemplate", "scale": 5000, "observed": 5000, "pass": true },
+    { "pair": "reactlynxDefault", "variant": "reactlynxDefault", "scale": 5000, "observed": 5000, "pass": true }
+  ],
+  "failures": [],
+  "nextGate": "Reproduce the Element Template bundle from a clean independent branch, then run complete semantics, all workloads/scales, startup, bundle, memory, and current-head CI before any #291 acceptance claim."
+}
