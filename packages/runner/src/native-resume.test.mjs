@@ -162,6 +162,21 @@ test('comparator v3 table payloads require real host-commit acknowledgements', (
     }, expectations),
     /real rLynxChange/,
   );
+
+  const elementTemplatePayload = {
+    ...payload,
+    transportEvidence: {
+      ...payload.transportEvidence,
+      method: 'rLynxElementTemplateUpdate',
+    },
+  };
+  assert.equal(
+    validateNativeTablePayload(elementTemplatePayload, {
+      ...expectations,
+      entryId: 'reactlynx-m4-et',
+    }),
+    elementTemplatePayload,
+  );
 });
 
 test('comparator v3 storms require one consistent host commit per tick', () => {
@@ -241,6 +256,22 @@ test('comparator v2 startup validates the framework-specific completion callback
       },
     }, expectations),
     /real vueIfrHydrationComplete/,
+  );
+
+
+  const elementTemplatePayload = {
+    ...payload,
+    transportEvidence: {
+      ...payload.transportEvidence,
+      method: 'rLynxElementTemplateUpdate',
+    },
+  };
+  assert.equal(
+    validateNativeStartupPayload(elementTemplatePayload, {
+      ...expectations,
+      entryId: 'reactlynx-m4-et',
+    }),
+    elementTemplatePayload,
   );
 });
 

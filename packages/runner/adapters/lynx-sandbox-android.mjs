@@ -301,6 +301,17 @@ function expectedStormTicks(name) {
 
 const isOctaneEntryId = (entryId) => entryId === 'octane' || entryId.startsWith('octane-');
 
+function expectedComparatorHostCommitMethod(entryId, { startup = false } = {}) {
+  if (entryId?.startsWith('reactlynx-')) {
+    return entryId.endsWith('-et')
+      ? 'rLynxElementTemplateUpdate'
+      : 'rLynxChange';
+  }
+  return startup && entryId?.includes('-ifr')
+    ? 'vueIfrHydrationComplete'
+    : 'vuePatchUpdate';
+}
+
 export function requiresOctaneDriverReadiness({ framework, suite, triggerMode }) {
   return framework === 'octane' && suite === 'table' && triggerMode === 'driver';
 }
@@ -418,9 +429,7 @@ function validateNativeTablePayloadUnchecked(payload, {
     }
     const transport = assertObject(payload.transportEvidence, 'Native table payload.transportEvidence');
     if (stormTicks === null) {
-      const expectedMethod = entryId?.startsWith('reactlynx-')
-        ? 'rLynxChange'
-        : 'vuePatchUpdate';
+      const expectedMethod = expectedComparatorHostCommitMethod(entryId);
       if (
         transport.kind !== 'framework-host-commit-callback'
         || transport.method !== expectedMethod
@@ -442,9 +451,7 @@ function validateNativeTablePayloadUnchecked(payload, {
           `Comparator Native ${expectedName} lacks ${stormTicks} host-commit callbacks.`,
         );
       }
-      const expectedMethod = entryId?.startsWith('reactlynx-')
-        ? 'rLynxChange'
-        : 'vuePatchUpdate';
+      const expectedMethod = expectedComparatorHostCommitMethod(entryId);
       if (
         !Array.isArray(transport.methods)
         || transport.methods.length !== 1
@@ -523,11 +530,9 @@ function validateNativeStartupPayloadUnchecked(payload, {
       throw new Error('Comparator startup transport acknowledgement is outside the render interval.');
     }
     const transport = assertObject(payload.transportEvidence, 'Native startup payload.transportEvidence');
-    const expectedMethod = entryId?.startsWith('reactlynx-')
-      ? 'rLynxChange'
-      : entryId?.includes('-ifr')
-        ? 'vueIfrHydrationComplete'
-        : 'vuePatchUpdate';
+    const expectedMethod = expectedComparatorHostCommitMethod(entryId, {
+      startup: true,
+    });
     if (
       transport.kind !== 'framework-host-commit-callback'
       || transport.method !== expectedMethod
