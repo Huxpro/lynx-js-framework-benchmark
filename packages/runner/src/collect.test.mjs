@@ -1794,14 +1794,14 @@ test('history audits every run but publishes only complete source-defined featur
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
   // The invalidated pre-verifier process-cgroup source remains archive-only.
   // The replacement run contributes one verified 108-record matrix for each
-  // still-byte-identical entry. The refreshed Hux composite has new artifacts,
-  // so its older process-cgroup source remains archive-only.
+  // still-byte-identical Vue entry. Refreshed ReactLynx and Octane artifacts
+  // keep their older process-cgroup sources archive-only.
   const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
     '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
-  assert.equal(verifiedProcessRun.length, 648);
+  assert.equal(verifiedProcessRun.length, 432);
   assert.deepEqual(
     [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
-    ['octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+    ['vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
   );
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
@@ -1809,7 +1809,7 @@ test('history audits every run but publishes only complete source-defined featur
   // The complete explicit M3 Native tier atomically replaces the legacy
   // global-tier cohort. Its 184 source cells publish together; historical and
   // incomplete observations remain archive-only.
-  assert.equal(retainedRecords.length, 3744);
+  assert.equal(retainedRecords.length, 2880);
   assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 184);
   assert.equal(out.nativeObservationRecords.length, 0);
   assert.deepEqual(out.nativeCoverage.summary, {
@@ -1831,11 +1831,11 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  // The current clean-composite run supplies all seven JIT entries. Older
-  // regimes retain only entries whose artifact receipt is still byte-identical.
-  assert.equal(currentWeb.entryIds.length, 7);
-  assert.equal(currentWeb.entryIds.includes('octane'), true);
-  assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
+  // Until the refreshed Web campaign lands, historical regimes retain only
+  // entries whose artifact receipt is still byte-identical.
+  assert.equal(currentWeb.entryIds.length, 4);
+  assert.equal(currentWeb.entryIds.includes('octane'), false);
+  assert.equal(currentWeb.entryIds.includes('octane-hux'), false);
   assert.equal(currentWeb.entryIds.includes('octane-pr-791'), false);
   const currentNative = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'native',
@@ -1950,8 +1950,8 @@ test('history audits every run but publishes only complete source-defined featur
   assert.equal(replay.minimumReps, 11);
   assert.equal(replay.cellKeys.length, 12);
   assert.equal(replay.cellKeys.includes('clear@1000'), true);
-  assert.equal(replay.checkpoints.length, webCheckpointIds.length - 1);
-  assert.equal(replay.checkpoints.some(({ checkpointId }) => checkpointId === 'current-main'), false);
+  assert.equal(replay.checkpoints.length, webCheckpointIds.length);
+  assert.equal(replay.checkpoints.some(({ checkpointId }) => checkpointId === 'current-main'), true);
   const stablePeerCells = [];
   for (const replayCheckpoint of replay.checkpoints) {
     const checkpoint = out.history.checkpoints.find((candidate) =>

@@ -136,6 +136,66 @@ test('Hux vendor publishes the reviewed #269 + #272 composite for Web and Native
   }
 });
 
+test('Hux branch-head vendor publishes a clean Web-only new-lynx entry', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-hux-branch-head-'));
+  const repo = path.join(dir, 'benchmark');
+  const build = path.join(dir, 'octane');
+  try {
+    fs.mkdirSync(path.join(repo, 'scripts'), { recursive: true });
+    fs.copyFileSync(sourceScript, path.join(repo, 'scripts/vendor-entries.mjs'));
+    fs.mkdirSync(path.join(build, 'packages/octane'), { recursive: true });
+    fs.writeFileSync(
+      path.join(build, 'packages/octane/package.json'),
+      JSON.stringify({ version: '9.9.9' }),
+    );
+    for (const rows of [0, 1000, 10000, 30000]) {
+      const output = path.join(
+        build,
+        'benchmarks/lynx-table/app',
+        rows === 0 ? 'dist' : `dist-rows${rows}`,
+      );
+      fs.mkdirSync(output, { recursive: true });
+      fs.writeFileSync(path.join(output, 'main.web.bundle'), `head-web-${rows}`);
+      fs.writeFileSync(path.join(output, 'main.lynx.bundle'), `head-lynx-${rows}`);
+    }
+    git(build, 'init', '-b', 'new-lynx');
+    git(build, 'config', 'user.name', 'Vendor Test');
+    git(build, 'config', 'user.email', 'vendor@example.test');
+    git(build, 'add', '.');
+    git(build, 'commit', '-m', 'new-lynx head');
+    const commit = git(build, 'rev-parse', 'HEAD');
+    const vendored = spawnSync(process.execPath, [path.join(repo, 'scripts/vendor-entries.mjs')], {
+      cwd: repo,
+      env: {
+        ...process.env,
+        VENDOR_ONLY: 'octane-hux',
+        OCTANE_HUX_HEAD_BUILD: build,
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(vendored.status, 0, vendored.stderr);
+    const manifest = JSON.parse(fs.readFileSync(
+      path.join(repo, 'entries/octane-hux/entry.json'),
+      'utf8',
+    ));
+    assert.equal(manifest.label, 'Octane (Huxpro)');
+    assert.equal(manifest.frameworkVersion, '9.9.9');
+    assert.equal(manifest.tier, 'featured');
+    assert.deepEqual(manifest.harnesses, ['web']);
+    assert.equal(manifest.provenance.commit, commit);
+    assert.equal(manifest.provenance.ref, 'new-lynx');
+    assert.equal(manifest.provenance.patched, false);
+    assert.equal(manifest.provenance.patchFile, null);
+    assert.deepEqual(manifest.provenance.buildEnv, {
+      BENCH_CORE: 'universal',
+      WEB_SOURCE: 'clean-new-lynx-head',
+    });
+    assert.equal(Object.keys(manifest.provenance.sha256).length, 8);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('PR #791 vendor keeps a clean Web-only archive entry', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vendor-octane-pr-791-'));
   const repo = path.join(dir, 'benchmark');

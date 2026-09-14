@@ -313,34 +313,52 @@ for (const id of ids) {
     }
   }
   if (id === 'octane-hux') {
-    if (manifest.label !== 'Octane (Hux)') fail(`${id}: public label must be Octane (Hux)`);
-    if (manifest.tier !== 'featured') fail(`${id}: Hux composite entry must be featured`);
-    if (manifest.provenance.ref !== 'composite:pull/269/head+pull/272/head') {
-      fail(`${id}: provenance.ref must identify the #269 + #272 composite`);
-    }
-    const expectedInputs = {
-      'pull/269/head': 'b166e43f9a59864c1c887f24e8448d6014542631',
-      'pull/272/head': '66ff34a3f50d6b53fdb7b55e594c4fa11e4bfe6f',
-    };
-    if (JSON.stringify(manifest.provenance.inputCommits) !== JSON.stringify(expectedInputs)) {
-      fail(`${id}: provenance.inputCommits must pin PR #269 and PR #272 heads`);
-    }
-    if (manifest.provenance.patched !== true
-      || manifest.provenance.patchFile !== 'entries/_patches/octane-hux-native-bench.patch') {
-      fail(`${id}: Hux Native instrumentation patch provenance is missing`);
-    }
-    if (manifest.provenance.buildEnv?.BENCH_CORE !== 'universal'
-      || manifest.provenance.buildEnv?.WEB_SOURCE !== 'clean-composite'
-      || manifest.provenance.buildEnv?.NATIVE_SOURCE !== 'reviewed-instrumentation-patch'
-      || manifest.provenance.buildEnv?.NATIVE_TABLE_PROTOCOL !== 'lynx-native-bench-v2'
-      || manifest.provenance.buildEnv?.NATIVE_STARTUP_PROTOCOL !== 'lynx-native-startup-v1') {
-      fail(`${id}: Hux composite build environment does not pin the Native producer contracts`);
+    if (manifest.tier !== 'featured') fail(`${id}: current Hux entry must be featured`);
+    if (manifest.provenance.ref === 'new-lynx') {
+      if (manifest.label !== 'Octane (Huxpro)') {
+        fail(`${id}: new-lynx branch-head label must be Octane (Huxpro)`);
+      }
+      if (manifest.provenance.source !== 'https://github.com/Huxpro/octane'
+        || manifest.provenance.patched !== false
+        || manifest.provenance.patchFile != null) {
+        fail(`${id}: new-lynx branch head must use a clean Huxpro checkout`);
+      }
+      if (manifest.provenance.buildEnv?.BENCH_CORE !== 'universal'
+        || manifest.provenance.buildEnv?.WEB_SOURCE !== 'clean-new-lynx-head') {
+        fail(`${id}: new-lynx branch-head build environment is incomplete`);
+      }
+      if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web'])) {
+        fail(`${id}: new-lynx branch-head refresh is Web-only until Native data exists`);
+      }
+    } else {
+      if (manifest.label !== 'Octane (Hux)') fail(`${id}: composite label must be Octane (Hux)`);
+      if (manifest.provenance.ref !== 'composite:pull/269/head+pull/272/head') {
+        fail(`${id}: provenance.ref must identify the #269 + #272 composite`);
+      }
+      const expectedInputs = {
+        'pull/269/head': 'b166e43f9a59864c1c887f24e8448d6014542631',
+        'pull/272/head': '66ff34a3f50d6b53fdb7b55e594c4fa11e4bfe6f',
+      };
+      if (JSON.stringify(manifest.provenance.inputCommits) !== JSON.stringify(expectedInputs)) {
+        fail(`${id}: provenance.inputCommits must pin PR #269 and PR #272 heads`);
+      }
+      if (manifest.provenance.patched !== true
+        || manifest.provenance.patchFile !== 'entries/_patches/octane-hux-native-bench.patch') {
+        fail(`${id}: Hux Native instrumentation patch provenance is missing`);
+      }
+      if (manifest.provenance.buildEnv?.BENCH_CORE !== 'universal'
+        || manifest.provenance.buildEnv?.WEB_SOURCE !== 'clean-composite'
+        || manifest.provenance.buildEnv?.NATIVE_SOURCE !== 'reviewed-instrumentation-patch'
+        || manifest.provenance.buildEnv?.NATIVE_TABLE_PROTOCOL !== 'lynx-native-bench-v2'
+        || manifest.provenance.buildEnv?.NATIVE_STARTUP_PROTOCOL !== 'lynx-native-startup-v1') {
+        fail(`${id}: Hux composite build environment does not pin the Native producer contracts`);
+      }
+      if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
+        fail(`${id}: Hux composite entry must explicitly support Web and Native`);
+      }
     }
     if (manifest.webLab != null || manifest.nativeLab != null || manifest.ranking != null) {
       fail(`${id}: Hux new-lynx entry must not use Lab contracts`);
-    }
-    if (JSON.stringify(manifest.harnesses) !== JSON.stringify(['web', 'native'])) {
-      fail(`${id}: Hux composite entry must explicitly support Web and Native`);
     }
   }
   if (id === 'octane-hux1' || id === 'octane-hux2') {

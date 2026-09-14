@@ -102,7 +102,7 @@ test('framework hover cards own source links and exact plugin options', () => {
   assert.equal(entry('vue-vapor-ifr').label, 'Vue Vapor +IFR');
   assert.match(entry('vue-vdom-ifr-et').configuration.summary, /enableElementTemplates: true/);
   assert.match(entry('vue-vapor-ifr').configuration.summary, /enableElementTemplates: false/);
-  assert.equal(entry('octane-hux').label, 'Octane (Hux)');
+  assert.equal(entry('octane-hux').label, 'Octane (Huxpro)');
   assert.equal(entry('octane-hux1').tier, 'archive');
   assert.equal(entry('octane-hux2').tier, 'archive');
   assert.equal(entry('octane-hux2').supersededBy, 'octane-hux');
