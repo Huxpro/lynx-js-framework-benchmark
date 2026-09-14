@@ -309,9 +309,8 @@ for (const id of ids) {
     const roadmap = manifest.roadmap;
     const receipts = manifest.provenance?.receipts;
     const expectedHarnesses = id === 'reactlynx-m3-et' ? ['native'] : ['web', 'native'];
-    if (manifest.tier !== 'archive'
-      || JSON.stringify(manifest.tiers) !== JSON.stringify({ native: 'featured' })) {
-      fail(`${id}: M3 identity must be archive globally and featured only in Native`);
+    if (manifest.tier !== 'archive' || manifest.tiers != null) {
+      fail(`${id}: superseded M3 identity must remain explicit-selection archive data`);
     }
     if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
       fail(`${id}: M3 identity has the wrong executable harness set`);
@@ -461,8 +460,9 @@ for (const id of M4_ENTRY_IDS) {
   const roadmap = manifest.roadmap;
   const receipts = manifest.provenance?.receipts;
   const expectedHarnesses = id === 'reactlynx-m4-et' ? ['native'] : ['web', 'native'];
-  if (manifest.tier !== 'archive' || manifest.tiers != null) {
-    fail(`${id}: M4 evidence identity must remain explicit-selection archive data`);
+  if (manifest.tier !== 'archive'
+    || JSON.stringify(manifest.tiers) !== JSON.stringify({ native: 'featured' })) {
+    fail(`${id}: M4 identity must be archive globally and featured only in Native`);
   }
   if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
     fail(`${id}: M4 identity has the wrong executable harness set`);
@@ -652,8 +652,8 @@ const currentNativeIds = ids.flatMap((id) => {
   const manifest = JSON.parse(fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'));
   return manifest.tiers?.native === 'featured' ? [id] : [];
 }).sort();
-if (JSON.stringify(currentNativeIds) !== JSON.stringify([...M3_ENTRY_IDS].sort())) {
-  fail('the explicit current Native cohort must contain exactly the frozen M3 identities');
+if (JSON.stringify(currentNativeIds) !== JSON.stringify([...M4_ENTRY_IDS].sort())) {
+  fail('the explicit current Native cohort must contain exactly the frozen M4 identities');
 }
 
 const currentOctaneToolchain = JSON.parse(

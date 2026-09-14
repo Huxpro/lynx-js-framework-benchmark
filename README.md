@@ -79,7 +79,7 @@ pnpm bench run --harness native \
 
 Native has no partial publish mode: omitting entry/case/scale flags runs the complete current
 per-harness cohort, 15 table cells per entry, and two startup metrics at 0/1k/10k/30k (23 cells
-per entry; five table and three startup repetitions). The M3 Lynx 4.1 cohort has eight entries and
+per entry; five table and three startup repetitions). The current M4 Lynx 4.1 cohort has eight entries and
 184 contract cells. Partial probes cannot enter the published cohort.
 
 The adapter serves the selected local `main.lynx.bundle` through ADB reverse, opens it in
@@ -91,9 +91,9 @@ client and surfaces as `No response found`. The adapter starts a clean Explorer,
 channel, waits 100 ms for device-side router teardown between pages, and recycles Explorer after
 the configured number of pages (five by default). Transport mode and recycle cadence are part of the environment identity, so runs
 with different lifecycle policies cannot be merged.
-Every current Native entry uses real Native touch input. The frozen M3 cohort keeps latest
+Every current Native entry uses real Native touch input. The frozen M4 cohort keeps latest
 upstream Octane unpatched and records any unsupported producer boundary as capability evidence;
-the M3 candidate is the strict Octane Native producer. Its samples begin in the background handler,
+the M4 candidate is the strict Octane Native producer. Its samples begin in the background handler,
 wait for the renderer's correlated
 transport acknowledgement, then wait two Native frames; the recorded post-ACK state is checked
 against the semantic workload predicate. A DevTool driver exists only as an explicitly labelled

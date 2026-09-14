@@ -1818,17 +1818,14 @@ test('history audits every run but publishes only complete source-defined featur
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  // The complete explicit M3 Native tier atomically replaces the legacy
-  // global-tier cohort. Its 184 source cells publish together; historical and
-  // incomplete observations remain archive-only.
-  assert.equal(retainedRecords.length, 3744);
-  assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 184);
+  // Promoting the explicit M4 Native tier atomically retires the M3 cohort.
+  // Until a complete M4 campaign lands, both historical M3 observations and
+  // incomplete M4 observations remain archive-only instead of leaking into
+  // the published comparison.
+  assert.equal(retainedRecords.length, 3560);
+  assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 0);
   assert.equal(out.nativeObservationRecords.length, 0);
-  assert.deepEqual(out.nativeCoverage.summary, {
-    dnf: 56,
-    measured: 105,
-    unsupported: 23,
-  });
+  assert.deepEqual(out.nativeCoverage.summary, { unscheduled: 184 });
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
     && record.runFile === null
@@ -1852,21 +1849,7 @@ test('history audits every run but publishes only complete source-defined featur
   const currentNative = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'native',
   );
-  assert.ok(currentNative);
-  assert.equal(currentNative.rankEligible, true);
-  assert.deepEqual(currentNative.entryIds, [
-    'octane-m3-current',
-    'octane-m3-upstream',
-    'reactlynx-m3-default',
-    'reactlynx-m3-et',
-    'vue-lynx-m3-vapor-default',
-    'vue-lynx-m3-vapor-ifr',
-    'vue-lynx-m3-vdom-default',
-    'vue-lynx-m3-vdom-ifr-et',
-  ]);
-  assert.deepEqual(currentNative.sourceRunFiles, [
-    '2026-09-08T13-07-21-lynx-native-android-aries_10-10-devtool-direct-recycle5-explorer-6ae29787a216-65bce2c8fa2a-45dbb20b784c-native.json',
-  ]);
+  assert.equal(currentNative, undefined);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
   ), false);
@@ -1889,8 +1872,8 @@ test('history audits every run but publishes only complete source-defined featur
   const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
     .map((index) => out.history.records[index]);
   const currentBundleScale = currentRecords.filter((record) => record.suite === 'bundle-scale');
-  assert.equal(currentBundleScale.length, 264);
-  assert.equal(currentBundleScale.filter((record) => record.harness === 'native').length, 104);
+  assert.equal(currentBundleScale.length, 160);
+  assert.equal(currentBundleScale.filter((record) => record.harness === 'native').length, 0);
   assert.ok(currentBundleScale
     .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
   const stormOperations = currentRecords.filter((record) =>

@@ -94,14 +94,14 @@ test('Native matrix uses an explicit current Native cohort without mutating hist
   const entries = [
     ...ENTRIES,
     {
-      id: 'octane-m3-current',
+      id: 'octane-m4-final',
       framework: 'octane',
       tier: 'archive',
       tiers: { native: 'featured' },
       harnesses: ['web', 'native'],
     },
     {
-      id: 'reactlynx-m3-et',
+      id: 'reactlynx-m4-et',
       framework: 'reactlynx',
       tier: 'archive',
       tiers: { native: 'featured' },
@@ -110,7 +110,7 @@ test('Native matrix uses an explicit current Native cohort without mutating hist
   ];
 
   const contract = buildNativeMatrixContract(entries);
-  assert.deepEqual(contract.entryIds, ['octane-m3-current', 'reactlynx-m3-et']);
+  assert.deepEqual(contract.entryIds, ['octane-m4-final', 'reactlynx-m4-et']);
   assert.equal(contract.cells.length, 2 * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
 });
 
@@ -128,7 +128,7 @@ test('featured Native artifacts match their strict or explicitly unavailable pro
   });
 
   assert.equal(entries.length, 8);
-  assert.deepEqual(inputs.snapshots.get('octane-m3-upstream:0').protocols, {
+  assert.deepEqual(inputs.snapshots.get('octane-m4-upstream:0').protocols, {
     table: false,
     // The legacy bundle contains the old startup marker, but its manifest
     // deliberately declines the strict receipt boundary. String presence does
@@ -136,7 +136,7 @@ test('featured Native artifacts match their strict or explicitly unavailable pro
     startup: true,
     startupTimingFlag: false,
   });
-  for (const entry of entries.filter(({ id }) => id !== 'octane-m3-upstream')) {
+  for (const entry of entries.filter(({ id }) => id !== 'octane-m4-upstream')) {
     assert.equal(inputs.snapshots.get(`${entry.id}:0`).protocols.table, true, entry.id);
     for (const rows of NATIVE_STARTUP_SCALES) {
       assert.equal(inputs.snapshots.get(`${entry.id}:${rows}`).protocols.startup, true, `${entry.id}:${rows}`);
