@@ -29,7 +29,7 @@ export const M4_PINNED_SOURCES = Object.freeze({
   comparators: Object.freeze({
     source: 'https://github.com/Huxpro/vue-lynx',
     ref: 'huxcx/native-benchmark-commit-ack-291',
-    commit: 'b38ffae051f41756e7f54084fca845bfcba453fe',
+    commit: '736708bc068a0dbeabefb740ba76d62194371ef2',
     producerPull: 397,
   }),
 });
