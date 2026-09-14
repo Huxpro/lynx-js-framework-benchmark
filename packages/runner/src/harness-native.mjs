@@ -51,6 +51,7 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 import {
   NATIVE_STARTUP_PROTOCOL,
   NATIVE_TABLE_PROTOCOL,
+  nativeTableBoundaryForEntry,
   nativeBundleSnapshot,
 } from './native-inputs.mjs';
 import { NATIVE_SANDBOX_POLICY } from './native-protocol.mjs';
@@ -190,7 +191,8 @@ export async function runNativeMatrix({
           const samples = [];
           const detailSamples = [];
           const extras = new Map();
-          let latencyBoundary = null;
+          const expectedLatencyBoundary = nativeTableBoundaryForEntry(entry);
+          let latencyBoundary = expectedLatencyBoundary;
           let dnfCount = 0;
           const failures = [];
           for (let rep = 0; rep < reps; rep++) {
@@ -238,7 +240,7 @@ export async function runNativeMatrix({
             }
             samples.push(observed.latencyMs);
             detailSamples.push(observed.detail ?? null);
-            const observedBoundary = observed.boundary ?? NATIVE_BOUNDARIES.latency;
+            const observedBoundary = observed.boundary ?? expectedLatencyBoundary;
             if (latencyBoundary !== null && latencyBoundary !== observedBoundary) {
               throw new Error(`native adapter changed the latency boundary within ${kase.name}@${scale}.`);
             }

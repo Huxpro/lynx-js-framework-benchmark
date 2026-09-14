@@ -16,6 +16,7 @@ import {
   NATIVE_STARTUP_PROTOCOL,
   NATIVE_STARTUP_TIMING_FLAG,
   NATIVE_TABLE_PROTOCOL,
+  nativeTableBoundaryForProtocol,
   nativeStartupProtocolForEntry,
   nativeTableProtocolForEntry,
 } from '../src/native-inputs.mjs';
@@ -378,9 +379,7 @@ function validateNativeTablePayloadUnchecked(payload, {
     );
   }
   const expectedBoundary = expectedSource === 'native-tap'
-    ? expectedProtocol === NATIVE_COMPARATOR_TABLE_PROTOCOL
-      ? 'native-input-handler-through-host-commit-to-second-native-frame'
-      : 'native-input-handler-to-second-native-frame'
+    ? nativeTableBoundaryForProtocol(expectedProtocol)
     : 'native-devtool-driver-handler-to-second-native-frame';
   if (payload.boundary !== expectedBoundary) {
     throw new Error(`Native table payload boundary ${JSON.stringify(payload.boundary)} is invalid.`);

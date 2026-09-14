@@ -15,12 +15,25 @@ export const NATIVE_STARTUP_PROTOCOL = 'lynx-native-startup-v1';
 export const NATIVE_COMPARATOR_TABLE_PROTOCOL = 'lynx-native-bench-v3';
 export const NATIVE_COMPARATOR_STARTUP_PROTOCOL = 'lynx-native-startup-v2';
 export const NATIVE_STARTUP_TIMING_FLAG = 'lynx-native-bench-startup';
+export const NATIVE_TABLE_BOUNDARY = 'native-input-handler-to-second-native-frame';
+export const NATIVE_COMPARATOR_TABLE_BOUNDARY =
+  'native-input-handler-through-host-commit-to-second-native-frame';
 
 export function nativeTableProtocolForEntry(entry) {
   const declared = entry?.capabilities?.nativeTableProtocol;
   return declared === 'legacy-public-source' || declared == null
     ? NATIVE_TABLE_PROTOCOL
     : declared;
+}
+
+export function nativeTableBoundaryForProtocol(protocol) {
+  return protocol === NATIVE_COMPARATOR_TABLE_PROTOCOL
+    ? NATIVE_COMPARATOR_TABLE_BOUNDARY
+    : NATIVE_TABLE_BOUNDARY;
+}
+
+export function nativeTableBoundaryForEntry(entry) {
+  return nativeTableBoundaryForProtocol(nativeTableProtocolForEntry(entry));
 }
 
 export function nativeStartupProtocolForEntry(entry) {

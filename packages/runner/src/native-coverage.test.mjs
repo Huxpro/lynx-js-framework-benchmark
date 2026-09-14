@@ -25,11 +25,14 @@ import {
 } from './native-coverage.mjs';
 import {
   NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  NATIVE_COMPARATOR_TABLE_BOUNDARY,
   NATIVE_COMPARATOR_TABLE_PROTOCOL,
   NATIVE_STARTUP_PROTOCOL,
+  NATIVE_TABLE_BOUNDARY,
   NATIVE_TABLE_PROTOCOL,
   assertNativeInputsUnchanged,
   nativeStartupProtocolForEntry,
+  nativeTableBoundaryForEntry,
   nativeTableProtocolForEntry,
   snapshotNativeInputs,
 } from './native-inputs.mjs';
@@ -67,6 +70,8 @@ test('Native producer protocols are selected from each frozen entry capability',
     nativeStartupProtocolForEntry(comparator),
     NATIVE_COMPARATOR_STARTUP_PROTOCOL,
   );
+  assert.equal(nativeTableBoundaryForEntry({ framework: 'octane' }), NATIVE_TABLE_BOUNDARY);
+  assert.equal(nativeTableBoundaryForEntry(comparator), NATIVE_COMPARATOR_TABLE_BOUNDARY);
 });
 
 function recordFor(cell, { dnf = false, unsupported = false } = {}) {
@@ -135,12 +140,17 @@ test('Native matrix uses an explicit current Native cohort without mutating hist
       tier: 'archive',
       tiers: { native: 'featured' },
       harnesses: ['native'],
+      capabilities: { nativeTableProtocol: NATIVE_COMPARATOR_TABLE_PROTOCOL },
     },
   ];
 
   const contract = buildNativeMatrixContract(entries);
   assert.deepEqual(contract.entryIds, ['octane-m4-final', 'reactlynx-m4-et']);
   assert.equal(contract.cells.length, 2 * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
+  assert.equal(
+    contract.cells.find((cell) => cell.entry === 'reactlynx-m4-et' && cell.suite === 'table').boundary,
+    NATIVE_COMPARATOR_TABLE_BOUNDARY,
+  );
 });
 
 test('featured Native artifacts match their strict or explicitly unavailable producer boundary', () => {

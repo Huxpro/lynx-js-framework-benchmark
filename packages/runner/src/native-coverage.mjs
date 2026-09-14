@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 import { STARTUP_CASES, tableCasesForHarness } from '@lynx-bench/shared/workloads';
 import { featuredEntriesForHarness } from './entry-cohorts.mjs';
+import { nativeTableBoundaryForEntry } from './native-inputs.mjs';
 
 export const NATIVE_MATRIX_CONTRACT_VERSION = 'native-featured-black-box-matrix-v2';
 export const NATIVE_MATRIX_CELL_COUNT_PER_ENTRY = 23;
@@ -48,7 +49,7 @@ export function buildNativeMatrixContract(entries) {
           scale,
           metric: 'latency',
           unit: 'ms',
-          boundary: 'native-input-handler-to-second-native-frame',
+          boundary: nativeTableBoundaryForEntry(entry),
         });
       }
     }
