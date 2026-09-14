@@ -1,0 +1,1565 @@
+{
+  "protocol": "octane-issue-291-element-template-lynx-develop-lifecycle-v1",
+  "capturedAt": "2026-09-14T22:34:00.713Z",
+  "qualification": "diagnostic-only-not-formal-performance-evidence",
+  "decision": "lynx-develop-fixes-the-4.1-weak-jni-reference-crash-but-et-memory-remains-unqualified",
+  "reason": "The source-built Lynx develop ElementTemplateInstance lifecycle survives three independent 60-cycle create1k-clear runs where Explorer 4.1 deterministically crashed on attempt 18, and the live element census returns to baseline. However, same-window uninstrumented Lynx-attributed background-runtime memory remains above the ordinary merged Octane route, while heap capture itself perturbs that allocator by more than 100 MiB. The Element Template route therefore remains blocked from default/formal qualification until fresh-process M0/upstream memory passes on a release-qualified runtime.",
+  "provenance": {
+    "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
+    "implementationIssue": "https://github.com/Huxpro/octane/issues/383",
+    "octaneElementTemplateCommit": "101c6a1ba9adb547a944a118f3ad704fbf8a278e",
+    "octaneElementTemplateBundle": {
+      "sha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+      "bytes": 262802
+    },
+    "lynxDevelop": {
+      "commit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+      "buildCommand": "source tools/envsetup.sh && cd explorer/android && ./gradlew :LynxExplorer:assembleNoasanRelease -Penable_trace=perfetto -PabiList=arm64-v8a --no-daemon",
+      "apkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+      "apkBytes": 55073821,
+      "package": "com.lynx.explorer",
+      "versionName": "1.0",
+      "versionCode": 1
+    },
+    "connectorPackageTreesSha256": "695ac20033d427c7219b41b878a428820c02ff073783f8f409a506e2b76abe8c",
+    "deviceSerialSha256": [
+      "ee24a3cc52a8c92d48c5fa560ab63065a20e18ba165d6a00674f06d329abb7c6",
+      "0206e2b2e8547322e1e95d9bbb188d0df75cc4dc058a08f63b69a7df1e06c0ce"
+    ],
+    "localRawArtifactSha256": {
+      "twentyCycleCombined": "eb626e9f010faf2b831c4995f7b1a244630f9b56d75516cbf9b4534fa057d18f",
+      "elementTemplate60Memory": "aac6b168a89113f475c1b957d8d52d2d7bbc5c967e37a7491d4e1876a0f09f13",
+      "ordinary60Memory": "68375ecddf25f27675be7ee514d1b5b646649ebceb653ccbd6d040330e83e513",
+      "elementTemplate60LiveStatus": "09a9845d1b0767d529baf49e73ad8ed50ba51ffea4e4a671984c1cc3f037966d",
+      "elementTemplate60HeapCaptureRun": "cf6eac0e034967910bae14aa8b40580585fddeff74c748c83a35b87d86c76bf3",
+      "rejectedNullChildSlots": "4b7b24c858bfda6dff2b4922a8e93cd2c06450db45e9819f8496564504ebb18d"
+    }
+  },
+  "method": {
+    "lifecycle": "one page, repeated create1k then clear, native-input-handler-to-second-native-frame; no process recycle within each 60-cycle arm",
+    "semantics": "native col-label census at cycle 0 and cycle 59",
+    "androidMemory": "dumpsys meminfo after every measured clear; independent 60-cycle Element Template and ordinary-control pages",
+    "lynxMemory": "Memory.getAllMemoryUsage at session -1, uninstrumented by heap capture for the comparable baseline/after-60 values",
+    "heap": "background QuickJS snapshots after Runtime.enable and best-effort HeapProfiler.collectGarbage; two A-like states only, so diff is lifecycle residue guidance rather than a three-way leak verdict",
+    "rejectedHypothesis": "fresh Explorer process before every arm; six alternating AB/BA create5k pairs; no outlier removal"
+  },
+  "lifecycle": {
+    "explorer410Reference": {
+      "requiredCycles": 20,
+      "completedCycles": 17,
+      "failedAttemptZeroBasedIndex": 17,
+      "failure": "weak global reference table overflow (max=51200); SIGABRT"
+    },
+    "lynxDevelopElementTemplate": {
+      "summary": {
+        "sampleCount": 60,
+        "latencyMedianMs": 71,
+        "latencyFirst10MedianMs": 67.5,
+        "latencyLast10MedianMs": 69.5,
+        "tailSlopeKbPerCycle": {
+          "totalPss": 1049.1723889555822,
+          "nativePss": 179.58621848739494,
+          "nativeHeapAlloc": 208.02084033613446,
+          "dalvikPss": 5.657623049219688
+        }
+      },
+      "semanticChecks": [
+        {
+          "variant": "cleanEt",
+          "workload": "clear",
+          "scale": 1000,
+          "repetition": 0,
+          "cycle": 0,
+          "nativeLabelCount": 0,
+          "expected": 0,
+          "pass": true
+        },
+        {
+          "variant": "cleanEt",
+          "workload": "clear",
+          "scale": 1000,
+          "repetition": 0,
+          "cycle": 59,
+          "nativeLabelCount": 0,
+          "expected": 0,
+          "pass": true
+        }
+      ],
+      "failures": [],
+      "fatalError": null,
+      "raw": [
+        {
+          "cycle": 0,
+          "latencyMs": 96,
+          "totalPssKb": 204205,
+          "nativePssKb": 102073,
+          "nativeHeapAllocKb": 96708,
+          "dalvikPssKb": 24099
+        },
+        {
+          "cycle": 1,
+          "latencyMs": 65,
+          "totalPssKb": 248994,
+          "nativePssKb": 127032,
+          "nativeHeapAllocKb": 113301,
+          "dalvikPssKb": 29067
+        },
+        {
+          "cycle": 2,
+          "latencyMs": 64,
+          "totalPssKb": 226839,
+          "nativePssKb": 121940,
+          "nativeHeapAllocKb": 95413,
+          "dalvikPssKb": 21871
+        },
+        {
+          "cycle": 3,
+          "latencyMs": 64,
+          "totalPssKb": 235312,
+          "nativePssKb": 126674,
+          "nativeHeapAllocKb": 119765,
+          "dalvikPssKb": 29371
+        },
+        {
+          "cycle": 4,
+          "latencyMs": 104,
+          "totalPssKb": 231415,
+          "nativePssKb": 120355,
+          "nativeHeapAllocKb": 95807,
+          "dalvikPssKb": 21827
+        },
+        {
+          "cycle": 5,
+          "latencyMs": 78,
+          "totalPssKb": 237495,
+          "nativePssKb": 127306,
+          "nativeHeapAllocKb": 119889,
+          "dalvikPssKb": 29487
+        },
+        {
+          "cycle": 6,
+          "latencyMs": 62,
+          "totalPssKb": 229323,
+          "nativePssKb": 117610,
+          "nativeHeapAllocKb": 96122,
+          "dalvikPssKb": 21679
+        },
+        {
+          "cycle": 7,
+          "latencyMs": 72,
+          "totalPssKb": 261915,
+          "nativePssKb": 128506,
+          "nativeHeapAllocKb": 120607,
+          "dalvikPssKb": 29551
+        },
+        {
+          "cycle": 8,
+          "latencyMs": 66,
+          "totalPssKb": 224459,
+          "nativePssKb": 117990,
+          "nativeHeapAllocKb": 96348,
+          "dalvikPssKb": 21679
+        },
+        {
+          "cycle": 9,
+          "latencyMs": 69,
+          "totalPssKb": 255710,
+          "nativePssKb": 128320,
+          "nativeHeapAllocKb": 109275,
+          "dalvikPssKb": 29699
+        },
+        {
+          "cycle": 10,
+          "latencyMs": 83,
+          "totalPssKb": 234521,
+          "nativePssKb": 128492,
+          "nativeHeapAllocKb": 96578,
+          "dalvikPssKb": 21687
+        },
+        {
+          "cycle": 11,
+          "latencyMs": 158,
+          "totalPssKb": 274843,
+          "nativePssKb": 154514,
+          "nativeHeapAllocKb": 110555,
+          "dalvikPssKb": 31611
+        },
+        {
+          "cycle": 12,
+          "latencyMs": 71,
+          "totalPssKb": 256839,
+          "nativePssKb": 129854,
+          "nativeHeapAllocKb": 97675,
+          "dalvikPssKb": 21767
+        },
+        {
+          "cycle": 13,
+          "latencyMs": 110,
+          "totalPssKb": 244279,
+          "nativePssKb": 130906,
+          "nativeHeapAllocKb": 97706,
+          "dalvikPssKb": 29867
+        },
+        {
+          "cycle": 14,
+          "latencyMs": 78,
+          "totalPssKb": 236431,
+          "nativePssKb": 123734,
+          "nativeHeapAllocKb": 97959,
+          "dalvikPssKb": 21879
+        },
+        {
+          "cycle": 15,
+          "latencyMs": 62,
+          "totalPssKb": 264320,
+          "nativePssKb": 131706,
+          "nativeHeapAllocKb": 122226,
+          "dalvikPssKb": 29415
+        },
+        {
+          "cycle": 16,
+          "latencyMs": 94,
+          "totalPssKb": 267623,
+          "nativePssKb": 125234,
+          "nativeHeapAllocKb": 98224,
+          "dalvikPssKb": 21599
+        },
+        {
+          "cycle": 17,
+          "latencyMs": 61,
+          "totalPssKb": 244744,
+          "nativePssKb": 131442,
+          "nativeHeapAllocKb": 119586,
+          "dalvikPssKb": 29491
+        },
+        {
+          "cycle": 18,
+          "latencyMs": 72,
+          "totalPssKb": 248451,
+          "nativePssKb": 127130,
+          "nativeHeapAllocKb": 98326,
+          "dalvikPssKb": 21811
+        },
+        {
+          "cycle": 19,
+          "latencyMs": 73,
+          "totalPssKb": 276611,
+          "nativePssKb": 134042,
+          "nativeHeapAllocKb": 117692,
+          "dalvikPssKb": 29527
+        },
+        {
+          "cycle": 20,
+          "latencyMs": 74,
+          "totalPssKb": 235627,
+          "nativePssKb": 126542,
+          "nativeHeapAllocKb": 98505,
+          "dalvikPssKb": 21827
+        },
+        {
+          "cycle": 21,
+          "latencyMs": 63,
+          "totalPssKb": 256091,
+          "nativePssKb": 134034,
+          "nativeHeapAllocKb": 122891,
+          "dalvikPssKb": 29539
+        },
+        {
+          "cycle": 22,
+          "latencyMs": 75,
+          "totalPssKb": 253171,
+          "nativePssKb": 122406,
+          "nativeHeapAllocKb": 98987,
+          "dalvikPssKb": 21815
+        },
+        {
+          "cycle": 23,
+          "latencyMs": 81,
+          "totalPssKb": 286995,
+          "nativePssKb": 134758,
+          "nativeHeapAllocKb": 117563,
+          "dalvikPssKb": 29503
+        },
+        {
+          "cycle": 24,
+          "latencyMs": 68,
+          "totalPssKb": 237327,
+          "nativePssKb": 129582,
+          "nativeHeapAllocKb": 98981,
+          "dalvikPssKb": 21723
+        },
+        {
+          "cycle": 25,
+          "latencyMs": 151,
+          "totalPssKb": 285426,
+          "nativePssKb": 157317,
+          "nativeHeapAllocKb": 124176,
+          "dalvikPssKb": 31471
+        },
+        {
+          "cycle": 26,
+          "latencyMs": 73,
+          "totalPssKb": 270179,
+          "nativePssKb": 135009,
+          "nativeHeapAllocKb": 100461,
+          "dalvikPssKb": 21871
+        },
+        {
+          "cycle": 27,
+          "latencyMs": 69,
+          "totalPssKb": 291951,
+          "nativePssKb": 134881,
+          "nativeHeapAllocKb": 105760,
+          "dalvikPssKb": 29823
+        },
+        {
+          "cycle": 28,
+          "latencyMs": 77,
+          "totalPssKb": 235346,
+          "nativePssKb": 126281,
+          "nativeHeapAllocKb": 100489,
+          "dalvikPssKb": 21831
+        },
+        {
+          "cycle": 29,
+          "latencyMs": 61,
+          "totalPssKb": 261907,
+          "nativePssKb": 135229,
+          "nativeHeapAllocKb": 108933,
+          "dalvikPssKb": 29687
+        },
+        {
+          "cycle": 30,
+          "latencyMs": 61,
+          "totalPssKb": 263274,
+          "nativePssKb": 128265,
+          "nativeHeapAllocKb": 100859,
+          "dalvikPssKb": 21811
+        },
+        {
+          "cycle": 31,
+          "latencyMs": 75,
+          "totalPssKb": 292055,
+          "nativePssKb": 135469,
+          "nativeHeapAllocKb": 123694,
+          "dalvikPssKb": 29511
+        },
+        {
+          "cycle": 32,
+          "latencyMs": 63,
+          "totalPssKb": 245106,
+          "nativePssKb": 132797,
+          "nativeHeapAllocKb": 100853,
+          "dalvikPssKb": 21815
+        },
+        {
+          "cycle": 33,
+          "latencyMs": 110,
+          "totalPssKb": 260278,
+          "nativePssKb": 136289,
+          "nativeHeapAllocKb": 112897,
+          "dalvikPssKb": 29751
+        },
+        {
+          "cycle": 34,
+          "latencyMs": 66,
+          "totalPssKb": 265202,
+          "nativePssKb": 133805,
+          "nativeHeapAllocKb": 101294,
+          "dalvikPssKb": 21743
+        },
+        {
+          "cycle": 35,
+          "latencyMs": 77,
+          "totalPssKb": 288402,
+          "nativePssKb": 135905,
+          "nativeHeapAllocKb": 110858,
+          "dalvikPssKb": 29799
+        },
+        {
+          "cycle": 36,
+          "latencyMs": 72,
+          "totalPssKb": 294826,
+          "nativePssKb": 132729,
+          "nativeHeapAllocKb": 101708,
+          "dalvikPssKb": 21807
+        },
+        {
+          "cycle": 37,
+          "latencyMs": 158,
+          "totalPssKb": 281685,
+          "nativePssKb": 159700,
+          "nativeHeapAllocKb": 110984,
+          "dalvikPssKb": 31627
+        },
+        {
+          "cycle": 38,
+          "latencyMs": 67,
+          "totalPssKb": 257477,
+          "nativePssKb": 137036,
+          "nativeHeapAllocKb": 101632,
+          "dalvikPssKb": 21775
+        },
+        {
+          "cycle": 39,
+          "latencyMs": 70,
+          "totalPssKb": 276873,
+          "nativePssKb": 136956,
+          "nativeHeapAllocKb": 126050,
+          "dalvikPssKb": 29507
+        },
+        {
+          "cycle": 40,
+          "latencyMs": 69,
+          "totalPssKb": 283389,
+          "nativePssKb": 134476,
+          "nativeHeapAllocKb": 102177,
+          "dalvikPssKb": 21711
+        },
+        {
+          "cycle": 41,
+          "latencyMs": 177,
+          "totalPssKb": 333477,
+          "nativePssKb": 161012,
+          "nativeHeapAllocKb": 126482,
+          "dalvikPssKb": 31519
+        },
+        {
+          "cycle": 42,
+          "latencyMs": 75,
+          "totalPssKb": 318933,
+          "nativePssKb": 138012,
+          "nativeHeapAllocKb": 102571,
+          "dalvikPssKb": 21691
+        },
+        {
+          "cycle": 43,
+          "latencyMs": 75,
+          "totalPssKb": 260253,
+          "nativePssKb": 138604,
+          "nativeHeapAllocKb": 114244,
+          "dalvikPssKb": 29799
+        },
+        {
+          "cycle": 44,
+          "latencyMs": 94,
+          "totalPssKb": 263269,
+          "nativePssKb": 134444,
+          "nativeHeapAllocKb": 102475,
+          "dalvikPssKb": 21787
+        },
+        {
+          "cycle": 45,
+          "latencyMs": 64,
+          "totalPssKb": 287913,
+          "nativePssKb": 138868,
+          "nativeHeapAllocKb": 105121,
+          "dalvikPssKb": 29795
+        },
+        {
+          "cycle": 46,
+          "latencyMs": 66,
+          "totalPssKb": 293721,
+          "nativePssKb": 135548,
+          "nativeHeapAllocKb": 103160,
+          "dalvikPssKb": 22027
+        },
+        {
+          "cycle": 47,
+          "latencyMs": 70,
+          "totalPssKb": 318606,
+          "nativePssKb": 138968,
+          "nativeHeapAllocKb": 114663,
+          "dalvikPssKb": 29559
+        },
+        {
+          "cycle": 48,
+          "latencyMs": 71,
+          "totalPssKb": 238210,
+          "nativePssKb": 121544,
+          "nativeHeapAllocKb": 102777,
+          "dalvikPssKb": 21759
+        },
+        {
+          "cycle": 49,
+          "latencyMs": 65,
+          "totalPssKb": 265937,
+          "nativePssKb": 138376,
+          "nativeHeapAllocKb": 125071,
+          "dalvikPssKb": 29491
+        },
+        {
+          "cycle": 50,
+          "latencyMs": 66,
+          "totalPssKb": 264852,
+          "nativePssKb": 129907,
+          "nativeHeapAllocKb": 103957,
+          "dalvikPssKb": 21755
+        },
+        {
+          "cycle": 51,
+          "latencyMs": 65,
+          "totalPssKb": 296215,
+          "nativePssKb": 141218,
+          "nativeHeapAllocKb": 113047,
+          "dalvikPssKb": 29751
+        },
+        {
+          "cycle": 52,
+          "latencyMs": 71,
+          "totalPssKb": 299923,
+          "nativePssKb": 135798,
+          "nativeHeapAllocKb": 106014,
+          "dalvikPssKb": 21843
+        },
+        {
+          "cycle": 53,
+          "latencyMs": 70,
+          "totalPssKb": 327319,
+          "nativePssKb": 141390,
+          "nativeHeapAllocKb": 120201,
+          "dalvikPssKb": 29623
+        },
+        {
+          "cycle": 54,
+          "latencyMs": 73,
+          "totalPssKb": 329543,
+          "nativePssKb": 133330,
+          "nativeHeapAllocKb": 106525,
+          "dalvikPssKb": 21819
+        },
+        {
+          "cycle": 55,
+          "latencyMs": 65,
+          "totalPssKb": 264955,
+          "nativePssKb": 141618,
+          "nativeHeapAllocKb": 118464,
+          "dalvikPssKb": 29691
+        },
+        {
+          "cycle": 56,
+          "latencyMs": 71,
+          "totalPssKb": 270775,
+          "nativePssKb": 140522,
+          "nativeHeapAllocKb": 106350,
+          "dalvikPssKb": 21787
+        },
+        {
+          "cycle": 57,
+          "latencyMs": 66,
+          "totalPssKb": 292451,
+          "nativePssKb": 142566,
+          "nativeHeapAllocKb": 125708,
+          "dalvikPssKb": 29487
+        },
+        {
+          "cycle": 58,
+          "latencyMs": 69,
+          "totalPssKb": 296371,
+          "nativePssKb": 138254,
+          "nativeHeapAllocKb": 106804,
+          "dalvikPssKb": 21803
+        },
+        {
+          "cycle": 59,
+          "latencyMs": 76,
+          "totalPssKb": 321547,
+          "nativePssKb": 142166,
+          "nativeHeapAllocKb": 131171,
+          "dalvikPssKb": 29559
+        }
+      ]
+    },
+    "lynxDevelopOrdinaryControl": {
+      "summary": {
+        "sampleCount": 60,
+        "latencyMedianMs": 88.5,
+        "latencyFirst10MedianMs": 89.5,
+        "latencyLast10MedianMs": 87,
+        "tailSlopeKbPerCycle": {
+          "totalPss": 585.6386554621848,
+          "nativePss": 215.84355342136854,
+          "nativeHeapAlloc": 179.9856422569027,
+          "dalvikPss": 2.618007202881153
+        }
+      },
+      "semanticChecks": [
+        {
+          "variant": "mergedCurrent",
+          "workload": "clear",
+          "scale": 1000,
+          "repetition": 0,
+          "cycle": 0,
+          "nativeLabelCount": 0,
+          "expected": 0,
+          "pass": true
+        },
+        {
+          "variant": "mergedCurrent",
+          "workload": "clear",
+          "scale": 1000,
+          "repetition": 0,
+          "cycle": 59,
+          "nativeLabelCount": 0,
+          "expected": 0,
+          "pass": true
+        }
+      ],
+      "failures": [],
+      "fatalError": null,
+      "raw": [
+        {
+          "cycle": 0,
+          "latencyMs": 88,
+          "totalPssKb": 185522,
+          "nativePssKb": 95804,
+          "nativeHeapAllocKb": 87182,
+          "dalvikPssKb": 14399
+        },
+        {
+          "cycle": 1,
+          "latencyMs": 126,
+          "totalPssKb": 216873,
+          "nativePssKb": 113488,
+          "nativeHeapAllocKb": 106322,
+          "dalvikPssKb": 29531
+        },
+        {
+          "cycle": 2,
+          "latencyMs": 86,
+          "totalPssKb": 254647,
+          "nativePssKb": 136453,
+          "nativeHeapAllocKb": 106719,
+          "dalvikPssKb": 33915
+        },
+        {
+          "cycle": 3,
+          "latencyMs": 90,
+          "totalPssKb": 242624,
+          "nativePssKb": 136463,
+          "nativeHeapAllocKb": 106956,
+          "dalvikPssKb": 30863
+        },
+        {
+          "cycle": 4,
+          "latencyMs": 88,
+          "totalPssKb": 244627,
+          "nativePssKb": 138595,
+          "nativeHeapAllocKb": 107326,
+          "dalvikPssKb": 32187
+        },
+        {
+          "cycle": 5,
+          "latencyMs": 89,
+          "totalPssKb": 244409,
+          "nativePssKb": 137550,
+          "nativeHeapAllocKb": 107255,
+          "dalvikPssKb": 32351
+        },
+        {
+          "cycle": 6,
+          "latencyMs": 90,
+          "totalPssKb": 263409,
+          "nativePssKb": 143354,
+          "nativeHeapAllocKb": 107921,
+          "dalvikPssKb": 34111
+        },
+        {
+          "cycle": 7,
+          "latencyMs": 85,
+          "totalPssKb": 252134,
+          "nativePssKb": 141551,
+          "nativeHeapAllocKb": 107996,
+          "dalvikPssKb": 33855
+        },
+        {
+          "cycle": 8,
+          "latencyMs": 91,
+          "totalPssKb": 246618,
+          "nativePssKb": 140523,
+          "nativeHeapAllocKb": 108004,
+          "dalvikPssKb": 31875
+        },
+        {
+          "cycle": 9,
+          "latencyMs": 90,
+          "totalPssKb": 244758,
+          "nativePssKb": 138243,
+          "nativeHeapAllocKb": 107990,
+          "dalvikPssKb": 31099
+        },
+        {
+          "cycle": 10,
+          "latencyMs": 93,
+          "totalPssKb": 245410,
+          "nativePssKb": 138163,
+          "nativeHeapAllocKb": 108229,
+          "dalvikPssKb": 31411
+        },
+        {
+          "cycle": 11,
+          "latencyMs": 86,
+          "totalPssKb": 252470,
+          "nativePssKb": 139083,
+          "nativeHeapAllocKb": 108466,
+          "dalvikPssKb": 31151
+        },
+        {
+          "cycle": 12,
+          "latencyMs": 85,
+          "totalPssKb": 246494,
+          "nativePssKb": 139534,
+          "nativeHeapAllocKb": 108902,
+          "dalvikPssKb": 31783
+        },
+        {
+          "cycle": 13,
+          "latencyMs": 85,
+          "totalPssKb": 257689,
+          "nativePssKb": 138814,
+          "nativeHeapAllocKb": 109033,
+          "dalvikPssKb": 31319
+        },
+        {
+          "cycle": 14,
+          "latencyMs": 90,
+          "totalPssKb": 247413,
+          "nativePssKb": 138846,
+          "nativeHeapAllocKb": 109218,
+          "dalvikPssKb": 32615
+        },
+        {
+          "cycle": 15,
+          "latencyMs": 90,
+          "totalPssKb": 246205,
+          "nativePssKb": 139846,
+          "nativeHeapAllocKb": 109262,
+          "dalvikPssKb": 30191
+        },
+        {
+          "cycle": 16,
+          "latencyMs": 75,
+          "totalPssKb": 255694,
+          "nativePssKb": 139910,
+          "nativeHeapAllocKb": 109497,
+          "dalvikPssKb": 30767
+        },
+        {
+          "cycle": 17,
+          "latencyMs": 90,
+          "totalPssKb": 243938,
+          "nativePssKb": 138098,
+          "nativeHeapAllocKb": 109417,
+          "dalvikPssKb": 30963
+        },
+        {
+          "cycle": 18,
+          "latencyMs": 84,
+          "totalPssKb": 267187,
+          "nativePssKb": 140560,
+          "nativeHeapAllocKb": 109595,
+          "dalvikPssKb": 37543
+        },
+        {
+          "cycle": 19,
+          "latencyMs": 90,
+          "totalPssKb": 246812,
+          "nativePssKb": 140720,
+          "nativeHeapAllocKb": 109632,
+          "dalvikPssKb": 30539
+        },
+        {
+          "cycle": 20,
+          "latencyMs": 106,
+          "totalPssKb": 260119,
+          "nativePssKb": 137792,
+          "nativeHeapAllocKb": 109820,
+          "dalvikPssKb": 32083
+        },
+        {
+          "cycle": 21,
+          "latencyMs": 92,
+          "totalPssKb": 250207,
+          "nativePssKb": 140716,
+          "nativeHeapAllocKb": 109839,
+          "dalvikPssKb": 33795
+        },
+        {
+          "cycle": 22,
+          "latencyMs": 89,
+          "totalPssKb": 259827,
+          "nativePssKb": 138168,
+          "nativeHeapAllocKb": 110107,
+          "dalvikPssKb": 31191
+        },
+        {
+          "cycle": 23,
+          "latencyMs": 90,
+          "totalPssKb": 245527,
+          "nativePssKb": 138656,
+          "nativeHeapAllocKb": 110079,
+          "dalvikPssKb": 30995
+        },
+        {
+          "cycle": 24,
+          "latencyMs": 74,
+          "totalPssKb": 260314,
+          "nativePssKb": 138543,
+          "nativeHeapAllocKb": 110268,
+          "dalvikPssKb": 31491
+        },
+        {
+          "cycle": 25,
+          "latencyMs": 123,
+          "totalPssKb": 248509,
+          "nativePssKb": 140273,
+          "nativeHeapAllocKb": 111311,
+          "dalvikPssKb": 32519
+        },
+        {
+          "cycle": 26,
+          "latencyMs": 78,
+          "totalPssKb": 269514,
+          "nativePssKb": 146131,
+          "nativeHeapAllocKb": 111492,
+          "dalvikPssKb": 33911
+        },
+        {
+          "cycle": 27,
+          "latencyMs": 91,
+          "totalPssKb": 253981,
+          "nativePssKb": 145658,
+          "nativeHeapAllocKb": 111435,
+          "dalvikPssKb": 31587
+        },
+        {
+          "cycle": 28,
+          "latencyMs": 74,
+          "totalPssKb": 261090,
+          "nativePssKb": 140654,
+          "nativeHeapAllocKb": 111721,
+          "dalvikPssKb": 32403
+        },
+        {
+          "cycle": 29,
+          "latencyMs": 76,
+          "totalPssKb": 257058,
+          "nativePssKb": 144838,
+          "nativeHeapAllocKb": 111695,
+          "dalvikPssKb": 33827
+        },
+        {
+          "cycle": 30,
+          "latencyMs": 76,
+          "totalPssKb": 264125,
+          "nativePssKb": 144002,
+          "nativeHeapAllocKb": 111891,
+          "dalvikPssKb": 33175
+        },
+        {
+          "cycle": 31,
+          "latencyMs": 110,
+          "totalPssKb": 258069,
+          "nativePssKb": 145538,
+          "nativeHeapAllocKb": 111907,
+          "dalvikPssKb": 34567
+        },
+        {
+          "cycle": 32,
+          "latencyMs": 76,
+          "totalPssKb": 261629,
+          "nativePssKb": 145330,
+          "nativeHeapAllocKb": 112107,
+          "dalvikPssKb": 32135
+        },
+        {
+          "cycle": 33,
+          "latencyMs": 119,
+          "totalPssKb": 275313,
+          "nativePssKb": 144106,
+          "nativeHeapAllocKb": 112218,
+          "dalvikPssKb": 33207
+        },
+        {
+          "cycle": 34,
+          "latencyMs": 86,
+          "totalPssKb": 254569,
+          "nativePssKb": 144410,
+          "nativeHeapAllocKb": 112185,
+          "dalvikPssKb": 31611
+        },
+        {
+          "cycle": 35,
+          "latencyMs": 92,
+          "totalPssKb": 260945,
+          "nativePssKb": 141510,
+          "nativeHeapAllocKb": 112416,
+          "dalvikPssKb": 31299
+        },
+        {
+          "cycle": 36,
+          "latencyMs": 78,
+          "totalPssKb": 275517,
+          "nativePssKb": 141930,
+          "nativeHeapAllocKb": 112591,
+          "dalvikPssKb": 30363
+        },
+        {
+          "cycle": 37,
+          "latencyMs": 92,
+          "totalPssKb": 249716,
+          "nativePssKb": 141433,
+          "nativeHeapAllocKb": 112791,
+          "dalvikPssKb": 30883
+        },
+        {
+          "cycle": 38,
+          "latencyMs": 75,
+          "totalPssKb": 263624,
+          "nativePssKb": 142041,
+          "nativeHeapAllocKb": 113071,
+          "dalvikPssKb": 30919
+        },
+        {
+          "cycle": 39,
+          "latencyMs": 88,
+          "totalPssKb": 278773,
+          "nativePssKb": 142245,
+          "nativeHeapAllocKb": 113272,
+          "dalvikPssKb": 31031
+        },
+        {
+          "cycle": 40,
+          "latencyMs": 89,
+          "totalPssKb": 252796,
+          "nativePssKb": 142145,
+          "nativeHeapAllocKb": 113268,
+          "dalvikPssKb": 32067
+        },
+        {
+          "cycle": 41,
+          "latencyMs": 91,
+          "totalPssKb": 265580,
+          "nativePssKb": 142341,
+          "nativeHeapAllocKb": 113464,
+          "dalvikPssKb": 31379
+        },
+        {
+          "cycle": 42,
+          "latencyMs": 91,
+          "totalPssKb": 281168,
+          "nativePssKb": 142621,
+          "nativeHeapAllocKb": 113674,
+          "dalvikPssKb": 31179
+        },
+        {
+          "cycle": 43,
+          "latencyMs": 87,
+          "totalPssKb": 252256,
+          "nativePssKb": 142237,
+          "nativeHeapAllocKb": 113627,
+          "dalvikPssKb": 30611
+        },
+        {
+          "cycle": 44,
+          "latencyMs": 74,
+          "totalPssKb": 269453,
+          "nativePssKb": 143497,
+          "nativeHeapAllocKb": 113896,
+          "dalvikPssKb": 32303
+        },
+        {
+          "cycle": 45,
+          "latencyMs": 103,
+          "totalPssKb": 254136,
+          "nativePssKb": 143137,
+          "nativeHeapAllocKb": 113846,
+          "dalvikPssKb": 31067
+        },
+        {
+          "cycle": 46,
+          "latencyMs": 74,
+          "totalPssKb": 263764,
+          "nativePssKb": 144928,
+          "nativeHeapAllocKb": 114081,
+          "dalvikPssKb": 32943
+        },
+        {
+          "cycle": 47,
+          "latencyMs": 86,
+          "totalPssKb": 274429,
+          "nativePssKb": 144142,
+          "nativeHeapAllocKb": 114256,
+          "dalvikPssKb": 31767
+        },
+        {
+          "cycle": 48,
+          "latencyMs": 91,
+          "totalPssKb": 255160,
+          "nativePssKb": 143357,
+          "nativeHeapAllocKb": 114179,
+          "dalvikPssKb": 31071
+        },
+        {
+          "cycle": 49,
+          "latencyMs": 117,
+          "totalPssKb": 262528,
+          "nativePssKb": 143701,
+          "nativeHeapAllocKb": 114368,
+          "dalvikPssKb": 32459
+        },
+        {
+          "cycle": 50,
+          "latencyMs": 86,
+          "totalPssKb": 274480,
+          "nativePssKb": 144741,
+          "nativeHeapAllocKb": 114500,
+          "dalvikPssKb": 30383
+        },
+        {
+          "cycle": 51,
+          "latencyMs": 89,
+          "totalPssKb": 298985,
+          "nativePssKb": 151094,
+          "nativeHeapAllocKb": 116488,
+          "dalvikPssKb": 33755
+        },
+        {
+          "cycle": 52,
+          "latencyMs": 117,
+          "totalPssKb": 264805,
+          "nativePssKb": 151970,
+          "nativeHeapAllocKb": 116381,
+          "dalvikPssKb": 33463
+        },
+        {
+          "cycle": 53,
+          "latencyMs": 103,
+          "totalPssKb": 275973,
+          "nativePssKb": 149490,
+          "nativeHeapAllocKb": 116571,
+          "dalvikPssKb": 35127
+        },
+        {
+          "cycle": 54,
+          "latencyMs": 88,
+          "totalPssKb": 288210,
+          "nativePssKb": 148778,
+          "nativeHeapAllocKb": 116771,
+          "dalvikPssKb": 33007
+        },
+        {
+          "cycle": 55,
+          "latencyMs": 88,
+          "totalPssKb": 261173,
+          "nativePssKb": 148862,
+          "nativeHeapAllocKb": 116674,
+          "dalvikPssKb": 30323
+        },
+        {
+          "cycle": 56,
+          "latencyMs": 75,
+          "totalPssKb": 267625,
+          "nativePssKb": 147234,
+          "nativeHeapAllocKb": 116886,
+          "dalvikPssKb": 32071
+        },
+        {
+          "cycle": 57,
+          "latencyMs": 74,
+          "totalPssKb": 278357,
+          "nativePssKb": 146486,
+          "nativeHeapAllocKb": 117075,
+          "dalvikPssKb": 31171
+        },
+        {
+          "cycle": 58,
+          "latencyMs": 77,
+          "totalPssKb": 301224,
+          "nativePssKb": 151501,
+          "nativeHeapAllocKb": 117374,
+          "dalvikPssKb": 33931
+        },
+        {
+          "cycle": 59,
+          "latencyMs": 78,
+          "totalPssKb": 264859,
+          "nativePssKb": 151628,
+          "nativeHeapAllocKb": 117155,
+          "dalvikPssKb": 30503
+        }
+      ]
+    }
+  },
+  "lynxAttributedMemory": {
+    "elementTemplate": {
+      "baseline": {
+        "collectionStatus": "completed",
+        "collectionDurationMs": 0,
+        "expectedInstanceCount": 1,
+        "completedInstanceCount": 1,
+        "totalBytes": 5410368,
+        "appBytes": 118365184,
+        "ratioToApp": 0.045709116626727,
+        "elementBytes": 34224,
+        "viewBytes": 0,
+        "mainThreadRuntimeBytes": 962760,
+        "backgroundThreadRuntimeBytes": 4413384,
+        "elementNodeCount": 31
+      },
+      "after60Clear": {
+        "collectionStatus": "completed",
+        "collectionDurationMs": 1,
+        "expectedInstanceCount": 1,
+        "completedInstanceCount": 1,
+        "totalBytes": 24130352,
+        "appBytes": 333228032,
+        "ratioToApp": 0.07241393185072738,
+        "elementBytes": 34224,
+        "viewBytes": 0,
+        "mainThreadRuntimeBytes": 659184,
+        "backgroundThreadRuntimeBytes": 23436944,
+        "elementNodeCount": 31
+      }
+    },
+    "ordinaryControl": {
+      "baseline": {
+        "collectionStatus": "completed",
+        "collectionDurationMs": 1,
+        "expectedInstanceCount": 1,
+        "completedInstanceCount": 1,
+        "totalBytes": 5013264,
+        "appBytes": 116741120,
+        "ratioToApp": 0.04294342901627122,
+        "elementBytes": 34224,
+        "viewBytes": 0,
+        "mainThreadRuntimeBytes": 830952,
+        "backgroundThreadRuntimeBytes": 4148088,
+        "elementNodeCount": 31
+      },
+      "after60Clear": {
+        "collectionStatus": "completed",
+        "collectionDurationMs": 1,
+        "expectedInstanceCount": 1,
+        "completedInstanceCount": 1,
+        "totalBytes": 14260600,
+        "appBytes": 189692928,
+        "ratioToApp": 0.07517728863355412,
+        "elementBytes": 34224,
+        "viewBytes": 0,
+        "mainThreadRuntimeBytes": 520624,
+        "backgroundThreadRuntimeBytes": 13705752,
+        "elementNodeCount": 31
+      }
+    },
+    "interpretation": "Both pages returned elementNodeCount to 31 and elementBytes to 34,224 bytes. The remaining ET delta is background-runtime allocation: 4,413,384 to 23,436,944 bytes versus ordinary 4,148,088 to 13,070,823 bytes. This is not a handle-tree leak proof, but it remains an independent memory-cost warning."
+  },
+  "heapDiagnostic": {
+    "snapshotSource": "automatic agent-lynx background capture",
+    "diagnosisMode": "lifecycle residue",
+    "target": "Octane clean Element Template table after 60 create1k-clear cycles",
+    "thread": "background",
+    "gcChoice": "best-effort HeapProfiler.collectGarbage before both snapshots",
+    "sourceCorrelation": "Octane source and exact production bundle available",
+    "a": {
+      "label": "baseline empty ET page",
+      "sha256": "a9442455f50633aece2d171b8d0e64797d6b480b560f71163cb04bca7134b76b",
+      "bytes": 1931529,
+      "nodes": 10520,
+      "edges": 17565,
+      "selfSizeBytes": 2160067
+    },
+    "c": {
+      "label": "same empty state after 60 create-clear cycles",
+      "sha256": "88e3ada39a7fe56029899984226934a1a3e5e24f667f4f91b93da9d27bd3671b",
+      "bytes": 2111311,
+      "nodes": 12042,
+      "edges": 20718,
+      "selfSizeBytes": 2327578
+    },
+    "delta": {
+      "nodes": 1522,
+      "edges": 3153,
+      "selfSizeBytes": 167511,
+      "dominantFamilies": [
+        {
+          "family": "object:Object",
+          "count": 497,
+          "selfBytes": 43736
+        },
+        {
+          "family": "array:[]",
+          "count": 249,
+          "selfBytes": 21914
+        },
+        {
+          "family": "benchmark timing JSON strings",
+          "count": 120,
+          "interpretation": "one create and one clear marker per cycle retained by the DevTool/benchmark observation path"
+        }
+      ]
+    },
+    "judgment": "insufficient evidence for a JS leak; live heap grew 7.8% but is dominated by measurement-protocol objects/strings, while the >100 MiB global-memory jump occurred only when heap snapshot instrumentation preceded the workload",
+    "limitations": [
+      "Only A/C states were captured; no active B snapshot.",
+      "QuickJS self-size does not account for all native/runtime allocations.",
+      "Heap snapshot instrumentation materially changed Memory.getAllMemoryUsage and is excluded from headline memory comparisons."
+    ]
+  },
+  "rejectedNullChildSlots": {
+    "hypothesis": "Pass null instead of a fresh empty child-slot array for each post-first-screen template instance.",
+    "sourceState": "fully reverted after measurement",
+    "candidateBundle": {
+      "sha256": "ac8501c72a48a15bbb58a7826342778cc51d2999b32cd48d0d9c79a5bcd7be54",
+      "bytes": 262800,
+      "deltaBytes": -2
+    },
+    "baselineBundle": {
+      "sha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+      "bytes": 262802
+    },
+    "ratios": {
+      "latencyGeometricMean": 0.9911638312364519,
+      "postMemoryGeometricMean": {
+        "totalPssKb": 1.0006826819487962,
+        "nativePssKb": 1.0059870067997356,
+        "nativeHeapAllocKb": 1.0016636782149326,
+        "dalvikPssKb": 0.9906414039537514
+      },
+      "incrementMemoryGeometricMean": {
+        "totalPssKb": 0.9879821663973524,
+        "nativePssKb": 0.9979587206705405,
+        "nativeHeapAllocKb": 0.9964888474725883,
+        "dalvikPssKb": 0.9863875803769578
+      }
+    },
+    "semanticChecks": [
+      {
+        "variant": "cleanEt",
+        "workload": "create",
+        "scale": 5000,
+        "repetition": 0,
+        "cycle": 0,
+        "nativeLabelCount": 5000,
+        "expected": 5000,
+        "pass": true
+      },
+      {
+        "variant": "nullChildSlots",
+        "workload": "create",
+        "scale": 5000,
+        "repetition": 0,
+        "cycle": 0,
+        "nativeLabelCount": 5000,
+        "expected": 5000,
+        "pass": true
+      }
+    ],
+    "failures": [],
+    "fatalError": null,
+    "raw": {
+      "latency": [
+        {
+          "variant": "cleanEt",
+          "repetition": 0,
+          "order": "cleanEt->nullChildSlots",
+          "latencyMs": 2697
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 0,
+          "order": "cleanEt->nullChildSlots",
+          "latencyMs": 2659
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 1,
+          "order": "nullChildSlots->cleanEt",
+          "latencyMs": 2680
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 1,
+          "order": "nullChildSlots->cleanEt",
+          "latencyMs": 2726
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 2,
+          "order": "cleanEt->nullChildSlots",
+          "latencyMs": 2761
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 2,
+          "order": "cleanEt->nullChildSlots",
+          "latencyMs": 2659
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 3,
+          "order": "nullChildSlots->cleanEt",
+          "latencyMs": 2697
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 3,
+          "order": "nullChildSlots->cleanEt",
+          "latencyMs": 2707
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 4,
+          "order": "cleanEt->nullChildSlots",
+          "latencyMs": 2712
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 4,
+          "order": "cleanEt->nullChildSlots",
+          "latencyMs": 2661
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 5,
+          "order": "nullChildSlots->cleanEt",
+          "latencyMs": 2689
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 5,
+          "order": "nullChildSlots->cleanEt",
+          "latencyMs": 2588
+        }
+      ],
+      "preMemory": [
+        {
+          "variant": "cleanEt",
+          "repetition": 0,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 123604,
+          "nativePssKb": 53873,
+          "nativeHeapAllocKb": 45889,
+          "dalvikPssKb": 9324
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 0,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 135614,
+          "nativePssKb": 56260,
+          "nativeHeapAllocKb": 51403,
+          "dalvikPssKb": 8986
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 1,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 138388,
+          "nativePssKb": 58496,
+          "nativeHeapAllocKb": 51667,
+          "dalvikPssKb": 9242
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 1,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 131768,
+          "nativePssKb": 52307,
+          "nativeHeapAllocKb": 51250,
+          "dalvikPssKb": 8800
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 2,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 140137,
+          "nativePssKb": 58070,
+          "nativeHeapAllocKb": 52518,
+          "dalvikPssKb": 11442
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 2,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 139791,
+          "nativePssKb": 57300,
+          "nativeHeapAllocKb": 52019,
+          "dalvikPssKb": 11264
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 3,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 138953,
+          "nativePssKb": 55728,
+          "nativeHeapAllocKb": 52621,
+          "dalvikPssKb": 12312
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 3,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 141626,
+          "nativePssKb": 57855,
+          "nativeHeapAllocKb": 53255,
+          "dalvikPssKb": 12350
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 4,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 137802,
+          "nativePssKb": 55352,
+          "nativeHeapAllocKb": 51961,
+          "dalvikPssKb": 11332
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 4,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 142296,
+          "nativePssKb": 58848,
+          "nativeHeapAllocKb": 52774,
+          "dalvikPssKb": 11668
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 5,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 143679,
+          "nativePssKb": 59545,
+          "nativeHeapAllocKb": 53628,
+          "dalvikPssKb": 12106
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 5,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 141181,
+          "nativePssKb": 57738,
+          "nativeHeapAllocKb": 52866,
+          "dalvikPssKb": 11596
+        }
+      ],
+      "postMemory": [
+        {
+          "variant": "cleanEt",
+          "repetition": 0,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 415236,
+          "nativePssKb": 238427,
+          "nativeHeapAllocKb": 237957,
+          "dalvikPssKb": 59747
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 0,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 431461,
+          "nativePssKb": 241366,
+          "nativeHeapAllocKb": 239833,
+          "dalvikPssKb": 73407
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 1,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 427919,
+          "nativePssKb": 248703,
+          "nativeHeapAllocKb": 246943,
+          "dalvikPssKb": 62511
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 1,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 434651,
+          "nativePssKb": 240370,
+          "nativeHeapAllocKb": 241519,
+          "dalvikPssKb": 75327
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 2,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 422602,
+          "nativePssKb": 246226,
+          "nativeHeapAllocKb": 244046,
+          "dalvikPssKb": 61551
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 2,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 418924,
+          "nativePssKb": 242514,
+          "nativeHeapAllocKb": 240994,
+          "dalvikPssKb": 59695
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 3,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 415651,
+          "nativePssKb": 238733,
+          "nativeHeapAllocKb": 239695,
+          "dalvikPssKb": 60487
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 3,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 417316,
+          "nativePssKb": 240446,
+          "nativeHeapAllocKb": 241311,
+          "dalvikPssKb": 60047
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 4,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 427515,
+          "nativePssKb": 242530,
+          "nativeHeapAllocKb": 241946,
+          "dalvikPssKb": 66371
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 4,
+          "order": "cleanEt->nullChildSlots",
+          "totalPssKb": 433082,
+          "nativePssKb": 251851,
+          "nativeHeapAllocKb": 247915,
+          "dalvikPssKb": 64651
+        },
+        {
+          "variant": "nullChildSlots",
+          "repetition": 5,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 418990,
+          "nativePssKb": 241855,
+          "nativeHeapAllocKb": 242591,
+          "dalvikPssKb": 60615
+        },
+        {
+          "variant": "cleanEt",
+          "repetition": 5,
+          "order": "nullChildSlots->cleanEt",
+          "totalPssKb": 426952,
+          "nativePssKb": 248198,
+          "nativeHeapAllocKb": 248771,
+          "dalvikPssKb": 62227
+        }
+      ]
+    },
+    "interpretation": "No >=5% owner reduction. The 0.9% latency point improvement and memory ratios around 1.0 are not retained."
+  },
+  "failures": [
+    {
+      "category": "memory-qualification-open",
+      "message": "Element Template does not yet have powered fresh-process M0/upstream peak, settled, and after-clear confidence intervals on a release-qualified Lynx runtime."
+    }
+  ],
+  "nextGate": "Measure exact merged/M0/upstream memory against the source-built fixed runtime to quantify the remaining gap, then reduce the native ElementTemplateInstance/materialization owner or keep the route fail-closed until a release-qualified SDK and full #291 scorecard pass."
+}
