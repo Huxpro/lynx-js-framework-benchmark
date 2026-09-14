@@ -2,8 +2,8 @@
   "protocol": "octane-issue-291-element-template-settled-memory-screen-v1",
   "capturedAt": "2026-09-14T23:26:17.067Z",
   "qualification": "diagnostic-only-not-formal-performance-evidence",
-  "decision": "fail-closed-element-template-and-automatic-native-settled-memory; frozen-m0-current-native-comparator-unavailable",
-  "reason": "At a fixed 30-second post-trigger boundary on fresh Explorer processes, Element Template retains 6.5655x the latest-upstream Native heap allocation and 1.1492x the merged automatic-core allocation. The exact frozen M0-current bundle mounts no Native controls on either Explorer 4.1 or source-built Lynx develop, so it cannot provide an unpatched Native memory baseline. These findings block default/formal qualification; no latency score is assigned to latest upstream because that artifact has only legacy-public-source timing capability.",
+  "decision": "fail-closed-element-template-vs-merged-settled-memory; latest-upstream-and-frozen-m0-current-native-comparators-unavailable",
+  "reason": "At a fixed 30-second post-trigger boundary on fresh Explorer processes, Element Template retains 1.1492x the merged automatic-core Native heap allocation. The attempted latest-upstream memory comparison is invalid because the timeout recovery restarted Explorer before the memory sample, so its apparent ratio is excluded. The exact frozen M0-current bundle mounts no Native controls on either Explorer 4.1 or source-built Lynx develop, so it cannot provide an unpatched Native memory baseline. These findings block default/formal qualification; no latency score is assigned to latest upstream because that artifact has only legacy-public-source timing capability.",
   "provenance": {
     "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
     "implementationIssue": "https://github.com/Huxpro/octane/issues/383",
@@ -59,12 +59,14 @@
     "processBoundary": "fresh Explorer process before every arm",
     "order": "balanced AB/BA; no outlier removal",
     "memoryBoundary": "dumpsys meminfo at a fixed 30,000 ms after the Native input trigger",
-    "semantics": "native col-label census must equal 5,000 before a memory sample is eligible",
+    "semantics": "native col-label census must equal 5,000 and the measured process must remain on that rendered page before a memory sample is eligible",
     "latencyPolicy": "latest upstream remains DNF because its frozen legacy-public-source artifact publishes no current timing ACK; semantic completion does not manufacture latency",
     "incrementPolicy": "startup-to-post deltas are not ratioed when startup memory falls during the 30-second window; fixed-boundary absolute post values remain paired"
   },
   "fixed30s": {
     "elementTemplateVsLatestUpstream": {
+      "valid": false,
+      "invalidReason": "The adapter captured the 5,000-label timeout evidence, then restarted Explorer before returning DNF; the caller's subsequent memory sample therefore measured the restarted process rather than the rendered upstream page. All ratios in this section are preserved as raw observations but excluded from every gate and conclusion.",
       "pairs": 10,
       "summary": {
         "totalPssKb": {
@@ -1675,7 +1677,7 @@
         ],
         "fatalError": null
       },
-      "interpretation": "All 10 upstream arms reached exactly 5,000 Native labels but emitted no timing event. Element Template fails the settled Native memory screen by a wide margin; this is memory-only evidence."
+      "interpretation": "All 10 upstream arms reached exactly 5,000 Native labels but emitted no timing event. However, timeout recovery restarted Explorer before each upstream memory sample, so this screen is invalid and contributes no performance conclusion."
     },
     "elementTemplateVsMergedAutomatic": {
       "pairs": 6,
@@ -2810,6 +2812,10 @@
   },
   "invalidScreens": [
     {
+      "artifactSha256": "ee4dd5297f14ca5727eb69d493bf11fc6e726fca434cff2f92db72aca74942ea",
+      "reason": "The adapter captured semantic timeout evidence and then restarted Explorer before the upstream memory read; excluded because the memory sample is from the restarted process, not the 5,000-node page."
+    },
+    {
       "artifactSha256": "1c291936a4357894ebb0f8b02e3c2d7c878b6ca57552f865db5aceb5ecb97c0b",
       "reason": "ET memory was sampled immediately after ACK while upstream memory was sampled after a 30-second timing timeout; excluded because the settle boundary differed."
     },
@@ -2820,10 +2826,10 @@
   ],
   "gates": {
     "elementTemplateVsMergedSettledNativeHeapAllocationUpperAtMost1_05": false,
-    "elementTemplateVsLatestUpstreamSettledNativeHeapAllocationUpperAtMost1_05": false,
+    "elementTemplateVsLatestUpstreamSettledNativeHeapAllocationUpperAtMost1_05": null,
     "m0CurrentNativeComparatorRunnable": false,
     "latestUpstreamLatencyComparable": false,
     "defaultSwitchEligible": false
   },
-  "nextGate": "Attribute and reduce the compiled-program/automatic resident Native allocation plus the Element Template-specific settled overhead without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
+  "nextGate": "Capture latest-upstream memory before any timeout recovery restart; attribute and reduce the Element Template-specific settled allocation over merged automatic without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
 }
