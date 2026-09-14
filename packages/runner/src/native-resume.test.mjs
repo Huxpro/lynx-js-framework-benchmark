@@ -10,6 +10,7 @@ import { makeRecord } from '@lynx-bench/shared/schema';
 import {
   NATIVE_PRODUCER_PROTOCOL_ERROR,
   NATIVE_PRODUCER_RUNTIME_ERROR,
+  isNativeStartupPayloadFromCurrentOpen,
   isNativeStartupPayloadPending,
   nativeProducerRuntimeDnf,
   nativeTransportFailureDnf,
@@ -104,6 +105,26 @@ test('startup polling waits for asynchronously completed producer payloads', () 
     entryId: 'reactlynx-m4-default',
     expectedProtocol: 'lynx-native-startup-v2',
   }), false);
+});
+
+test('startup receipt ownership rejects the previous card and accepts the current card', () => {
+  const stale = {
+    protocol: 'lynx-native-startup-v2',
+    moduleStartMs: 99,
+    commitAckMs: 100,
+    firstFrameMs: 101,
+    secondFrameMs: 102,
+    transportEvidence: {
+      kind: 'framework-host-commit-callback',
+      method: 'rLynxChange',
+      acknowledged: true,
+      acknowledgedAtMs: 100,
+    },
+    renderEvidence: { kind: 'native-animation-frame', frames: 2 },
+    postState: { rowCount: 0 },
+  };
+  assert.equal(isNativeStartupPayloadFromCurrentOpen(stale, 103), false);
+  assert.equal(isNativeStartupPayloadFromCurrentOpen(stale, 99), true);
 });
 
 const nativeState = (rowCount) => ({

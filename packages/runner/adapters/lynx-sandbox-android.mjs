@@ -332,6 +332,12 @@ export function isNativeStartupPayloadPending(payload, {
   return deferredFields.some((key) => payload[key] === undefined);
 }
 
+export function isNativeStartupPayloadFromCurrentOpen(payload, openTime) {
+  return Number.isFinite(openTime)
+    && Number.isFinite(payload?.moduleStartMs)
+    && payload.moduleStartMs >= openTime;
+}
+
 export function selectNativeStartupPipelineEntry(entries, { afterOpenTime } = {}) {
   const pipelines = (entries ?? []).filter((candidate) =>
     candidate?.entryType === 'pipeline'
@@ -1646,8 +1652,16 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           expectedRows: currentRows,
           expectedProtocol: currentStartupProtocol,
         });
-        if (!Number.isFinite(openTime) || startup.moduleStartMs < openTime) {
-          throw new Error('Native startup payload predates the adapter open request.');
+        if (!Number.isFinite(openTime)) {
+          throw new Error('Native startup open request has no finite device timestamp.');
+        }
+        // A Lynx global can briefly retain the previous card's startup receipt
+        // while the newly opened bundle is still booting. Ignore that stale
+        // value and keep polling; accepting it would cross page boundaries,
+        // while throwing here would abort an otherwise resumable campaign.
+        if (!isNativeStartupPayloadFromCurrentOpen(startup, openTime)) {
+          await delay(STARTUP_POLL_MS);
+          continue;
         }
         if (process.env.LYNX_SANDBOX_DEBUG_STARTUP === '1') {
           log(`  [sandbox:startup-frame] ${JSON.stringify({ openTime, startup })}`);

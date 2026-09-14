@@ -51,6 +51,23 @@ export const OCTANE_FORMAL_CONNECTOR_RESET_REVISION = Object.freeze({
   ]),
 });
 
+export const M4_STALE_STARTUP_RECEIPT_REVISION = Object.freeze({
+  reason: 'ignore-stale-startup-receipt-20260914',
+  baseCampaignId: '031ead5d8482f70e',
+  baseInputReceiptSha256: '833d9824d42b43392bf962108f37a4fd0487aad22b6b2fabdd8a98f417e04b2b',
+  baseRecordCount: 132,
+  baseLeaseCount: 2,
+  baseLastLeaseIssueId: 'octane-291-m4-android-nojit-ack-v5-lease2',
+  requiredCurrentSources: Object.freeze({
+    'packages/runner/adapters/lynx-sandbox-android.mjs':
+      'c442dd913968d67c3f83aed356d20420d94f21c878f9703b5b19ae107e4646de',
+  }),
+  allowedChangedSources: Object.freeze([
+    'packages/runner/adapters/lynx-sandbox-android.mjs',
+    'packages/runner/src/native-resume.mjs',
+  ]),
+});
+
 const campaignMethodInvariant = (campaign) => {
   const { id: _id, inputReceiptSha256: _inputReceiptSha256, ...invariant } = campaign;
   return invariant;
@@ -103,6 +120,21 @@ function assertApprovedMethodRevision(
   }
   if (!jsonEqual(changed.sort(), [...allowed].sort())) {
     throw new Error('Native resume method revision does not contain the exact approved source delta.');
+  }
+  const comparableEntryArtifacts = (receipt) => Object.fromEntries(
+    Object.entries(receipt.entryArtifacts ?? {}).map(([entryId, artifact]) => [
+      entryId,
+      {
+        provenance: artifact.provenance,
+        bundles: artifact.bundles,
+      },
+    ]),
+  );
+  if (!jsonEqual(
+    comparableEntryArtifacts(run.meta.inputReceipt),
+    comparableEntryArtifacts(currentInputReceipt),
+  )) {
+    throw new Error('Native resume method revision changes entry bundles or provenance.');
   }
   for (const [path, expectedSha256] of Object.entries(approval.requiredCurrentSources)) {
     if (newSources[path]?.sha256 !== expectedSha256) {
@@ -185,7 +217,11 @@ export function validateNativeResumeCheckpoint(run, {
       throw new Error('Native resume active method revision does not match current runner sources.');
     }
     const approval = methodRevisionApproval
-      ?? [NATIVE_TRANSPORT_CONTAINMENT_REVISION, OCTANE_FORMAL_CONNECTOR_RESET_REVISION]
+      ?? [
+        NATIVE_TRANSPORT_CONTAINMENT_REVISION,
+        OCTANE_FORMAL_CONNECTOR_RESET_REVISION,
+        M4_STALE_STARTUP_RECEIPT_REVISION,
+      ]
         .find((candidate) => candidate.baseCampaignId === run.meta.campaign.id
           && candidate.baseInputReceiptSha256 === run.meta.inputReceipt.sha256);
     if (approval == null) {
