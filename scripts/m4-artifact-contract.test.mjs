@@ -28,7 +28,7 @@ test('M4 freezes a distinct final qualification cohort', () => {
   );
   assert.equal(
     M4_PINNED_SOURCES.comparators.commit,
-    'f43b859f70519fda37fd155741bef66b9dc544e0',
+    'c0e6cb89f684738517cfbd97a71f2c459a4c2360',
   );
   assert.equal(M4_PINNED_SOURCES.comparators.producerPull, 397);
   assert.equal(M4_PLATFORM_LANE.sdk, 'Lynx 4.1.0');
