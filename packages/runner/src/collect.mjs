@@ -478,6 +478,7 @@ function samplingProblems(run, record) {
   if (
     !run.meta.receipt
     || !isBenchmarkRecord(record)
+    || record.workload === 'memoryPeak'
     || record.workload === 'memory'
     || record.workload === 'memoryAfterClear'
   ) return [];

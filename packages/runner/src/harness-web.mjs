@@ -461,6 +461,22 @@ export async function runTableSuite({
       if (reg?.name === 'lynx-bg') sessions.push({ key: 'heapBts', sessionId: w.sessionId });
     }
     for (const s of sessions) {
+      const { usedSize: peakUsedSize } = await cdp.send(
+        'Runtime.getHeapUsage',
+        {},
+        s.sessionId,
+      );
+      records.push(makeRecord({
+        suite: 'table',
+        entry: entry.id,
+        workload: 'memoryPeak',
+        scale: 10000,
+        metric: `${s.key}Peak`,
+        boundary: 'ungc-heap-at-post-create-10k-rows',
+        unit: 'bytes',
+        value: peakUsedSize,
+        jsRegime, cpuThrottle, throttleScope, verifiedSlowdown,
+      }));
       await cdp.send('HeapProfiler.collectGarbage', {}, s.sessionId);
       const { usedSize } = await cdp.send('Runtime.getHeapUsage', {}, s.sessionId);
       records.push(makeRecord({
@@ -494,7 +510,7 @@ export async function runTableSuite({
       }));
     }
     log(
-      `  ${entry.id} memory@10k+afterClear: ${sessions.map((s) => s.key).join('+')} captured`,
+      `  ${entry.id} memory@10k peak+settled+afterClear: ${sessions.map((s) => s.key).join('+')} captured`,
     );
   } catch (e) {
     log(`  [warn] ${entry.id} memory snapshot failed: ${String(e).slice(0, 120)}`);

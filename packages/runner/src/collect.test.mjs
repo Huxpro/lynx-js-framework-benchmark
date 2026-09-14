@@ -1686,6 +1686,14 @@ test('prospective one-shot memory observations do not require repetition account
       n: 1,
       median: 1024,
     });
+    const memoryPeak = (entry) => ({
+      ...memoryAfterClear(entry),
+      workload: 'memoryPeak',
+      metric: 'heapMtsPeak',
+      boundary: 'ungc-heap-at-post-create-10k-rows',
+      value: 4096,
+      median: 4096,
+    });
     fs.writeFileSync(path.join(root, 'results/runs/complete.json'), JSON.stringify({
       schemaVersion: 2,
       meta: {
@@ -1696,8 +1704,8 @@ test('prospective one-shot memory observations do not require repetition account
         entryCommits: { octane: 'octane-sha', react: 'react-sha' },
       },
       records: [
-        measured('octane'), memoryAfterClear('octane'),
-        measured('react'), memoryAfterClear('react'),
+        measured('octane'), memoryPeak('octane'), memoryAfterClear('octane'),
+        measured('react'), memoryPeak('react'), memoryAfterClear('react'),
       ],
     }));
 
@@ -1711,6 +1719,10 @@ test('prospective one-shot memory observations do not require repetition account
     assert.equal(memory.length, 2);
     assert.equal(memory.every(({ comparabilityStatus }) => comparabilityStatus === 'comparable'), true);
     assert.equal(memory.every(({ rankingEligible }) => rankingEligible), true);
+    const peaks = out.records.filter(({ workload }) => workload === 'memoryPeak');
+    assert.equal(peaks.length, 2);
+    assert.equal(peaks.every(({ comparabilityStatus }) => comparabilityStatus === 'comparable'), true);
+    assert.equal(peaks.every(({ rankingEligible }) => rankingEligible), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
