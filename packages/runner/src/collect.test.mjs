@@ -1819,13 +1819,16 @@ test('history audits every run but publishes only complete source-defined featur
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
   // Refreshing a frozen comparator artifact invalidates the old 184-cell M4
-  // Native cohort atomically. It remains source evidence, but no Native cell
-  // can publish until a complete replacement campaign uses the new identity.
-  assert.equal(retainedRecords.length, 3560);
-  assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 0);
-  assert.equal(out.nativeObservationRecords.length, 46);
+  // Native cohort atomically. The complete replacement campaign publishes all
+  // cells under the refreshed exact identity, while the old source stays
+  // archive-only.
+  assert.equal(retainedRecords.length, 3744);
+  assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 184);
+  assert.equal(out.nativeObservationRecords.length, 0);
   assert.deepEqual(out.nativeCoverage.summary, {
-    'invalid-incomparable': 184,
+    dnf: 74,
+    measured: 87,
+    unsupported: 23,
   });
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
@@ -1850,7 +1853,20 @@ test('history audits every run but publishes only complete source-defined featur
   const currentNative = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'native',
   );
-  assert.equal(currentNative, undefined);
+  assert.deepEqual(currentNative.entryIds, [
+    'octane-m4-final',
+    'octane-m4-upstream',
+    'reactlynx-m4-default',
+    'reactlynx-m4-et',
+    'vue-lynx-m4-vapor-default',
+    'vue-lynx-m4-vapor-ifr',
+    'vue-lynx-m4-vdom-default',
+    'vue-lynx-m4-vdom-ifr-et',
+  ]);
+  assert.deepEqual(currentNative.sourceRunFiles, [
+    '2026-09-14T14-29-24-lynx-native-android-aries_10-10-devtool-direct-recycle5-explorer-6ae29787a216-32c4d29e947a-bdca3fcd1209-native-issue291-m4-android-nojit-ack-v7.json',
+  ]);
+  assert.equal(currentNative.rankEligible, true);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
   ), false);
@@ -1873,11 +1889,10 @@ test('history audits every run but publishes only complete source-defined featur
   const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
     .map((index) => out.history.records[index]);
   const currentBundleScale = currentRecords.filter((record) => record.suite === 'bundle-scale');
-  // Native bundle-scale records stay out of the current checkpoint while its
-  // exact-identity cohort is invalidated; the global audit above still keeps
-  // all 264 descriptive artifact records.
-  assert.equal(currentBundleScale.length, 160);
-  assert.equal(currentBundleScale.filter((record) => record.harness === 'native').length, 0);
+  // The complete exact-identity cohort restores all Native bundle receipts to
+  // the current checkpoint alongside the Web receipts.
+  assert.equal(currentBundleScale.length, 264);
+  assert.equal(currentBundleScale.filter((record) => record.harness === 'native').length, 104);
   assert.ok(currentBundleScale
     .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
   const stormOperations = currentRecords.filter((record) =>
@@ -1996,6 +2011,24 @@ test('history audits every run but publishes only complete source-defined featur
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
         && record.environment === cohort.environment
         && record.rankEligible);
+      if (cohort.harness === 'native') {
+        const logicalCellCounts = cohort.entryIds.map((entryId) => Object.fromEntries(
+          Object.entries(cohortRecords
+            .filter((record) => record.entry === entryId)
+            .reduce((counts, record) => {
+              const key = [record.suite, record.workload, record.scale].join('|');
+              counts[key] = (counts[key] ?? 0) + 1;
+              return counts;
+            }, {}))
+            .sort(([left], [right]) => left.localeCompare(right)),
+        ));
+        assert.equal(logicalCellCounts.every((counts) =>
+          Object.values(counts).reduce((sum, count) => sum + count, 0) === 23), true);
+        for (const counts of logicalCellCounts.slice(1)) {
+          assert.deepEqual(counts, logicalCellCounts[0]);
+        }
+        continue;
+      }
       const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [

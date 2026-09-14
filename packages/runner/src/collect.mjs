@@ -1887,10 +1887,19 @@ const buildHistory = ({
             && record.jsFlags === cohort.jsFlags
             && record.cpuThrottle === cohort.cpuThrottle
             && record.throttleScope === cohort.throttleScope)))));
-    const matrixRecords = completeMatrixRecords(
-      cohortRecords.filter((record) => !['pipeline', 'storm'].includes(record.suite)),
-      cohort.entryIds,
-    );
+    // Native completeness is governed by the frozen coverage contract rather
+    // than a cross-entry cell-key intersection. Comparator table records use a
+    // host-commit boundary that intentionally differs from Octane's direct
+    // commit acknowledgement, so intersecting full cell keys would erase the
+    // otherwise complete Native matrix from history.
+    const matrixRecords = cohort.harness === 'native'
+      ? cohortRecords.filter((record) =>
+        ['table', 'startup'].includes(record.suite)
+        && cohort.entryIds.includes(record.entry))
+      : completeMatrixRecords(
+        cohortRecords.filter((record) => !['pipeline', 'storm'].includes(record.suite)),
+        cohort.entryIds,
+      );
     const matrixSet = new Set(matrixRecords);
     const descriptiveExactRecords = cohortRecords.filter((record) =>
       !matrixSet.has(record)
