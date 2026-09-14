@@ -1,0 +1,113 @@
+{
+  "kind": "m4-native-source-experiment-and-capability-probe",
+  "issue": 291,
+  "generatedAt": "2026-09-14T17:03:02.000Z",
+  "disposition": "REJECTED_NO_OCTANE_PR",
+  "source": {
+    "baseCommit": "7a523bf20d04578c39fe0b5fe532cdef6dab3e9e",
+    "branch": "huxcx/m4-native-bulk-create-291",
+    "hypothesis": "Materialize every large compiled view-run root while attaching it, then restore flatten=true before the first observable frame, so Android Fiber container insertion does not repeatedly promote a widening detached subtree.",
+    "variants": {
+      "baseline": {
+        "lynxBundleBytes": 186581,
+        "lynxBundleSha256": "58790f90fd40f80403469c31415a638743dfcc5b1a349a041395266b085a4fca"
+      },
+      "materializeOnly": {
+        "lynxBundleBytes": 186645,
+        "lynxBundleSha256": "3f6ba0a9f1fb6c25cdb49c99a453e29b55df5ebe54381c26e8bdc613f858aad1"
+      },
+      "materializeThenReflatten": {
+        "lynxBundleBytes": 186774,
+        "lynxBundleSha256": "fd1acf5ad8aaa497923b50ae349ee86b6ffc24033a7a35691e7ec6b259b634ce"
+      },
+      "bounded256To511MemberChunks": {
+        "lynxBundleBytes": 187107,
+        "lynxBundleSha256": "f38ac9402218bd0108cc7cbebac83f8ecf0cb082495532935946fddeb69f6053"
+      }
+    }
+  },
+  "protocol": {
+    "harness": "lynx-native-android",
+    "jsRegime": "lepusng-nojit",
+    "trigger": "native tap",
+    "boundary": "native-input-handler-through-octane-root-flush-to-second-native-frame",
+    "freshProcessMemory": "force-stop/start Explorer for every arm, create 5000 rows, wait 250ms, then adb dumpsys meminfo",
+    "deviceCohort": "same physical Android lease as the issue-291 Native v7 qualification",
+    "deviceSerialSha256": "931ddcbe",
+    "explorerArtifactSha256": "6ae29787",
+    "lynxEngineVersion": "3.9",
+    "dnf": 0
+  },
+  "latency": {
+    "materializeThenReflattenCreate5000": {
+      "pairs": 4,
+      "orders": ["AB", "BA", "AB", "BA"],
+      "baselineMs": [7327, 7875, 8096, 7834],
+      "candidateMs": [3634, 3405, 3318, 3552],
+      "baselineMedianMs": 7854.5,
+      "candidateMedianMs": 3478.5,
+      "medianRatio": 0.44286650964415305,
+      "rawEvidenceSha256": "ba021904ab610aa82fd5aa2d820b67504f4503592227e3dc1c4d0614549446d8"
+    },
+    "boundedCreate5000": {
+      "pairs": 4,
+      "orders": ["AB", "BA", "AB", "BA"],
+      "baselineMs": [7136, 8056, 7772, 7606],
+      "candidateMs": [3673, 3520, 3446, 3501],
+      "baselineMedianMs": 7689,
+      "candidateMedianMs": 3510.5,
+      "medianRatio": 0.4565613213681883,
+      "rawEvidenceSha256": "7c9bb05a71ef7b2574946cf6b6ec461431b77926f5546afb218316088aa6a532"
+    }
+  },
+  "memory": {
+    "boundedFreshProcessSixPairs": {
+      "baselineMediansKb": {
+        "totalPss": 447616.5,
+        "nativeHeapPss": 277561.5,
+        "nativeHeapAlloc": 257675.5
+      },
+      "candidateMediansKb": {
+        "totalPss": 489291.5,
+        "nativeHeapPss": 309598,
+        "nativeHeapAlloc": 288991.5
+      },
+      "pairedGeometricRatios": {
+        "totalPss": 1.0981,
+        "nativeHeapPss": 1.1189,
+        "nativeHeapAlloc": 1.1205
+      },
+      "rawEvidenceSha256": "8fa5fac9f62f38b87838065e5ec08cc1088ad59e3863beb53acbd9eedce50c49"
+    },
+    "fourArmCrossCheck": {
+      "arms": ["baseline", "materializeThenReflatten", "materializeOnly", "vueVaporDefault"],
+      "medianTotalPssKb": [455692, 485906.5, 513557, 622920.5],
+      "medianNativeHeapPssKb": [275814, 310983.5, 328979, 324375.5],
+      "medianNativeHeapAllocKb": [258828.5, 288451.5, 309959.5, 304923.5],
+      "rawEvidenceSha256": "28f41a45454af169336daf7d2c088a95ffe0706f11b197ef11a8f138156a2b02"
+    }
+  },
+  "nativeElementTemplateCapability": {
+    "probe": "A diagnostic compiled-program run deliberately threw the typeof map from the real main-thread VM; the Explorer error channel preserved the value verbatim.",
+    "available": [
+      "__CreateElementTemplate",
+      "__CreateTypedElementTemplate",
+      "__SetAttributeOfElementTemplate",
+      "__InsertNodeToElementTemplate",
+      "__RemoveNodeFromElementTemplate",
+      "__SerializeElementTemplate"
+    ],
+    "unavailable": ["__InstantiateElementTemplate"],
+    "interpretation": "The device exposes the modern handle-based Element Template family used by ReactLynx 0.126; the older instantiate helper is not the applicable API. Native template cloning is therefore a viable next mechanism to prototype."
+  },
+  "m0NativeQualificationNote": {
+    "status": "not measured in this lease",
+    "reason": "The frozen M0 bundle constructs MessageChannel in both background JavaScript and compiled main-thread bytecode. Explorer 3.9 has no MessageChannel, so it fails before rendering. A background-only byte patch did not change the compiled main-thread bytecode and was correctly rejected as insufficient; this is a harness compatibility failure, not a framework DNF or performance result.",
+    "requiredFollowup": "Rebuild the exact M0 framework revision through the current benchmark harness fallback, then qualify the rebuilt artifact and run peak/settled/after-clear and lifecycle memory gates."
+  },
+  "decision": {
+    "accepted": false,
+    "reason": "The candidate cuts create-5000 wall latency by about 54%, but fresh-process total PSS rises about 9.8% and native heap rises about 12%. Restoring flatten=true and bounding each materialized chunk do not reclaim that cost. This violates issue #291's 1.05 memory gate and the roadmap's no-cost-transfer rule.",
+    "nextMechanism": "Prototype compiler-described Native Element Templates using the confirmed modern API family, with ordinary Element PAPI fallback and the same public semantics."
+  }
+}
