@@ -52,6 +52,7 @@
       "fixedUpstream": "ee4dd5297f14ca5727eb69d493bf11fc6e726fca434cff2f92db72aca74942ea",
       "fixedMerged": "49f28057e5d7188ffd309b1b989e449f1eb93c3c120aaebb1012afb9b9841a06",
       "preservedTimeoutUpstream": "5454ce651ea1ce27b9363ffb35162ba193713b73c5841085b5cbc1d243dc324a",
+      "rejectedSharedRuns": "f01e1317153a2022bbe60ae57f129bdcf506934c155b5cab53713f7a975c5219",
       "m0Release": "c8234c78ee5cfe9263ba4aea49fafd148f22b4132f3414d5f9ee1128b5459971",
       "runner": "82e6bc9c4dbbc7ca5aeb991e9a284f47e07cf041116695116ace1f15a8c2deb6"
     }
@@ -2894,6 +2895,28 @@
     "sourceInference": "The frozen e82160f benchmark module constructs MessageChannel unconditionally at module scope, while the later upstream fixture added a Native setTimeout fallback. The repeated blank page is consistent with that source difference, but no console exception was captured, so this remains an inference rather than a verified error string.",
     "interpretation": "The exact unpatched M0-current Native comparator is unavailable on both tested runtimes. A patched/rebuilt fixture would be a separate identity and cannot silently replace it."
   },
+  "rejectedHypotheses": [
+    {
+      "name": "share-element-template-row-values-by-mount-run",
+      "qualification": "diagnostic-only-uncommitted-source-candidate",
+      "sourceBase": "101c6a1ba9adb547a944a118f3ad704fbf8a278e",
+      "candidateBundleSha256": "251a2052a620b7893315db9f00bafe97402b8f5538d9d3540be01f3874010238",
+      "candidateBundleBytes": 262995,
+      "baselineBundleSha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+      "method": "six balanced fresh-process AB/BA create5k pairs; fixed 30-second memory; no outlier removal",
+      "semantic": "12/12 exact timing samples, 2/2 explicit 5,000-label checks, zero failures",
+      "latencyPairedGeometricMean": 1.0087718069574958,
+      "memoryPairedGeometricMean": {
+        "totalPssKb": 0.9958391408839682,
+        "nativePssKb": 0.999124337691612,
+        "nativeHeapAllocKb": 0.9986429615608674,
+        "dalvikPssKb": 0.983744225880617,
+        "dalvikHeapAllocKb": 0.9975650243734543
+      },
+      "decision": "reject",
+      "reason": "Replacing one per-row JavaScript values slice and repeated plan reference with a shared flat mount run changed settled Native heap allocation by only 0.14% and made create latency 0.88% slower. The material overhead is therefore not owned by those JavaScript row slices; continue attribution at the live native ElementTemplateInstance and slot-storage boundary."
+    }
+  ],
   "invalidScreens": [
     {
       "artifactSha256": "ee4dd5297f14ca5727eb69d493bf11fc6e726fca434cff2f92db72aca74942ea",
@@ -2915,5 +2938,5 @@
     "latestUpstreamLatencyComparable": false,
     "defaultSwitchEligible": false
   },
-  "nextGate": "Repeat the preserve-before-restart latest-upstream screen until a complete ten-pair semantic cohort is obtained; attribute and reduce the Element Template-specific settled allocation over merged automatic without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
+  "nextGate": "Repeat the preserve-before-restart latest-upstream screen until a complete ten-pair semantic cohort is obtained; attribute and reduce live native ElementTemplateInstance/slot-storage overhead over merged automatic without weakening semantics; restore a runnable immutable M0 Native comparison identity; then rerun ten-pair peak/settled/after-clear confidence intervals and the full #291 matrix on a release-qualified SDK."
 }
