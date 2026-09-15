@@ -116,6 +116,68 @@ test('BENCH_ROWS builds the exact diagnostic matrix and rejects ambiguous input'
   }
 });
 
+test('table Element Template candidate keeps an explicit list fallback', () => {
+  const checkout = fs.mkdtempSync(path.join(os.tmpdir(), 'build-octane-et-table-'));
+  try {
+    const buildScript = path.join(checkout, 'benchmarks/lynx-table/scripts/build-app.mjs');
+    fs.mkdirSync(path.dirname(buildScript), { recursive: true });
+    fs.writeFileSync(buildScript, `
+      import fs from 'node:fs';
+      import path from 'node:path';
+      const rows = Number(process.env.BENCH_AUTOROWS);
+      const listRows = Number(process.env.BENCH_LIST_ROWS);
+      const et = process.env.BENCH_ELEMENT_TEMPLATE === '1';
+      if (listRows > 0 && et) throw new Error('list must retain the non-ET fallback');
+      if (listRows === 0 && !et) throw new Error('table must use the ET candidate');
+      const suffix = (et ? '-element-template' : '') + (listRows > 0
+        ? '-list-rows' + listRows
+        : rows === 0 ? '' : '-rows' + rows);
+      const out = path.join(process.cwd(), 'benchmarks/lynx-table/app/dist-automatic' + suffix);
+      fs.mkdirSync(out, { recursive: true });
+      fs.writeFileSync(path.join(out, 'main.web.bundle'), 'web');
+      fs.writeFileSync(path.join(out, 'main.lynx.bundle'), 'lynx');
+    `);
+
+    const result = spawnSync(process.execPath, [script, checkout], {
+      env: {
+        ...process.env,
+        BENCH_CORE: 'automatic',
+        BENCH_ELEMENT_TEMPLATE: '1',
+        BENCH_LIST_ELEMENT_TEMPLATE: '0',
+        BENCH_ROWS: '0,1000',
+      },
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /table\+et 0\/1000 list 1000\/10000 complete/);
+    assert.equal(
+      fs.existsSync(path.join(
+        checkout,
+        'benchmarks/lynx-table/app/dist-automatic-element-template/main.lynx.bundle',
+      )),
+      true,
+    );
+    assert.equal(
+      fs.existsSync(path.join(
+        checkout,
+        'benchmarks/lynx-table/app/dist-automatic-element-template-rows1000/main.lynx.bundle',
+      )),
+      true,
+    );
+    for (const rows of [1000, 10000]) {
+      assert.equal(
+        fs.existsSync(path.join(
+          checkout,
+          `benchmarks/lynx-table/app/dist-automatic-list-rows${rows}/main.lynx.bundle`,
+        )),
+        true,
+      );
+    }
+  } finally {
+    fs.rmSync(checkout, { recursive: true, force: true });
+  }
+});
+
 test('external list fixture builds against an unmodified target checkout', () => {
   const target = fs.mkdtempSync(path.join(os.tmpdir(), 'build-octane-target-'));
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'build-octane-fixture-'));

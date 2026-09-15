@@ -141,8 +141,10 @@ function combineSourceReceipts(primary, listFixture) {
   };
 }
 
-function octaneCells(checkout, core) {
-  const coreSuffix = core === 'automatic' ? '-automatic' : '';
+function octaneCells(checkout, core, elementTemplate = false) {
+  const coreSuffix =
+    (core === 'automatic' ? '-automatic' : '') +
+    (elementTemplate ? '-element-template' : '');
   return M4_ROWS.map((rows) => ({
     rows,
     from: path.join(
@@ -267,7 +269,7 @@ function vendor({
     framework,
     frameworkVersion,
     config,
-    tags: ['roadmap-m4', 'lynx-4.1', configuration],
+    tags: ['roadmap-m4', 'lynx-develop-f975a21d', configuration],
     tier: 'archive',
     tiers: { native: 'featured' },
     harnesses,
@@ -340,12 +342,13 @@ const octaneListSourceFiles = [
 for (const spec of [
   {
     id: 'octane-m4-final',
-    label: 'Octane M4 final default',
+    label: 'Octane M4 ET release candidate',
     role: 'final-candidate',
     checkout: checkouts.current,
     pin: M4_PINNED_SOURCES['octane-m4-final'],
     producerProtocol: true,
     core: 'automatic',
+    elementTemplate: true,
   },
   {
     id: 'octane-m4-upstream',
@@ -355,6 +358,7 @@ for (const spec of [
     pin: M4_PINNED_SOURCES['octane-m4-upstream'],
     producerProtocol: false,
     core: 'universal',
+    elementTemplate: false,
   },
 ]) {
   if (!wants(spec.id)) continue;
@@ -362,8 +366,10 @@ for (const spec of [
     ...spec,
     framework: 'octane',
     frameworkVersion: readJson(spec.checkout, 'packages/octane/package.json').version,
-    config: `.tsrx keyed table; compiled JS PAPI; production ${spec.core} core`,
-    configuration: 'production-default',
+    config: spec.elementTemplate
+      ? '.tsrx keyed table; compiler-certified Element Template; production automatic core; list direct-PAPI fallback'
+      : `.tsrx keyed table; compiled JS PAPI; production ${spec.core} core`,
+    configuration: spec.elementTemplate ? 'release-candidate' : 'production-default',
     capabilities: {
       production: true,
       sourcePatches: false,
@@ -371,7 +377,13 @@ for (const spec of [
       nativeTableProtocol: spec.producerProtocol ? NATIVE_TABLE_PROTOCOL : 'legacy-public-source',
       nativeStartupReceipt: spec.producerProtocol,
       nativeStartupProtocol: NATIVE_STARTUP_PROTOCOL,
-      elementTemplates: false,
+      elementTemplates: spec.elementTemplate,
+      ...(spec.elementTemplate
+        ? {
+            elementTemplateScope: 'compiler-certified table root',
+            listFallback: 'automatic direct PAPI',
+          }
+        : null),
     },
     sourceFiles: octaneSourceFiles,
     listSource: {
@@ -382,9 +394,9 @@ for (const spec of [
     },
     toolchainDirectory: 'packages/rspeedy-plugin-octane',
     buildCommand: spec.id === 'octane-m4-final'
-      ? `BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`
+      ? `BENCH_ELEMENT_TEMPLATE=1 BENCH_LIST_ELEMENT_TEMPLATE=0 BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`
       : `OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`,
-    cells: octaneCells(spec.checkout, spec.core),
+    cells: octaneCells(spec.checkout, spec.core, spec.elementTemplate),
     listCells: octaneListCells(spec.checkout, spec.core),
   });
 }

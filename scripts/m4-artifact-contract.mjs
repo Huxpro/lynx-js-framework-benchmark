@@ -2,7 +2,7 @@ import { combineWorkloadReceipts, hashFiles } from './m0-artifact-contract.mjs';
 
 export { combineWorkloadReceipts, hashFiles };
 
-export const M4_CAMPAIGN = 'octane-roadmap-m4-final-4.1-v3';
+export const M4_CAMPAIGN = 'octane-roadmap-m4-rc-f975-v4';
 export const M4_ROWS = Object.freeze([0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
 export const M4_ENTRY_IDS = Object.freeze([
   'octane-m4-final',
@@ -19,12 +19,12 @@ export const M4_PINNED_SOURCES = Object.freeze({
   'octane-m4-final': Object.freeze({
     source: 'https://github.com/Huxpro/octane',
     ref: 'new-lynx',
-    commit: '7a523bf20d04578c39fe0b5fe532cdef6dab3e9e',
+    commit: '5623d5d7e14997eec98cd7d7c95ff9f7786fc70a',
   }),
   'octane-m4-upstream': Object.freeze({
     source: 'https://github.com/octanejs/octane',
     ref: 'main',
-    commit: '8e5ca22a6e17582b4293232406a2c0420509f4a4',
+    commit: 'bb11d0b3ec9fc0cbe3723fc4e6bf0217d4149892',
   }),
   comparators: Object.freeze({
     source: 'https://github.com/Huxpro/vue-lynx',
@@ -35,12 +35,16 @@ export const M4_PINNED_SOURCES = Object.freeze({
 });
 
 export const M4_PLATFORM_LANE = Object.freeze({
-  sdk: 'Lynx 4.1.0',
+  sdk: 'Lynx develop f975a21d',
+  engineCommit: 'f975a21ddf6052688f41cc8b8f48255344617e11',
+  engineTree: '50b102720657bb49534a9d4107a9386905d2fcee',
   explorerArtifact: 'LynxExplorer-noasan-release.apk',
-  explorerSha256: '6ae29787a2166974c29c2f23d87f3b20a137abcf9a8c17903ad19f3fb7f00cb6',
-  explorerBytes: 173293606,
+  explorerSha256: '455e03f3cdfc13b4076c729fa93c3088655cdbf08f1acc7a4210e09cabd0d9e0',
+  explorerBytes: 55114771,
   explorerSource:
-    'https://github.com/lynx-family/lynx/releases/download/4.1.0/LynxExplorer-noasan-release.apk',
+    'https://github.com/Huxpro/lynx/releases/download/octane-m4-lynx-f975a21d/LynxExplorer-noasan-release.apk',
+  explorerBuildCommand:
+    './gradlew :LynxExplorer:assembleNoasanRelease -Penable_trace=perfetto -PabiList=arm64-v8a --no-daemon',
 });
 
 export const M4_RUNNER_CONTRACT_FILES = Object.freeze([

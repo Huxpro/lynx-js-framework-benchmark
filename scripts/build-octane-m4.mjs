@@ -31,6 +31,10 @@ const coreSuffix = requestedCore === 'automatic'
   : requestedCore === 'block'
     ? (blockMode === 'reconcile' ? '-block-reconcile' : '-block')
     : '';
+const tableElementTemplate = process.env.BENCH_ELEMENT_TEMPLATE === '1';
+const listElementTemplate = process.env.BENCH_LIST_ELEMENT_TEMPLATE === '1';
+const tableCoreSuffix = coreSuffix + (tableElementTemplate ? '-element-template' : '');
+const listCoreSuffix = coreSuffix + (listElementTemplate ? '-element-template' : '');
 
 function rowsFromEnvironment() {
   const raw = process.env.BENCH_ROWS;
@@ -59,7 +63,7 @@ function buildExternalListFixture(rows) {
   const destination = path.join(
     checkout,
     'benchmarks/lynx-table/app',
-    `dist${coreSuffix}-list-rows${rows}`,
+    `dist${listCoreSuffix}-list-rows${rows}`,
   );
   const config = `import { defineConfig } from '@lynx-js/rspeedy';
 import { pluginOctane } from '@octanejs/rspeedy-plugin';
@@ -79,7 +83,13 @@ export default defineConfig({
     define: { __BENCH_LIST_ROWS__: JSON.stringify(listRows) },
   },
   splitChunks: false,
-  plugins: [pluginOctane({ dev: false, hmr: false })],
+  plugins: [pluginOctane({
+    dev: false,
+    hmr: false,
+    ...(process.env.BENCH_ELEMENT_TEMPLATE === '1'
+      ? { experimentalElementTemplate: true }
+      : null),
+  })],
 });
 `;
 
@@ -97,7 +107,12 @@ export default defineConfig({
     execFileSync('npx', ['rspeedy', 'build', '--root', `examples/${stageName}`], {
       cwd: pluginDir,
       stdio: 'inherit',
-      env: { ...process.env, NODE_ENV: 'production', BENCH_LIST_ROWS: String(rows) },
+      env: {
+        ...process.env,
+        NODE_ENV: 'production',
+        BENCH_ELEMENT_TEMPLATE: listElementTemplate ? '1' : '0',
+        BENCH_LIST_ROWS: String(rows),
+      },
     });
     for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
       if (!fs.existsSync(path.join(output, file))) throw new Error(`missing ${output}/${file}`);
@@ -120,9 +135,10 @@ for (const rows of rowsMatrix) {
       BENCH_LIST_ROWS: '0',
       BENCH_CORE: requestedCore,
       BENCH_BLOCK_MODE: blockMode,
+      BENCH_ELEMENT_TEMPLATE: tableElementTemplate ? '1' : '0',
     },
   });
-  const suffix = coreSuffix + (rows === 0 ? '' : `-rows${rows}`);
+  const suffix = tableCoreSuffix + (rows === 0 ? '' : `-rows${rows}`);
   const dist = path.join(checkout, `benchmarks/lynx-table/app/dist${suffix}`);
   for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
     if (!fs.existsSync(path.join(dist, file))) throw new Error(`missing ${dist}/${file}`);
@@ -141,17 +157,21 @@ for (const rows of listRowsMatrix) {
         BENCH_LIST_ROWS: String(rows),
         BENCH_CORE: requestedCore,
         BENCH_BLOCK_MODE: blockMode,
+        BENCH_ELEMENT_TEMPLATE: listElementTemplate ? '1' : '0',
       },
     });
   } else {
     buildExternalListFixture(rows);
   }
-  const dist = path.join(checkout, `benchmarks/lynx-table/app/dist${coreSuffix}-list-rows${rows}`);
+  const dist = path.join(
+    checkout,
+    `benchmarks/lynx-table/app/dist${listCoreSuffix}-list-rows${rows}`,
+  );
   for (const file of ['main.web.bundle', 'main.lynx.bundle']) {
     if (!fs.existsSync(path.join(dist, file))) throw new Error(`missing ${dist}/${file}`);
   }
 }
 
 console.log(
-  `[build-octane-m4] ${requestedCore}/${blockMode} table ${rowsMatrix.join('/')} list ${listRowsMatrix.join('/')} complete`,
+  `[build-octane-m4] ${requestedCore}/${blockMode} table${tableElementTemplate ? '+et' : ''} ${rowsMatrix.join('/')} list${listElementTemplate ? '+et' : ''} ${listRowsMatrix.join('/')} complete`,
 );

@@ -100,9 +100,11 @@ const M4_ROLES = {
 };
 const M4_CONFIGURATIONS = Object.fromEntries(M4_ENTRY_IDS.map((id) => [
   id,
-  id.endsWith('-et') || id.endsWith('-ifr') || id.endsWith('-ifr-et')
-    ? 'explicit-optimized'
-    : 'production-default',
+  id === 'octane-m4-final'
+    ? 'release-candidate'
+    : id.endsWith('-et') || id.endsWith('-ifr') || id.endsWith('-ifr-et')
+      ? 'explicit-optimized'
+      : 'production-default',
 ]));
 const M4_LIST_ROWS = [1000, 10000];
 const M4_OCTANE_LIST_SOURCE_FILES = [
@@ -687,7 +689,12 @@ if (ids.includes('octane-m4-final') && ids.includes('octane-m4-upstream')) {
   const upstreamM4Toolchain = JSON.parse(
     fs.readFileSync(path.join(entriesDir, 'octane-m4-upstream/entry.json'), 'utf8'),
   ).provenance.receipts.engineAndToolchain;
-  for (const key of ['node', 'pnpm', 'rspeedy', 'platform', 'architecture', 'nodeEnv']) {
+  // The final candidate needs the Element Template-capable Rspeedy release,
+  // while latest upstream is built with its own unmodified pinned toolchain.
+  // Preserve both exact Rspeedy receipts above, but compare the shared host
+  // build environment here rather than requiring different source trees to
+  // claim the same framework toolchain version.
+  for (const key of ['node', 'pnpm', 'platform', 'architecture', 'nodeEnv']) {
     if (finalM4Toolchain[key] !== upstreamM4Toolchain[key]) {
       fail(`M4 candidate/upstream toolchain mismatch for ${key}`);
     }
