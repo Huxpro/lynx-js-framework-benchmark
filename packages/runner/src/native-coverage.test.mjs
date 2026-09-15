@@ -279,6 +279,7 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   });
   assert.equal(policy.defaultTimeoutMs, 11);
   assert.equal(policy.longWorkloadTimeoutMs, 22);
+  assert.equal(policy.timeoutPageDisposition, 'restart');
   assert.equal(policy.thermalGateScope, 'before-every-bundle-load');
   assert.equal(policy.explorerReconnectTimeoutMs, 66);
   assert.equal(policy.transientAttempts, 2);
@@ -338,6 +339,16 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   assert.throws(
     () => resolveNativeSandboxPolicy({ LYNX_SANDBOX_RENDER_GRACE_FRAMES: '1' }),
     /must be 2/,
+  );
+  assert.equal(resolveNativeSandboxPolicy({
+    LYNX_SANDBOX_RECYCLE_EVERY_PAGES: '1',
+    LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION: 'preserve',
+  }).timeoutPageDisposition, 'preserve');
+  assert.throws(
+    () => resolveNativeSandboxPolicy({
+      LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION: 'preserve',
+    }),
+    /requires LYNX_SANDBOX_RECYCLE_EVERY_PAGES=1/,
   );
 });
 

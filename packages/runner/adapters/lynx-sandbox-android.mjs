@@ -47,6 +47,7 @@ const {
   devtoolTransport: DEVTOOL_TRANSPORT_MODE,
   debugRouterSettleMs: ROUTER_SETTLE_MS,
   explorerRecycleEveryPages: EXPLORER_RECYCLE_EVERY_PAGES,
+  timeoutPageDisposition: TIMEOUT_PAGE_DISPOSITION,
   maxBatteryTemperatureC: MAX_BATTERY_TEMPERATURE_C,
   thermalGateTimeoutMs: THERMAL_GATE_TIMEOUT_MS,
   explorerReconnectTimeoutMs: EXPLORER_RECONNECT_TIMEOUT_MS,
@@ -1955,7 +1956,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
           }
           unsupportedTableCells.set(`${currentEntryId}:${kase.name}:${scale}`, failure);
           log(`  [sandbox] ${currentEntryId} ${kase.name}@${scale} DNF; remaining reps for this cell are DNF`);
-          await restartExplorer();
+          if (TIMEOUT_PAGE_DISPOSITION === 'restart') await restartExplorer();
           lastObserved = { dnf: true, failure };
           return;
         }
