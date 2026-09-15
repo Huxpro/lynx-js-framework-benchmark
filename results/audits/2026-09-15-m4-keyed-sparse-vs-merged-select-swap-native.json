@@ -1,0 +1,1395 @@
+{
+  "protocol": "octane-issue-291-direct-frame-ablation-v1",
+  "capturedAt": "2026-09-15T09:23:02.945Z",
+  "qualification": "diagnostic-only-not-formal-performance-evidence",
+  "device": {
+    "serialSha256": "8809fd0567b15b39106e65d6bb2460ad2475cb551960b6cc5d6acbb658a3e182"
+  },
+  "explorer": {
+    "localSourceCommit": "3a954f0-plus-pr9535-ef22e46",
+    "localApkSha256": "663af49a7b33f377b13c1bebec215cbe69e1c187430c6f51427a0e1d69937bc1",
+    "localApkBytes": 62546523
+  },
+  "inputs": {
+    "directFrame": {
+      "sha256": "f2d9af07070547a359d80f4090c3734ba36cc16178024d1ffb0c06d2c9f23873",
+      "bytes": 281775,
+      "sourcePath": "/data00/home/xuan.huang/.codex/worktrees/68ea/octane-m4-keyed-sparse-291/benchmarks/lynx-table/app/dist-automatic-element-template-m4-keyed-sparse-retained-scalars-291/main.lynx.bundle"
+    },
+    "contextProxy": {
+      "sha256": "c93ccb9a1b7e9d65793fb2fe7095bc9030b8700fab46090a45db84be43e8689e",
+      "bytes": 279783,
+      "sourcePath": "/data00/home/xuan.huang/.codex/worktrees/68ea/octane-m4-et-visible-slot-291/benchmarks/lynx-table/app/dist-automatic-element-template-m4-merged-364ec/main.lynx.bundle"
+    }
+  },
+  "method": {
+    "boundary": "native-input-handler-to-second-native-frame",
+    "order": "balanced AB/BA within workload; 10 samples per variant",
+    "scale": 1000,
+    "workloads": [
+      "select",
+      "swap"
+    ]
+  },
+  "medians": [
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "medianMs": 29,
+      "samplesMs": [
+        20,
+        30,
+        34,
+        21,
+        35,
+        23,
+        36,
+        28,
+        22,
+        34
+      ]
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "medianMs": 30.5,
+      "samplesMs": [
+        35,
+        34,
+        31,
+        35,
+        35,
+        30,
+        30,
+        30,
+        23,
+        29
+      ]
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "medianMs": 43.5,
+      "samplesMs": [
+        49,
+        44,
+        43,
+        42,
+        44,
+        41,
+        43,
+        46,
+        54,
+        38
+      ]
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "medianMs": 43.5,
+      "samplesMs": [
+        44,
+        43,
+        52,
+        54,
+        44,
+        49,
+        43,
+        39,
+        43,
+        42
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 0,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 20,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464125163,
+        "commitAckMs": 1789464125166,
+        "firstFrameMs": 1789464125167,
+        "endMs": 1789464125183
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "big green cookie",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 0,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 35,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464126532,
+        "commitAckMs": 1789464126535,
+        "firstFrameMs": 1789464126550,
+        "endMs": 1789464126567
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "clean yellow pizza",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 1,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 34,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464127750,
+        "commitAckMs": 1789464127754,
+        "firstFrameMs": 1789464127767,
+        "endMs": 1789464127784
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "angry orange burger",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 1,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 30,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464129137,
+        "commitAckMs": 1789464129140,
+        "firstFrameMs": 1789464129151,
+        "endMs": 1789464129167
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "large white bbq",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 2,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 34,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464130400,
+        "commitAckMs": 1789464130404,
+        "firstFrameMs": 1789464130417,
+        "endMs": 1789464130434
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "handsome brown burger",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 2,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 31,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464133170,
+        "commitAckMs": 1789464133173,
+        "firstFrameMs": 1789464133184,
+        "endMs": 1789464133201
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "clean orange cookie",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 3,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 35,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464134350,
+        "commitAckMs": 1789464134353,
+        "firstFrameMs": 1789464134368,
+        "endMs": 1789464134385
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "small green pony",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 3,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 21,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464135730,
+        "commitAckMs": 1789464135733,
+        "firstFrameMs": 1789464135735,
+        "endMs": 1789464135751
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "short yellow house",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 4,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 35,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464136950,
+        "commitAckMs": 1789464136953,
+        "firstFrameMs": 1789464136968,
+        "endMs": 1789464136985
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "pretty pink chair",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 4,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 35,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464138400,
+        "commitAckMs": 1789464138403,
+        "firstFrameMs": 1789464138418,
+        "endMs": 1789464138435
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "big brown sandwich",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 5,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 30,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464140922,
+        "commitAckMs": 1789464140926,
+        "firstFrameMs": 1789464140935,
+        "endMs": 1789464140952
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "elegant white pizza",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 5,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 23,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464142413,
+        "commitAckMs": 1789464142417,
+        "firstFrameMs": 1789464142419,
+        "endMs": 1789464142436
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "adorable red burger",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 6,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 36,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464143650,
+        "commitAckMs": 1789464143653,
+        "firstFrameMs": 1789464143669,
+        "endMs": 1789464143686
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "tall purple bbq",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 6,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 30,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464145039,
+        "commitAckMs": 1789464145042,
+        "firstFrameMs": 1789464145052,
+        "endMs": 1789464145069
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "helpful pink chair",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 7,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 30,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464146206,
+        "commitAckMs": 1789464146209,
+        "firstFrameMs": 1789464146219,
+        "endMs": 1789464146236
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "tall green sandwich",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 7,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 28,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464148992,
+        "commitAckMs": 1789464148995,
+        "firstFrameMs": 1789464149003,
+        "endMs": 1789464149020
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "cheap pink pizza",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 8,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 22,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464150231,
+        "commitAckMs": 1789464150234,
+        "firstFrameMs": 1789464150236,
+        "endMs": 1789464150253
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "important black chair",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 8,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 23,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464151630,
+        "commitAckMs": 1789464151633,
+        "firstFrameMs": 1789464151637,
+        "endMs": 1789464151653
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "mushy red burger",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 9,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 29,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464152841,
+        "commitAckMs": 1789464152844,
+        "firstFrameMs": 1789464152853,
+        "endMs": 1789464152870
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "odd purple keyboard",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "select",
+      "scale": 1000,
+      "repetition": 9,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 34,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464154170,
+        "commitAckMs": 1789464154173,
+        "firstFrameMs": 1789464154187,
+        "endMs": 1789464154204
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 2,
+        "thirdId": 3,
+        "row998Id": 999,
+        "firstLabel": "long pink keyboard",
+        "selectedId": 2
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 0,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 49,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464156638,
+        "commitAckMs": 1789464156659,
+        "firstFrameMs": 1789464156671,
+        "endMs": 1789464156687
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "adorable brown pizza",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 0,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 44,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464157960,
+        "commitAckMs": 1789464157981,
+        "firstFrameMs": 1789464157987,
+        "endMs": 1789464158004
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "large green desk",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 1,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 43,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464159061,
+        "commitAckMs": 1789464159082,
+        "firstFrameMs": 1789464159087,
+        "endMs": 1789464159104
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "helpful red bbq",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 1,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 44,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464160344,
+        "commitAckMs": 1789464160365,
+        "firstFrameMs": 1789464160371,
+        "endMs": 1789464160388
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "handsome blue keyboard",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 2,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 43,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464161461,
+        "commitAckMs": 1789464161482,
+        "firstFrameMs": 1789464161488,
+        "endMs": 1789464161504
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "expensive green pony",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 2,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 52,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464164436,
+        "commitAckMs": 1789464164458,
+        "firstFrameMs": 1789464164471,
+        "endMs": 1789464164488
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "mushy brown mouse",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 3,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 54,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464165601,
+        "commitAckMs": 1789464165622,
+        "firstFrameMs": 1789464165638,
+        "endMs": 1789464165655
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "odd orange house",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 3,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 42,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464166930,
+        "commitAckMs": 1789464166951,
+        "firstFrameMs": 1789464166955,
+        "endMs": 1789464166972
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "fancy green cookie",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 4,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 44,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464168145,
+        "commitAckMs": 1789464168166,
+        "firstFrameMs": 1789464168172,
+        "endMs": 1789464168189
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "clean purple keyboard",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 4,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 44,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464169428,
+        "commitAckMs": 1789464169449,
+        "firstFrameMs": 1789464169455,
+        "endMs": 1789464169472
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "plain purple desk",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 5,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 49,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464171890,
+        "commitAckMs": 1789464171910,
+        "firstFrameMs": 1789464171922,
+        "endMs": 1789464171939
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "handsome brown house",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 5,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 41,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464173231,
+        "commitAckMs": 1789464173253,
+        "firstFrameMs": 1789464173256,
+        "endMs": 1789464173272
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "long purple keyboard",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 6,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 43,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464174330,
+        "commitAckMs": 1789464174352,
+        "firstFrameMs": 1789464174356,
+        "endMs": 1789464174373
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "plain brown mouse",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 6,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 43,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464175663,
+        "commitAckMs": 1789464175684,
+        "firstFrameMs": 1789464175689,
+        "endMs": 1789464175706
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "big green bbq",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 7,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 39,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464176784,
+        "commitAckMs": 1789464176805,
+        "firstFrameMs": 1789464176806,
+        "endMs": 1789464176823
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "odd white pizza",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 7,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 46,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464179394,
+        "commitAckMs": 1789464179416,
+        "firstFrameMs": 1789464179423,
+        "endMs": 1789464179440
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "short red keyboard",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 8,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 54,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464180569,
+        "commitAckMs": 1789464180593,
+        "firstFrameMs": 1789464180607,
+        "endMs": 1789464180623
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "small brown keyboard",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 8,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 43,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464181864,
+        "commitAckMs": 1789464181885,
+        "firstFrameMs": 1789464181890,
+        "endMs": 1789464181907
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "handsome purple burger",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 9,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 42,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464183032,
+        "commitAckMs": 1789464183053,
+        "firstFrameMs": 1789464183057,
+        "endMs": 1789464183074
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "crazy white house",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 9,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 38,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789464184319,
+        "commitAckMs": 1789464184340,
+        "firstFrameMs": 1789464184340,
+        "endMs": 1789464184357
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "crazy orange house",
+        "selectedId": null
+      }
+    }
+  ],
+  "semantics": {
+    "expected": 40,
+    "passed": 40,
+    "failed": 0
+  }
+}
