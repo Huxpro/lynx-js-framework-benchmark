@@ -91,6 +91,17 @@ packages:
       clean.comparabilityCohort,
       'AB/BA scheduling and unique session identity must not split a comparable cohort',
     );
+    assert.equal(
+      runReceipt({
+        ...options,
+        execution: { ...options.execution, processQuotaPercent: 31.02 },
+      }).comparabilityCohort,
+      runReceipt({
+        ...options,
+        execution: { ...options.execution, processQuotaPercent: 29.79 },
+      }).comparabilityCohort,
+      'adaptive cgroup quotas that verify the same nominal lane must not split a cohort',
+    );
     assert.notEqual(
       runReceipt({
         ...options,

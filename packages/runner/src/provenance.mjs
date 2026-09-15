@@ -192,6 +192,28 @@ export function samplingPolicy({ reps, stormReps, startupReps, listReps }) {
   };
 }
 
+export function comparabilityCohortForReceipt({
+  repository, runtime, workload, execution, sampling,
+}) {
+  // Session identity, AB/BA order, and the adaptive cgroup quota are audit
+  // dimensions, not logical environment dimensions. The nominal CPU rate and
+  // process-cgroup scope remain cohort dimensions, while each record must
+  // independently prove its accepted slowdown window.
+  const {
+    sessionId: _sessionId,
+    entryOrder: _entryOrder,
+    processQuotaPercent: _processQuotaPercent,
+    ...comparisonExecution
+  } = execution;
+  return `sha256:${sha256(JSON.stringify({
+    repository,
+    runtime,
+    workload,
+    execution: comparisonExecution,
+    sampling,
+  }))}`;
+}
+
 export function runReceipt({
   entries, reps, stormReps, startupReps, listReps, execution, root = repoRoot(),
 }) {
@@ -199,17 +221,6 @@ export function runReceipt({
   const runtime = runtimeReceipt(root);
   const workload = workloadReceipt(root);
   const sampling = samplingPolicy({ reps, stormReps, startupReps, listReps });
-  // Session identity and AB/BA schedule are audit dimensions, not environment
-  // dimensions. Keeping them in `execution` proves what actually ran, while
-  // excluding them here lets independently scheduled pairs share one cohort.
-  const { sessionId: _sessionId, entryOrder: _entryOrder, ...comparisonExecution } = execution;
-  const cohortDimensions = {
-    repository,
-    runtime,
-    workload,
-    execution: comparisonExecution,
-    sampling,
-  };
   return {
     repository,
     runtime,
@@ -217,6 +228,8 @@ export function runReceipt({
     execution,
     sampling,
     entryBundles: entryBundleReceipts(entries),
-    comparabilityCohort: `sha256:${sha256(JSON.stringify(cohortDimensions))}`,
+    comparabilityCohort: comparabilityCohortForReceipt({
+      repository, runtime, workload, execution, sampling,
+    }),
   };
 }

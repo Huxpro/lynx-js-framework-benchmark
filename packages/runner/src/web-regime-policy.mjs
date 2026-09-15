@@ -14,3 +14,24 @@ export function resolveThrottleScope(args, cpuThrottle) {
   }
   return scope;
 }
+
+export function attachWebExecutionEnvironment(records, {
+  jsRegime,
+  jsFlags,
+  cpuThrottle,
+  throttleScope,
+  verifiedSlowdownByEntry = {},
+}) {
+  return records.map((record) => ({
+    ...record,
+    environment: {
+      jsRegime,
+      jsFlags,
+      cpuThrottle,
+      throttleScope,
+      ...(verifiedSlowdownByEntry[record.entry] == null
+        ? {}
+        : { verifiedSlowdown: verifiedSlowdownByEntry[record.entry] }),
+    },
+  }));
+}
