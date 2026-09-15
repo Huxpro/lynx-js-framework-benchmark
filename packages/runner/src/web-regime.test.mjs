@@ -12,7 +12,10 @@ import {
   summarizeProcessThrottleProbes,
 } from './preflight.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
-import { resolveThrottleScope } from './web-regime-policy.mjs';
+import {
+  attachWebExecutionEnvironment,
+  resolveThrottleScope,
+} from './web-regime-policy.mjs';
 
 test('default Chromium arguments remain byte-for-byte identical', () => {
   assert.deepEqual(chromiumArgs(), [
@@ -142,6 +145,35 @@ test('new 4× runs use whole-process throttling and reject the retired mixed sco
     () => resolveThrottleScope({ 'throttle-scope': 'page-cdp' }, 4),
     /page-cdp is retired/,
   );
+});
+
+test('the run receipt environment overrides emitter defaults for every Web record', () => {
+  const records = attachWebExecutionEnvironment([
+    { entry: 'react', suite: 'pipeline', environment: { jsRegime: 'jit' } },
+    { entry: 'octane', suite: 'storm', environment: { jsRegime: 'jit' } },
+  ], {
+    jsRegime: 'interp',
+    jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+    cpuThrottle: 4,
+    throttleScope: 'process-cgroup',
+    verifiedSlowdownByEntry: { react: 4.1, octane: 3.9 },
+  });
+  assert.deepEqual(records.map((record) => record.environment), [
+    {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+      throttleScope: 'process-cgroup',
+      verifiedSlowdown: 4.1,
+    },
+    {
+      jsRegime: 'interp',
+      jsFlags: '--expose-gc,--no-opt,--no-sparkplug,--no-maglev',
+      cpuThrottle: 4,
+      throttleScope: 'process-cgroup',
+      verifiedSlowdown: 3.9,
+    },
+  ]);
 });
 
 test('schema records Web regimes and rejects applying them to Native', () => {

@@ -37,7 +37,9 @@ inherited CPU cgroup: writable
 cgroup-v2 `cpu.max` when delegated, or cgroup-v1 `cgexec` with non-interactive `sudo` on the lab
 runner. It never chases renderer PIDs with `cpulimit`. Before every entry, three in-page probes use
 their median score to verify a 3.5–4.5× slowdown; the observed `verifiedSlowdown` is written into
-every record. The former page-target CDP lane is frozen as historical source evidence; the CLI
+every record. The adaptive quota percentage remains in each execution receipt for audit, but does
+not split independently verified runs in the same nominal process-cgroup lane. The former
+page-target CDP lane is frozen as historical source evidence; the CLI
 rejects new `--throttle-scope=page-cdp` runs.
 
 `--startup-scale=0,1000,10000` is the budget fallback for dropping only the 30k startup cell;

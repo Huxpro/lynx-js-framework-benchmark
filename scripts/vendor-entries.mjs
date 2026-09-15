@@ -10,6 +10,8 @@
 //   OCTANE_PRIOR_BUILD an optional prior upstream-main checkout
 //   OCTANE_HUX_BUILD an optional #269 + #272 composite checkout with the
 //                    checked-in Native benchmark instrumentation applied
+//   OCTANE_HUX_HEAD_BUILD an optional clean Huxpro/octane new-lynx checkout
+//                         for refreshing the Web-only branch-head entry
 //   OCTANE_PR_791_BUILD an optional clean octanejs/octane PR #791 checkout
 //
 // Usage: node scripts/vendor-entries.mjs
@@ -34,6 +36,7 @@ const OCTANE_PRIOR_BUILD = process.env.OCTANE_PRIOR_BUILD ?? null;
 const OCTANE_HUX_BUILD = process.env.OCTANE_HUX_BUILD
   ?? process.env.OCTANE_NEW_BUILD
   ?? null;
+const OCTANE_HUX_HEAD_BUILD = process.env.OCTANE_HUX_HEAD_BUILD ?? null;
 const OCTANE_HUX_WEB_BUILD = process.env.OCTANE_HUX_WEB_BUILD ?? null;
 const OCTANE_PR_791_BUILD = process.env.OCTANE_PR_791_BUILD ?? null;
 
@@ -277,19 +280,63 @@ function vendorHuxCompositeSnapshot(id, label, buildDir) {
   });
 }
 
+function vendorHuxBranchHead(buildDir) {
+  const id = 'octane-hux';
+  if (!wants(id)) return;
+  const appDir = path.join(buildDir ?? '', 'benchmarks/lynx-table/app');
+  if (!buildDir || !fs.existsSync(path.join(appDir, 'dist'))) {
+    throw new Error(`${id}: set OCTANE_HUX_HEAD_BUILD to the built new-lynx checkout`);
+  }
+  const sourceGit = requireCleanOctaneCheckout(id, buildDir);
+  const version = JSON.parse(
+    fs.readFileSync(path.join(buildDir, 'packages/octane/package.json'), 'utf-8'),
+  ).version;
+  vendor({
+    id,
+    tier: 'featured',
+    harnesses: ['web'],
+    label: 'Octane (Huxpro)',
+    framework: 'octane',
+    frameworkVersion: version,
+    config: '.tsrx, keyed @for; latest Huxpro/octane new-lynx head',
+    historyChannel: 'Huxpro/new-lynx HEAD at measurement time',
+    tags: ['optimized', 'branch-head'],
+    color: '#7c3aed',
+    source: {
+      url: 'https://github.com/Huxpro/octane',
+      commit: sourceGit.commit,
+      dirty: false,
+      builtAt: sourceDate(buildDir),
+      buildEnv: {
+        BENCH_CORE: 'universal',
+        WEB_SOURCE: 'clean-new-lynx-head',
+      },
+    },
+    ref: 'new-lynx',
+    buildCommand: 'node scripts/build-octane-upstream.mjs <clean-new-lynx-checkout>',
+    cells: AUTOROWS.map((rows) => ({
+      rows,
+      from: path.join(appDir, rows === 0 ? 'dist' : `dist-rows${rows}`),
+    })),
+  });
+}
+
 // -- capture patches applied to the source checkouts -------------------------
 const patchesDir = path.join(root, 'entries', '_patches');
 fs.mkdirSync(patchesDir, { recursive: true });
 
 const vueIds = ['react', 'vue-vdom', 'vue-vdom-ifr-et', 'vue-vapor', 'vue-vapor-ifr'];
 const vueGit = vueIds.some(wants) ? gitInfo(VUE_BUILD) : null;
+const vuePatchName = ONLY.size === 1 && wants('react')
+  ? 'reactlynx-latest.patch'
+  : 'vue-lynx-bench.patch';
 if (vueGit?.dirty) {
   const patch = execFileSync(
     'git',
     ['diff', '--no-color', '--unified=0', '--', 'packages', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'],
     { cwd: VUE_BUILD },
   ).toString();
-  fs.writeFileSync(path.join(patchesDir, 'vue-lynx-bench.patch'), patch);
+  fs.writeFileSync(path.join(patchesDir, vuePatchName), patch);
 }
 const octaneGit = wants('octane') ? gitInfo(OCTANE_BUILD) : null;
 if (octaneGit?.dirty) {
@@ -302,7 +349,7 @@ const vueSource = vueGit === null ? null : {
   url: 'https://github.com/Huxpro/vue-lynx',
   commit: vueGit.commit,
   dirty: vueGit.dirty,
-  patchName: 'vue-lynx-bench.patch',
+  patchName: vuePatchName,
   builtAt: sourceDate(VUE_BUILD),
 };
 const octaneSource = octaneGit === null ? null : {
@@ -317,18 +364,26 @@ const vueCells = (entryId) =>
     rows,
     from: path.join(VUE_BUILD, 'bench-out', entryId, `rows-${rows}`),
   }));
+const reactVersion = wants('react')
+  ? JSON.parse(
+      fs.readFileSync(
+        path.join(VUE_BUILD, 'packages/benchmark/apps/ui-react/package.json'),
+        'utf-8',
+      ),
+    ).dependencies['@lynx-js/react']
+  : null;
 
 vendor({
   id: 'react',
   tier: 'featured',
-  label: 'ReactLynx 0.124',
+  label: `ReactLynx ${reactVersion}`,
   framework: 'reactlynx',
-  frameworkVersion: '0.124.0',
-  config: 'idiomatic keyed hooks (memo + useCallback)',
+  frameworkVersion: reactVersion,
+  config: 'React Compiler; latest stable ReactLynx; Element Template off',
   tags: ['baseline'],
   color: '#1e93b0',
   source: vueSource,
-  ref: 'huxcx/unify-benchmark-system',
+  ref: 'feat/unified-benchmark-framework-ui',
   buildCommand: 'node scripts/build-vue-featured.mjs <vue-lynx-checkout>',
   cells: vueCells('react'),
 });
@@ -614,11 +669,15 @@ if (
   console.log('[vendor] octane-prior skipped (set OCTANE_PRIOR_BUILD to a built checkout)');
 }
 
-vendorHuxCompositeSnapshot(
-  'octane-hux',
-  'Octane (Hux)',
-  OCTANE_HUX_BUILD,
-);
+if (OCTANE_HUX_HEAD_BUILD != null) {
+  vendorHuxBranchHead(OCTANE_HUX_HEAD_BUILD);
+} else {
+  vendorHuxCompositeSnapshot(
+    'octane-hux',
+    'Octane (Hux)',
+    OCTANE_HUX_BUILD,
+  );
+}
 
 vendorOctanePr791(OCTANE_PR_791_BUILD);
 

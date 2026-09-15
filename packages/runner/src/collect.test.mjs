@@ -1792,24 +1792,26 @@ test('history audits every run but publishes only complete source-defined featur
   // than comparison records.
   assert.equal(bundleScale.length, 264);
   const retainedRecords = out.comparisonRecords.filter((record) => record.suite !== 'bundle-scale');
-  // The invalidated pre-verifier process-cgroup source remains archive-only.
-  // The replacement run contributes one verified 108-record matrix for each
-  // still-byte-identical entry. The refreshed Hux composite has new artifacts,
-  // so its older process-cgroup source remains archive-only.
-  const verifiedProcessRun = retainedRecords.filter((record) => record.runFile ===
-    '2026-08-30T17-58-27-65160668d8d9-issue43-featured-web-interp-4x-cg-inherited-clean-v3.json');
-  assert.equal(verifiedProcessRun.length, 648);
+  // The current process-cgroup campaign replaces the pre-verifier source and
+  // combines its formal matrix with the extra create scales. Adaptive quota
+  // percentages stay in each execution receipt; accepted slowdown proof is
+  // retained on every record in the logical Interp 4x lane.
+  const verifiedProcessRun = retainedRecords.filter((record) =>
+    record.runFile?.includes('web-2026-09-14-interp-4x'));
+  assert.equal(verifiedProcessRun.length, 952);
   assert.deepEqual(
     [...new Set(verifiedProcessRun.map((record) => record.entry))].sort(),
-    ['octane', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
+    ['octane', 'octane-hux', 'react', 'vue-vapor', 'vue-vapor-ifr', 'vue-vdom', 'vue-vdom-ifr-et'],
   );
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
-    && record.cpuThrottle === 4));
+    && record.cpuThrottle === 4
+    && record.verifiedSlowdown >= 3.5
+    && record.verifiedSlowdown <= 4.5));
   // The complete explicit M3 Native tier atomically replaces the legacy
   // global-tier cohort. Its 184 source cells publish together; historical and
   // incomplete observations remain archive-only.
-  assert.equal(retainedRecords.length, 3744);
+  assert.equal(retainedRecords.length, 4356);
   assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 184);
   assert.equal(out.nativeObservationRecords.length, 0);
   assert.deepEqual(out.nativeCoverage.summary, {
@@ -1831,8 +1833,6 @@ test('history audits every run but publishes only complete source-defined featur
   const currentWeb = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'web',
   );
-  // The current clean-composite run supplies all seven JIT entries. Older
-  // regimes retain only entries whose artifact receipt is still byte-identical.
   assert.equal(currentWeb.entryIds.length, 7);
   assert.equal(currentWeb.entryIds.includes('octane'), true);
   assert.equal(currentWeb.entryIds.includes('octane-hux'), true);
@@ -1860,7 +1860,7 @@ test('history audits every run but publishes only complete source-defined featur
   ), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-09-01T13-18-29-65160668d8d9-octane-hux-compiled-create-fcp-web-isolated-pages.json',
-  ), true);
+  ), false);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-50-00-65160668d8d9-issue-201-current-bundle-storm-interp-v3.json',
   ), false);

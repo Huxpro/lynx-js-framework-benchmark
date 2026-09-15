@@ -51,7 +51,10 @@ import { runReceipt } from './provenance.mjs';
 import { stringifyResult } from './result-json.mjs';
 import { NATIVE_TABLE_CASES } from './run-matrix.mjs';
 import { shouldCollectAfterRun } from './run-policy.mjs';
-import { resolveThrottleScope } from './web-regime-policy.mjs';
+import {
+  attachWebExecutionEnvironment,
+  resolveThrottleScope,
+} from './web-regime-policy.mjs';
 import {
   assertConnectorPackageTrees,
   resolveConnectorPackageTrees,
@@ -730,7 +733,7 @@ async function cmdRun(args) {
 
   const runHarness = suites.includes('list') ? runWebListHarness : runWebHarness;
   const {
-    records, executablePath, browserVersion, processThrottle,
+    records: harnessRecords, executablePath, browserVersion, processThrottle,
     processThrottleEntryVerifications, verifiedSlowdownByEntry,
   } = await runHarness({
     entries,
@@ -752,6 +755,13 @@ async function cmdRun(args) {
   if ((processThrottle?.quotaPercent ?? null) !== (preflight.processThrottle?.quotaPercent ?? null)) {
     throw new Error('whole-process throttle quota changed between preflight and benchmark execution');
   }
+  const records = attachWebExecutionEnvironment(harnessRecords, {
+    jsRegime: jit,
+    jsFlags,
+    cpuThrottle,
+    throttleScope,
+    verifiedSlowdownByEntry,
+  });
   for (const entry of entries) records.push(...bundleRecords(entry).map((record) =>
     attachWebBundleEnvironment(record, {
       jsRegime: jit, jsFlags, cpuThrottle, throttleScope,
