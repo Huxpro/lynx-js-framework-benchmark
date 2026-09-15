@@ -1,0 +1,253 @@
+{
+  "id": "octane-m4-upstream",
+  "label": "Octane latest upstream",
+  "framework": "octane",
+  "frameworkVersion": "0.2.11",
+  "config": ".tsrx keyed table; compiled JS PAPI; production universal core",
+  "tags": [
+    "roadmap-m4",
+    "lynx-develop-f975a21d",
+    "production-default"
+  ],
+  "tier": "archive",
+  "tiers": {
+    "native": "featured"
+  },
+  "harnesses": [
+    "web",
+    "native"
+  ],
+  "color": "#eb6834",
+  "presentation": {
+    "order": 41,
+    "colorLight": "#eb6834",
+    "colorDark": "#f08055"
+  },
+  "kind": "vendored",
+  "roadmap": {
+    "issue": 291,
+    "milestone": "M4",
+    "campaign": "octane-roadmap-m4-rc-f975-v5",
+    "role": "latest-upstream",
+    "configuration": "production-default"
+  },
+  "capabilities": {
+    "production": true,
+    "sourcePatches": false,
+    "core": "universal",
+    "nativeTableProtocol": "legacy-public-source",
+    "nativeStartupReceipt": false,
+    "nativeStartupProtocol": "lynx-native-startup-v1",
+    "elementTemplates": false
+  },
+  "platformLane": {
+    "sdk": "Lynx develop f975a21d",
+    "engineCommit": "f975a21ddf6052688f41cc8b8f48255344617e11",
+    "engineTree": "50b102720657bb49534a9d4107a9386905d2fcee",
+    "explorerArtifact": "LynxExplorer-noasan-release.apk",
+    "explorerSha256": "455e03f3cdfc13b4076c729fa93c3088655cdbf08f1acc7a4210e09cabd0d9e0",
+    "explorerBytes": 55114771,
+    "explorerSource": "https://github.com/Huxpro/lynx/releases/download/octane-m4-lynx-f975a21d/LynxExplorer-noasan-release.apk",
+    "explorerBuildCommand": "./gradlew :LynxExplorer:assembleNoasanRelease -Penable_trace=perfetto -PabiList=arm64-v8a --no-daemon"
+  },
+  "provenance": {
+    "source": "https://github.com/octanejs/octane",
+    "ref": "main",
+    "commit": "bb11d0b3ec9fc0cbe3723fc4e6bf0217d4149892",
+    "patched": false,
+    "patchFile": null,
+    "buildCommand": "OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=universal BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>",
+    "builtAt": "2026-09-15T01:23:04-04:00",
+    "receipts": {
+      "sourceCommit": "bb11d0b3ec9fc0cbe3723fc4e6bf0217d4149892",
+      "sourcePatch": {
+        "present": false,
+        "path": null,
+        "sha256": null
+      },
+      "dependencyLock": {
+        "path": "pnpm-lock.yaml",
+        "sha256": "51648462c4e126c7b945cb99c5390b8a77243538c3bc86fbf784021d16e0cace"
+      },
+      "engineAndToolchain": {
+        "node": "v22.22.2",
+        "pnpm": "11.15.1",
+        "rspeedy": "Rspeedy v0.16.0 (Rsbuild v2.1.4, Rspack v2.1.4)\n\n0.16.0",
+        "platform": "linux",
+        "architecture": "x64",
+        "nodeEnv": "production",
+        "buildDriver": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "scripts/build-octane-m4.mjs",
+            "scripts/build-vue-m4.mjs",
+            "scripts/m0-artifact-contract.mjs",
+            "scripts/m4-artifact-contract.mjs",
+            "scripts/vendor-m4-entries.mjs"
+          ],
+          "sha256": "42428f3972667ad9c925b198732762c512b0afe5b13cba2ea4e84f1be7a7b59a"
+        }
+      },
+      "platformLane": {
+        "sdk": "Lynx develop f975a21d",
+        "engineCommit": "f975a21ddf6052688f41cc8b8f48255344617e11",
+        "engineTree": "50b102720657bb49534a9d4107a9386905d2fcee",
+        "explorerArtifact": "LynxExplorer-noasan-release.apk",
+        "explorerSha256": "455e03f3cdfc13b4076c729fa93c3088655cdbf08f1acc7a4210e09cabd0d9e0",
+        "explorerBytes": 55114771,
+        "explorerSource": "https://github.com/Huxpro/lynx/releases/download/octane-m4-lynx-f975a21d/LynxExplorer-noasan-release.apk",
+        "explorerBuildCommand": "./gradlew :LynxExplorer:assembleNoasanRelease -Penable_trace=perfetto -PabiList=arm64-v8a --no-daemon"
+      },
+      "configurationCapabilities": {
+        "production": true,
+        "sourcePatches": false,
+        "core": "universal",
+        "nativeTableProtocol": "legacy-public-source",
+        "nativeStartupReceipt": false,
+        "nativeStartupProtocol": "lynx-native-startup-v1",
+        "elementTemplates": false
+      },
+      "workloadContract": {
+        "algorithm": "sha256-runner-source-v1",
+        "runner": {
+          "algorithm": "sha256-path-content-v1",
+          "files": [
+            "packages/runner/adapters/lynx-sandbox-android.mjs",
+            "packages/runner/src/cli.mjs",
+            "packages/runner/src/connector-receipt.mjs",
+            "packages/runner/src/entries.mjs",
+            "packages/runner/src/entry-cohorts.mjs",
+            "packages/runner/src/harness-native-list.mjs",
+            "packages/runner/src/harness-native.mjs",
+            "packages/runner/src/harness-web-list.mjs",
+            "packages/runner/src/harness-web.mjs",
+            "packages/runner/src/list-coverage.mjs",
+            "packages/runner/src/list-derivation.mjs",
+            "packages/runner/src/list-native-inputs.mjs",
+            "packages/runner/src/list-observation.mjs",
+            "packages/runner/src/native-coverage.mjs",
+            "packages/runner/src/native-inputs.mjs",
+            "packages/runner/src/native-protocol.mjs",
+            "packages/runner/src/native-resume.mjs",
+            "packages/runner/src/qualification-runs.mjs",
+            "packages/runner/src/run-matrix.mjs",
+            "packages/runner/src/server.mjs",
+            "packages/shared/src/driver-client.mjs",
+            "packages/shared/src/list-workloads.mjs",
+            "packages/shared/src/qualification.mjs",
+            "packages/shared/src/schema.mjs",
+            "packages/shared/src/scorecard.mjs",
+            "packages/shared/src/workloads.mjs"
+          ],
+          "sha256": "cdce1280ed16224dceaab5117f2bf21b484469b424aa1bdd89ab6618a655d2cb"
+        },
+        "source": {
+          "algorithm": "sha256-primary-list-fixture-v1",
+          "primary": {
+            "algorithm": "sha256-path-content-v1",
+            "files": [
+              "benchmarks/lynx-table/app/lynx.config.mjs",
+              "benchmarks/lynx-table/app/src/App.lynx.tsrx",
+              "benchmarks/lynx-table/app/src/app.css",
+              "benchmarks/lynx-table/app/src/data.ts",
+              "benchmarks/lynx-table/app/src/index.ts",
+              "benchmarks/lynx-table/scripts/build-app.mjs"
+            ],
+            "sha256": "b4176cfcde16cc30afc63a48f5440bdf69da70bee5f20abe6e08d76fd868f177"
+          },
+          "listFixture": {
+            "algorithm": "sha256-path-content-v1",
+            "files": [
+              "benchmarks/lynx-table/app/src/ListApp.lynx.tsrx",
+              "benchmarks/lynx-table/app/src/list-index.ts",
+              "benchmarks/lynx-table/app/src/list.css"
+            ],
+            "sha256": "771da79a75cc4bdeaaa2b06d91f5c01cf1bc64ccde0655a11cc44dd9aaf60f84"
+          },
+          "sha256": "083352373f6cd5419095942ebb0cd152fd9f6662e7666f9583d804214bf21762"
+        },
+        "sha256": "9c2cafc585f5be32d38a41f6b2d4abea4bbfd6cee2a9910d9c340d5e78dec12d"
+      },
+      "bundleSha256": {
+        "rows-0/main.web.bundle": "fc236f94d80021c43b2b5297cd53acd12ce29f7ad58150fe4d12e3655775e970",
+        "rows-0/main.lynx.bundle": "acfa76f5a8f1f8fa246d328ad6152c9964b9f1c31223dd803f47cd39ed31f9a1",
+        "rows-1000/main.web.bundle": "4db5287f4506d600400aa171704b5fd93b537fbf132088902072f06ba6855908",
+        "rows-1000/main.lynx.bundle": "63c35863a47e4afec508bfe4b17271bb2b24ecf6cee51dbacd06221d9fec7676",
+        "rows-2000/main.web.bundle": "38bf42e40ea3e3eb3dd723c5485f2ba3ede6ec9df1abbe13eeb81fcf8bd33598",
+        "rows-2000/main.lynx.bundle": "d7ed06f4ef93b3bd36d6f6b5a3a2d5caef9ce13533d788398a9dfe5bb8fdbed4",
+        "rows-3000/main.web.bundle": "4d5581f84b5b45ba79c36b341e254a480cd97281dd2d5ce3c1cacec73e99ac1e",
+        "rows-3000/main.lynx.bundle": "4c746da4fade50016708e7361287f9428694fe1b77f1d5eb7985890d7589bf01",
+        "rows-5000/main.web.bundle": "c129ecbb48b0650faba94bfc4e4e27778a5f68a465c3c5b93878a25a39ee4fcc",
+        "rows-5000/main.lynx.bundle": "f1a781ee7fdd502600789f2c4f4ce465ebb5c5a01acbc5e2527f319ab255e00e",
+        "rows-10000/main.web.bundle": "1fc9a18249ec87ea99e5f67a593f95adbf154204761732959413c67046ffb352",
+        "rows-10000/main.lynx.bundle": "dd3e05643f0961ca8e1d53253bc8205ab40f04fa6ff28d806e956ec02bd0ee3c",
+        "rows-20000/main.web.bundle": "f9c6a1e35743dbd3a05da91c77b9920d800726e02e13b8a848b28e64c0c3c554",
+        "rows-20000/main.lynx.bundle": "785babaae0d64441c7738cc8c5d24d793ba3b311cb30473bca9a6d409e3ba593",
+        "rows-30000/main.web.bundle": "607fc1279b170e4fa474625a6bb86e4313ec25a35b0e5e813316d7ded2d8eeaa",
+        "rows-30000/main.lynx.bundle": "509a9c46ad8ced81336f84e9325f24b5b786a53f6d921ca67b7a990bc5a4fbad"
+      }
+    },
+    "sha256": {
+      "rows-0/main.web.bundle": "fc236f94d80021c43b2b5297cd53acd12ce29f7ad58150fe4d12e3655775e970",
+      "rows-0/main.lynx.bundle": "acfa76f5a8f1f8fa246d328ad6152c9964b9f1c31223dd803f47cd39ed31f9a1",
+      "rows-1000/main.web.bundle": "4db5287f4506d600400aa171704b5fd93b537fbf132088902072f06ba6855908",
+      "rows-1000/main.lynx.bundle": "63c35863a47e4afec508bfe4b17271bb2b24ecf6cee51dbacd06221d9fec7676",
+      "rows-2000/main.web.bundle": "38bf42e40ea3e3eb3dd723c5485f2ba3ede6ec9df1abbe13eeb81fcf8bd33598",
+      "rows-2000/main.lynx.bundle": "d7ed06f4ef93b3bd36d6f6b5a3a2d5caef9ce13533d788398a9dfe5bb8fdbed4",
+      "rows-3000/main.web.bundle": "4d5581f84b5b45ba79c36b341e254a480cd97281dd2d5ce3c1cacec73e99ac1e",
+      "rows-3000/main.lynx.bundle": "4c746da4fade50016708e7361287f9428694fe1b77f1d5eb7985890d7589bf01",
+      "rows-5000/main.web.bundle": "c129ecbb48b0650faba94bfc4e4e27778a5f68a465c3c5b93878a25a39ee4fcc",
+      "rows-5000/main.lynx.bundle": "f1a781ee7fdd502600789f2c4f4ce465ebb5c5a01acbc5e2527f319ab255e00e",
+      "rows-10000/main.web.bundle": "1fc9a18249ec87ea99e5f67a593f95adbf154204761732959413c67046ffb352",
+      "rows-10000/main.lynx.bundle": "dd3e05643f0961ca8e1d53253bc8205ab40f04fa6ff28d806e956ec02bd0ee3c",
+      "rows-20000/main.web.bundle": "f9c6a1e35743dbd3a05da91c77b9920d800726e02e13b8a848b28e64c0c3c554",
+      "rows-20000/main.lynx.bundle": "785babaae0d64441c7738cc8c5d24d793ba3b311cb30473bca9a6d409e3ba593",
+      "rows-30000/main.web.bundle": "607fc1279b170e4fa474625a6bb86e4313ec25a35b0e5e813316d7ded2d8eeaa",
+      "rows-30000/main.lynx.bundle": "509a9c46ad8ced81336f84e9325f24b5b786a53f6d921ca67b7a990bc5a4fbad"
+    }
+  },
+  "bundles": {
+    "web": "dist/rows-0/main.web.bundle",
+    "lynx": "dist/rows-0/main.lynx.bundle"
+  },
+  "listFixture": {
+    "protocol": "lynx-list-fixture-v2",
+    "contractSha256": "41a98a22508609f1e9444a0c03d3f2261f212312921e196d386b21bd4362f78b",
+    "source": {
+      "source": "https://github.com/Huxpro/octane",
+      "ref": "new-lynx",
+      "commit": "5623d5d7e14997eec98cd7d7c95ff9f7786fc70a",
+      "producerPull": null,
+      "mode": "external-frozen-workload",
+      "receipt": {
+        "algorithm": "sha256-path-content-v1",
+        "files": [
+          "benchmarks/lynx-table/app/src/ListApp.lynx.tsrx",
+          "benchmarks/lynx-table/app/src/list-index.ts",
+          "benchmarks/lynx-table/app/src/list.css"
+        ],
+        "sha256": "771da79a75cc4bdeaaa2b06d91f5c01cf1bc64ccde0655a11cc44dd9aaf60f84"
+      }
+    },
+    "bundles": {
+      "web": {
+        "1000": "dist/list/rows-1000/main.web.bundle",
+        "10000": "dist/list/rows-10000/main.web.bundle"
+      },
+      "native": {
+        "1000": "dist/list/rows-1000/main.lynx.bundle",
+        "10000": "dist/list/rows-10000/main.lynx.bundle"
+      }
+    },
+    "sha256": {
+      "web": {
+        "1000": "f04f9af8a67ce8e2671965fa95a995891d50297660c4662c74d36b36d18839bc",
+        "10000": "e7ddf780eb6794627270b781bb2eee9881e48eb0050eb84780a7d9bce6c64f3a"
+      },
+      "native": {
+        "1000": "8ffe42eb56d3233279d169584d4c714b2b63ea13f7ac25882fc2816fd4760a67",
+        "10000": "e2feb9e77040f0b70fc3a508c7c141dd6184363b2ce5f46867c73800d307f35d"
+      }
+    }
+  }
+}

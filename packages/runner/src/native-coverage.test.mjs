@@ -23,7 +23,19 @@ import {
   classifyNativeCoverage,
   NATIVE_MATRIX_CELL_COUNT_PER_ENTRY,
 } from './native-coverage.mjs';
-import { assertNativeInputsUnchanged, snapshotNativeInputs } from './native-inputs.mjs';
+import {
+  NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  NATIVE_COMPARATOR_TABLE_BOUNDARY,
+  NATIVE_COMPARATOR_TABLE_PROTOCOL,
+  NATIVE_STARTUP_PROTOCOL,
+  NATIVE_TABLE_BOUNDARY,
+  NATIVE_TABLE_PROTOCOL,
+  assertNativeInputsUnchanged,
+  nativeStartupProtocolForEntry,
+  nativeTableBoundaryForEntry,
+  nativeTableProtocolForEntry,
+  snapshotNativeInputs,
+} from './native-inputs.mjs';
 import { deriveNativeLeaseExpirySafety, resolveNativeSandboxPolicy } from './native-protocol.mjs';
 import { NATIVE_STARTUP_SCALES, NATIVE_TABLE_SCALES, resolveNativeRunMatrix } from './run-matrix.mjs';
 
@@ -39,6 +51,28 @@ const ENTRIES = [
   { id: 'vue-vdom-ifr-et', framework: 'vue-lynx' },
 ];
 const NATIVE_TABLE_CASES = tableCasesForHarness('native');
+
+test('Native producer protocols are selected from each frozen entry capability', () => {
+  assert.equal(nativeTableProtocolForEntry({ framework: 'octane' }), NATIVE_TABLE_PROTOCOL);
+  assert.equal(nativeStartupProtocolForEntry({ framework: 'octane' }), NATIVE_STARTUP_PROTOCOL);
+  const comparator = {
+    framework: 'reactlynx',
+    capabilities: {
+      nativeTableProtocol: NATIVE_COMPARATOR_TABLE_PROTOCOL,
+      nativeStartupProtocol: NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+    },
+  };
+  assert.equal(
+    nativeTableProtocolForEntry(comparator),
+    NATIVE_COMPARATOR_TABLE_PROTOCOL,
+  );
+  assert.equal(
+    nativeStartupProtocolForEntry(comparator),
+    NATIVE_COMPARATOR_STARTUP_PROTOCOL,
+  );
+  assert.equal(nativeTableBoundaryForEntry({ framework: 'octane' }), NATIVE_TABLE_BOUNDARY);
+  assert.equal(nativeTableBoundaryForEntry(comparator), NATIVE_COMPARATOR_TABLE_BOUNDARY);
+});
 
 function recordFor(cell, { dnf = false, unsupported = false } = {}) {
   const failure = unsupported
@@ -94,24 +128,29 @@ test('Native matrix uses an explicit current Native cohort without mutating hist
   const entries = [
     ...ENTRIES,
     {
-      id: 'octane-m3-current',
+      id: 'octane-m4-final',
       framework: 'octane',
       tier: 'archive',
       tiers: { native: 'featured' },
       harnesses: ['web', 'native'],
     },
     {
-      id: 'reactlynx-m3-et',
+      id: 'reactlynx-m4-et',
       framework: 'reactlynx',
       tier: 'archive',
       tiers: { native: 'featured' },
       harnesses: ['native'],
+      capabilities: { nativeTableProtocol: NATIVE_COMPARATOR_TABLE_PROTOCOL },
     },
   ];
 
   const contract = buildNativeMatrixContract(entries);
-  assert.deepEqual(contract.entryIds, ['octane-m3-current', 'reactlynx-m3-et']);
+  assert.deepEqual(contract.entryIds, ['octane-m4-final', 'reactlynx-m4-et']);
   assert.equal(contract.cells.length, 2 * NATIVE_MATRIX_CELL_COUNT_PER_ENTRY);
+  assert.equal(
+    contract.cells.find((cell) => cell.entry === 'reactlynx-m4-et' && cell.suite === 'table').boundary,
+    NATIVE_COMPARATOR_TABLE_BOUNDARY,
+  );
 });
 
 test('featured Native artifacts match their strict or explicitly unavailable producer boundary', () => {
@@ -128,7 +167,7 @@ test('featured Native artifacts match their strict or explicitly unavailable pro
   });
 
   assert.equal(entries.length, 8);
-  assert.deepEqual(inputs.snapshots.get('octane-m3-upstream:0').protocols, {
+  assert.deepEqual(inputs.snapshots.get('octane-m4-upstream:0').protocols, {
     table: false,
     // The legacy bundle contains the old startup marker, but its manifest
     // deliberately declines the strict receipt boundary. String presence does
@@ -136,7 +175,7 @@ test('featured Native artifacts match their strict or explicitly unavailable pro
     startup: true,
     startupTimingFlag: false,
   });
-  for (const entry of entries.filter(({ id }) => id !== 'octane-m3-upstream')) {
+  for (const entry of entries.filter(({ id }) => id !== 'octane-m4-upstream')) {
     assert.equal(inputs.snapshots.get(`${entry.id}:0`).protocols.table, true, entry.id);
     for (const rows of NATIVE_STARTUP_SCALES) {
       assert.equal(inputs.snapshots.get(`${entry.id}:${rows}`).protocols.startup, true, `${entry.id}:${rows}`);
@@ -240,6 +279,7 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   });
   assert.equal(policy.defaultTimeoutMs, 11);
   assert.equal(policy.longWorkloadTimeoutMs, 22);
+  assert.equal(policy.timeoutPageDisposition, 'restart');
   assert.equal(policy.thermalGateScope, 'before-every-bundle-load');
   assert.equal(policy.explorerReconnectTimeoutMs, 66);
   assert.equal(policy.transientAttempts, 2);
@@ -299,6 +339,16 @@ test('campaign policy includes every timeout, lifecycle, thermal, and retry inpu
   assert.throws(
     () => resolveNativeSandboxPolicy({ LYNX_SANDBOX_RENDER_GRACE_FRAMES: '1' }),
     /must be 2/,
+  );
+  assert.equal(resolveNativeSandboxPolicy({
+    LYNX_SANDBOX_RECYCLE_EVERY_PAGES: '1',
+    LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION: 'preserve',
+  }).timeoutPageDisposition, 'preserve');
+  assert.throws(
+    () => resolveNativeSandboxPolicy({
+      LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION: 'preserve',
+    }),
+    /requires LYNX_SANDBOX_RECYCLE_EVERY_PAGES=1/,
   );
 });
 

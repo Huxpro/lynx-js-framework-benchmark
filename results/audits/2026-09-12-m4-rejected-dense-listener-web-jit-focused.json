@@ -1,0 +1,92 @@
+{
+  "kind": "m4-rejected-hypothesis",
+  "candidate": "octane-m4-dense-listener-exp",
+  "comparator": "octane-m4-final",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Replace the Block root listener Map with dense indexed slots while preserving acknowledgement publication and synchronous teardown.",
+  "disposition": "rejected-and-reverted",
+  "recoveryPath": "/data00/home/xuan.huang/.codex/tmp/issue291-rejected-dense-listener-20260912/entry",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": {
+      "AB": 5,
+      "BA": 5
+    },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "confidence": 0.95,
+    "unit": "session median"
+  },
+  "result": {
+    "aggregate": {
+      "point": 0.9993461283951783,
+      "lower": 0.9719203030952545,
+      "upper": 1.0260819477071284
+    },
+    "cells": {
+      "select@1000": {
+        "point": 1.020857029671074,
+        "lower": 0.930393515785974,
+        "upper": 1.1144437776585008
+      },
+      "swap@1000": {
+        "point": 0.9759360555559966,
+        "lower": 0.9292471216097236,
+        "upper": 1.0211073555699475
+      },
+      "remove@1000": {
+        "point": 1.004539152602605,
+        "lower": 0.9719235842744127,
+        "upper": 1.0371027221022706
+      },
+      "clear@1000": {
+        "point": 0.9965763623429178,
+        "lower": 0.9686012296592407,
+        "upper": 1.0239117373420463
+      }
+    }
+  },
+  "sourceRuns": [
+    {
+      "file": "results/runs/2026-09-12T00-28-43-65160668d8d9.json",
+      "sha256": "d3c3e127f2a37169dd855289c3765bdf4c758e73a3158704488a23ac7a26dfa6"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-32-14-65160668d8d9.json",
+      "sha256": "6e54a542b40382871c92656cd79653961d8287aace90cf5d1cb22e6931fe7530"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-35-47-65160668d8d9.json",
+      "sha256": "a4264824717a7fd5df410541f82dfc0381155f0be1d5853e4437cc9964991903"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-39-19-65160668d8d9.json",
+      "sha256": "a3392f932bf07ea3288a123cc05585299246d18dc3cb09d767bea5d5dd31678e"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-42-51-65160668d8d9.json",
+      "sha256": "b78b9ebe81e9d282457e691db42abfce565888c8e0b910fca821368dfec70d7a"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-46-25-65160668d8d9.json",
+      "sha256": "476ea93be945700d590ff4d6cbbbfc1c8020e5eb0b9ac1b604e7a684c79ab0df"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-49-57-65160668d8d9.json",
+      "sha256": "0da4c8515847ed2c668a156cb2fb2617bd9154053053add5ff4d1450468c6ed1"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-53-30-65160668d8d9.json",
+      "sha256": "6286a5cb72f9f241c6969fbf849207c8305995ada2ba663cd11181c11ed0ee7e"
+    },
+    {
+      "file": "results/runs/2026-09-12T00-57-04-65160668d8d9.json",
+      "sha256": "61a0836817692df4bc9ac6cb0e5701a3802490e14877d12a0c40cb528be8ab39"
+    },
+    {
+      "file": "results/runs/2026-09-12T01-00-38-65160668d8d9.json",
+      "sha256": "77af09b5101f34fe73e110b841e48ae3f706eb7d40a8c1ddf03846ce6432b077"
+    }
+  ]
+}

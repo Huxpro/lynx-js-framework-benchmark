@@ -387,6 +387,12 @@ export function resolveNativeSandboxPolicy(env = process.env) {
     explorerRecycleEveryPages: finite(
       env, 'LYNX_SANDBOX_RECYCLE_EVERY_PAGES', 5, { positive: true, integer: true },
     ),
+    timeoutPageDisposition: choice(
+      env,
+      'LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION',
+      'restart',
+      ['restart', 'preserve'],
+    ),
     explorerLaunchSettleMs: finite(env, 'LYNX_SANDBOX_EXPLORER_LAUNCH_SETTLE_MS', 500),
     explorerReconnectTimeoutMs: finite(
       env, 'LYNX_SANDBOX_RECONNECT_TIMEOUT_MS', 90_000, { positive: true },
@@ -425,6 +431,15 @@ export function resolveNativeSandboxPolicy(env = process.env) {
   if (policy.renderGraceFrames !== 2) {
     throw new Error(
       'LYNX_SANDBOX_RENDER_GRACE_FRAMES must be 2 for the versioned producer protocol.',
+    );
+  }
+  if (
+    policy.timeoutPageDisposition === 'preserve'
+    && policy.explorerRecycleEveryPages !== 1
+  ) {
+    throw new Error(
+      'LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION=preserve requires '
+      + 'LYNX_SANDBOX_RECYCLE_EVERY_PAGES=1.',
     );
   }
   return Object.freeze(policy);

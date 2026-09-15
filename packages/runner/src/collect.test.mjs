@@ -1686,6 +1686,14 @@ test('prospective one-shot memory observations do not require repetition account
       n: 1,
       median: 1024,
     });
+    const memoryPeak = (entry) => ({
+      ...memoryAfterClear(entry),
+      workload: 'memoryPeak',
+      metric: 'heapMtsPeak',
+      boundary: 'ungc-heap-at-post-create-10k-rows',
+      value: 4096,
+      median: 4096,
+    });
     fs.writeFileSync(path.join(root, 'results/runs/complete.json'), JSON.stringify({
       schemaVersion: 2,
       meta: {
@@ -1696,8 +1704,8 @@ test('prospective one-shot memory observations do not require repetition account
         entryCommits: { octane: 'octane-sha', react: 'react-sha' },
       },
       records: [
-        measured('octane'), memoryAfterClear('octane'),
-        measured('react'), memoryAfterClear('react'),
+        measured('octane'), memoryPeak('octane'), memoryAfterClear('octane'),
+        measured('react'), memoryPeak('react'), memoryAfterClear('react'),
       ],
     }));
 
@@ -1711,6 +1719,10 @@ test('prospective one-shot memory observations do not require repetition account
     assert.equal(memory.length, 2);
     assert.equal(memory.every(({ comparabilityStatus }) => comparabilityStatus === 'comparable'), true);
     assert.equal(memory.every(({ rankingEligible }) => rankingEligible), true);
+    const peaks = out.records.filter(({ workload }) => workload === 'memoryPeak');
+    assert.equal(peaks.length, 2);
+    assert.equal(peaks.every(({ comparabilityStatus }) => comparabilityStatus === 'comparable'), true);
+    assert.equal(peaks.every(({ rankingEligible }) => rankingEligible), true);
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
@@ -1806,16 +1818,31 @@ test('history audits every run but publishes only complete source-defined featur
   assert.ok(verifiedProcessRun.every((record) =>
     record.throttleScope === 'process-cgroup'
     && record.cpuThrottle === 4));
-  // The complete explicit M3 Native tier atomically replaces the legacy
-  // global-tier cohort. Its 184 source cells publish together; historical and
-  // incomplete observations remain archive-only.
-  assert.equal(retainedRecords.length, 3744);
-  assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 184);
-  assert.equal(out.nativeObservationRecords.length, 0);
+  // Refreshing the candidate, upstream, and pinned engine invalidates the old
+  // 184-cell M4 Native cohort atomically. Until the replacement campaign is
+  // complete, the old source stays archive-only and no Native record is
+  // published under the new exact identity.
+  assert.equal(retainedRecords.length, 3560);
+  assert.equal(retainedRecords.filter((record) => record.harness === 'native').length, 0);
+  // The six byte-identical comparator arms remain visible only as
+  // legacy-unverified diagnostic observations; they cannot restore or rank
+  // the invalidated eight-entry campaign.
+  assert.equal(out.nativeObservationRecords.length, 138);
+  assert.equal(out.nativeObservationRecords.every((record) =>
+    record.comparabilityStatus === 'legacy-unverified'), true);
+  assert.deepEqual(
+    [...new Set(out.nativeObservationRecords.map((record) => record.entry))].sort(),
+    [
+      'reactlynx-m4-default',
+      'reactlynx-m4-et',
+      'vue-lynx-m4-vapor-default',
+      'vue-lynx-m4-vapor-ifr',
+      'vue-lynx-m4-vdom-default',
+      'vue-lynx-m4-vdom-ifr-et',
+    ],
+  );
   assert.deepEqual(out.nativeCoverage.summary, {
-    dnf: 56,
-    measured: 105,
-    unsupported: 23,
+    'invalid-incomparable': 184,
   });
   assert.ok(bundleScale.every((record) => record.rankingEligible === false
     && record.descriptiveEligible === true
@@ -1840,21 +1867,7 @@ test('history audits every run but publishes only complete source-defined featur
   const currentNative = out.history.checkpoints.at(-1).harnesses.find(
     (cohort) => cohort.harness === 'native',
   );
-  assert.ok(currentNative);
-  assert.equal(currentNative.rankEligible, true);
-  assert.deepEqual(currentNative.entryIds, [
-    'octane-m3-current',
-    'octane-m3-upstream',
-    'reactlynx-m3-default',
-    'reactlynx-m3-et',
-    'vue-lynx-m3-vapor-default',
-    'vue-lynx-m3-vapor-ifr',
-    'vue-lynx-m3-vdom-default',
-    'vue-lynx-m3-vdom-ifr-et',
-  ]);
-  assert.deepEqual(currentNative.sourceRunFiles, [
-    '2026-09-08T13-07-21-lynx-native-android-aries_10-10-devtool-direct-recycle5-explorer-6ae29787a216-65bce2c8fa2a-45dbb20b784c-native.json',
-  ]);
+  assert.equal(currentNative, undefined);
   assert.equal(currentWeb.sourceRunFiles.includes(
     '2026-08-30T11-42-45-65160668d8d9-issue-201-current-bundle-storm-jit.json',
   ), false);
@@ -1877,8 +1890,10 @@ test('history audits every run but publishes only complete source-defined featur
   const currentRecords = out.history.checkpoints.at(-1).activeRecordIndexes
     .map((index) => out.history.records[index]);
   const currentBundleScale = currentRecords.filter((record) => record.suite === 'bundle-scale');
-  assert.equal(currentBundleScale.length, 264);
-  assert.equal(currentBundleScale.filter((record) => record.harness === 'native').length, 104);
+  // Native static receipts join the current checkpoint only with a complete
+  // exact-identity Native cohort; Web receipts remain available meanwhile.
+  assert.equal(currentBundleScale.length, 160);
+  assert.equal(currentBundleScale.filter((record) => record.harness === 'native').length, 0);
   assert.ok(currentBundleScale
     .every((record) => record.rankEligible === false && record.descriptiveEligible === true));
   const stormOperations = currentRecords.filter((record) =>
@@ -1997,6 +2012,24 @@ test('history audits every run but publishes only complete source-defined featur
       const cohortRecords = records.filter((record) => record.harness === cohort.harness
         && record.environment === cohort.environment
         && record.rankEligible);
+      if (cohort.harness === 'native') {
+        const logicalCellCounts = cohort.entryIds.map((entryId) => Object.fromEntries(
+          Object.entries(cohortRecords
+            .filter((record) => record.entry === entryId)
+            .reduce((counts, record) => {
+              const key = [record.suite, record.workload, record.scale].join('|');
+              counts[key] = (counts[key] ?? 0) + 1;
+              return counts;
+            }, {}))
+            .sort(([left], [right]) => left.localeCompare(right)),
+        ));
+        assert.equal(logicalCellCounts.every((counts) =>
+          Object.values(counts).reduce((sum, count) => sum + count, 0) === 23), true);
+        for (const counts of logicalCellCounts.slice(1)) {
+          assert.deepEqual(counts, logicalCellCounts[0]);
+        }
+        continue;
+      }
       const cellKeys = cohort.entryIds.map((entryId) => new Set(cohortRecords
         .filter((record) => record.entry === entryId)
         .map((record) => [

@@ -1,0 +1,648 @@
+{
+  "protocol": "octane-issue-291-direct-frame-ablation-v1",
+  "capturedAt": "2026-09-15T10:47:43.878Z",
+  "qualification": "diagnostic-only-not-formal-performance-evidence",
+  "device": {
+    "serialSha256": "8809fd0567b15b39106e65d6bb2460ad2475cb551960b6cc5d6acbb658a3e182"
+  },
+  "explorer": {
+    "localSourceCommit": "3a954f0-plus-pr9535-ef22e46",
+    "localApkSha256": "663af49a7b33f377b13c1bebec215cbe69e1c187430c6f51427a0e1d69937bc1",
+    "localApkBytes": 62546523
+  },
+  "inputs": {
+    "directFrame": {
+      "sha256": "58076f2db905a1e5dafb8efc99332d2ae3545ee9581bbe6d262ff2a8191fd2b1",
+      "bytes": 282766,
+      "sourcePath": "/data00/home/xuan.huang/.codex/worktrees/68ea/octane-m4-keyed-sparse-merged-291/benchmarks/lynx-table/app/dist-automatic-element-template-m4-keyed-pair-swap-6885522/main.lynx.bundle"
+    },
+    "contextProxy": {
+      "sha256": "2d7f21fcc8afd038b7edee8454432651f21960bc9384cc34cadf622d06fca9b5",
+      "bytes": 151141,
+      "sourcePath": "/data00/home/xuan.huang/.codex/worktrees/68ea/lynx-benchmark-upstream-8e5-291/entries/vue-lynx-m4-vapor-default/dist/rows-0/main.lynx.bundle"
+    }
+  },
+  "method": {
+    "boundary": "native-input-handler-to-second-native-frame",
+    "order": "balanced AB/BA within workload; 10 samples per variant",
+    "scale": 1000,
+    "workloads": [
+      "swap"
+    ]
+  },
+  "medians": [
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "medianMs": 27.5,
+      "samplesMs": [
+        25,
+        24,
+        27,
+        27,
+        31,
+        38,
+        39,
+        28,
+        37,
+        27
+      ]
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "medianMs": 39.5,
+      "samplesMs": [
+        41,
+        39,
+        33,
+        39,
+        30,
+        35,
+        40,
+        41,
+        43,
+        40
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 0,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 25,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469230573,
+        "commitAckMs": 1789469230581,
+        "firstFrameMs": 1789469230582,
+        "endMs": 1789469230598
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "big purple cookie",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 0,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 41,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469232524,
+        "commitAckMs": 1789469232536,
+        "firstFrameMs": 1789469232549,
+        "endMs": 1789469232565
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "fancy green table",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 1,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 39,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469234343,
+        "commitAckMs": 1789469234354,
+        "firstFrameMs": 1789469234366,
+        "endMs": 1789469234382
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "expensive orange table",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 1,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 24,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469235858,
+        "commitAckMs": 1789469235865,
+        "firstFrameMs": 1789469235866,
+        "endMs": 1789469235882
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "handsome green pony",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 2,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 27,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469237172,
+        "commitAckMs": 1789469237179,
+        "firstFrameMs": 1789469237183,
+        "endMs": 1789469237199
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "pretty yellow chair",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 2,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 33,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469240467,
+        "commitAckMs": 1789469240478,
+        "firstFrameMs": 1789469240483,
+        "endMs": 1789469240500
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "important red cookie",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 3,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 39,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469242177,
+        "commitAckMs": 1789469242189,
+        "firstFrameMs": 1789469242200,
+        "endMs": 1789469242216
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "mushy white table",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 3,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 27,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469243640,
+        "commitAckMs": 1789469243648,
+        "firstFrameMs": 1789469243650,
+        "endMs": 1789469243667
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "crazy purple mouse",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 4,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 31,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469244952,
+        "commitAckMs": 1789469244960,
+        "firstFrameMs": 1789469244967,
+        "endMs": 1789469244983
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "important yellow pizza",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 4,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 30,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469246887,
+        "commitAckMs": 1789469246899,
+        "firstFrameMs": 1789469246900,
+        "endMs": 1789469246917
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "helpful blue cookie",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 5,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 35,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469249966,
+        "commitAckMs": 1789469249978,
+        "firstFrameMs": 1789469249984,
+        "endMs": 1789469250001
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "expensive pink house",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 5,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 38,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469251396,
+        "commitAckMs": 1789469251403,
+        "firstFrameMs": 1789469251418,
+        "endMs": 1789469251434
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "expensive pink table",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 6,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 39,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469252662,
+        "commitAckMs": 1789469252670,
+        "firstFrameMs": 1789469252684,
+        "endMs": 1789469252701
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "long brown cookie",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 6,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 40,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469254545,
+        "commitAckMs": 1789469254557,
+        "firstFrameMs": 1789469254568,
+        "endMs": 1789469254585
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "clean brown bbq",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 7,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 41,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469256227,
+        "commitAckMs": 1789469256238,
+        "firstFrameMs": 1789469256251,
+        "endMs": 1789469256268
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "tall blue chair",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 7,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 28,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469259040,
+        "commitAckMs": 1789469259047,
+        "firstFrameMs": 1789469259052,
+        "endMs": 1789469259068
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "unsightly pink pony",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 8,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 37,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469260332,
+        "commitAckMs": 1789469260339,
+        "firstFrameMs": 1789469260352,
+        "endMs": 1789469260369
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "unsightly orange mouse",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 8,
+      "order": "directFrame->contextProxy",
+      "latencyMs": 43,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469262209,
+        "commitAckMs": 1789469262220,
+        "firstFrameMs": 1789469262235,
+        "endMs": 1789469262252
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "clean orange house",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "contextProxy",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 9,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 40,
+      "boundary": "native-input-handler-through-host-commit-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469263879,
+        "commitAckMs": 1789469263891,
+        "firstFrameMs": 1789469263902,
+        "endMs": 1789469263919
+      },
+      "ackPipelineEvidence": null,
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "clean orange cookie",
+        "selectedId": null
+      }
+    },
+    {
+      "variant": "directFrame",
+      "workload": "swap",
+      "scale": 1000,
+      "repetition": 9,
+      "order": "contextProxy->directFrame",
+      "latencyMs": 27,
+      "boundary": "native-input-handler-to-second-native-frame",
+      "timing": {
+        "startMs": 1789469265359,
+        "commitAckMs": 1789469265366,
+        "firstFrameMs": 1789469265369,
+        "endMs": 1789469265386
+      },
+      "ackPipelineEvidence": {
+        "queueMaxDepthBefore": 0,
+        "queueMaxDepthAfter": 0,
+        "merges": 0,
+        "preparations": 0,
+        "preparationsWhileAck": 0,
+        "roundTrips": 0
+      },
+      "postState": {
+        "rowCount": 1000,
+        "firstId": 1,
+        "secondId": 999,
+        "thirdId": 3,
+        "row998Id": 2,
+        "firstLabel": "cheap blue sandwich",
+        "selectedId": null
+      }
+    }
+  ],
+  "semantics": {
+    "expected": 20,
+    "passed": 20,
+    "failed": 0
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "octane-m4-stage-indices-experiment",
+  "candidateCommit": "1234b40d1c321ff80d25d0d82abb2aa439b5aacb",
+  "comparator": "octane-m4-keyed-row-experiment",
+  "comparatorCommit": "9d1a7df73b458c15d889b162d42ceca4eaa7ede6",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Publish retained row indices after a successful structural commit instead of allocating a copied record for every shifted survivor.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": {
+      "AB": 5,
+      "BA": 5
+    },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "confidence": 0.95,
+    "unit": "session median"
+  },
+  "removeAt1000": {
+    "latency": {
+      "point": 0.9531584092392217,
+      "lower": 0.9213362547126794,
+      "upper": 0.988126038266031,
+      "strictWin": true
+    },
+    "backgroundCpu": {
+      "point": 0.6457583901682734,
+      "lower": 0.6319443711457897,
+      "upper": 0.6610239262315502,
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 0.9992298860694753,
+      "lower": 0.9649421896403243,
+      "upper": 1.0399649036392062,
+      "nonInferior": true
+    },
+    "wireToMtsBytes": {
+      "point": 1,
+      "lower": 1,
+      "upper": 1
+    },
+    "wireToBtsBytes": {
+      "point": 1.0001618908940284,
+      "lower": 1,
+      "upper": 1.0004047763776371
+    }
+  },
+  "memory": {
+    "heapMts": {
+      "point": 1.0005982342427653,
+      "upper": 1.0014961391062938
+    },
+    "heapBts": {
+      "point": 1.000202015910466,
+      "upper": 1.000375249586448
+    },
+    "heapMtsAfterClear": {
+      "point": 1.0001462961925907,
+      "upper": 1.0004651122416321
+    },
+    "heapBtsAfterClear": {
+      "point": 1.0014107402254644,
+      "upper": 1.0025963336966732
+    }
+  },
+  "bundle": {
+    "web": {
+      "comparatorBytes": 184305,
+      "candidateBytes": 184318,
+      "deltaBytes": 13,
+      "candidateSha256": "a907e1f1d6d450bb3e146d87d4cb0e4e11d4afb3eab09ab0722375a836149667"
+    },
+    "native": {
+      "comparatorBytes": 184426,
+      "candidateBytes": 184439,
+      "deltaBytes": 13,
+      "candidateSha256": "110f30ebd72c3a19c910f916b0b1967e060bbea2c737cec56d814e04fd279f1a"
+    }
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-stage-row-indices-remove-profile.json",
+    "sha256": "b8d45348763db5cb47d1ff6c30c87e215f0b16651f6551ce9326b9575f6a6061",
+    "pairs": 5,
+    "runsPerArm": 10,
+    "backgroundCpuMeanMs": {
+      "candidate": 4.6919,
+      "comparator": 7.5071
+    },
+    "mainThreadCpuMeanMs": {
+      "candidate": 4.1583,
+      "comparator": 4.242
+    }
+  },
+  "benchmarkReceipt": {
+    "dirty": true,
+    "reason": "The two immutable experiment entries and the diagnostic profiler were intentionally untracked during measurement.",
+    "diffSha256": "ecda74822fa3ef35822fdf638d034b6893d443909db697bc3128ff25dac2ced7"
+  },
+  "sourceRuns": [
+    {
+      "file": "results/runs/2026-09-12T05-04-11-65160668d8d9.json",
+      "sha256": "78e4c6f74a033f329821ea212a6f92d6caa2bf038225336a6af384565c233e82"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-05-12-65160668d8d9.json",
+      "sha256": "4da23072d7a733b5caad3221d8e79c780413e8fa18880afe442ed3b99aa225cd"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-06-13-65160668d8d9.json",
+      "sha256": "969e73c77c9225edbb37c22b3cd834611da656d982c0136490e8aae39d904946"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-07-15-65160668d8d9.json",
+      "sha256": "e8d33d77df9feec3f079eb56aa6250e610faf3877752be93e6d82b025f4a1f71"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-08-15-65160668d8d9.json",
+      "sha256": "8878db867a9f285a9c3e8773436b53def404f2feb6c57b5db577d5a714e20f4e"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-09-16-65160668d8d9.json",
+      "sha256": "186caa8a16246163a88ddb89dc462bb32917ec88a7ae53814e9a134945299613"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-10-17-65160668d8d9.json",
+      "sha256": "0a30e027ef2244d0e76288465dd891084a27773aaf143dbeaf9175571f5bff8c"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-11-18-65160668d8d9.json",
+      "sha256": "2a38b3ec061d68c0c47b334a6f314c5680114188906f1aabe61699e2660952b8"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-12-19-65160668d8d9.json",
+      "sha256": "dc84420e9dae072d27d792109da10f4d8ef62b3b6369af43761ea6c42827d561"
+    },
+    {
+      "file": "results/runs/2026-09-12T05-13-21-65160668d8d9.json",
+      "sha256": "c33a404978433bf5396878be083e02f6901ea8b16629a61b00758867bf82cf0f"
+    }
+  ]
+}

@@ -1,0 +1,327 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "octane-m4-index-independent-experiment",
+  "candidateCommit": "9ded504238284e6a7b902f702f8f25a18de01a11",
+  "comparator": "octane-m4-stage-indices-experiment",
+  "comparatorCommit": "1234b40d1c321ff80d25d0d82abb2aa439b5aacb",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "Retain a shifted keyed component-row descriptor when the compiler proves that no row prop reads the loop index.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": {
+      "AB": 5,
+      "BA": 5
+    },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x2919ded5",
+    "confidence": 0.95,
+    "unit": "session median",
+    "outliersRemoved": false
+  },
+  "removeAt1000": {
+    "latency": {
+      "point": 0.9831334569155745,
+      "lower": 0.9527847277806624,
+      "upper": 1.0179061959301352,
+      "sessionRatios": [
+        0.970182988027271,
+        0.9698667753883622,
+        1.1044808959494596,
+        1.0452015073872385,
+        1.0198863810431555,
+        0.9279656576687897,
+        0.9620352787296609,
+        0.9748455738385194,
+        0.9104699693097654,
+        0.9610027716836665
+      ],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "backgroundCpu": {
+      "point": 0.7642618528455962,
+      "lower": 0.7526807133630137,
+      "upper": 0.7763600549466325,
+      "sessionRatios": [
+        0.764380290861732,
+        0.7641336071776024,
+        0.762362187534112,
+        0.80859417602792,
+        0.7281292059219381,
+        0.7680309734513274,
+        0.7689015691868759,
+        0.7740199846272099,
+        0.74945462478185,
+        0.7569995821145007
+      ],
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 0.9952367082361011,
+      "lower": 0.970787721061855,
+      "upper": 1.0220178368255146,
+      "sessionRatios": [
+        1.0129126431619135,
+        0.9725596041385516,
+        0.9625876851130163,
+        1.0886677222347887,
+        0.9306517199692274,
+        1.0113636363636362,
+        0.9902945878054351,
+        1.0052740197202477,
+        1.0316815597075548,
+        0.9553245604334845
+      ],
+      "nonInferior": true
+    },
+    "wireToMtsBytes": {
+      "point": 1,
+      "lower": 1,
+      "upper": 1,
+      "sessionRatios": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "wireToBtsBytes": {
+      "point": 0.9997570816945258,
+      "lower": 0.9994332605680114,
+      "upper": 1,
+      "sessionRatios": [
+        0.9983818770226537,
+        1,
+        1,
+        1,
+        0.9991902834008097,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": {
+      "point": 1.00032119017179,
+      "lower": 0.9997056916996212,
+      "upper": 1.0009830401299349,
+      "sessionRatios": [
+        1.0000282290413212,
+        0.9999305804667991,
+        0.9987278806785796,
+        1.0014674683966507,
+        1.0017630663818107,
+        1.0003465764655242,
+        0.9998036971634946,
+        1.0020647115707682,
+        0.9993902503241738,
+        0.9996948066740686
+      ]
+    },
+    "heapBts": {
+      "point": 0.9999713644941376,
+      "lower": 0.9997640731345697,
+      "upper": 1.0001783487873408,
+      "sessionRatios": [
+        1.0000148617897267,
+        1.0004206718680717,
+        0.9995764512119003,
+        1.0000109322641288,
+        1.0000148678792151,
+        0.9996052883493185,
+        1.0004246091387605,
+        0.9996052883493185,
+        0.9996166488905985,
+        1.0004246091387605
+      ]
+    },
+    "heapMtsAfterClear": {
+      "point": 1.0002384782337002,
+      "lower": 0.9998014498601777,
+      "upper": 1.0006785465350996,
+      "sessionRatios": [
+        1.000014171260517,
+        0.9998967069509558,
+        1.000235022914734,
+        1.0015032390925538,
+        1.0013003467869106,
+        1.0000166636810905,
+        0.9989554462450165,
+        0.9997726314947856,
+        1.0006797479268106,
+        1.000013331100374
+      ]
+    },
+    "heapBtsAfterClear": {
+      "point": 0.9997945539871754,
+      "lower": 0.9983501620758757,
+      "upper": 1.0012434349505006,
+      "sessionRatios": [
+        1.0001026099133248,
+        1.0029205165531248,
+        0.9970882076937699,
+        1.0000756626535194,
+        1.000124090131808,
+        0.997211517278634,
+        1.0029962410793731,
+        0.9971904517608715,
+        0.9973169877830895,
+        1.002947834824401
+      ]
+    }
+  },
+  "bundle": {
+    "web": {
+      "comparatorBytes": 184318,
+      "candidateBytes": 184337,
+      "deltaBytes": 19,
+      "candidateSha256": "9c0c7b46acbbe93cbf2131ae897bbac212bd00b45cf98e8ddaf41bd0a45caa01"
+    },
+    "native": {
+      "comparatorBytes": 184439,
+      "candidateBytes": 184457,
+      "deltaBytes": 18,
+      "candidateSha256": "74423cf55dde6f55c3e79efb57e40b72266c705facb6ee81b01890500fcc075f"
+    }
+  },
+  "profile": {
+    "file": "results/audits/2026-09-12-m4-index-independent-rows-remove-profile.json",
+    "sha256": "54e9b1978c26de24287323ef17e59dbd44b6cd2c2a7102a3040f971100035e48",
+    "pairs": 5,
+    "runsPerArm": 10,
+    "means": {
+      "staged": {
+        "latencyMs": 24.607499980926512,
+        "backgroundCpuMs": 5.127799999999999,
+        "mainThreadCpuMs": 4.4453
+      },
+      "candidate": {
+        "latencyMs": 23.060999965667726,
+        "backgroundCpuMs": 3.5766,
+        "mainThreadCpuMs": 4.8972
+      }
+    }
+  },
+  "validation": {
+    "focusedTests": "135 passed",
+    "fullProjects": "9418 passed; two unrelated async timing failures, each isolated (hydration recovered in joint retry; HMR 70/70 in isolated retry)",
+    "typecheck": "selected octane and lynx files passed",
+    "sync": "passed"
+  },
+  "benchmarkReceipt": {
+    "commit": "5240e8d0ceb95a15f3b6d383c2be656c4d8cad21",
+    "dirty": true,
+    "diffSha256": "8d1fa8054978864f2966f844446dac12110b6f203e22b2077cb349a984264962",
+    "ignoredGeneratedPaths": [
+      "results/runs/**",
+      "results/audits/**",
+      "results/latest.json",
+      "site/dist/**"
+    ]
+  },
+  "sourceRuns": [
+    {
+      "file": "results/runs/2026-09-12T05-40-09-65160668d8d9.json",
+      "sha256": "198679d6cf77ebc0ab5d045cf3e5ef9323ce3c6aebb2519f685391839affca17",
+      "sessionId": "issue291-index-independent-remove-web-jit-ab-1",
+      "entryOrder": [
+        "octane-m4-stage-indices-experiment",
+        "octane-m4-index-independent-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-42-09-65160668d8d9.json",
+      "sha256": "e7e546faffe8858a8f90a79a3068bb0c49d6eaa8b6212ddef2be50c5a51dbdc7",
+      "sessionId": "issue291-index-independent-remove-web-jit-ab-3",
+      "entryOrder": [
+        "octane-m4-stage-indices-experiment",
+        "octane-m4-index-independent-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-44-09-65160668d8d9.json",
+      "sha256": "bf93beceae139299b2c4cfd26723961783c2f4b792e34d034940b44713c62a92",
+      "sessionId": "issue291-index-independent-remove-web-jit-ab-5",
+      "entryOrder": [
+        "octane-m4-stage-indices-experiment",
+        "octane-m4-index-independent-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-46-10-65160668d8d9.json",
+      "sha256": "58e7798267ca5381538e45b6fae9fc7aaa5fc5c1723d50cfa28d0b89340f4dd8",
+      "sessionId": "issue291-index-independent-remove-web-jit-ab-7",
+      "entryOrder": [
+        "octane-m4-stage-indices-experiment",
+        "octane-m4-index-independent-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-48-11-65160668d8d9.json",
+      "sha256": "e8542cd2039ed52f461812da16f5ce13ea601c699c801e6e030c7b51e41857e7",
+      "sessionId": "issue291-index-independent-remove-web-jit-ab-9",
+      "entryOrder": [
+        "octane-m4-stage-indices-experiment",
+        "octane-m4-index-independent-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-41-09-65160668d8d9.json",
+      "sha256": "07e201909c273de7f244680884a76d0ec0fc05e2b6818085b7093ac27e54f439",
+      "sessionId": "issue291-index-independent-remove-web-jit-ba-2",
+      "entryOrder": [
+        "octane-m4-index-independent-experiment",
+        "octane-m4-stage-indices-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-43-09-65160668d8d9.json",
+      "sha256": "d1e6119881d6267a1df4b2b09074b8b0a0aba5b5c9f48cb611c21bc8f383305e",
+      "sessionId": "issue291-index-independent-remove-web-jit-ba-4",
+      "entryOrder": [
+        "octane-m4-index-independent-experiment",
+        "octane-m4-stage-indices-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-45-09-65160668d8d9.json",
+      "sha256": "328f411d2434d474ee90885dff4d97f3e51928a7c98bb7f53239e4953f5ce5d5",
+      "sessionId": "issue291-index-independent-remove-web-jit-ba-6",
+      "entryOrder": [
+        "octane-m4-index-independent-experiment",
+        "octane-m4-stage-indices-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-47-10-65160668d8d9.json",
+      "sha256": "2a502d4afe1552c8e72c267a6a2908e04691633cd7691f4963389dae782ecb19",
+      "sessionId": "issue291-index-independent-remove-web-jit-ba-8",
+      "entryOrder": [
+        "octane-m4-index-independent-experiment",
+        "octane-m4-stage-indices-experiment"
+      ]
+    },
+    {
+      "file": "results/runs/2026-09-12T05-49-11-65160668d8d9.json",
+      "sha256": "a15e5744493624302f8ed1d0b4c62cdff864064306844e0bfa36b9d298bbfd7e",
+      "sessionId": "issue291-index-independent-remove-web-jit-ba-10",
+      "entryOrder": [
+        "octane-m4-index-independent-experiment",
+        "octane-m4-stage-indices-experiment"
+      ]
+    }
+  ]
+}

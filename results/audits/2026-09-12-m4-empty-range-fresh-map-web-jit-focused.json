@@ -1,0 +1,87 @@
+{
+  "kind": "m4-accepted-hypothesis",
+  "candidate": "z-octane-m4-clear-map-candidate",
+  "candidateCommit": "2bec72926aa9ce8b4cc52f57bb7b73ad1473ab3f",
+  "candidateBuildBase": "d80d63caac26121b6d0a05e0d6aad7b4dd44d8ad",
+  "candidatePatchSha256": "4baa3944fc7e3f03b51049f2885a256316828c5295f36c979783ed72cb687ad8",
+  "comparator": "z-octane-m4-deletion-descriptors-candidate",
+  "comparatorCommit": "d80d63caac26121b6d0a05e0d6aad7b4dd44d8ad",
+  "harness": "web",
+  "environment": "jit",
+  "hypothesis": "When a compiler-certified keyed range becomes empty, publish the ordinary path's fresh empty descriptor Map after acknowledgement instead of retaining the committed Map, allocating all old keys, and deleting them one by one.",
+  "disposition": "retained-for-formal-comparator-validation",
+  "sampling": {
+    "independentSessions": 10,
+    "orderCounts": { "AB": 5, "BA": 5 },
+    "repetitionsPerCellPerArm": 20,
+    "bootstrapResamples": 10000,
+    "bootstrapSeed": "0x291c1ea",
+    "confidence": 0.95,
+    "unit": "session median",
+    "ratioAggregation": "geometric mean",
+    "outliersRemoved": false,
+    "comparabilityCohort": "sha256:e66158c17af23b7169f061068019baa93b6babd460ca1548341bde85ad023da7"
+  },
+  "clearAt1000": {
+    "latency": {
+      "point": 1.01211515,
+      "lower": 0.98951634,
+      "upper": 1.033220179,
+      "sessionRatios": [1.056963, 0.997955, 0.990059, 0.964462, 0.947059, 1.02527, 1.027076, 1.053589, 1.041328, 1.023268],
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "backgroundCpu": {
+      "point": 0.923901901,
+      "lower": 0.905878129,
+      "upper": 0.943693677,
+      "sessionRatios": [0.969645, 0.915736, 0.898644, 0.88447, 0.920716, 0.956806, 0.922203, 0.906, 0.978977, 0.891308],
+      "nonInferior": true,
+      "strictWin": true
+    },
+    "mainThreadCpu": {
+      "point": 1.002285302,
+      "lower": 0.987470025,
+      "upper": 1.017389854,
+      "nonInferior": true,
+      "strictWin": false
+    },
+    "wireToBtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "wireToMtsBytes": { "point": 1, "lower": 1, "upper": 1, "nonInferior": true },
+    "dnfCount": 0
+  },
+  "memory": {
+    "heapMts": { "point": 1.000180881, "lower": 0.999123792, "upper": 1.001278325, "nonInferior": true },
+    "heapBts": { "point": 1.000045881, "lower": 1.000002349, "upper": 1.000126817, "nonInferior": true },
+    "heapMtsAfterClear": { "point": 0.999970354, "lower": 0.999648344, "upper": 1.00025296, "nonInferior": true },
+    "heapBtsAfterClear": { "point": 1.000226855, "lower": 0.999922772, "upper": 1.000795297, "nonInferior": true }
+  },
+  "bundle": {
+    "web": { "comparatorBytes": 185237, "candidateBytes": 185251, "deltaBytes": 14, "candidateSha256": "1ce5a793598849abdf512a5e1485565569d085b040efa24da5db19160a5288f7" },
+    "native": { "comparatorBytes": 185357, "candidateBytes": 185371, "deltaBytes": 14, "candidateSha256": "d07e9f46afe7e5cf5d0b18011a2a8a829ab934d126867b961bcf48cb1cf57e4b" }
+  },
+  "validation": {
+    "focusedTests": "1 file, 53 tests passed",
+    "fullLynxProject": "57 files, 995 tests passed",
+    "typecheck": "changed Lynx production and test files passed",
+    "sync": "passed",
+    "format": "passed"
+  },
+  "benchmarkReceipt": {
+    "commit": "a5bd6044a08d3f730a27cf7aa71fdfc6132e9301",
+    "dirty": true,
+    "reason": "The two immutable experiment entries and focused audit inputs were intentionally untracked during measurement."
+  },
+  "sourceRuns": [
+    { "file": "results/runs/2026-09-12T09-11-36-65160668d8d9-issue291-clear-map-ab-1.json", "sha256": "b0575f72e4f587e66c3726e7d54a300874aa69b71f7a0a64981b08e96d07a8d1", "sessionId": "issue291-clear-map-ab-1", "calibration": 2234 },
+    { "file": "results/runs/2026-09-12T09-12-36-65160668d8d9-issue291-clear-map-ba-1.json", "sha256": "65fa1fd58da2f9cfd98d5b01af7f6dc2b38270924ab4c488785904a1f5698914", "sessionId": "issue291-clear-map-ba-1", "calibration": 2350.3 },
+    { "file": "results/runs/2026-09-12T09-13-36-65160668d8d9-issue291-clear-map-ab-2.json", "sha256": "5720521aec016f9bcb4099ae87671e7b64ea9f49672d198b10329d75188159cd", "sessionId": "issue291-clear-map-ab-2", "calibration": 2261.8 },
+    { "file": "results/runs/2026-09-12T09-14-38-65160668d8d9-issue291-clear-map-ba-2.json", "sha256": "0be2502d3c49008318614d52f2f85a265d797b3eac3e91300d0c959d9c50b195", "sessionId": "issue291-clear-map-ba-2", "calibration": 2322 },
+    { "file": "results/runs/2026-09-12T09-15-38-65160668d8d9-issue291-clear-map-ab-3.json", "sha256": "dea9a0c448d7a4cd91e9c3678c6b818811698636e596e644b74e17b3900f56cb", "sessionId": "issue291-clear-map-ab-3", "calibration": 2106 },
+    { "file": "results/runs/2026-09-12T09-16-38-65160668d8d9-issue291-clear-map-ba-3.json", "sha256": "c4cf07a8401391c735399b0393bc9bfd84c5ab150de82aa656ece2a554f2c4ac", "sessionId": "issue291-clear-map-ba-3", "calibration": 2379.8 },
+    { "file": "results/runs/2026-09-12T09-17-39-65160668d8d9-issue291-clear-map-ab-4.json", "sha256": "163c20b7ba3e16fde159c344d048d5e855233dca668a5c9902919405b7cddcf4", "sessionId": "issue291-clear-map-ab-4", "calibration": 2288 },
+    { "file": "results/runs/2026-09-12T09-18-40-65160668d8d9-issue291-clear-map-ba-4.json", "sha256": "f0c6effd1370c8c6841cc0c33894bf32c4f7cbf50bb8db22f559add335070387", "sessionId": "issue291-clear-map-ba-4", "calibration": 2240.6 },
+    { "file": "results/runs/2026-09-12T09-19-40-65160668d8d9-issue291-clear-map-ab-5.json", "sha256": "88f0dc7b63e6efb53c7cfe21f1240bcdbd45b965788e0d391bec446d0b054c18", "sessionId": "issue291-clear-map-ab-5", "calibration": 2321 },
+    { "file": "results/runs/2026-09-12T09-20-41-65160668d8d9-issue291-clear-map-ba-5.json", "sha256": "ece88973b25ffaec723c10177d193d842f4c604a2ae47060fa850ecea6ef48fa", "sessionId": "issue291-clear-map-ba-5", "calibration": 2317.3 }
+  ]
+}

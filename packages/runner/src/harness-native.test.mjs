@@ -213,6 +213,33 @@ test('native matrix emits schema-shaped native records with DNF accounting', asy
   assert.equal(progress.at(-1), records.length);
 });
 
+test('comparator table DNF retains the host-commit metric boundary', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-comparator-dnf-'));
+  try {
+    const { entry, snapshots } = fakeEntry(dir, {
+      capabilities: { nativeTableProtocol: 'lynx-native-bench-v3' },
+    });
+    const records = await runNativeMatrix({
+      adapter: mockAdapter({ calls: [], collect: [{ dnf: true }], startup: [] }),
+      entries: [entry],
+      cases: [{ name: 'create', scales: [1000] }],
+      suites: ['table'],
+      scales: [1000],
+      reps: 1,
+      startupScales: [],
+      bundleSnapshots: snapshots,
+    });
+
+    assert.equal(records[0].dnfCount, 1);
+    assert.equal(
+      records[0].boundary,
+      'native-input-handler-through-host-commit-to-second-native-frame',
+    );
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('native startup keeps settled evidence when only FCP is DNF', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-startup-partial-'));
   try {

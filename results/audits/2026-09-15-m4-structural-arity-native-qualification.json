@@ -1,0 +1,232 @@
+{
+  "protocol": "octane-issue-291-structural-arity-native-qualification-v1",
+  "capturedAt": "2026-09-15T02:20:41.325Z",
+  "qualification": "partial-powered-native-evidence-not-formal-roadmap-acceptance",
+  "decision": "no-go-vue-create5k-and-incomplete-final-matrix",
+  "reason": "The exact structural-arity Element Template candidate strictly beats latest upstream Octane on fixed-boundary Android memory and strictly beats ReactLynx default on create5k latency, but it is 1.3651x Vue Vapor on the same create5k boundary. Latest upstream publishes all 5,000 native rows but has no eligible timing sample inside 30 seconds, so its DNF is retained and is not scored as a latency benefit. The Vue regression and missing lifecycle, tail-cell, platform, list/recycle, startup, and after-clear cohorts keep #291 fail-closed.",
+  "provenance": {
+    "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
+    "implementationIssue": "https://github.com/Huxpro/octane/issues/383",
+    "octaneCandidateCommit": "618c95d3379260a9b530a6255cd90456e3e8aa5d",
+    "benchmarkHarnessCommit": "c034c2517749f85c7cd65127380b5a678a7bd80c",
+    "connectorPackageTreesSha256": "695ac20033d427c7219b41b878a428820c02ff073783f8f409a506e2b76abe8c",
+    "lynxDevelop": {
+      "commit": "3a954f0cca41eec68862dad743d32c6e877cd148",
+      "apkSha256": "75ec2425927b7443a76e87fa59b134778a5f453709b2df145886bcd9adeedce8",
+      "apkBytes": 55073821
+    },
+    "deviceSerialSha256": "f2e5c88255e7cb5d1d2aedab1ce6674321f6aed95682a320ebbe15b44312d95f",
+    "bundles": {
+      "candidate": {
+        "sha256": "c93ccb9a1b7e9d65793fb2fe7095bc9030b8700fab46090a45db84be43e8689e",
+        "bytes": 279783,
+        "build": "BENCH_CORE=automatic BENCH_ELEMENT_TEMPLATE=1 BENCH_DIST_TAG=structural-arity-618c node benchmarks/lynx-table/scripts/build-app.mjs"
+      },
+      "latestUpstream": {
+        "commit": "8e5ca22a6e17582b4293232406a2c0420509f4a4",
+        "sha256": "3507aecec61f23f01a039d72e7eafbd32223013442bf7a085cb4d30740032d69",
+        "bytes": 510445,
+        "capability": "legacy-public-source"
+      },
+      "reactlynxDefault": {
+        "sha256": "e1a626dfed1e0a38380991edb0bd127c45e167d932d9282fe5f6d4f3c3680346",
+        "bytes": 114904,
+        "protocol": "lynx-native-bench-v3"
+      },
+      "vueVapor": {
+        "sha256": "2d7f21fcc8afd038b7edee8454432651f21960bc9384cc34cadf622d06fca9b5",
+        "bytes": 151141,
+        "protocol": "lynx-native-bench-v3"
+      },
+      "mergedOctane": {
+        "commit": "7a523bf20d04578c39fe0b5fe532cdef6dab3e9e",
+        "sha256": "58790f90fd40f80403469c31415a638743dfcc5b1a349a041395266b085a4fca",
+        "bytes": 186581
+      }
+    },
+    "localRawArtifacts": {
+      "candidateVsUpstreamPreservedFixed30TenPairs": {
+        "sha256": "2788ddddf58b7ce68ae279492311834d3cfacdcd550dd40332d6990aa47b14c1",
+        "bytes": 39492
+      },
+      "candidateVsReactDefaultTenPairs": {
+        "sha256": "e49d1a46d8e8e5582864fa920f03c9ce7c77ed8dcb8e2fe8014e86a1d72fd76b",
+        "bytes": 16111
+      },
+      "candidateVsVueVaporTenPairs": {
+        "sha256": "ef82b4ad5d1579421912a19d6a27bad01eca808a8a8ebf4bdc9c45cc5b9d30b1",
+        "bytes": 15949
+      },
+      "candidateVsMergedThreePairScreen": {
+        "sha256": "affdfca987cbb7846ccaa3077c65f52e914bc600785cb38a9cd0e7ad7d624ee9",
+        "bytes": 13793
+      },
+      "rejectedNullChildSlotsThreePairScreen": {
+        "sha256": "3475fa1aa41581a7b2116c38498a315e52d6d03986e9b04119c71ad9f91fc75e",
+        "bytes": 13318
+      },
+      "invalidRestartedUpstreamScreen": {
+        "sha256": "42c852314a6260cdc5977737fce969f3e0697c6f93f3d0747a81efbfd736afc5",
+        "bytes": 23402
+      },
+      "unsupportedReactEtAttempt": {
+        "sha256": "0dcfb9792320c076fb29a208a24c1822c3864f32ed1840e4845ac13a50c651f8",
+        "bytes": 3057
+      }
+    }
+  },
+  "method": {
+    "harness": "Lynx Sandbox Android through the benchmark Native adapter on a source-built Lynx develop Explorer",
+    "trigger": "native tap",
+    "timingBoundary": "native-input-handler-to-second-native-frame",
+    "memoryBoundary": "dumpsys meminfo exactly 30,000 ms after the Native trigger",
+    "order": "10 independent pairs, balanced 5 AB / 5 BA, no outlier removal",
+    "processBoundary": "Explorer recycled before every arm",
+    "semanticBoundary": "DOM.performSearch('col-label') must equal 5,000 on every rendered arm",
+    "statistics": {
+      "ratio": "candidate/comparator paired geometric mean",
+      "confidence": 0.95,
+      "bootstrapResamples": 10000,
+      "resamplingUnit": "one physical AB/BA pair; both arms remain together",
+      "qualificationImplementation": "packages/shared/src/qualification.mjs"
+    },
+    "timeoutPolicy": {
+      "longTimeoutMs": 30000,
+      "adapterDisposition": "preserve",
+      "adapterEnvironment": "LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION=preserve",
+      "recycleEveryPages": 1,
+      "memoryOnSemanticDnf": true,
+      "explanation": "The timed-out page remains mounted through its semantic census and fixed-boundary memory sample. The following load recycles Explorer, so every arm still begins in a fresh process.",
+      "rawDiagnosticMetadataCorrection": "The local diagnostic's preserveTimeoutPage field is false because it reads an obsolete diagnostic-only environment name. That field does not control the adapter. The hash-recorded adapter at c034c25 reads LYNX_SANDBOX_TIMEOUT_PAGE_DISPOSITION; observed upstream memory of 333,369-333,940 KiB and 5,000/5,000 native labels confirms the rendered timeout process was sampled."
+    }
+  },
+  "candidateVsLatestUpstream": {
+    "integrity": {
+      "candidateTimingSamples": 10,
+      "upstreamTimingDnf": 10,
+      "semanticChecksPassed": 20,
+      "semanticChecksTotal": 20,
+      "nativeLabelCounts": [5000],
+      "memorySamples": 20,
+      "fatalError": null
+    },
+    "candidateLatencyMs": [7408, 7310, 7392, 7273, 7426, 7461, 7350, 7451, 7257, 7649],
+    "candidateMedianLatencyMs": 7400,
+    "upstreamLatency": {
+      "eligibleSamples": 0,
+      "dnf": 10,
+      "score": null,
+      "reason": "All arms rendered 5,000 native rows but emitted no eligible Native timing event inside 30 seconds. DNF is not converted into a performance win."
+    },
+    "fixed30sMemory": {
+      "totalPssKb": {
+        "candidateValues": [464561, 458529, 451780, 449499, 468596, 456934, 462400, 460080, 464036, 450620],
+        "upstreamValues": [622647, 626692, 618283, 625381, 630395, 624644, 625260, 627282, 629326, 627547],
+        "point": 0.7329952968878503,
+        "lower": 0.7274562608545508,
+        "upper": 0.738258488054479,
+        "bootstrapSeed": "0x28229180",
+        "strictWin": true
+      },
+      "nativePssKb": {
+        "candidateValues": [287775, 284669, 285018, 283620, 287919, 286407, 287554, 283669, 285209, 283925],
+        "upstreamValues": [352417, 352440, 351412, 351113, 354277, 351335, 351392, 353420, 352723, 357620],
+        "point": 0.8094212462481064,
+        "lower": 0.8049365885247075,
+        "upper": 0.8133446937427494,
+        "bootstrapSeed": "0x28229182",
+        "strictWin": true
+      },
+      "nativeHeapAllocKb": {
+        "candidateValues": [271417, 270105, 269657, 269517, 273788, 269594, 271764, 271532, 273446, 269442],
+        "upstreamValues": [333845, 333448, 333592, 333663, 333737, 333734, 333524, 333369, 333817, 333940],
+        "point": 0.8122526368814376,
+        "lower": 0.8094783046538104,
+        "upper": 0.8152067273892852,
+        "bootstrapSeed": "0x28229185",
+        "strictWin": true
+      }
+    }
+  },
+  "candidateVsReactlynxDefault": {
+    "integrity": {
+      "samples": 20,
+      "semanticChecksPassed": 20,
+      "semanticChecksTotal": 20,
+      "dnf": 0,
+      "failures": 0,
+      "fatalError": null
+    },
+    "candidateLatencyMs": [7424, 7251, 7342, 7215, 7470, 7390, 7422, 7649, 7338, 7602],
+    "reactlynxLatencyMs": [8965, 8929, 9012, 9085, 9070, 9362, 8843, 9251, 8994, 9111],
+    "candidateMedianMs": 7406,
+    "reactlynxMedianMs": 9041,
+    "point": 0.817692551393721,
+    "lower": 0.8078306592791381,
+    "upper": 0.8269064064271879,
+    "bootstrapSeed": "0x282291a0",
+    "strictWin": true,
+    "engineeringTargetPointAtMost0_95": true
+  },
+  "candidateVsVueVapor": {
+    "integrity": {
+      "samples": 20,
+      "semanticChecksPassed": 20,
+      "semanticChecksTotal": 20,
+      "dnf": 0,
+      "failures": 0,
+      "fatalError": null
+    },
+    "candidateLatencyMs": [7463, 7530, 7473, 7496, 7294, 7418, 7440, 7671, 7652, 7471],
+    "vueLatencyMs": [5478, 5482, 5584, 5489, 5526, 5615, 5487, 5411, 5417, 5382],
+    "candidateMedianMs": 7472,
+    "vueMedianMs": 5484.5,
+    "point": 1.3651453113240408,
+    "lower": 1.3453944511978908,
+    "upper": 1.385284919618703,
+    "bootstrapSeed": "0x282291b0",
+    "strictWin": false,
+    "engineeringTargetPointAtMost0_95": false,
+    "coreCellNonInferiorUpperAtMost1_05": false
+  },
+  "supportingScreens": {
+    "candidateVsMergedOctane": {
+      "qualification": "three-pair-attribution-only",
+      "latencyPairedGeometricRatio": 0.953054,
+      "totalPssPairedGeometricRatio": 0.9884374249269678,
+      "nativePssPairedGeometricRatio": 0.9916361236816028,
+      "nativeHeapAllocPairedGeometricRatio": 1.041090698009803,
+      "interpretation": "Structural arity reduced the former Element Template native-allocation excess to below the 1.05 screening ceiling, but three pairs are not a formal confidence-qualified gate."
+    },
+    "rejectedNullChildSlots": {
+      "qualification": "three-pair-attribution-only",
+      "nullChildSlotsOverCleanTotalPssGeometricRatio": 0.992156225809633,
+      "nullChildSlotsOverCleanNativeHeapAllocGeometricRatio": 1.0002172366026214,
+      "decision": "reject-no-native-allocation-benefit"
+    }
+  },
+  "excludedEvidence": {
+    "restartedUpstreamScreen": {
+      "decision": "invalid-excluded",
+      "reason": "The pre-c034 adapter restarted Explorer immediately after timeout, so dumpsys sampled an empty replacement process even though the preceding page had rendered 5,000 labels. Its apparent multi-x candidate regression is a boundary violation."
+    },
+    "reactlynxElementTemplateAttempt": {
+      "decision": "unsupported-excluded",
+      "reason": "On the source-built develop Explorer, the frozen ReactLynx ET artifact exposed zero Native nodes for the protocol's Create 5,000 rows trigger in four consecutive arms. No comparable observation was produced."
+    }
+  },
+  "gates": {
+    "androidCreate5kUpstreamMemoryStrictWin": true,
+    "androidCreate5kReactlynxStrictWin": true,
+    "androidCreate5kVueStrictWin": false,
+    "latestCandidateLifecycleQualified": false,
+    "afterClearMemoryQualified": false,
+    "fullFrozenWorkloadMatrixQualified": false,
+    "startupAndTailQualified": false,
+    "androidListRecycleFlingQualified": false,
+    "iosQualified": false,
+    "webQualified": false,
+    "formalRoadmapAcceptance": false
+  },
+  "nextGate": "Attribute and close the 1.3651x Vue create5k gap on the exact 618c95d production path, then rerun latest-head lifecycle/after-clear memory and the complete frozen platform/workload matrix before changing any default."
+}

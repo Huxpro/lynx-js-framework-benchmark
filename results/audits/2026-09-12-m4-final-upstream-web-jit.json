@@ -1,0 +1,305 @@
+{
+  "scorecardVersion": 1,
+  "candidate": "octane-m4-final",
+  "comparator": "octane-m4-upstream",
+  "harness": "web",
+  "machine": {
+    "id": "65160668d8d9",
+    "hostname": "n251-227-236",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+    "cores": 32,
+    "memGB": 67,
+    "node": "v22.22.2"
+  },
+  "comparabilityCohorts": {
+    "interaction": "sha256:31837b763d06bef4c8facdd9d58598e51f208818e770a9803adf7d6edcdf74a8",
+    "startup": "sha256:31837b763d06bef4c8facdd9d58598e51f208818e770a9803adf7d6edcdf74a8"
+  },
+  "entryCommits": {
+    "candidate": "23ed94d8efe51cb9ff86832903e5f5a8fbca66dd",
+    "comparator": "fa11c10556338420dc686a2e93bf1b5787099b30"
+  },
+  "sessions": {
+    "interaction": [
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-01-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-02-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-03-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-04-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-05-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-06-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-07-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-08-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-09-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-table-fixed-10-BA",
+        "order": "BA"
+      }
+    ],
+    "startup": [
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-01-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-02-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-03-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-04-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-05-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-06-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-07-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-08-BA",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-09-AB",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-final-upstream-web-jit-startup-fixed-10-BA",
+        "order": "BA"
+      }
+    ]
+  },
+  "suites": {
+    "interaction": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.6539688111081416,
+        "lower": 0.6397676530272084,
+        "upper": 0.667363406073401,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "create@1000": {
+          "point": 0.6897036282590843,
+          "lower": 0.6697499202935623,
+          "upper": 0.7096320139043687,
+          "nonInferior": true
+        },
+        "replace@1000": {
+          "point": 0.44558509347088004,
+          "lower": 0.4374608449731457,
+          "upper": 0.454942289836191,
+          "nonInferior": true
+        },
+        "update10th@1000": {
+          "point": 0.6973024549512613,
+          "lower": 0.6386740763308015,
+          "upper": 0.754556379426709,
+          "nonInferior": true
+        },
+        "select@1000": {
+          "point": 0.9171574182000456,
+          "lower": 0.796796202668151,
+          "upper": 1.0569949029466108,
+          "nonInferior": false
+        },
+        "swap@1000": {
+          "point": 0.6388298443555234,
+          "lower": 0.61105478762078,
+          "upper": 0.6688634854463243,
+          "nonInferior": true
+        },
+        "remove@1000": {
+          "point": 0.6564504266296655,
+          "lower": 0.6049060254957137,
+          "upper": 0.7101543778001206,
+          "nonInferior": true
+        },
+        "create@10000": {
+          "point": 0.7264252644285667,
+          "lower": 0.7134330213971916,
+          "upper": 0.738337932586572,
+          "nonInferior": true
+        },
+        "append1k@1000": {
+          "point": 0.5251467576864572,
+          "lower": 0.5158476762092121,
+          "upper": 0.5347028949256747,
+          "nonInferior": true
+        },
+        "clear@1000": {
+          "point": 0.9156276893166119,
+          "lower": 0.8760839245274609,
+          "upper": 0.9560618612750957,
+          "nonInferior": true
+        }
+      },
+      "pass": false
+    },
+    "startup": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.5759497260456663,
+        "lower": 0.5697499866071185,
+        "upper": 0.5835947244888489,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "fcp@0": {
+          "point": 0.6183841729208133,
+          "lower": 0.6050397241978904,
+          "upper": 0.6342439840748104,
+          "nonInferior": true
+        },
+        "fcp@1000": {
+          "point": 0.5409226229583753,
+          "lower": 0.5327315512944413,
+          "upper": 0.5493310361110192,
+          "nonInferior": true
+        },
+        "fcp@10000": {
+          "point": 0.5711631988321045,
+          "lower": 0.5629477641664435,
+          "upper": 0.5780492143598633,
+          "nonInferior": true
+        }
+      },
+      "pass": true
+    }
+  },
+  "pass": false,
+  "sourceRuns": {
+    "interaction": [
+      {
+        "file": "results/runs/2026-09-12T19-32-27-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-01-AB.json",
+        "sha256": "3a91e00de7779d1f3b98b4abfd1f5902597878496f3e4b3d7b103402b3187a95"
+      },
+      {
+        "file": "results/runs/2026-09-12T19-39-02-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-02-BA.json",
+        "sha256": "a14ec965a20498fc160be003cc66a5b8ce2491655c7850c5fe71eb477b0383e8"
+      },
+      {
+        "file": "results/runs/2026-09-12T19-45-35-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-03-AB.json",
+        "sha256": "378d7f6e3272d14d9ffcc60536ec61cd6f48dc6f46f399d29b49e23e61f988df"
+      },
+      {
+        "file": "results/runs/2026-09-12T19-52-07-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-04-BA.json",
+        "sha256": "d5d1ca43e869fdfc5275632bb1e3bff402f97e1092f475013ca34d04515dd434"
+      },
+      {
+        "file": "results/runs/2026-09-12T19-58-39-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-05-AB.json",
+        "sha256": "238768565a019434dfe9cb78b60eebf45d31777cf7ca2daecece567806ff5552"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-05-14-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-06-BA.json",
+        "sha256": "fc9baa56fca9addd4682263ee1f82b231335d518c7141ddf9538ae3531e5f2b9"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-11-48-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-07-AB.json",
+        "sha256": "74d6aca643172f32cc48b3a0261c3a9ada380c20b9918487a456f0b001b2a31c"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-18-23-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-08-BA.json",
+        "sha256": "89a748903f4ff79b6adf11fc0b356e13503c6d3e21d9db7f87a15acb206e2b2c"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-24-58-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-09-AB.json",
+        "sha256": "e16e64a2a75c856b6169376a6102cdba44f508f128956a8bef810e68bc7d842b"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-31-29-65160668d8d9-issue291-final-upstream-web-jit-table-fixed-10-BA.json",
+        "sha256": "4430a420ece1afbc2d525913a6fb149cecc91a594b29a36e23ac7abfc51f881f"
+      }
+    ],
+    "startup": [
+      {
+        "file": "results/runs/2026-09-12T20-32-37-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-01-AB.json",
+        "sha256": "ecd69c0bbcde0f3cdcae4f7037bf16ad187239eec61c3afc9e01424fcaf2bf0b"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-33-35-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-02-BA.json",
+        "sha256": "13e3b265e877055798179bb34712cb5d59b0bd23c2ba043f4b936b87474f0e52"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-34-32-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-03-AB.json",
+        "sha256": "ec5e1aa9878542c89f41d6f94949376c0db4e6e67f539cc29b3b19d93a6417c9"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-35-31-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-04-BA.json",
+        "sha256": "9bccac8a10edda1459b75ade51bb7c4781b91f43a1a3c871af3c6f7ad7a96ab9"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-36-28-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-05-AB.json",
+        "sha256": "b81786874e4957a5ea781aab371f326c33a31d58b44e76e7cf715cabcf74753f"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-37-25-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-06-BA.json",
+        "sha256": "246261a4e24ddff71cc0ed5d0a6eb6cbbe2c0d2031b79f0cd5824a934a73d1a5"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-38-22-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-07-AB.json",
+        "sha256": "911928bee706aebb171ce4dcfaece2583d362c07993495bf9c90cb1e628551a3"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-39-19-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-08-BA.json",
+        "sha256": "8610e911a9e9901826e98acde896f1f3b81df6122ccd7eafbb6d24fe6c4ecbf1"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-40-15-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-09-AB.json",
+        "sha256": "8792512119423c7bea1959598830cf5bca1a3daca4f8b40b6e7544af9cb25cf3"
+      },
+      {
+        "file": "results/runs/2026-09-12T20-41-12-65160668d8d9-issue291-final-upstream-web-jit-startup-fixed-10-BA.json",
+        "sha256": "7974bd5b3e3c74ae9dacb087e0ae6bc6ec994f5903b67de4e4926ec2fa9d4f52"
+      }
+    ]
+  }
+}

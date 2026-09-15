@@ -6,6 +6,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  LIST_FIXTURE_PROTOCOL,
+  LIST_WORKLOAD_CONTRACT,
+} from '../packages/shared/src/list-workloads.mjs';
+
+import {
   hashFiles,
   M0_BUILD_DRIVER_FILES,
   M0_CAMPAIGN,
@@ -23,6 +28,15 @@ import {
   M3_ROWS,
   M3_RUNNER_CONTRACT_FILES,
 } from './m3-artifact-contract.mjs';
+import {
+  M4_BUILD_DRIVER_FILES,
+  M4_CAMPAIGN,
+  M4_ENTRY_IDS,
+  M4_PINNED_SOURCES,
+  M4_PLATFORM_LANE,
+  M4_ROWS,
+  M4_RUNNER_CONTRACT_FILES,
+} from './m4-artifact-contract.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entriesDir = path.join(root, 'entries');
@@ -56,6 +70,8 @@ const M0_RUNNER_RECEIPT = hashFiles(root, M0_RUNNER_CONTRACT_FILES);
 const M0_BUILD_DRIVER_RECEIPT = hashFiles(root, M0_BUILD_DRIVER_FILES);
 const M3_RUNNER_RECEIPT = hashFiles(root, M3_RUNNER_CONTRACT_FILES);
 const M3_BUILD_DRIVER_RECEIPT = hashFiles(root, M3_BUILD_DRIVER_FILES);
+const M4_RUNNER_RECEIPT = hashFiles(root, M4_RUNNER_CONTRACT_FILES);
+const M4_BUILD_DRIVER_RECEIPT = hashFiles(root, M4_BUILD_DRIVER_FILES);
 const M3_ROLES = {
   'octane-m3-current': 'm3-candidate',
   'octane-m3-upstream': 'latest-upstream',
@@ -72,6 +88,59 @@ const M3_CONFIGURATIONS = Object.fromEntries(M3_ENTRY_IDS.map((id) => [
     ? 'explicit-optimized'
     : 'production-default',
 ]));
+const M4_ROLES = {
+  'octane-m4-final': 'final-candidate',
+  'octane-m4-upstream': 'latest-upstream',
+  'reactlynx-m4-default': 'reactlynx',
+  'reactlynx-m4-et': 'reactlynx',
+  'vue-lynx-m4-vdom-default': 'vue-vdom',
+  'vue-lynx-m4-vdom-ifr-et': 'vue-vdom',
+  'vue-lynx-m4-vapor-default': 'vue-vapor',
+  'vue-lynx-m4-vapor-ifr': 'vue-vapor',
+};
+const M4_CONFIGURATIONS = Object.fromEntries(M4_ENTRY_IDS.map((id) => [
+  id,
+  id === 'octane-m4-final'
+    ? 'release-candidate'
+    : id.endsWith('-et') || id.endsWith('-ifr') || id.endsWith('-ifr-et')
+      ? 'explicit-optimized'
+      : 'production-default',
+]));
+const M4_LIST_ROWS = [1000, 10000];
+const M4_OCTANE_LIST_SOURCE_FILES = [
+  'benchmarks/lynx-table/app/src/ListApp.lynx.tsrx',
+  'benchmarks/lynx-table/app/src/list-index.ts',
+  'benchmarks/lynx-table/app/src/list.css',
+].sort();
+const M4_COMPARATOR_APPS = {
+  'reactlynx-m4-default': 'ui-react',
+  'reactlynx-m4-et': 'ui-react',
+  'vue-lynx-m4-vdom-default': 'ui-vdom',
+  'vue-lynx-m4-vdom-ifr-et': 'ui-vdom',
+  'vue-lynx-m4-vapor-default': 'ui-vapor',
+  'vue-lynx-m4-vapor-ifr': 'ui-vapor',
+};
+const M4_LIST_CONTRACT_SHA256 = crypto
+  .createHash('sha256')
+  .update(JSON.stringify(LIST_WORKLOAD_CONTRACT))
+  .digest('hex');
+
+function listSourceFilesFor(id) {
+  if (id.startsWith('octane-')) return M4_OCTANE_LIST_SOURCE_FILES;
+  const app = M4_COMPARATOR_APPS[id];
+  const extension = app === 'ui-react' ? 'tsx' : 'vue';
+  return [
+    `packages/benchmark/apps/${app}/src/ListApp.${extension}`,
+    `packages/benchmark/apps/${app}/src/list-index.${app === 'ui-react' ? 'tsx' : 'ts'}`,
+    ...(app === 'ui-react' ? ['packages/benchmark/apps/ui-react/src/List.css'] : []),
+  ].sort();
+}
+
+function receiptHasShape(receipt, expectedFiles) {
+  return receipt?.algorithm === 'sha256-path-content-v1'
+    && JSON.stringify(receipt.files) === JSON.stringify(expectedFiles)
+    && /^[\da-f]{64}$/.test(receipt.sha256 ?? '');
+}
 
 let failures = 0;
 const fail = (msg) => {
@@ -87,6 +156,9 @@ for (const id of M0_ENTRY_IDS) {
 }
 for (const id of M3_ENTRY_IDS) {
   if (!ids.includes(id)) fail(`missing frozen M3 identity ${id}`);
+}
+for (const id of M4_ENTRY_IDS) {
+  if (!ids.includes(id)) fail(`missing frozen M4 identity ${id}`);
 }
 
 for (const id of ids) {
@@ -239,9 +311,8 @@ for (const id of ids) {
     const roadmap = manifest.roadmap;
     const receipts = manifest.provenance?.receipts;
     const expectedHarnesses = id === 'reactlynx-m3-et' ? ['native'] : ['web', 'native'];
-    if (manifest.tier !== 'archive'
-      || JSON.stringify(manifest.tiers) !== JSON.stringify({ native: 'featured' })) {
-      fail(`${id}: M3 identity must be archive globally and featured only in Native`);
+    if (manifest.tier !== 'archive' || manifest.tiers != null) {
+      fail(`${id}: superseded M3 identity must remain explicit-selection archive data`);
     }
     if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
       fail(`${id}: M3 identity has the wrong executable harness set`);
@@ -382,6 +453,142 @@ for (const id of ids) {
   if (!fs.existsSync(web)) fail(`${id}: bundles.web missing (${manifest.bundles?.web})`);
 }
 
+for (const id of M4_ENTRY_IDS) {
+  if (!ids.includes(id)) continue;
+  const manifest = JSON.parse(fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'));
+  const pin = id.startsWith('octane-')
+    ? M4_PINNED_SOURCES[id]
+    : M4_PINNED_SOURCES.comparators;
+  const roadmap = manifest.roadmap;
+  const receipts = manifest.provenance?.receipts;
+  const expectedHarnesses = id === 'reactlynx-m4-et' ? ['native'] : ['web', 'native'];
+  if (manifest.tier !== 'archive'
+    || JSON.stringify(manifest.tiers) !== JSON.stringify({ native: 'featured' })) {
+    fail(`${id}: M4 identity must be archive globally and featured only in Native`);
+  }
+  if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
+    fail(`${id}: M4 identity has the wrong executable harness set`);
+  }
+  if (roadmap?.issue !== 291 || roadmap?.milestone !== 'M4'
+    || roadmap?.campaign !== M4_CAMPAIGN
+    || roadmap?.role !== M4_ROLES[id]
+    || roadmap?.configuration !== M4_CONFIGURATIONS[id]) {
+    fail(`${id}: invalid M4 roadmap identity`);
+  }
+  if (manifest.provenance?.source !== pin.source
+    || manifest.provenance?.ref !== pin.ref
+    || manifest.provenance?.commit !== pin.commit) {
+    fail(`${id}: source identity differs from the frozen M4 pin`);
+  }
+  if (pin.producerPull != null && manifest.provenance?.producerPull !== pin.producerPull) {
+    fail(`${id}: comparator producer PR provenance differs from the frozen M4 pin`);
+  }
+  if (manifest.provenance?.patched !== false || manifest.provenance?.patchFile !== null
+    || receipts?.sourcePatch?.present !== false
+    || receipts?.sourcePatch?.path !== null
+    || receipts?.sourcePatch?.sha256 !== null) {
+    fail(`${id}: M4 identity must come from an unpatched checkout`);
+  }
+  if (receipts?.sourceCommit !== pin.commit
+    || JSON.stringify(manifest.platformLane) !== JSON.stringify(M4_PLATFORM_LANE)
+    || JSON.stringify(receipts?.platformLane) !== JSON.stringify(M4_PLATFORM_LANE)) {
+    fail(`${id}: source or Lynx 4.1 platform-lane receipt mismatch`);
+  }
+  if (!/^[\da-f]{64}$/.test(receipts?.dependencyLock?.sha256 ?? '')
+    || receipts?.dependencyLock?.path !== 'pnpm-lock.yaml') {
+    fail(`${id}: dependency-lock receipt is incomplete`);
+  }
+  const toolchain = receipts?.engineAndToolchain;
+  if (!/^v\d+\./.test(toolchain?.node ?? '')
+    || !/^\d+\.\d+\.\d+/.test(toolchain?.pnpm ?? '')
+    || !/Rspeedy v\d+\./.test(toolchain?.rspeedy ?? '')
+    || toolchain?.nodeEnv !== 'production'
+    || toolchain?.buildDriver?.sha256 !== M4_BUILD_DRIVER_RECEIPT.sha256
+    || JSON.stringify(toolchain?.buildDriver?.files)
+      !== JSON.stringify(M4_BUILD_DRIVER_RECEIPT.files)) {
+    fail(`${id}: M4 engine-and-toolchain receipt is incomplete`);
+  }
+  if (JSON.stringify(receipts?.configurationCapabilities)
+    !== JSON.stringify(manifest.capabilities)) {
+    fail(`${id}: M4 configuration-capabilities receipt mismatch`);
+  }
+  const workload = receipts?.workloadContract;
+  if (workload?.runner?.sha256 !== M4_RUNNER_RECEIPT.sha256
+    || JSON.stringify(workload?.runner?.files) !== JSON.stringify(M4_RUNNER_RECEIPT.files)
+    || workload?.algorithm !== 'sha256-runner-source-v1'
+    || workload?.source?.algorithm !== 'sha256-primary-list-fixture-v1'
+    || !/^[\da-f]{64}$/.test(workload?.source?.primary?.sha256 ?? '')
+    || !/^[\da-f]{64}$/.test(workload?.source?.listFixture?.sha256 ?? '')
+    || workload?.source?.sha256 !== crypto.createHash('sha256').update(
+      `${workload?.source?.primary?.sha256}\0${workload?.source?.listFixture?.sha256}`,
+    ).digest('hex')
+    || workload?.sha256 !== crypto.createHash('sha256').update(
+      `${workload?.runner?.sha256}\0${workload?.source?.sha256}`,
+    ).digest('hex')) {
+    fail(`${id}: M4 workload-contract receipt is incomplete or stale`);
+  }
+  const listFixture = manifest.listFixture;
+  const expectedListPin = id.startsWith('octane-')
+    ? M4_PINNED_SOURCES['octane-m4-final']
+    : M4_PINNED_SOURCES.comparators;
+  const expectedListMode = id === 'octane-m4-upstream'
+    ? 'external-frozen-workload'
+    : 'same-checkout';
+  const expectedListFiles = listSourceFilesFor(id);
+  if (listFixture?.protocol !== LIST_FIXTURE_PROTOCOL
+    || listFixture?.contractSha256 !== M4_LIST_CONTRACT_SHA256
+    || listFixture?.source?.source !== expectedListPin.source
+    || listFixture?.source?.ref !== expectedListPin.ref
+    || listFixture?.source?.commit !== expectedListPin.commit
+    || listFixture?.source?.producerPull !== (expectedListPin.producerPull ?? null)
+    || listFixture?.source?.mode !== expectedListMode
+    || !receiptHasShape(listFixture?.source?.receipt, expectedListFiles)
+    || JSON.stringify(workload?.source?.listFixture)
+      !== JSON.stringify(listFixture?.source?.receipt)) {
+    fail(`${id}: frozen list fixture identity or source receipt mismatch`);
+  }
+  for (const [harness, bundle] of [
+    ['web', 'main.web.bundle'],
+    ['native', 'main.lynx.bundle'],
+  ]) {
+    const expectedPaths = Object.fromEntries(M4_LIST_ROWS.map((rows) => [
+      rows,
+      `dist/list/rows-${rows}/${bundle}`,
+    ]));
+    if (JSON.stringify(listFixture?.bundles?.[harness]) !== JSON.stringify(expectedPaths)
+      || Object.keys(listFixture?.sha256?.[harness] ?? {}).length !== M4_LIST_ROWS.length) {
+      fail(`${id}: ${harness} list bundle matrix is incomplete`);
+      continue;
+    }
+    for (const rows of M4_LIST_ROWS) {
+      const relative = expectedPaths[rows];
+      const expected = listFixture.sha256[harness][rows];
+      const file = path.join(entriesDir, id, relative);
+      if (!/^[\da-f]{64}$/.test(expected ?? '') || !fs.existsSync(file)) {
+        fail(`${id}: missing checksummed ${harness} list bundle at ${relative}`);
+        continue;
+      }
+      const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+      if (actual !== expected) fail(`${id}: list bundle sha256 mismatch for ${relative}`);
+    }
+  }
+  const expectedBundleKeys = M4_ROWS.flatMap((rows) => [
+    `rows-${rows}/main.web.bundle`,
+    `rows-${rows}/main.lynx.bundle`,
+  ]);
+  if (Object.keys(manifest.provenance?.sha256 ?? {}).length !== expectedBundleKeys.length
+    || expectedBundleKeys.some((key) => !/^[\da-f]{64}$/.test(manifest.provenance?.sha256?.[key] ?? ''))
+    || JSON.stringify(receipts?.bundleSha256) !== JSON.stringify(manifest.provenance?.sha256)) {
+    fail(`${id}: frozen M4 row matrix or bundle-sha256 receipt is incomplete`);
+  }
+  for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
+    const hashes = M4_ROWS.map((rows) => manifest.provenance.sha256[`rows-${rows}/${bundle}`]);
+    if (new Set(hashes).size !== M4_ROWS.length) {
+      fail(`${id}: ${bundle} does not encode every M4 startup scale`);
+    }
+  }
+}
+
 for (const [defaultId, optimizedId] of [
   ['reactlynx-0-126-default', 'reactlynx-0-126-et'],
   ['vue-lynx-0-5-vdom-default', 'vue-lynx-0-5-vdom-ifr-et'],
@@ -422,12 +629,33 @@ for (const [defaultId, optimizedId] of [
   }
 }
 
+for (const [defaultId, optimizedId] of [
+  ['reactlynx-m4-default', 'reactlynx-m4-et'],
+  ['vue-lynx-m4-vdom-default', 'vue-lynx-m4-vdom-ifr-et'],
+  ['vue-lynx-m4-vapor-default', 'vue-lynx-m4-vapor-ifr'],
+]) {
+  if (!ids.includes(defaultId) || !ids.includes(optimizedId)) continue;
+  const readManifest = (id) => JSON.parse(
+    fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'),
+  );
+  const baseline = readManifest(defaultId).provenance.sha256;
+  const optimized = readManifest(optimizedId).provenance.sha256;
+  for (const rows of M4_ROWS) {
+    for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
+      const key = `rows-${rows}/${bundle}`;
+      if (baseline[key] === optimized[key]) {
+        fail(`${defaultId}/${optimizedId}: ${key} does not distinguish the configuration`);
+      }
+    }
+  }
+}
+
 const currentNativeIds = ids.flatMap((id) => {
   const manifest = JSON.parse(fs.readFileSync(path.join(entriesDir, id, 'entry.json'), 'utf8'));
   return manifest.tiers?.native === 'featured' ? [id] : [];
 }).sort();
-if (JSON.stringify(currentNativeIds) !== JSON.stringify([...M3_ENTRY_IDS].sort())) {
-  fail('the explicit current Native cohort must contain exactly the frozen M3 identities');
+if (JSON.stringify(currentNativeIds) !== JSON.stringify([...M4_ENTRY_IDS].sort())) {
+  fail('the explicit current Native cohort must contain exactly the frozen M4 identities');
 }
 
 const currentOctaneToolchain = JSON.parse(
@@ -451,6 +679,25 @@ const upstreamM3Toolchain = JSON.parse(
 for (const key of ['node', 'pnpm', 'rspeedy', 'platform', 'architecture', 'nodeEnv']) {
   if (currentM3Toolchain[key] !== upstreamM3Toolchain[key]) {
     fail(`M3 candidate/upstream toolchain mismatch for ${key}`);
+  }
+}
+
+if (ids.includes('octane-m4-final') && ids.includes('octane-m4-upstream')) {
+  const finalM4Toolchain = JSON.parse(
+    fs.readFileSync(path.join(entriesDir, 'octane-m4-final/entry.json'), 'utf8'),
+  ).provenance.receipts.engineAndToolchain;
+  const upstreamM4Toolchain = JSON.parse(
+    fs.readFileSync(path.join(entriesDir, 'octane-m4-upstream/entry.json'), 'utf8'),
+  ).provenance.receipts.engineAndToolchain;
+  // The final candidate needs the Element Template-capable Rspeedy release,
+  // while latest upstream is built with its own unmodified pinned toolchain.
+  // Preserve both exact Rspeedy receipts above, but compare the shared host
+  // build environment here rather than requiring different source trees to
+  // claim the same framework toolchain version.
+  for (const key of ['node', 'pnpm', 'platform', 'architecture', 'nodeEnv']) {
+    if (finalM4Toolchain[key] !== upstreamM4Toolchain[key]) {
+      fail(`M4 candidate/upstream toolchain mismatch for ${key}`);
+    }
   }
 }
 

@@ -1,0 +1,139 @@
+{
+  "protocol": "octane-issue-291-et-owner-batch-native-screen-v1",
+  "capturedAt": "2026-09-14T17:35:00.000Z",
+  "qualification": "diagnostic-only-not-formal-performance-evidence",
+  "decision": "reject-owner-batch-family",
+  "reason": "The owner-batch path has no directional win at 1k/5k and crashes the pinned Native process at 10k. Chunked flush survives 10k but is slower than the same-window baseline.",
+  "provenance": {
+    "roadmapIssue": "https://github.com/Huxpro/octane/issues/291",
+    "octaneWorkingTreeHead": "a89cb6680bafa26b5397701ceeba4d8c27dcb0fb",
+    "diagnosticBundles": "ignored local build artifacts; identified by immutable SHA-256 and therefore excluded from any formal acceptance claim",
+    "runnerHead": "eaa86785a15434ce3016aa3fdcc09d0be60f8e0b",
+    "connectorPackageTreesSha256": "695ac20033d427c7219b41b878a428820c02ff073783f8f409a506e2b76abe8c",
+    "deviceSerialSha256": "b172d852a39ca2c69ab576c6f7dba5d8ab704c5632f74fbdc26e4379d029ea4b",
+    "explorer": {
+      "release": "4.1.0",
+      "sha256": "6ae29787a2166974c29c2f23d87f3b20a137abcf9a8c17903ad19f3fb7f00cb6"
+    }
+  },
+  "method": {
+    "harness": "Lynx Sandbox Android through the benchmark Native adapter",
+    "trigger": "native tap",
+    "boundary": "native-input-handler-to-second-native-frame",
+    "screeningPolicy": "small-sample attribution only; no confidence interval or acceptance inference",
+    "semanticCheck": "DOM.performSearch('col-label') after the measured boundary",
+    "thermalGate": "adapter-enforced battery <= 35C and thermal status 0",
+    "explorerRecycleEveryPages": 5
+  },
+  "inputs": {
+    "baseline": {
+      "sha256": "a7579ff9dea071266e623fb15a001ec9685b21393b01bb02b3c2a4c93f9ec8f4",
+      "bytes": 262802
+    },
+    "ownerBatch": {
+      "sha256": "2bd08ba890708fb8da977d9ecf829ea82ce7b53cae7e03da1f8cf589f142b1f3",
+      "bytes": 259584
+    },
+    "phaseMarkers": {
+      "sha256": "ffd41e38a928da8c881349dc3e0ad41e52d897fc92e9981355282c9a4841340e",
+      "bytes": 260110
+    },
+    "chunkedFlush": {
+      "sha256": "a92bc51d65a1af7eb1ab2fae962acd4fc64f06a3feb7b08fbcf54b509fb2cf3b",
+      "bytes": 257902
+    },
+    "ownerSplit": {
+      "sha256": "8d0fe98f6c17464b59c473d99fba428d6ffe77ba047a760b1cfc196601d3d191",
+      "bytes": 264619
+    },
+    "ownerSplit2": {
+      "sha256": "2e8d11b76352843cc0f0171edf2696bcb0e35128de121569f3fd80cdc79d3566",
+      "bytes": 257849
+    }
+  },
+  "screens": [
+    {
+      "capturedAt": "2026-09-14T17:25:54.506Z",
+      "order": "balanced AB/BA within scale",
+      "samples": [
+        { "variant": "baseline", "scale": 1000, "repetition": 0, "order": "baseline->ownerBatch", "latencyMs": 503 },
+        { "variant": "ownerBatch", "scale": 1000, "repetition": 0, "order": "baseline->ownerBatch", "latencyMs": 500 },
+        { "variant": "ownerBatch", "scale": 1000, "repetition": 1, "order": "ownerBatch->baseline", "latencyMs": 546 },
+        { "variant": "baseline", "scale": 1000, "repetition": 1, "order": "ownerBatch->baseline", "latencyMs": 515 },
+        { "variant": "baseline", "scale": 5000, "repetition": 0, "order": "baseline->ownerBatch", "latencyMs": 2419 },
+        { "variant": "ownerBatch", "scale": 5000, "repetition": 0, "order": "baseline->ownerBatch", "latencyMs": 2354 },
+        { "variant": "ownerBatch", "scale": 5000, "repetition": 1, "order": "ownerBatch->baseline", "latencyMs": 3030 },
+        { "variant": "baseline", "scale": 5000, "repetition": 1, "order": "ownerBatch->baseline", "latencyMs": 2908 }
+      ],
+      "mediansMs": {
+        "baseline@1000": 509,
+        "ownerBatch@1000": 523,
+        "baseline@5000": 2663.5,
+        "ownerBatch@5000": 2692
+      },
+      "nativeSemanticChecks": [
+        { "variant": "baseline", "scale": 1000, "observed": 1000, "pass": true },
+        { "variant": "ownerBatch", "scale": 1000, "observed": 1000, "pass": true },
+        { "variant": "baseline", "scale": 5000, "observed": 5000, "pass": true },
+        { "variant": "ownerBatch", "scale": 5000, "observed": 5000, "pass": true }
+      ]
+    },
+    {
+      "capturedAt": "2026-09-14T17:20:33.000Z",
+      "variant": "ownerBatch",
+      "scale": 10000,
+      "outcome": "DNF",
+      "timeoutMs": 240000,
+      "producerTimingEvents": [],
+      "transportAfterFailure": "DevTool socket ended by peer",
+      "nativeFatal": "JNI ERROR (app bug): global reference table overflow (max=51200); SIGABRT"
+    },
+    {
+      "capturedAt": "2026-09-14T17:27:33.257Z",
+      "variant": "phaseMarkers",
+      "scale": 10000,
+      "outcome": "DNF",
+      "timeoutMs": 60000,
+      "producerTimingEvents": [],
+      "observedPhaseMarkers": [],
+      "transportAfterFailure": "Runtime.evaluate timeout followed by DevTool socket ended by peer",
+      "nativeFatalAtDeviceLocalTime": "09-15 01:26:22.584",
+      "nativeFatal": "JNI ERROR (app bug): global reference table overflow (max=51200); SIGABRT"
+    },
+    {
+      "capturedAt": "2026-09-14T17:29:39.132Z",
+      "order": "baseline->chunkedFlush",
+      "samples": [
+        { "variant": "baseline", "scale": 10000, "latencyMs": 4818 },
+        { "variant": "chunkedFlush", "scale": 10000, "latencyMs": 6588 }
+      ],
+      "nativeSemanticChecks": [
+        { "variant": "baseline", "scale": 10000, "observed": 10000, "pass": true },
+        { "variant": "chunkedFlush", "scale": 10000, "observed": 10000, "pass": true }
+      ],
+      "directionalDelta": "+36.7% slower"
+    },
+    {
+      "capturedAt": "2026-09-14T17:32:09.078Z",
+      "order": "baseline->ownerSplit",
+      "baseline": { "scale": 10000, "latencyMs": 4934, "nativeRows": 10000 },
+      "candidate": { "scale": 10000, "outcome": "DNF", "timeoutMs": 90000 },
+      "nativeFatalAtDeviceLocalTime": "09-15 01:30:44.420",
+      "nativeFatal": "JNI ERROR (app bug): global reference table overflow (max=51200); SIGABRT"
+    },
+    {
+      "capturedAt": "2026-09-14T17:34:24.047Z",
+      "order": "baseline->ownerSplit2",
+      "baseline": { "scale": 10000, "latencyMs": 4882, "nativeRows": 10000 },
+      "candidate": { "scale": 10000, "outcome": "DNF", "timeoutMs": 90000 },
+      "nativeFatalAtDeviceLocalTime": "09-15 01:32:57.991",
+      "nativeFatal": "JNI ERROR (app bug): global reference table overflow (max=51200); SIGABRT"
+    }
+  ],
+  "interpretation": [
+    "Detached whole-owner construction retains enough JNI global references to overflow the pinned Android runtime at 10k.",
+    "The 1k/5k same-window samples show no directional latency benefit, so raising the JNI limit would not rescue the optimization case.",
+    "Incremental flushing preserves reachability but adds synchronization cost and is directionally slower at 10k.",
+    "No candidate in this screen is eligible for source promotion or formal #291 acceptance."
+  ]
+}
