@@ -142,15 +142,19 @@ function combineSourceReceipts(primary, listFixture) {
 }
 
 function octaneCells(checkout, core, elementTemplate = false) {
-  const coreSuffix =
-    (core === 'automatic' ? '-automatic' : '') +
-    (elementTemplate ? '-element-template' : '');
+  const coreSuffix = core === 'automatic' ? '-automatic' : '';
+  const nativeSuffix = coreSuffix + (elementTemplate ? '-element-template' : '');
   return M4_ROWS.map((rows) => ({
     rows,
-    from: path.join(
+    fromWeb: path.join(
       checkout,
       'benchmarks/lynx-table/app',
       `dist${coreSuffix}${rows === 0 ? '' : `-rows${rows}`}`,
+    ),
+    fromNative: path.join(
+      checkout,
+      'benchmarks/lynx-table/app',
+      `dist${nativeSuffix}${rows === 0 ? '' : `-rows${rows}`}`,
     ),
   }));
 }
@@ -205,11 +209,11 @@ function vendor({
   fs.rmSync(dist, { recursive: true, force: true });
   fs.mkdirSync(dist, { recursive: true });
   const checks = {};
-  for (const { rows, from } of cells) {
+  for (const { rows, from, fromWeb = from, fromNative = from } of cells) {
     const target = path.join(dist, `rows-${rows}`);
     fs.mkdirSync(target, { recursive: true });
     for (const bundle of ['main.web.bundle', 'main.lynx.bundle']) {
-      const input = path.join(from, bundle);
+      const input = path.join(bundle === 'main.web.bundle' ? fromWeb : fromNative, bundle);
       if (!fs.existsSync(input)) throw new Error(`${id}: missing ${input}`);
       const output = path.join(target, bundle);
       fs.copyFileSync(input, output);
@@ -342,7 +346,7 @@ const octaneListSourceFiles = [
 for (const spec of [
   {
     id: 'octane-m4-final',
-    label: 'Octane M4 ET release candidate',
+    label: 'Octane M4 release candidate (Native ET)',
     role: 'final-candidate',
     checkout: checkouts.current,
     pin: M4_PINNED_SOURCES['octane-m4-final'],
@@ -367,7 +371,7 @@ for (const spec of [
     framework: 'octane',
     frameworkVersion: readJson(spec.checkout, 'packages/octane/package.json').version,
     config: spec.elementTemplate
-      ? '.tsrx keyed table; compiler-certified Element Template; production automatic core; list direct-PAPI fallback'
+		? '.tsrx keyed table; Native compiler-certified Element Template; Web and list production automatic direct-PAPI fallback'
       : `.tsrx keyed table; compiled JS PAPI; production ${spec.core} core`,
     configuration: spec.elementTemplate ? 'release-candidate' : 'production-default',
     capabilities: {
@@ -380,8 +384,9 @@ for (const spec of [
       elementTemplates: spec.elementTemplate,
       ...(spec.elementTemplate
         ? {
-            elementTemplateScope: 'compiler-certified table root',
-            listFallback: 'automatic direct PAPI',
+				elementTemplateScope: 'native compiler-certified table root',
+				webFallback: 'automatic direct PAPI',
+				listFallback: 'automatic direct PAPI',
           }
         : null),
     },
@@ -393,8 +398,8 @@ for (const spec of [
       mode: spec.id === 'octane-m4-final' ? 'same-checkout' : 'external-frozen-workload',
     },
     toolchainDirectory: 'packages/rspeedy-plugin-octane',
-    buildCommand: spec.id === 'octane-m4-final'
-      ? `BENCH_ELEMENT_TEMPLATE=1 BENCH_LIST_ELEMENT_TEMPLATE=0 BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`
+		buildCommand: spec.id === 'octane-m4-final'
+			? `BENCH_ELEMENT_TEMPLATE=1 BENCH_LIST_ELEMENT_TEMPLATE=0 BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout> && BENCH_ELEMENT_TEMPLATE=0 BENCH_LIST_ELEMENT_TEMPLATE=0 BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`
       : `OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=${spec.core} BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>`,
     cells: octaneCells(spec.checkout, spec.core, spec.elementTemplate),
     listCells: octaneListCells(spec.checkout, spec.core),
