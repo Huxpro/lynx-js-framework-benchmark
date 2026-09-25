@@ -8,7 +8,11 @@ import {
   LIST_SOURCE_METRIC_CONTRACTS,
   LIST_WORKLOAD_CONTRACT_VERSION,
 } from '../../shared/src/list-workloads.mjs';
-import { loadNativeAdapter, NativeLeaseExpiryStop } from './harness-native.mjs';
+import {
+  loadNativeAdapter,
+  NativeLeaseExpiryStop,
+  withTransientRetry,
+} from './harness-native.mjs';
 import { nativeListBundleSnapshot } from './list-native-inputs.mjs';
 
 export const NATIVE_LIST_MATRIX_VERSION = 'native-list-matrix-v1';
@@ -117,15 +121,21 @@ export async function runNativeListMatrix({
         for (let rep = 0; rep < reps; rep++) {
           if (shouldStopBeforeRepetition()) throw new NativeLeaseExpiryStop(records);
           try {
-            await adapter.loadBundle(entry, {
-              rows: scale,
-              bundlePath: bundle.bundlePath,
-              bundleBytes: bundle.bundleBytes,
-              bundleSha256: bundle.sha256,
-              suite: 'list',
+            const observed = await withTransientRetry(adapter, async () => {
+              await adapter.loadBundle(entry, {
+                rows: scale,
+                bundlePath: bundle.bundlePath,
+                bundleBytes: bundle.bundleBytes,
+                bundleSha256: bundle.sha256,
+                suite: 'list',
+              });
+              const startup = await adapter.collectListStartup();
+              return kase.name === 'list-startup'
+                ? { startup }
+                : { measured: await adapter.driveListCase(kase, scale, startup.initial) };
             });
-            const startup = await adapter.collectListStartup();
             if (kase.name === 'list-startup') {
+              const { startup } = observed;
               if (!Number.isFinite(startup.firstVisibleContentMs)) {
                 throw new Error(`${entry.id} list-startup@${scale} omitted firstVisibleContentMs.`);
               }
@@ -133,7 +143,7 @@ export async function runNativeListMatrix({
               detail.firstVisibleContentMs.push(startup);
               continue;
             }
-            const measured = await adapter.driveListCase(kase, scale, startup.initial);
+            const { measured } = observed;
             const repetition = {};
             for (const metric of kase.sourceMetrics) {
               const value = measured.metrics?.[metric];

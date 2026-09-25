@@ -58,6 +58,61 @@ const {
 } = NATIVE_SANDBOX_POLICY;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function pollNativeListFirstContent({
+  loadStartedAt,
+  timeoutMs,
+  snapshot,
+  now = Date.now,
+  wait = delay,
+  pollMs = 16,
+}) {
+  if (!Number.isFinite(loadStartedAt)) {
+    throw new Error('Native list load boundary is unavailable.');
+  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Native list first-content timeout must be positive.');
+  }
+  const deadline = now() + timeoutMs;
+  while (now() < deadline) {
+    const initial = await snapshot(loadStartedAt);
+    if (initial !== null && initial.keys.length > 0) {
+      return {
+        firstVisibleContentMs: initial.atMs,
+        initial: { ...initial, atMs: 0 },
+        observation: LIST_CONFIG.observation.native,
+      };
+    }
+    await wait(pollMs);
+  }
+  throw new Error('timeout waiting for Native list first visible content.');
+}
+
+export function nativeListGestureDistances(kaseName) {
+  const fling = kaseName === 'list-fling';
+  const contentDistancePx = fling
+    ? LIST_CONFIG.fling.nativeReleaseDistancePx
+    : LIST_CONFIG.recycle.distancePx;
+  // Android consumes the leading part of a drag while crossing touch slop.
+  // Compensate the pointer path while keeping the measured content target at
+  // exactly one 640 px viewport. Without this, both Octane and ReactLynx stop
+  // at row 15 and the observer falsely reports a renderer DNF.
+  const touchSlopCompensationPx = fling
+    ? 0
+    : LIST_CONFIG.recycle.nativeTouchSlopCompensationPx;
+  return {
+    contentDistancePx,
+    pointerDistancePx: contentDistancePx + touchSlopCompensationPx,
+    touchSlopCompensationPx,
+  };
+}
+
+export function nativeConsoleStreamOptions(suite) {
+  return suite === 'list'
+    ? { enableRuntime: false, timeoutMs: null }
+    : { enableRuntime: true, timeoutMs: DEFAULT_TIMEOUT_MS };
+}
+
 async function loadConnectorModule() {
   try {
     const connector = await import('@byted/agent-lynx/connector');
@@ -1103,8 +1158,9 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     return point;
   }
 
-  async function nativeListSnapshot(startedAt = Date.now()) {
+  async function nativeListSnapshot(startedAt = Date.now(), { allowMissingViewport = false } = {}) {
     const viewportNodes = await search('bench-list-viewport');
+    if (allowMissingViewport && viewportNodes.length === 0) return null;
     if (viewportNodes.length !== 1) {
       throw new Error(`expected one Native list viewport, found ${viewportNodes.length}.`);
     }
@@ -1145,22 +1201,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   }
 
   async function waitForNativeListFirstContent(timeoutMs = LONG_WORKLOAD_TIMEOUT_MS) {
-    if (!Number.isFinite(currentLoadStartedAt)) {
-      throw new Error('Native list load boundary is unavailable.');
-    }
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const initial = await nativeListSnapshot(currentLoadStartedAt);
-      if (initial.keys.length > 0) {
-        return {
-          firstVisibleContentMs: initial.atMs,
-          initial: { ...initial, atMs: 0 },
-          observation: LIST_CONFIG.observation.native,
-        };
-      }
-      await delay(16);
-    }
-    throw new Error('timeout waiting for Native list first visible content.');
+    return pollNativeListFirstContent({
+      loadStartedAt: currentLoadStartedAt,
+      timeoutMs,
+      snapshot: (startedAt) => nativeListSnapshot(startedAt, { allowMissingViewport: true }),
+    });
   }
 
   async function emitTouch(type, point, timestamp) {
@@ -1186,20 +1231,26 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     const x = (viewport.left + viewport.right) / 2;
     const startY = viewport.bottom - 1;
     const fling = kase.name === 'list-fling';
-    const distancePx = fling ? LIST_CONFIG.fling.nativeReleaseDistancePx : LIST_CONFIG.recycle.distancePx;
-    const durationMs = fling ? (distancePx / LIST_CONFIG.fling.velocityPxPerSecond) * 1000 : 800;
+    const {
+      contentDistancePx,
+      pointerDistancePx,
+      touchSlopCompensationPx,
+    } = nativeListGestureDistances(kase.name);
+    const durationMs = fling
+      ? (pointerDistancePx / LIST_CONFIG.fling.velocityPxPerSecond) * 1000
+      : 800;
     const steps = Math.max(2, Math.round(durationMs / (1000 / 60)));
     const startedAt = Date.now();
     const frames = [];
     await emitTouch('mousePressed', { x, y: startY }, startedAt);
     for (let step = 1; step <= steps; step++) {
       const targetAt = startedAt + (durationMs * step) / steps;
-      const y = startY - (distancePx * step) / steps;
+      const y = startY - (pointerDistancePx * step) / steps;
       const remaining = targetAt - Date.now();
       if (remaining > 0) await delay(remaining);
       await emitTouch('mouseMoved', { x, y }, Date.now());
     }
-    await emitTouch('mouseReleased', { x, y: startY - distancePx }, Date.now());
+    await emitTouch('mouseReleased', { x, y: startY - pointerDistancePx }, Date.now());
     const releasedAt = Date.now();
     const observeUntil = fling ? releasedAt + LIST_CONFIG.fling.durationMs : releasedAt + 250;
     let stableFrames = 0;
@@ -1217,9 +1268,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       frames,
       input: fling ? LIST_CONFIG.input.native.fling : LIST_CONFIG.input.native.recycle,
       gesture: {
-        distancePx,
+        contentDistancePx,
+        pointerDistancePx,
+        touchSlopCompensationPx,
         durationMs,
-        velocityPxPerSecond: (distancePx / durationMs) * 1000,
+        velocityPxPerSecond: (pointerDistancePx / durationMs) * 1000,
       },
     };
   }
@@ -1328,7 +1381,10 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     throw new Error(`timeout waiting for Native timing ${expectedName}.`);
   }
 
-  async function startConsoleStream() {
+  async function startConsoleStream({
+    enableRuntime = true,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = {}) {
     await stopConsoleStream();
     consoleGeneration++;
     const generation = consoleGeneration;
@@ -1416,7 +1472,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         }
       }
     })();
-    await cdp('Runtime.enable');
+    if (enableRuntime) await cdp('Runtime.enable', {}, timeoutMs);
   }
 
   async function stopConsoleStream() {
@@ -1873,7 +1929,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         served: activeBundle.served,
       });
       pageCount++;
-      await startConsoleStream();
+      await startConsoleStream(nativeConsoleStreamOptions(suite));
       if (requiresOctaneDriverReadiness({
         framework: entry.framework,
         suite,

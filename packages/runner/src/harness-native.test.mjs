@@ -11,7 +11,10 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
+  nativeConsoleStreamOptions,
+  nativeListGestureDistances,
   nativeTransportFailureDnf,
+  pollNativeListFirstContent,
   resolvePinnedExplorerApk,
 } from '../adapters/lynx-sandbox-android.mjs';
 
@@ -33,6 +36,54 @@ const CASES = [
   { name: 'create', scales: [1000, 10000] },
   { name: 'clear', scales: [10000] },
 ];
+
+test('Native list first-content polling treats an absent viewport as pending', async () => {
+  let clock = 1_000;
+  const snapshots = [
+    null,
+    null,
+    { atMs: 48, keys: ['row-0'], cells: [{ key: 'row-0', top: 0, bottom: 40 }] },
+  ];
+  const result = await pollNativeListFirstContent({
+    loadStartedAt: 952,
+    timeoutMs: 100,
+    snapshot: async () => snapshots.shift(),
+    now: () => clock,
+    wait: async (ms) => { clock += ms; },
+  });
+
+  assert.equal(result.firstVisibleContentMs, 48);
+  assert.equal(result.initial.atMs, 0);
+  assert.deepEqual(result.initial.keys, ['row-0']);
+});
+
+test('Native list recycle compensates pointer travel without changing the content target', () => {
+  assert.deepEqual(nativeListGestureDistances('list-recycle'), {
+    contentDistancePx: 640,
+    pointerDistancePx: 656,
+    touchSlopCompensationPx: 16,
+  });
+  assert.deepEqual(nativeListGestureDistances('list-fling'), {
+    contentDistancePx: 600,
+    pointerDistancePx: 600,
+    touchSlopCompensationPx: 0,
+  });
+});
+
+test('Native list CDP setup skips the unused Runtime console domain', () => {
+  assert.deepEqual(nativeConsoleStreamOptions('list'), {
+    enableRuntime: false,
+    timeoutMs: null,
+  });
+  assert.deepEqual(nativeConsoleStreamOptions('table'), {
+    enableRuntime: true,
+    timeoutMs: 30_000,
+  });
+  assert.deepEqual(nativeConsoleStreamOptions('startup'), {
+    enableRuntime: true,
+    timeoutMs: 30_000,
+  });
+});
 
 function fakeEntry(dir, { id = 'fake', framework = 'reactlynx', capabilities } = {}) {
   const snapshots = new Map();

@@ -99,7 +99,7 @@ function producerProtocolUnavailableFailure(entry, suite, bundle) {
   };
 }
 
-async function withTransientRetry(
+export async function withTransientRetry(
   adapter,
   action,
   attempts = NATIVE_SANDBOX_POLICY.transientAttempts,

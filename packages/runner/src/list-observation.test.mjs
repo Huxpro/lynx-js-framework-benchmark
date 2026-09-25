@@ -50,6 +50,13 @@ test('one-viewport recycle closes on the first presented 16-row advance', () => 
   assert.equal(result.terminal.keys[0], 'row-16');
 });
 
+test('one-viewport recycle reports the furthest observed row on a short native drag', () => {
+  assert.throws(
+    () => analyzeListRecycle(frame(0, 0), [frame(16, 8), frame(32, 15)]),
+    /maximum observed advance 15; furthest visible range 15-30/,
+  );
+});
+
 test('fling counts source blank frames and first visible appearances', () => {
   const result = analyzeListFling(frame(0, 0), [
     { atMs: 16, keys: [] },
