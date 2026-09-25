@@ -11,6 +11,7 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
+  nativeConsoleStreamTimeoutMs,
   nativeListGestureDistances,
   nativeTransportFailureDnf,
   pollNativeListFirstContent,
@@ -67,6 +68,12 @@ test('Native list recycle compensates pointer travel without changing the conten
     pointerDistancePx: 600,
     touchSlopCompensationPx: 0,
   });
+});
+
+test('Native list console setup uses the long-workload timeout without changing table policy', () => {
+  assert.equal(nativeConsoleStreamTimeoutMs('list'), 240_000);
+  assert.equal(nativeConsoleStreamTimeoutMs('table'), 30_000);
+  assert.equal(nativeConsoleStreamTimeoutMs('startup'), 30_000);
 });
 
 function fakeEntry(dir, { id = 'fake', framework = 'reactlynx', capabilities } = {}) {
