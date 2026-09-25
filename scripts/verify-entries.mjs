@@ -469,7 +469,10 @@ for (const id of M4_ENTRY_IDS) {
   if (JSON.stringify(manifest.harnesses) !== JSON.stringify(expectedHarnesses)) {
     fail(`${id}: M4 identity has the wrong executable harness set`);
   }
-  if (roadmap?.issue !== 291 || roadmap?.milestone !== 'M4'
+  const expectedRoadmapIssue = id.startsWith('octane-') ? 383 : 291;
+  const expectedRoadmapMilestone = id.startsWith('octane-') ? 'R11' : 'M4';
+  if (roadmap?.issue !== expectedRoadmapIssue
+    || roadmap?.milestone !== expectedRoadmapMilestone
     || roadmap?.campaign !== M4_CAMPAIGN
     || roadmap?.role !== M4_ROLES[id]
     || roadmap?.configuration !== M4_CONFIGURATIONS[id]) {
