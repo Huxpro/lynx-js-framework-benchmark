@@ -11,6 +11,7 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
+  nativeListGestureDistances,
   nativeTransportFailureDnf,
   pollNativeListFirstContent,
   resolvePinnedExplorerApk,
@@ -53,6 +54,19 @@ test('Native list first-content polling treats an absent viewport as pending', a
   assert.equal(result.firstVisibleContentMs, 48);
   assert.equal(result.initial.atMs, 0);
   assert.deepEqual(result.initial.keys, ['row-0']);
+});
+
+test('Native list recycle compensates pointer travel without changing the content target', () => {
+  assert.deepEqual(nativeListGestureDistances('list-recycle'), {
+    contentDistancePx: 640,
+    pointerDistancePx: 648,
+    touchSlopCompensationPx: 8,
+  });
+  assert.deepEqual(nativeListGestureDistances('list-fling'), {
+    contentDistancePx: 600,
+    pointerDistancePx: 600,
+    touchSlopCompensationPx: 0,
+  });
 });
 
 function fakeEntry(dir, { id = 'fake', framework = 'reactlynx', capabilities } = {}) {

@@ -88,6 +88,25 @@ export async function pollNativeListFirstContent({
   throw new Error('timeout waiting for Native list first visible content.');
 }
 
+export function nativeListGestureDistances(kaseName) {
+  const fling = kaseName === 'list-fling';
+  const contentDistancePx = fling
+    ? LIST_CONFIG.fling.nativeReleaseDistancePx
+    : LIST_CONFIG.recycle.distancePx;
+  // Android consumes the leading part of a drag while crossing touch slop.
+  // Compensate the pointer path while keeping the measured content target at
+  // exactly one 640 px viewport. Without this, both Octane and ReactLynx stop
+  // at row 15 and the observer falsely reports a renderer DNF.
+  const touchSlopCompensationPx = fling
+    ? 0
+    : LIST_CONFIG.recycle.nativeTouchSlopCompensationPx;
+  return {
+    contentDistancePx,
+    pointerDistancePx: contentDistancePx + touchSlopCompensationPx,
+    touchSlopCompensationPx,
+  };
+}
+
 async function loadConnectorModule() {
   try {
     const connector = await import('@byted/agent-lynx/connector');
@@ -1206,20 +1225,26 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     const x = (viewport.left + viewport.right) / 2;
     const startY = viewport.bottom - 1;
     const fling = kase.name === 'list-fling';
-    const distancePx = fling ? LIST_CONFIG.fling.nativeReleaseDistancePx : LIST_CONFIG.recycle.distancePx;
-    const durationMs = fling ? (distancePx / LIST_CONFIG.fling.velocityPxPerSecond) * 1000 : 800;
+    const {
+      contentDistancePx,
+      pointerDistancePx,
+      touchSlopCompensationPx,
+    } = nativeListGestureDistances(kase.name);
+    const durationMs = fling
+      ? (pointerDistancePx / LIST_CONFIG.fling.velocityPxPerSecond) * 1000
+      : 800;
     const steps = Math.max(2, Math.round(durationMs / (1000 / 60)));
     const startedAt = Date.now();
     const frames = [];
     await emitTouch('mousePressed', { x, y: startY }, startedAt);
     for (let step = 1; step <= steps; step++) {
       const targetAt = startedAt + (durationMs * step) / steps;
-      const y = startY - (distancePx * step) / steps;
+      const y = startY - (pointerDistancePx * step) / steps;
       const remaining = targetAt - Date.now();
       if (remaining > 0) await delay(remaining);
       await emitTouch('mouseMoved', { x, y }, Date.now());
     }
-    await emitTouch('mouseReleased', { x, y: startY - distancePx }, Date.now());
+    await emitTouch('mouseReleased', { x, y: startY - pointerDistancePx }, Date.now());
     const releasedAt = Date.now();
     const observeUntil = fling ? releasedAt + LIST_CONFIG.fling.durationMs : releasedAt + 250;
     let stableFrames = 0;
@@ -1237,9 +1262,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       frames,
       input: fling ? LIST_CONFIG.input.native.fling : LIST_CONFIG.input.native.recycle,
       gesture: {
-        distancePx,
+        contentDistancePx,
+        pointerDistancePx,
+        touchSlopCompensationPx,
         durationMs,
-        velocityPxPerSecond: (distancePx / durationMs) * 1000,
+        velocityPxPerSecond: (pointerDistancePx / durationMs) * 1000,
       },
     };
   }

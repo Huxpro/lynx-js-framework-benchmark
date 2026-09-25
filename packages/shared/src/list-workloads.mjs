@@ -35,7 +35,11 @@ export const LIST_CONFIG = Object.freeze({
   viewport: Object.freeze({ widthPx: 390, heightPx: 640 }),
   row: Object.freeze({ estimatedHeightPx: 40, itemKey: 'id' }),
   buffer: Object.freeze({ leadingRows: 2, trailingRows: 2 }),
-  recycle: Object.freeze({ distancePx: 640, repetitions: 20 }),
+  recycle: Object.freeze({
+    distancePx: 640,
+    nativeTouchSlopCompensationPx: 8,
+    repetitions: 20,
+  }),
   fling: Object.freeze({
     velocityPxPerSecond: 4800,
     durationMs: 1500,
@@ -51,7 +55,7 @@ export const LIST_CONFIG = Object.freeze({
       fling: 'shared-pointer-wheel-velocity-schedule-v1',
     }),
     native: Object.freeze({
-      recycle: 'shared-touch-drag-one-viewport-v1',
+      recycle: 'shared-touch-drag-one-viewport-v2',
       fling: 'shared-native-touch-release-velocity-v1',
     }),
   }),

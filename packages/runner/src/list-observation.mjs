@@ -43,12 +43,25 @@ export function analyzeListRecycle(initial, frames, config = LIST_CONFIG) {
   }
   const initialFirst = Math.min(...initialIndices);
   const expectedAdvance = Math.round(config.recycle.distancePx / config.row.estimatedHeightPx);
-  const terminal = frames.find((frame) => {
+  const observed = frames.map((frame) => {
     const indices = frame.keys.map(listKeyIndex).filter((index) => index != null);
-    return indices.length > 0 && Math.min(...indices) >= initialFirst + expectedAdvance;
+    return {
+      frame,
+      first: indices.length === 0 ? null : Math.min(...indices),
+      last: indices.length === 0 ? null : Math.max(...indices),
+    };
   });
+  const terminal = observed.find(({ first }) =>
+    first !== null && first >= initialFirst + expectedAdvance)?.frame;
   if (terminal == null) {
-    throw new Error(`list recycle did not advance ${expectedAdvance} visible rows`);
+    const furthest = observed.reduce((best, next) =>
+      next.first !== null && (best === null || next.first > best.first) ? next : best, null);
+    const maximumAdvance = furthest === null ? 0 : furthest.first - initialFirst;
+    const visibleRange = furthest === null ? 'empty' : `${furthest.first}-${furthest.last}`;
+    throw new Error(
+      `list recycle did not advance ${expectedAdvance} visible rows `
+        + `(maximum observed advance ${maximumAdvance}; furthest visible range ${visibleRange})`,
+    );
   }
   const initialKeys = new Set(initial.keys);
   return {
