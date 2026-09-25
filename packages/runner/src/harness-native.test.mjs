@@ -12,6 +12,7 @@ import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
   nativeTransportFailureDnf,
+  pollNativeListFirstContent,
   resolvePinnedExplorerApk,
 } from '../adapters/lynx-sandbox-android.mjs';
 
@@ -33,6 +34,26 @@ const CASES = [
   { name: 'create', scales: [1000, 10000] },
   { name: 'clear', scales: [10000] },
 ];
+
+test('Native list first-content polling treats an absent viewport as pending', async () => {
+  let clock = 1_000;
+  const snapshots = [
+    null,
+    null,
+    { atMs: 48, keys: ['row-0'], cells: [{ key: 'row-0', top: 0, bottom: 40 }] },
+  ];
+  const result = await pollNativeListFirstContent({
+    loadStartedAt: 952,
+    timeoutMs: 100,
+    snapshot: async () => snapshots.shift(),
+    now: () => clock,
+    wait: async (ms) => { clock += ms; },
+  });
+
+  assert.equal(result.firstVisibleContentMs, 48);
+  assert.equal(result.initial.atMs, 0);
+  assert.deepEqual(result.initial.keys, ['row-0']);
+});
 
 function fakeEntry(dir, { id = 'fake', framework = 'reactlynx', capabilities } = {}) {
   const snapshots = new Map();

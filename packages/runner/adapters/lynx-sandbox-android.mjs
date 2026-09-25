@@ -58,6 +58,36 @@ const {
 } = NATIVE_SANDBOX_POLICY;
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function pollNativeListFirstContent({
+  loadStartedAt,
+  timeoutMs,
+  snapshot,
+  now = Date.now,
+  wait = delay,
+  pollMs = 16,
+}) {
+  if (!Number.isFinite(loadStartedAt)) {
+    throw new Error('Native list load boundary is unavailable.');
+  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new Error('Native list first-content timeout must be positive.');
+  }
+  const deadline = now() + timeoutMs;
+  while (now() < deadline) {
+    const initial = await snapshot(loadStartedAt);
+    if (initial !== null && initial.keys.length > 0) {
+      return {
+        firstVisibleContentMs: initial.atMs,
+        initial: { ...initial, atMs: 0 },
+        observation: LIST_CONFIG.observation.native,
+      };
+    }
+    await wait(pollMs);
+  }
+  throw new Error('timeout waiting for Native list first visible content.');
+}
+
 async function loadConnectorModule() {
   try {
     const connector = await import('@byted/agent-lynx/connector');
@@ -1103,8 +1133,9 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     return point;
   }
 
-  async function nativeListSnapshot(startedAt = Date.now()) {
+  async function nativeListSnapshot(startedAt = Date.now(), { allowMissingViewport = false } = {}) {
     const viewportNodes = await search('bench-list-viewport');
+    if (allowMissingViewport && viewportNodes.length === 0) return null;
     if (viewportNodes.length !== 1) {
       throw new Error(`expected one Native list viewport, found ${viewportNodes.length}.`);
     }
@@ -1145,22 +1176,11 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
   }
 
   async function waitForNativeListFirstContent(timeoutMs = LONG_WORKLOAD_TIMEOUT_MS) {
-    if (!Number.isFinite(currentLoadStartedAt)) {
-      throw new Error('Native list load boundary is unavailable.');
-    }
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      const initial = await nativeListSnapshot(currentLoadStartedAt);
-      if (initial.keys.length > 0) {
-        return {
-          firstVisibleContentMs: initial.atMs,
-          initial: { ...initial, atMs: 0 },
-          observation: LIST_CONFIG.observation.native,
-        };
-      }
-      await delay(16);
-    }
-    throw new Error('timeout waiting for Native list first visible content.');
+    return pollNativeListFirstContent({
+      loadStartedAt: currentLoadStartedAt,
+      timeoutMs,
+      snapshot: (startedAt) => nativeListSnapshot(startedAt, { allowMissingViewport: true }),
+    });
   }
 
   async function emitTouch(type, point, timestamp) {
