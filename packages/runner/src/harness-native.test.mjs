@@ -11,7 +11,7 @@ import test from 'node:test';
 import { COMPARABILITY_KEYS } from '@lynx-bench/shared/schema';
 import {
   isNativeTransientTransportFailure,
-  nativeConsoleStreamTimeoutMs,
+  nativeConsoleStreamOptions,
   nativeListGestureDistances,
   nativeTransportFailureDnf,
   pollNativeListFirstContent,
@@ -70,10 +70,19 @@ test('Native list recycle compensates pointer travel without changing the conten
   });
 });
 
-test('Native list console setup uses the long-workload timeout without changing table policy', () => {
-  assert.equal(nativeConsoleStreamTimeoutMs('list'), 240_000);
-  assert.equal(nativeConsoleStreamTimeoutMs('table'), 30_000);
-  assert.equal(nativeConsoleStreamTimeoutMs('startup'), 30_000);
+test('Native list CDP setup skips the unused Runtime console domain', () => {
+  assert.deepEqual(nativeConsoleStreamOptions('list'), {
+    enableRuntime: false,
+    timeoutMs: null,
+  });
+  assert.deepEqual(nativeConsoleStreamOptions('table'), {
+    enableRuntime: true,
+    timeoutMs: 30_000,
+  });
+  assert.deepEqual(nativeConsoleStreamOptions('startup'), {
+    enableRuntime: true,
+    timeoutMs: 30_000,
+  });
 });
 
 function fakeEntry(dir, { id = 'fake', framework = 'reactlynx', capabilities } = {}) {

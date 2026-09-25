@@ -107,8 +107,10 @@ export function nativeListGestureDistances(kaseName) {
   };
 }
 
-export function nativeConsoleStreamTimeoutMs(suite) {
-  return suite === 'list' ? LONG_WORKLOAD_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+export function nativeConsoleStreamOptions(suite) {
+  return suite === 'list'
+    ? { enableRuntime: false, timeoutMs: null }
+    : { enableRuntime: true, timeoutMs: DEFAULT_TIMEOUT_MS };
 }
 
 async function loadConnectorModule() {
@@ -1379,7 +1381,10 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     throw new Error(`timeout waiting for Native timing ${expectedName}.`);
   }
 
-  async function startConsoleStream(timeoutMs = DEFAULT_TIMEOUT_MS) {
+  async function startConsoleStream({
+    enableRuntime = true,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  } = {}) {
     await stopConsoleStream();
     consoleGeneration++;
     const generation = consoleGeneration;
@@ -1467,7 +1472,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         }
       }
     })();
-    await cdp('Runtime.enable', {}, timeoutMs);
+    if (enableRuntime) await cdp('Runtime.enable', {}, timeoutMs);
   }
 
   async function stopConsoleStream() {
@@ -1924,7 +1929,7 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
         served: activeBundle.served,
       });
       pageCount++;
-      await startConsoleStream(nativeConsoleStreamTimeoutMs(suite));
+      await startConsoleStream(nativeConsoleStreamOptions(suite));
       if (requiresOctaneDriverReadiness({
         framework: entry.framework,
         suite,
