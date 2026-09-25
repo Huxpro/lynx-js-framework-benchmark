@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { analyzeListFling, analyzeListRecycle, listKeyIndex } from './list-observation.mjs';
+import {
+  analyzeListFling,
+  analyzeListRecycle,
+  listKeyIndex,
+  nativeListCellKey,
+} from './list-observation.mjs';
 
 const frame = (atMs, first, count = 16) => ({
   atMs,
@@ -11,6 +16,31 @@ const frame = (atMs, first, count = 16) => ({
 test('list observations accept only the fixture stable-key namespace', () => {
   assert.equal(listKeyIndex('row-42'), 42);
   assert.equal(listKeyIndex('42'), null);
+});
+
+test('Native list observation ignores substring class matches outside list-item cells', () => {
+  assert.equal(nativeListCellKey({
+    localName: 'view',
+    attributes: ['class', 'bench-list-cell-body'],
+  }), null);
+  assert.equal(nativeListCellKey({
+    localName: 'list-item',
+    attributes: ['class', 'bench-list-cell bench-list-cell-active', 'item-key', 'row-42'],
+  }), 'row-42');
+  assert.equal(nativeListCellKey({
+    localName: 'list-item',
+    attributes: ['class', 'bench-list-cell-body', 'item-key', 'row-42'],
+  }), null);
+});
+
+test('Native list observation rejects an exact fixture cell without a stable item key', () => {
+  assert.throws(
+    () => nativeListCellKey({
+      localName: 'list-item',
+      attributes: ['class', 'bench-list-cell'],
+    }),
+    /invalid item-key undefined/,
+  );
 });
 
 test('one-viewport recycle closes on the first presented 16-row advance', () => {

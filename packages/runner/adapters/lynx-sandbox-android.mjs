@@ -20,7 +20,11 @@ import {
   nativeStartupProtocolForEntry,
   nativeTableProtocolForEntry,
 } from '../src/native-inputs.mjs';
-import { analyzeListFling, analyzeListRecycle } from '../src/list-observation.mjs';
+import {
+  analyzeListFling,
+  analyzeListRecycle,
+  nativeListCellKey,
+} from '../src/list-observation.mjs';
 import { LIST_CONFIG } from '../../shared/src/list-workloads.mjs';
 import {
   NATIVE_SANDBOX_POLICY,
@@ -1099,15 +1103,6 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     return point;
   }
 
-  function nodeAttributes(node) {
-    const entries = node?.attributes ?? [];
-    const result = {};
-    for (let index = 0; index + 1 < entries.length; index += 2) {
-      result[entries[index]] = entries[index + 1];
-    }
-    return result;
-  }
-
   async function nativeListSnapshot(startedAt = Date.now()) {
     const viewportNodes = await search('bench-list-viewport');
     if (viewportNodes.length !== 1) {
@@ -1120,6 +1115,12 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
     const cellNodes = await search('bench-list-cell');
     const cells = [];
     for (const nodeId of cellNodes) {
+      const described = await cdp('DOM.describeNode', { nodeId, depth: 0 });
+      const key = nativeListCellKey(described.node);
+      // DOM.performSearch uses substring matching, so the query also returns
+      // descendants such as `.bench-list-cell-body`. Only an exact fixture
+      // list-item is a logical cell and carries the stable ownership key.
+      if (key === null) continue;
       let box;
       try {
         box = await cdp('DOM.getBoxModel', { nodeId });
@@ -1129,11 +1130,6 @@ export default async function createAdapter({ log = () => {}, campaignIdentity =
       }
       const rect = bounds(box.model.border);
       if (rect.bottom <= viewport.top || rect.top >= viewport.bottom) continue;
-      const described = await cdp('DOM.describeNode', { nodeId, depth: 0 });
-      const key = nodeAttributes(described.node)['item-key'];
-      if (typeof key !== 'string' || !/^row-\d+$/.test(key)) {
-        throw new Error(`Native visible list cell has invalid item-key ${JSON.stringify(key)}.`);
-      }
       cells.push({
         key,
         top: rect.top - viewport.top,

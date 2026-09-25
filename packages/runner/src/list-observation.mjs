@@ -2,6 +2,28 @@ import { LIST_CONFIG } from '../../shared/src/list-workloads.mjs';
 
 const ROW_KEY = /^row-(\d+)$/;
 
+function nodeAttributes(node) {
+  const entries = node?.attributes ?? [];
+  const result = {};
+  for (let index = 0; index + 1 < entries.length; index += 2) {
+    result[entries[index]] = entries[index + 1];
+  }
+  return result;
+}
+
+export function nativeListCellKey(node) {
+  const attributes = nodeAttributes(node);
+  const classes = typeof attributes.class === 'string'
+    ? attributes.class.split(/\s+/).filter(Boolean)
+    : [];
+  if (node?.localName !== 'list-item' || !classes.includes('bench-list-cell')) return null;
+  const key = attributes['item-key'];
+  if (typeof key !== 'string' || !ROW_KEY.test(key)) {
+    throw new Error(`Native visible list cell has invalid item-key ${JSON.stringify(key)}.`);
+  }
+  return key;
+}
+
 export function listKeyIndex(key) {
   const match = ROW_KEY.exec(key);
   return match == null ? null : Number(match[1]);
