@@ -113,6 +113,33 @@ test('Native list repetitions commit atomically after validating every metric', 
   );
 });
 
+test('Native list retries transient transport failures within the same repetition', async () => {
+  let loads = 0;
+  let recoveries = 0;
+  const startup = LIST_CASES.filter((kase) => kase.name === 'list-startup' && kase.scales[0] === 1000)
+    .map((kase) => ({ ...kase, scales: [1000] }));
+  const records = await runNativeListMatrix({
+    adapter: adapter({
+      async loadBundle() {
+        loads++;
+        if (loads === 1) throw new Error('transient Runtime.enable timeout');
+      },
+      async recoverTransient(error) {
+        recoveries++;
+        return String(error).includes('Runtime.enable');
+      },
+    }),
+    entries: [entry],
+    cases: startup,
+    bundleSnapshots,
+    reps: 1,
+  });
+  assert.equal(loads, 2);
+  assert.equal(recoveries, 1);
+  assert.equal(records[0].acceptedCount, 1);
+  assert.equal(records[0].dnfCount, 0);
+});
+
 test('Native list matrix rejects a partial metric checkpoint', async () => {
   const recycle = LIST_CASES.find((kase) => kase.name === 'list-recycle');
   await assert.rejects(

@@ -37,7 +37,7 @@ export const LIST_CONFIG = Object.freeze({
   buffer: Object.freeze({ leadingRows: 2, trailingRows: 2 }),
   recycle: Object.freeze({
     distancePx: 640,
-    nativeTouchSlopCompensationPx: 8,
+    nativeTouchSlopCompensationPx: 16,
     repetitions: 20,
   }),
   fling: Object.freeze({

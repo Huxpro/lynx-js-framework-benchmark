@@ -59,8 +59,8 @@ test('Native list first-content polling treats an absent viewport as pending', a
 test('Native list recycle compensates pointer travel without changing the content target', () => {
   assert.deepEqual(nativeListGestureDistances('list-recycle'), {
     contentDistancePx: 640,
-    pointerDistancePx: 648,
-    touchSlopCompensationPx: 8,
+    pointerDistancePx: 656,
+    touchSlopCompensationPx: 16,
   });
   assert.deepEqual(nativeListGestureDistances('list-fling'), {
     contentDistancePx: 600,
