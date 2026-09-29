@@ -2,7 +2,7 @@ import { combineWorkloadReceipts, hashFiles } from './m0-artifact-contract.mjs';
 
 export { combineWorkloadReceipts, hashFiles };
 
-export const M4_CAMPAIGN = 'octane-roadmap-m4-rc-f975-v5';
+export const M4_CAMPAIGN = 'octane-roadmap-m4-rc-f975-v6';
 export const M4_ROWS = Object.freeze([0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
 export const M4_ENTRY_IDS = Object.freeze([
   'octane-m4-final',
@@ -19,12 +19,12 @@ export const M4_PINNED_SOURCES = Object.freeze({
   'octane-m4-final': Object.freeze({
     source: 'https://github.com/Huxpro/octane',
     ref: 'new-lynx',
-    commit: '11cc998af102670277f3d3de808057fb963f7741',
+    commit: 'f3e33a7a6dad78ada5ee4277f85f4b26255cd48f',
   }),
   'octane-m4-upstream': Object.freeze({
     source: 'https://github.com/octanejs/octane',
     ref: 'main',
-    commit: '777cef385684055e11a956b29c26f34e109cfcd5',
+    commit: '5dd150667ec3cc17c07692c2bcafcd00012e86ca',
   }),
   comparators: Object.freeze({
     source: 'https://github.com/Huxpro/vue-lynx',

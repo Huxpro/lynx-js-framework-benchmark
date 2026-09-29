@@ -10,7 +10,7 @@ import {
 } from './m4-artifact-contract.mjs';
 
 test('M4 freezes a distinct final qualification cohort', () => {
-  assert.equal(M4_CAMPAIGN, 'octane-roadmap-m4-rc-f975-v5');
+  assert.equal(M4_CAMPAIGN, 'octane-roadmap-m4-rc-f975-v6');
   assert.deepEqual(M4_ROWS, [0, 1000, 2000, 3000, 5000, 10000, 20000, 30000]);
   assert.equal(new Set(M4_ENTRY_IDS).size, 8);
   assert.equal(M4_ENTRY_IDS.every((id) => id.includes('m4')), true);
@@ -20,11 +20,11 @@ test('M4 freezes a distinct final qualification cohort', () => {
   );
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-final'].commit,
-    '11cc998af102670277f3d3de808057fb963f7741',
+    'f3e33a7a6dad78ada5ee4277f85f4b26255cd48f',
   );
   assert.equal(
     M4_PINNED_SOURCES['octane-m4-upstream'].commit,
-    '777cef385684055e11a956b29c26f34e109cfcd5',
+    '5dd150667ec3cc17c07692c2bcafcd00012e86ca',
   );
   assert.equal(
     M4_PINNED_SOURCES.comparators.commit,
