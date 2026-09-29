@@ -665,7 +665,8 @@ async function cmdRun(args) {
   console.log(
     `[run] suites: ${suites.join(', ')}; cases: ${cases.map((c) => c.name).join(', ')}; `
     + `storm: ${stormCases.map((c) => `${c.name}/${c.commitPolicy}`).join(', ')}; `
-    + `scales: ${scales.join(', ')}; reps=${reps}; stormReps=${stormReps}`,
+    + `scales: ${scales.join(', ')}; `
+    + `reps=${suites.includes('list') ? listReps : reps}; stormReps=${stormReps}`,
   );
 
   // Only the one-off verifier gets --allow-natives-syntax. Measured processes never do.
@@ -741,8 +742,9 @@ async function cmdRun(args) {
     entries,
     cases: suites.includes('list') ? listCases : cases,
     stormCases,
-    suites, scales, startupScales, reps, stormReps, startupReps,
-    listReps,
+    suites, scales, startupScales,
+    reps: suites.includes('list') ? listReps : reps,
+    stormReps, startupReps,
     includeMemory,
     jit, cpuThrottle, throttleScope,
     processThrottleControl: preflight.processThrottleVerification?.control ?? null,
