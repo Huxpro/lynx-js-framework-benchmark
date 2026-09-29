@@ -22,6 +22,10 @@ const PROCESS_CGROUP_READINESS_BARRIER = Object.freeze({
 
 const wireSnapshot = (page) => page.evaluate(() => globalThis.__LYNX_WIRE_SNAPSHOT__());
 
+export function playwrightViewport({ widthPx, heightPx }) {
+  return { width: widthPx, height: heightPx };
+}
+
 function wireDelta(before, after) {
   const side = (left, right) => ({
     messages: right.messages - left.messages,
@@ -103,7 +107,7 @@ export async function runListSuite({
       const failures = [];
       let dnfCount = 0;
       for (let rep = 0; rep < reps; rep++) {
-        const page = await browser.newPage({ viewport: LIST_CONFIG.viewport });
+        const page = await browser.newPage({ viewport: playwrightViewport(LIST_CONFIG.viewport) });
         try {
           await page.goto(`${origin}/list`, { waitUntil: 'load' });
           const initial = await page.evaluate(
