@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-29T23:46:57.796Z",
+  "kind": "m4-web-list-complete-matrix-audit",
+  "source": {
+    "path": "results/runs/2026-09-29T23-45-57-65160668d8d9-issue291-m4-v6-web-list-e67800f.json",
+    "sha256": "bc2f93433529706b994a9047d07c06f6b3ccb447c0c5a6bbc740eef47c3475d0"
+  },
+  "identity": {
+    "harnessCommit": "e67800f6d93330068263b3fab2b26b99b212dab7",
+    "harnessDirty": false,
+    "candidateCommit": "f3e33a7a6dad78ada5ee4277f85f4b26255cd48f",
+    "upstreamCommit": "5dd150667ec3cc17c07692c2bcafcd00012e86ca",
+    "comparatorCommit": "736708bc068a0dbeabefb740ba76d62194371ef2",
+    "machineId": "65160668d8d9",
+    "browser": "Chromium 149.0.7827.55",
+    "environment": "web/jit/x1/none",
+    "sessionId": "issue291-m4-v6-web-list-e67800f"
+  },
+  "scope": {
+    "contractVersion": "lynx-list-workloads-v2",
+    "repetitions": 20,
+    "entries": [
+      "octane-m4-final",
+      "octane-m4-upstream",
+      "reactlynx-m4-default",
+      "vue-lynx-m4-vdom-default",
+      "vue-lynx-m4-vdom-ifr-et",
+      "vue-lynx-m4-vapor-default",
+      "vue-lynx-m4-vapor-ifr"
+    ],
+    "webExcluded": [
+      {
+        "entry": "reactlynx-m4-et",
+        "reason": "ReactLynx Element Template requires __CreateTypedElementTemplate, which Lynx for Web 0.22.1 does not expose"
+      }
+    ],
+    "sourceMetricCells": 70,
+    "derivedMetricCells": 42
+  },
+  "integrity": {
+    "pass": true,
+    "missingCells": 0,
+    "duplicateCells": 0,
+    "dnfCount": 0,
+    "failureCount": 0,
+    "nonDistributionCellsWith20Samples": 63,
+    "distributionSamplesByEntry": {
+      "octane-m4-final": 2004,
+      "octane-m4-upstream": 1822,
+      "reactlynx-m4-default": 1958,
+      "vue-lynx-m4-vdom-default": 2050,
+      "vue-lynx-m4-vdom-ifr-et": 2122,
+      "vue-lynx-m4-vapor-default": 2096,
+      "vue-lynx-m4-vapor-ifr": 2176
+    }
+  },
+  "metrics": {
+    "startup1kMs": "lower",
+    "startup10kMs": "lower",
+    "recycleCells": "higher",
+    "recycleMsPerCell": "lower",
+    "recycleMtsBytesPerCell": "lower",
+    "recycleBtsBytesPerCell": "lower",
+    "flingElapsedMs": "lower",
+    "flingCellsPerSecond": "higher",
+    "flingBlankFrames": "lower",
+    "flingMaterializationP50Ms": "lower",
+    "flingMaterializationP99Ms": "lower"
+  },
+  "results": [
+    {
+      "entry": "octane-m4-final",
+      "values": [220.475, 2457.82, 16, 13.082656, 12.375, 10.5, 2778.0475, 36.26497, 0, 751.299166, 976.297233]
+    },
+    {
+      "entry": "octane-m4-upstream",
+      "values": [566.4475, 5372.975, 16, 15.048594, 8.25, 7, 3083.8375, 29.738919, 0, 842.27, 1111.662316]
+    },
+    {
+      "entry": "reactlynx-m4-default",
+      "values": [194.355, 2598.1875, 16, 14.16875, 73.34375, 12.625, 2834.47, 34.440821, 0, 785.8475, 1038.663499]
+    },
+    {
+      "entry": "vue-lynx-m4-vdom-default",
+      "values": [273.255, 2747.6725, 16, 11.713906, 8.25, 7, 2759.6575, 36.90482, 0, 728.08, 877.051383]
+    },
+    {
+      "entry": "vue-lynx-m4-vdom-ifr-et",
+      "values": [231.97, 2922.89, 16, 11.422031, 8.25, 7, 2775.1875, 38.465996, 0, 699.703334, 884.522683]
+    },
+    {
+      "entry": "vue-lynx-m4-vapor-default",
+      "values": [248, 1727.87, 16, 12.45375, 4.125, 3.5, 2853.62, 36.822469, 0, 727.824166, 924.427583]
+    },
+    {
+      "entry": "vue-lynx-m4-vapor-ifr",
+      "values": [218.44, 1983.1325, 16, 12.070781, 4.125, 3.5, 2783.525, 39.302113, 0, 718.479167, 940.86875]
+    }
+  ],
+  "candidatePointComparisons": [
+    { "entry": "octane-m4-upstream", "wins": 7, "ties": 2, "losses": 2 },
+    { "entry": "reactlynx-m4-default", "wins": 8, "ties": 2, "losses": 1 },
+    { "entry": "vue-lynx-m4-vdom-default", "wins": 2, "ties": 2, "losses": 7 },
+    { "entry": "vue-lynx-m4-vdom-ifr-et", "wins": 2, "ties": 2, "losses": 7 },
+    { "entry": "vue-lynx-m4-vapor-default", "wins": 2, "ties": 2, "losses": 7 },
+    { "entry": "vue-lynx-m4-vapor-ifr", "wins": 1, "ties": 2, "losses": 8 }
+  ],
+  "interpretation": {
+    "ranking": "descriptive point estimates only; List has no roadmap superiority gate or paired-window CI contract",
+    "costPolicy": "latency, materialization, blank-frame, and both wire directions retained; no DNF or outlier removal",
+    "resultOrder": "values follow the insertion order of the metrics object"
+  }
+}
