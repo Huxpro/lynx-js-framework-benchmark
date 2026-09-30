@@ -2,7 +2,7 @@
   "id": "octane-m4-upstream",
   "label": "Octane latest upstream",
   "framework": "octane",
-  "frameworkVersion": "0.6.3",
+  "frameworkVersion": "0.7.1",
   "config": ".tsrx keyed table; compiled JS PAPI; production universal core",
   "tags": [
     "roadmap-m4",
@@ -27,7 +27,7 @@
   "roadmap": {
     "issue": 291,
     "milestone": "M4",
-    "campaign": "octane-roadmap-m4-rc-f975-v6",
+    "campaign": "octane-roadmap-m4-rc-f975-v7",
     "role": "latest-upstream",
     "configuration": "production-default"
   },
@@ -53,13 +53,13 @@
   "provenance": {
     "source": "https://github.com/octanejs/octane",
     "ref": "main",
-    "commit": "5dd150667ec3cc17c07692c2bcafcd00012e86ca",
+    "commit": "676a4ee6db59854d6b711921f4ac808845dcdbcd",
     "patched": false,
     "patchFile": null,
     "buildCommand": "OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=universal BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>",
-    "builtAt": "2026-09-28T21:44:34+01:00",
+    "builtAt": "2026-09-30T19:05:32+01:00",
     "receipts": {
-      "sourceCommit": "5dd150667ec3cc17c07692c2bcafcd00012e86ca",
+      "sourceCommit": "676a4ee6db59854d6b711921f4ac808845dcdbcd",
       "sourcePatch": {
         "present": false,
         "path": null,
@@ -67,7 +67,7 @@
       },
       "dependencyLock": {
         "path": "pnpm-lock.yaml",
-        "sha256": "e343fccf527e853ab1d5b50f8056795e02d2c7785e8c52071c162d6f7e3f518c"
+        "sha256": "dd8aaffd92382a12590aa1451bfc1230bb4f5c304c4193af659443c1446f7074"
       },
       "engineAndToolchain": {
         "node": "v22.22.2",
@@ -85,7 +85,7 @@
             "scripts/m4-artifact-contract.mjs",
             "scripts/vendor-m4-entries.mjs"
           ],
-          "sha256": "d69c8b4be2de6cdfdd964918e8341954b6a013a66b7f1a765b260a276ba23fa9"
+          "sha256": "d76807a6b4fd31fbb4a532d2481689b625b774d094388540434460b3f1c00c8a"
         }
       },
       "platformLane": {
@@ -169,41 +169,41 @@
         "sha256": "177ddd8f938d5b4c0b1330ce6dcfbeaaeb71d989660842a3dc9b0c4530e385de"
       },
       "bundleSha256": {
-        "rows-0/main.web.bundle": "5151f8c7e5209c03cef406d3b504590601a38f2b65042527f76abaac987eb5f4",
-        "rows-0/main.lynx.bundle": "d90eed7e9174625d21716ffc2f7d89006478493010c37edcb29ec653052d6c0b",
-        "rows-1000/main.web.bundle": "3eca7476bfcea6d1ead2d86b777a4bbcc58ac99e69478b9cd11cf37aa75be000",
-        "rows-1000/main.lynx.bundle": "9072be511224706fc6cecfc210f3e5ab15af1ef2b6e8f0ab2df58da0b5ec67d4",
-        "rows-2000/main.web.bundle": "61050e611341d137420cf0e197d18bad00f32bbf9ce85bb8253a9c0b72afcf2d",
-        "rows-2000/main.lynx.bundle": "46ad7f8fde0d5a02bf73dacd8891d5c9b50418dee41568549f1611f9f53c3eec",
-        "rows-3000/main.web.bundle": "278afe1adc3a6bf35eadcb215fef5a82c11f02e3c5ffd5d89261dd079682512b",
-        "rows-3000/main.lynx.bundle": "192e569f21b62404d51c019f908de96ca6dbc1a0709b6208edbf228a62cb38ae",
-        "rows-5000/main.web.bundle": "837bcfd5d6bf1da8b0b66d05dc453d5675e73a7ab435464b467619495bdbfe8e",
-        "rows-5000/main.lynx.bundle": "d0e32bae479777fc73f7be9f1ca46386ec83d697e28b2a5a28dfe123897479c2",
-        "rows-10000/main.web.bundle": "3261fef2fbee7da105deb8f65528f168a9a93154b76aa9a9a50b6485622248fd",
-        "rows-10000/main.lynx.bundle": "670a82806b201f9a95e00b4fbd762041f0e8cd83de3662df4668ce8ade74599a",
-        "rows-20000/main.web.bundle": "e3f0a53abe1494009ecbceddb3d67852b65d5d6484e0896eb64d7c5d3deb65f3",
-        "rows-20000/main.lynx.bundle": "9536e07c28a45083f12a5af5c3f83d26a75c20e6adc3fbd020d935238ae23d5f",
-        "rows-30000/main.web.bundle": "c36fb5c922020cb574481c708196fabe1830c4dbf5f1bf9b67707182c2afc490",
-        "rows-30000/main.lynx.bundle": "c2bf76beb8b980b29fc0c80794cd63d44d6226d3588c5804af04fedaced916bf"
+        "rows-0/main.web.bundle": "d186354a07b583c8a6464ffea3d1695f9bdcdc286a350785c122175cd75f754a",
+        "rows-0/main.lynx.bundle": "6d0db5d1c363e4a982a50b0f316925d44a36d93b6d09802107d415853d9d594d",
+        "rows-1000/main.web.bundle": "0cc27b049c9257e2f46acc1a34434b2c45ac4fa0a8229c36d920bf56c40618da",
+        "rows-1000/main.lynx.bundle": "5cefae072fc376f6677d7d7a0f55cde87c37acadb5da5b613e1c76b37ff9a4b8",
+        "rows-2000/main.web.bundle": "0e431124b3c9bc578cb84f6b5ba25690e17b3076cbbb7bd6ae6b62e1fdd31a69",
+        "rows-2000/main.lynx.bundle": "8314db91d73cb61f6f3a43c156028680042942d5bb4a01943349d2e677f1b33d",
+        "rows-3000/main.web.bundle": "8710317c4f62ff1a7595c2fd5bf37d15fbcffb13eaf0818047f804ceb4bc68bf",
+        "rows-3000/main.lynx.bundle": "e9e3682488290c88797c281a6b267894733e0bd6ecbd361810dfb230e6c156d1",
+        "rows-5000/main.web.bundle": "229b629820e729c98f537f89ddb79f47e20f02436acd4d0db4e834cc58bba6c4",
+        "rows-5000/main.lynx.bundle": "023c9829dd04d3cf395c374123d70887b46d5b6c8df8763d0b5126c1796eec1c",
+        "rows-10000/main.web.bundle": "3e4149d6a5c0d52a0feb6344f123cf3a0ec04815c47b795471548fc5e5a085fd",
+        "rows-10000/main.lynx.bundle": "ceb8bc7837358ec361f59a95295db1bda77227d456fcbcb2b7802660f9bcba64",
+        "rows-20000/main.web.bundle": "aa74756f0b6fd3a6c68e3ff37503c1c97f7082fc2f1c7bdae6a0645c5c95d51c",
+        "rows-20000/main.lynx.bundle": "95bbf9b00007252215c6212eac8f99c798808f6cc2569ba012aa03e1ddd7a816",
+        "rows-30000/main.web.bundle": "bfd81272798b76b21b5ac3f676356547a192a792836c57343dc8b79db3fe877a",
+        "rows-30000/main.lynx.bundle": "d61a84a9d18f3d2032b60942fefd7da9f0a937aac1a753bbc53e4e182fb961f9"
       }
     },
     "sha256": {
-      "rows-0/main.web.bundle": "5151f8c7e5209c03cef406d3b504590601a38f2b65042527f76abaac987eb5f4",
-      "rows-0/main.lynx.bundle": "d90eed7e9174625d21716ffc2f7d89006478493010c37edcb29ec653052d6c0b",
-      "rows-1000/main.web.bundle": "3eca7476bfcea6d1ead2d86b777a4bbcc58ac99e69478b9cd11cf37aa75be000",
-      "rows-1000/main.lynx.bundle": "9072be511224706fc6cecfc210f3e5ab15af1ef2b6e8f0ab2df58da0b5ec67d4",
-      "rows-2000/main.web.bundle": "61050e611341d137420cf0e197d18bad00f32bbf9ce85bb8253a9c0b72afcf2d",
-      "rows-2000/main.lynx.bundle": "46ad7f8fde0d5a02bf73dacd8891d5c9b50418dee41568549f1611f9f53c3eec",
-      "rows-3000/main.web.bundle": "278afe1adc3a6bf35eadcb215fef5a82c11f02e3c5ffd5d89261dd079682512b",
-      "rows-3000/main.lynx.bundle": "192e569f21b62404d51c019f908de96ca6dbc1a0709b6208edbf228a62cb38ae",
-      "rows-5000/main.web.bundle": "837bcfd5d6bf1da8b0b66d05dc453d5675e73a7ab435464b467619495bdbfe8e",
-      "rows-5000/main.lynx.bundle": "d0e32bae479777fc73f7be9f1ca46386ec83d697e28b2a5a28dfe123897479c2",
-      "rows-10000/main.web.bundle": "3261fef2fbee7da105deb8f65528f168a9a93154b76aa9a9a50b6485622248fd",
-      "rows-10000/main.lynx.bundle": "670a82806b201f9a95e00b4fbd762041f0e8cd83de3662df4668ce8ade74599a",
-      "rows-20000/main.web.bundle": "e3f0a53abe1494009ecbceddb3d67852b65d5d6484e0896eb64d7c5d3deb65f3",
-      "rows-20000/main.lynx.bundle": "9536e07c28a45083f12a5af5c3f83d26a75c20e6adc3fbd020d935238ae23d5f",
-      "rows-30000/main.web.bundle": "c36fb5c922020cb574481c708196fabe1830c4dbf5f1bf9b67707182c2afc490",
-      "rows-30000/main.lynx.bundle": "c2bf76beb8b980b29fc0c80794cd63d44d6226d3588c5804af04fedaced916bf"
+      "rows-0/main.web.bundle": "d186354a07b583c8a6464ffea3d1695f9bdcdc286a350785c122175cd75f754a",
+      "rows-0/main.lynx.bundle": "6d0db5d1c363e4a982a50b0f316925d44a36d93b6d09802107d415853d9d594d",
+      "rows-1000/main.web.bundle": "0cc27b049c9257e2f46acc1a34434b2c45ac4fa0a8229c36d920bf56c40618da",
+      "rows-1000/main.lynx.bundle": "5cefae072fc376f6677d7d7a0f55cde87c37acadb5da5b613e1c76b37ff9a4b8",
+      "rows-2000/main.web.bundle": "0e431124b3c9bc578cb84f6b5ba25690e17b3076cbbb7bd6ae6b62e1fdd31a69",
+      "rows-2000/main.lynx.bundle": "8314db91d73cb61f6f3a43c156028680042942d5bb4a01943349d2e677f1b33d",
+      "rows-3000/main.web.bundle": "8710317c4f62ff1a7595c2fd5bf37d15fbcffb13eaf0818047f804ceb4bc68bf",
+      "rows-3000/main.lynx.bundle": "e9e3682488290c88797c281a6b267894733e0bd6ecbd361810dfb230e6c156d1",
+      "rows-5000/main.web.bundle": "229b629820e729c98f537f89ddb79f47e20f02436acd4d0db4e834cc58bba6c4",
+      "rows-5000/main.lynx.bundle": "023c9829dd04d3cf395c374123d70887b46d5b6c8df8763d0b5126c1796eec1c",
+      "rows-10000/main.web.bundle": "3e4149d6a5c0d52a0feb6344f123cf3a0ec04815c47b795471548fc5e5a085fd",
+      "rows-10000/main.lynx.bundle": "ceb8bc7837358ec361f59a95295db1bda77227d456fcbcb2b7802660f9bcba64",
+      "rows-20000/main.web.bundle": "aa74756f0b6fd3a6c68e3ff37503c1c97f7082fc2f1c7bdae6a0645c5c95d51c",
+      "rows-20000/main.lynx.bundle": "95bbf9b00007252215c6212eac8f99c798808f6cc2569ba012aa03e1ddd7a816",
+      "rows-30000/main.web.bundle": "bfd81272798b76b21b5ac3f676356547a192a792836c57343dc8b79db3fe877a",
+      "rows-30000/main.lynx.bundle": "d61a84a9d18f3d2032b60942fefd7da9f0a937aac1a753bbc53e4e182fb961f9"
     }
   },
   "bundles": {
@@ -216,7 +216,7 @@
     "source": {
       "source": "https://github.com/Huxpro/octane",
       "ref": "new-lynx",
-      "commit": "f3e33a7a6dad78ada5ee4277f85f4b26255cd48f",
+      "commit": "c2889216f47eee3b609e82092f5ee2e990ab1cba",
       "producerPull": null,
       "mode": "external-frozen-workload",
       "receipt": {
@@ -241,12 +241,12 @@
     },
     "sha256": {
       "web": {
-        "1000": "b52c53a49b224c3d2e43339e6428f39a28fb1686a4bdca6e0686dfe52078c21b",
-        "10000": "1dda2c3582107a94eff2e9f6886618cfbeb06de495451eadd801e6e307bb0610"
+        "1000": "29255010290b8b71080dcbc6ab2efe3fc8f24050f50dfb5401489dede8a38462",
+        "10000": "4306cb568501068e9185c8e3c3f84407a79618addc13bff7bf343c55d9b4bb16"
       },
       "native": {
-        "1000": "92be8dcc07e05e97ae3d0733dc5910b1272723d109ba11c9df5f312418f1feaa",
-        "10000": "cd23bb3e641193bf4c22df4c8429c8835ec350133e9da3a2235cec14f3c2d9eb"
+        "1000": "bd119105654e140fd676db414877ff9dfdcbdda1cf15b4705e76a4edfcba47ac",
+        "10000": "7ef073ae0a59e94bf87f57b237e0189903fef1eecfe91d3f7839bcbdb51f350a"
       }
     }
   }
