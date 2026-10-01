@@ -22,6 +22,10 @@ const PROCESS_CGROUP_READINESS_BARRIER = Object.freeze({
 
 const wireSnapshot = (page) => page.evaluate(() => globalThis.__LYNX_WIRE_SNAPSHOT__());
 
+export function playwrightViewport({ widthPx, heightPx }) {
+  return { width: widthPx, height: heightPx };
+}
+
 function wireDelta(before, after) {
   const side = (left, right) => ({
     messages: right.messages - left.messages,
@@ -66,15 +70,34 @@ function emitListRecord({
   });
 }
 
-async function runFixedVelocityWheel(page, { velocityPxPerSecond, durationMs }) {
+export async function runFixedVelocityWheel(
+  page,
+  { velocityPxPerSecond, durationMs },
+  {
+    now = () => performance.now(),
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  } = {},
+) {
   const frameMs = 1000 / 60;
   const frameCount = Math.round(durationMs / frameMs);
   const delta = (velocityPxPerSecond * frameMs) / 1000;
-  const startedAt = performance.now();
+  const startedAt = now();
+  const dispatches = [];
   for (let frame = 0; frame < frameCount; frame++) {
-    await page.mouse.wheel(0, delta);
-    const delayMs = Math.max(0, startedAt + (frame + 1) * frameMs - performance.now());
-    if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+    const delayMs = Math.max(0, startedAt + frame * frameMs - now());
+    if (delayMs > 0) await sleep(delayMs);
+    // Do not serialize input on renderer backpressure: the contract freezes a
+    // 60 Hz host schedule, and the renderer's catch-up time is an outcome.
+    try {
+      dispatches.push(Promise.resolve(page.mouse.wheel(0, delta))
+        .then(() => null, (error) => error));
+    } catch (error) {
+      dispatches.push(Promise.resolve(error));
+    }
+  }
+  const failure = (await Promise.all(dispatches)).find((error) => error != null);
+  if (failure != null) {
+    throw failure;
   }
 }
 
@@ -103,7 +126,7 @@ export async function runListSuite({
       const failures = [];
       let dnfCount = 0;
       for (let rep = 0; rep < reps; rep++) {
-        const page = await browser.newPage({ viewport: LIST_CONFIG.viewport });
+        const page = await browser.newPage({ viewport: playwrightViewport(LIST_CONFIG.viewport) });
         try {
           await page.goto(`${origin}/list`, { waitUntil: 'load' });
           const initial = await page.evaluate(
@@ -118,16 +141,22 @@ export async function runListSuite({
             continue;
           }
           const before = await wireSnapshot(page);
-          const armed = page.evaluate(({ durationMs }) => globalThis.__x.armListMotion({ durationMs }), {
-            durationMs: kase.name === 'list-fling' ? LIST_CONFIG.fling.durationMs : 0,
-          });
+          const armed = page.evaluate(
+            ({ durationMs }) => globalThis.__x.armListMotion({ durationMs }),
+            { durationMs: kase.name === 'list-fling' ? LIST_CONFIG.fling.durationMs : 0 },
+          ).then(
+            (capture) => ({ capture, error: null }),
+            (error) => ({ capture: null, error }),
+          );
           await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
           if (kase.name === 'list-recycle') {
             await page.mouse.wheel(0, LIST_CONFIG.recycle.distancePx);
           } else {
             await runFixedVelocityWheel(page, LIST_CONFIG.fling);
           }
-          const capture = await armed;
+          const armedResult = await armed;
+          if (armedResult.error != null) throw armedResult.error;
+          const { capture } = armedResult;
           const wire = wireDelta(before, await wireSnapshot(page));
           if (kase.name === 'list-recycle') {
             const measured = analyzeListRecycle(initial, capture.frames);

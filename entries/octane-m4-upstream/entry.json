@@ -2,7 +2,7 @@
   "id": "octane-m4-upstream",
   "label": "Octane latest upstream",
   "framework": "octane",
-  "frameworkVersion": "0.2.11",
+  "frameworkVersion": "0.7.1",
   "config": ".tsrx keyed table; compiled JS PAPI; production universal core",
   "tags": [
     "roadmap-m4",
@@ -27,7 +27,7 @@
   "roadmap": {
     "issue": 291,
     "milestone": "M4",
-    "campaign": "octane-roadmap-m4-rc-f975-v5",
+    "campaign": "octane-roadmap-m4-rc-f975-v7",
     "role": "latest-upstream",
     "configuration": "production-default"
   },
@@ -53,13 +53,13 @@
   "provenance": {
     "source": "https://github.com/octanejs/octane",
     "ref": "main",
-    "commit": "777cef385684055e11a956b29c26f34e109cfcd5",
+    "commit": "676a4ee6db59854d6b711921f4ac808845dcdbcd",
     "patched": false,
     "patchFile": null,
     "buildCommand": "OCTANE_M4_LIST_FIXTURE_BUILD=<final-checkout> BENCH_CORE=universal BENCH_ROWS=0,1000,2000,3000,5000,10000,20000,30000 node scripts/build-octane-m4.mjs <checkout>",
-    "builtAt": "2026-09-15T17:45:46+01:00",
+    "builtAt": "2026-09-30T19:05:32+01:00",
     "receipts": {
-      "sourceCommit": "777cef385684055e11a956b29c26f34e109cfcd5",
+      "sourceCommit": "676a4ee6db59854d6b711921f4ac808845dcdbcd",
       "sourcePatch": {
         "present": false,
         "path": null,
@@ -67,7 +67,7 @@
       },
       "dependencyLock": {
         "path": "pnpm-lock.yaml",
-        "sha256": "51648462c4e126c7b945cb99c5390b8a77243538c3bc86fbf784021d16e0cace"
+        "sha256": "dd8aaffd92382a12590aa1451bfc1230bb4f5c304c4193af659443c1446f7074"
       },
       "engineAndToolchain": {
         "node": "v22.22.2",
@@ -85,7 +85,7 @@
             "scripts/m4-artifact-contract.mjs",
             "scripts/vendor-m4-entries.mjs"
           ],
-          "sha256": "58266d9aaf8b192d79d3169b942283632d1aec19b9369f7a2d438ee547ba1c64"
+          "sha256": "d76807a6b4fd31fbb4a532d2481689b625b774d094388540434460b3f1c00c8a"
         }
       },
       "platformLane": {
@@ -139,7 +139,7 @@
             "packages/shared/src/scorecard.mjs",
             "packages/shared/src/workloads.mjs"
           ],
-          "sha256": "cdce1280ed16224dceaab5117f2bf21b484469b424aa1bdd89ab6618a655d2cb"
+          "sha256": "78fc7ddabebc465fae87e58a08d04e24776bc4086001179e69edb30fbc658c3d"
         },
         "source": {
           "algorithm": "sha256-primary-list-fixture-v1",
@@ -166,44 +166,44 @@
           },
           "sha256": "083352373f6cd5419095942ebb0cd152fd9f6662e7666f9583d804214bf21762"
         },
-        "sha256": "9c2cafc585f5be32d38a41f6b2d4abea4bbfd6cee2a9910d9c340d5e78dec12d"
+        "sha256": "177ddd8f938d5b4c0b1330ce6dcfbeaaeb71d989660842a3dc9b0c4530e385de"
       },
       "bundleSha256": {
-        "rows-0/main.web.bundle": "fc236f94d80021c43b2b5297cd53acd12ce29f7ad58150fe4d12e3655775e970",
-        "rows-0/main.lynx.bundle": "ff0870ce8b7b3c3bdfec50fdd3e21f8cae2e5380372921d873b795979c907d02",
-        "rows-1000/main.web.bundle": "4db5287f4506d600400aa171704b5fd93b537fbf132088902072f06ba6855908",
-        "rows-1000/main.lynx.bundle": "e5b25854ee8653f530d7ddebfb586ee5778743e0433bd35a14e9342482c8f4c2",
-        "rows-2000/main.web.bundle": "38bf42e40ea3e3eb3dd723c5485f2ba3ede6ec9df1abbe13eeb81fcf8bd33598",
-        "rows-2000/main.lynx.bundle": "4a0c0a6f7dd8fe510df347dffd521994faf74269ba61a7a6b54715c76ef90946",
-        "rows-3000/main.web.bundle": "4d5581f84b5b45ba79c36b341e254a480cd97281dd2d5ce3c1cacec73e99ac1e",
-        "rows-3000/main.lynx.bundle": "21ad19ac99e1c17be10a55d2148659c11e7ec16dcf6b3bee5d21b607b8c5b669",
-        "rows-5000/main.web.bundle": "c129ecbb48b0650faba94bfc4e4e27778a5f68a465c3c5b93878a25a39ee4fcc",
-        "rows-5000/main.lynx.bundle": "6b9e9ccf972ca2438a6b02f40d964ecfb8149f15d5bdbff073489a89497625ff",
-        "rows-10000/main.web.bundle": "1fc9a18249ec87ea99e5f67a593f95adbf154204761732959413c67046ffb352",
-        "rows-10000/main.lynx.bundle": "f563652772ab34cb93e705e2152b09df68761ef41947cfcda9b6b5d752a94bd1",
-        "rows-20000/main.web.bundle": "f9c6a1e35743dbd3a05da91c77b9920d800726e02e13b8a848b28e64c0c3c554",
-        "rows-20000/main.lynx.bundle": "e3f8c40432a74d892fe07cf91b7bfb268c61daadca7882d870a16418f1eefc43",
-        "rows-30000/main.web.bundle": "607fc1279b170e4fa474625a6bb86e4313ec25a35b0e5e813316d7ded2d8eeaa",
-        "rows-30000/main.lynx.bundle": "980a6484914ed254ac37604dda7a130485abdb5dcf39c66ec81dd8a073b512e1"
+        "rows-0/main.web.bundle": "d186354a07b583c8a6464ffea3d1695f9bdcdc286a350785c122175cd75f754a",
+        "rows-0/main.lynx.bundle": "6d0db5d1c363e4a982a50b0f316925d44a36d93b6d09802107d415853d9d594d",
+        "rows-1000/main.web.bundle": "0cc27b049c9257e2f46acc1a34434b2c45ac4fa0a8229c36d920bf56c40618da",
+        "rows-1000/main.lynx.bundle": "5cefae072fc376f6677d7d7a0f55cde87c37acadb5da5b613e1c76b37ff9a4b8",
+        "rows-2000/main.web.bundle": "0e431124b3c9bc578cb84f6b5ba25690e17b3076cbbb7bd6ae6b62e1fdd31a69",
+        "rows-2000/main.lynx.bundle": "8314db91d73cb61f6f3a43c156028680042942d5bb4a01943349d2e677f1b33d",
+        "rows-3000/main.web.bundle": "8710317c4f62ff1a7595c2fd5bf37d15fbcffb13eaf0818047f804ceb4bc68bf",
+        "rows-3000/main.lynx.bundle": "e9e3682488290c88797c281a6b267894733e0bd6ecbd361810dfb230e6c156d1",
+        "rows-5000/main.web.bundle": "229b629820e729c98f537f89ddb79f47e20f02436acd4d0db4e834cc58bba6c4",
+        "rows-5000/main.lynx.bundle": "023c9829dd04d3cf395c374123d70887b46d5b6c8df8763d0b5126c1796eec1c",
+        "rows-10000/main.web.bundle": "3e4149d6a5c0d52a0feb6344f123cf3a0ec04815c47b795471548fc5e5a085fd",
+        "rows-10000/main.lynx.bundle": "ceb8bc7837358ec361f59a95295db1bda77227d456fcbcb2b7802660f9bcba64",
+        "rows-20000/main.web.bundle": "aa74756f0b6fd3a6c68e3ff37503c1c97f7082fc2f1c7bdae6a0645c5c95d51c",
+        "rows-20000/main.lynx.bundle": "95bbf9b00007252215c6212eac8f99c798808f6cc2569ba012aa03e1ddd7a816",
+        "rows-30000/main.web.bundle": "bfd81272798b76b21b5ac3f676356547a192a792836c57343dc8b79db3fe877a",
+        "rows-30000/main.lynx.bundle": "d61a84a9d18f3d2032b60942fefd7da9f0a937aac1a753bbc53e4e182fb961f9"
       }
     },
     "sha256": {
-      "rows-0/main.web.bundle": "fc236f94d80021c43b2b5297cd53acd12ce29f7ad58150fe4d12e3655775e970",
-      "rows-0/main.lynx.bundle": "ff0870ce8b7b3c3bdfec50fdd3e21f8cae2e5380372921d873b795979c907d02",
-      "rows-1000/main.web.bundle": "4db5287f4506d600400aa171704b5fd93b537fbf132088902072f06ba6855908",
-      "rows-1000/main.lynx.bundle": "e5b25854ee8653f530d7ddebfb586ee5778743e0433bd35a14e9342482c8f4c2",
-      "rows-2000/main.web.bundle": "38bf42e40ea3e3eb3dd723c5485f2ba3ede6ec9df1abbe13eeb81fcf8bd33598",
-      "rows-2000/main.lynx.bundle": "4a0c0a6f7dd8fe510df347dffd521994faf74269ba61a7a6b54715c76ef90946",
-      "rows-3000/main.web.bundle": "4d5581f84b5b45ba79c36b341e254a480cd97281dd2d5ce3c1cacec73e99ac1e",
-      "rows-3000/main.lynx.bundle": "21ad19ac99e1c17be10a55d2148659c11e7ec16dcf6b3bee5d21b607b8c5b669",
-      "rows-5000/main.web.bundle": "c129ecbb48b0650faba94bfc4e4e27778a5f68a465c3c5b93878a25a39ee4fcc",
-      "rows-5000/main.lynx.bundle": "6b9e9ccf972ca2438a6b02f40d964ecfb8149f15d5bdbff073489a89497625ff",
-      "rows-10000/main.web.bundle": "1fc9a18249ec87ea99e5f67a593f95adbf154204761732959413c67046ffb352",
-      "rows-10000/main.lynx.bundle": "f563652772ab34cb93e705e2152b09df68761ef41947cfcda9b6b5d752a94bd1",
-      "rows-20000/main.web.bundle": "f9c6a1e35743dbd3a05da91c77b9920d800726e02e13b8a848b28e64c0c3c554",
-      "rows-20000/main.lynx.bundle": "e3f8c40432a74d892fe07cf91b7bfb268c61daadca7882d870a16418f1eefc43",
-      "rows-30000/main.web.bundle": "607fc1279b170e4fa474625a6bb86e4313ec25a35b0e5e813316d7ded2d8eeaa",
-      "rows-30000/main.lynx.bundle": "980a6484914ed254ac37604dda7a130485abdb5dcf39c66ec81dd8a073b512e1"
+      "rows-0/main.web.bundle": "d186354a07b583c8a6464ffea3d1695f9bdcdc286a350785c122175cd75f754a",
+      "rows-0/main.lynx.bundle": "6d0db5d1c363e4a982a50b0f316925d44a36d93b6d09802107d415853d9d594d",
+      "rows-1000/main.web.bundle": "0cc27b049c9257e2f46acc1a34434b2c45ac4fa0a8229c36d920bf56c40618da",
+      "rows-1000/main.lynx.bundle": "5cefae072fc376f6677d7d7a0f55cde87c37acadb5da5b613e1c76b37ff9a4b8",
+      "rows-2000/main.web.bundle": "0e431124b3c9bc578cb84f6b5ba25690e17b3076cbbb7bd6ae6b62e1fdd31a69",
+      "rows-2000/main.lynx.bundle": "8314db91d73cb61f6f3a43c156028680042942d5bb4a01943349d2e677f1b33d",
+      "rows-3000/main.web.bundle": "8710317c4f62ff1a7595c2fd5bf37d15fbcffb13eaf0818047f804ceb4bc68bf",
+      "rows-3000/main.lynx.bundle": "e9e3682488290c88797c281a6b267894733e0bd6ecbd361810dfb230e6c156d1",
+      "rows-5000/main.web.bundle": "229b629820e729c98f537f89ddb79f47e20f02436acd4d0db4e834cc58bba6c4",
+      "rows-5000/main.lynx.bundle": "023c9829dd04d3cf395c374123d70887b46d5b6c8df8763d0b5126c1796eec1c",
+      "rows-10000/main.web.bundle": "3e4149d6a5c0d52a0feb6344f123cf3a0ec04815c47b795471548fc5e5a085fd",
+      "rows-10000/main.lynx.bundle": "ceb8bc7837358ec361f59a95295db1bda77227d456fcbcb2b7802660f9bcba64",
+      "rows-20000/main.web.bundle": "aa74756f0b6fd3a6c68e3ff37503c1c97f7082fc2f1c7bdae6a0645c5c95d51c",
+      "rows-20000/main.lynx.bundle": "95bbf9b00007252215c6212eac8f99c798808f6cc2569ba012aa03e1ddd7a816",
+      "rows-30000/main.web.bundle": "bfd81272798b76b21b5ac3f676356547a192a792836c57343dc8b79db3fe877a",
+      "rows-30000/main.lynx.bundle": "d61a84a9d18f3d2032b60942fefd7da9f0a937aac1a753bbc53e4e182fb961f9"
     }
   },
   "bundles": {
@@ -216,7 +216,7 @@
     "source": {
       "source": "https://github.com/Huxpro/octane",
       "ref": "new-lynx",
-      "commit": "11cc998af102670277f3d3de808057fb963f7741",
+      "commit": "c2889216f47eee3b609e82092f5ee2e990ab1cba",
       "producerPull": null,
       "mode": "external-frozen-workload",
       "receipt": {
@@ -241,12 +241,12 @@
     },
     "sha256": {
       "web": {
-        "1000": "f04f9af8a67ce8e2671965fa95a995891d50297660c4662c74d36b36d18839bc",
-        "10000": "e7ddf780eb6794627270b781bb2eee9881e48eb0050eb84780a7d9bce6c64f3a"
+        "1000": "29255010290b8b71080dcbc6ab2efe3fc8f24050f50dfb5401489dede8a38462",
+        "10000": "4306cb568501068e9185c8e3c3f84407a79618addc13bff7bf343c55d9b4bb16"
       },
       "native": {
-        "1000": "bb43ef415b80904261d5eca915a88fa931f0db66fa8d6e99724c991267b14ced",
-        "10000": "3c6866c205327911b3e231928f8bd71b5e6ed6246c931525b56e02753dd88bee"
+        "1000": "bd119105654e140fd676db414877ff9dfdcbdda1cf15b4705e76a4edfcba47ac",
+        "10000": "7ef073ae0a59e94bf87f57b237e0189903fef1eecfe91d3f7839bcbdb51f350a"
       }
     }
   }

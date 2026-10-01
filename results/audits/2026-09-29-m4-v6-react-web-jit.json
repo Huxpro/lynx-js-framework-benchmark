@@ -1,0 +1,305 @@
+{
+  "scorecardVersion": 1,
+  "candidate": "octane-m4-final",
+  "comparator": "reactlynx-m4-default",
+  "harness": "web",
+  "machine": {
+    "id": "65160668d8d9",
+    "hostname": "n251-227-236",
+    "platform": "linux",
+    "arch": "x64",
+    "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+    "cores": 32,
+    "memGB": 67,
+    "node": "v22.22.2"
+  },
+  "comparabilityCohorts": {
+    "interaction": "sha256:1da504ceabe272b6cfeb9384e3b46691745412afe1997abeed58802e6e17c107",
+    "startup": "sha256:1da504ceabe272b6cfeb9384e3b46691745412afe1997abeed58802e6e17c107"
+  },
+  "entryCommits": {
+    "candidate": "f3e33a7a6dad78ada5ee4277f85f4b26255cd48f",
+    "comparator": "736708bc068a0dbeabefb740ba76d62194371ef2"
+  },
+  "sessions": {
+    "interaction": [
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ab-01",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ba-02",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ab-03",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ba-04",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ab-05",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ba-06",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ab-07",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ba-08",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ab-09",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-table-ba-10",
+        "order": "BA"
+      }
+    ],
+    "startup": [
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ab-01",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ba-02",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ab-03",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ba-04",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ab-05",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ba-06",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ab-07",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ba-08",
+        "order": "BA"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ab-09",
+        "order": "AB"
+      },
+      {
+        "session": "issue291-m4-v6-react-web-jit-startup-ba-10",
+        "order": "BA"
+      }
+    ]
+  },
+  "suites": {
+    "interaction": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.7578946961877883,
+        "lower": 0.7375825988186289,
+        "upper": 0.776870745047262,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "create@1000": {
+          "point": 0.7222433376065369,
+          "lower": 0.7115948030860466,
+          "upper": 0.7312133346445686,
+          "nonInferior": true
+        },
+        "replace@1000": {
+          "point": 0.7777146362848768,
+          "lower": 0.7621359005706786,
+          "upper": 0.7960501225879011,
+          "nonInferior": true
+        },
+        "update10th@1000": {
+          "point": 0.699213136970232,
+          "lower": 0.6012672208559526,
+          "upper": 0.8129923878745551,
+          "nonInferior": true
+        },
+        "select@1000": {
+          "point": 0.8481683691575542,
+          "lower": 0.76413996990208,
+          "upper": 0.9426972653197906,
+          "nonInferior": true
+        },
+        "swap@1000": {
+          "point": 0.7584685652045728,
+          "lower": 0.6532277260606196,
+          "upper": 0.8747991251544602,
+          "nonInferior": true
+        },
+        "remove@1000": {
+          "point": 0.7037295075733867,
+          "lower": 0.6540529299325915,
+          "upper": 0.7677071434860926,
+          "nonInferior": true
+        },
+        "create@10000": {
+          "point": 0.7103331713720077,
+          "lower": 0.7025987199780934,
+          "upper": 0.7185216627289993,
+          "nonInferior": true
+        },
+        "append1k@1000": {
+          "point": 0.8548493660367338,
+          "lower": 0.8425668843255076,
+          "upper": 0.8678595132398288,
+          "nonInferior": true
+        },
+        "clear@1000": {
+          "point": 0.8523044146278353,
+          "lower": 0.7947625017306844,
+          "upper": 0.9208334054743869,
+          "nonInferior": true
+        }
+      },
+      "pass": true
+    },
+    "startup": {
+      "pairCount": 10,
+      "orderCounts": {
+        "AB": 5,
+        "BA": 5
+      },
+      "aggregate": {
+        "point": 0.9058887889894611,
+        "lower": 0.8884639297428558,
+        "upper": 0.9239004641824127,
+        "strictWin": true,
+        "engineeringTarget": true
+      },
+      "cells": {
+        "fcp@0": {
+          "point": 1.0407967122577768,
+          "lower": 1.0010657749668659,
+          "upper": 1.0825557087516862,
+          "nonInferior": false
+        },
+        "fcp@1000": {
+          "point": 0.8541360593551883,
+          "lower": 0.8240792477319866,
+          "upper": 0.8829311892038109,
+          "nonInferior": true
+        },
+        "fcp@10000": {
+          "point": 0.8362414420160992,
+          "lower": 0.8253470832439892,
+          "upper": 0.8463379646643227,
+          "nonInferior": true
+        }
+      },
+      "pass": false
+    }
+  },
+  "pass": false,
+  "sourceRuns": {
+    "interaction": [
+      {
+        "file": "results/runs/2026-09-29T13-07-57-65160668d8d9-issue291-m4-v6-react-table-ab-01.json",
+        "sha256": "949bd4ac9e9a16b2d750524209833c6ad203b1ccee8f99f54bffea892ab0e9a7"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-14-13-65160668d8d9-issue291-m4-v6-react-table-ba-02.json",
+        "sha256": "1811a67d11f7cb9e2a7e517390686be71aafc2f3da3dde898477c055294e3d33"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-20-25-65160668d8d9-issue291-m4-v6-react-table-ab-03.json",
+        "sha256": "d72970823182308254e187d2b3c510cd13399e3eb9b077c273591222620c2d8f"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-26-36-65160668d8d9-issue291-m4-v6-react-table-ba-04.json",
+        "sha256": "43bc79b875569e7d305034ed656fc7175345e418bed7e41093c20ae8649e59f5"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-32-51-65160668d8d9-issue291-m4-v6-react-table-ab-05.json",
+        "sha256": "0601315deaa52814bdc0b3260c9eecac191dee9c646d288c64f528fe06e5ae91"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-39-03-65160668d8d9-issue291-m4-v6-react-table-ba-06.json",
+        "sha256": "36a77c0ccc6deb75de8c04a06272026baaa07345c2bf53dc52508f482e91fac2"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-45-17-65160668d8d9-issue291-m4-v6-react-table-ab-07.json",
+        "sha256": "39baa00cde66591290c9524218e86e7f5896372c88c1ab1725743f837de294c8"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-51-32-65160668d8d9-issue291-m4-v6-react-table-ba-08.json",
+        "sha256": "e8ad8e7631270ffb0471f05796e534351c1f1aee1502a52f1e8c4b048c944aea"
+      },
+      {
+        "file": "results/runs/2026-09-29T13-57-48-65160668d8d9-issue291-m4-v6-react-table-ab-09.json",
+        "sha256": "eb20c559f33ebca68f4b1a76832dd0cb0119758e9c3889dbf2665d9e5cc6902b"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-04-04-65160668d8d9-issue291-m4-v6-react-table-ba-10.json",
+        "sha256": "a08c2057810d3a7cad11d3e4e6923e02fed3e2470b9202f6bbaf3c31db03971a"
+      }
+    ],
+    "startup": [
+      {
+        "file": "results/runs/2026-09-29T14-05-20-65160668d8d9-issue291-m4-v6-react-startup-ab-01.json",
+        "sha256": "78eeee9024c7b4b8177b0912e7366a63cb2cddb93d5847a0f039489d4d5ecf1a"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-06-14-65160668d8d9-issue291-m4-v6-react-startup-ba-02.json",
+        "sha256": "fbbb0573e90b830510ccfa4d6a6d628e06f73f152904589b340ce904e948649d"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-07-07-65160668d8d9-issue291-m4-v6-react-startup-ab-03.json",
+        "sha256": "03c417efb416b8f2beb8fab30a25c581730f931cfccf8b4733b2a38c97e4a500"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-08-00-65160668d8d9-issue291-m4-v6-react-startup-ba-04.json",
+        "sha256": "08786a2d939c295f5115e5233934fe7df9c1476fd0ef8bc732eafab3c9cf9dba"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-08-53-65160668d8d9-issue291-m4-v6-react-startup-ab-05.json",
+        "sha256": "d012354b9e289782e545beec619b785b8ae8e876eac465a89d130f0794b0385d"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-09-47-65160668d8d9-issue291-m4-v6-react-startup-ba-06.json",
+        "sha256": "29c75fb46afe2338092cf508b50c51ea9ba1f89e227d8f1b9a139776fe1248ba"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-10-41-65160668d8d9-issue291-m4-v6-react-startup-ab-07.json",
+        "sha256": "c7caf5ccf83c297854f8682f768a8e844487e0817ac172c5e639f4b190f9e162"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-11-34-65160668d8d9-issue291-m4-v6-react-startup-ba-08.json",
+        "sha256": "248896f44628b23b2633dd85a15d55cbb8c54208a2892ca850b14edd98bf9f64"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-12-29-65160668d8d9-issue291-m4-v6-react-startup-ab-09.json",
+        "sha256": "4e30ccb30e0263fb8493a65cfe7b75080b41f5908fd4f3cedc35c312654d1caf"
+      },
+      {
+        "file": "results/runs/2026-09-29T14-13-21-65160668d8d9-issue291-m4-v6-react-startup-ba-10.json",
+        "sha256": "7a09e49ebb103a986af8dcf900da9ad71e20f58f2bb9b1dbe246d450553132d9"
+      }
+    ]
+  }
+}
