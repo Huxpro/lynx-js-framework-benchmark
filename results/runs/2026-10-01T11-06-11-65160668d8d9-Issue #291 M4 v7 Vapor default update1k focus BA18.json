@@ -1,0 +1,4297 @@
+{
+ "schemaVersion": 4,
+ "meta": {
+  "generatedAt": "2026-10-01T11:06:11.110Z",
+  "machine": {
+   "id": "65160668d8d9",
+   "hostname": "n251-227-236",
+   "platform": "linux",
+   "arch": "x64",
+   "cpuModel": "Intel(R) Xeon(R) Platinum 8336C CPU @ 2.30GHz",
+   "cores": 32,
+   "memGB": 67,
+   "node": "v22.22.2"
+  },
+  "calibration": {
+   "probeVersion": 1,
+   "score": 2360.8,
+   "iterations": 2361
+  },
+  "chromium": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+  "browser": {
+   "name": "chromium",
+   "version": "149.0.7827.55",
+   "executablePath": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome"
+  },
+  "environment": {
+   "jsRegime": "jit",
+   "jsFlags": "--expose-gc",
+   "cpuThrottle": 1,
+   "throttleScope": "none"
+  },
+  "entryOrder": [
+   "vue-lynx-m4-vapor-default",
+   "octane-m4-final"
+  ],
+  "sessionId": "issue291-m4-v7-vapor-default-update1k-focus-BA18",
+  "argv": [
+   "run",
+   "--harness",
+   "web",
+   "--entry",
+   "vue-lynx-m4-vapor-default,octane-m4-final",
+   "--suite",
+   "table",
+   "--case",
+   "update10th",
+   "--scale",
+   "1000",
+   "--reps",
+   "20",
+   "--no-memory",
+   "--session-id",
+   "issue291-m4-v7-vapor-default-update1k-focus-BA18",
+   "--label",
+   "Issue #291 M4 v7 Vapor default update1k focus BA18",
+   "--no-collect"
+  ],
+  "entryCommits": {
+   "vue-lynx-m4-vapor-default": "736708bc068a0dbeabefb740ba76d62194371ef2",
+   "octane-m4-final": "c2889216f47eee3b609e82092f5ee2e990ab1cba"
+  },
+  "receipt": {
+   "repository": {
+    "commit": "604c4ba8faac02dfd5de155860ca875299fd7fdf",
+    "dirty": false,
+    "diffSha256": null
+   },
+   "runtime": {
+    "lockfile": "pnpm-lock.yaml",
+    "lockfileSha256": "0a3c203095f8d43350d15db005b02a825fff187883f9af2d34b9ddae3b1d3758",
+    "packages": [
+     {
+      "name": "@lynx-js/web-core",
+      "version": "0.22.1",
+      "integrity": "sha512-B5XLDjPTU+aO6fq6ylHt7mf3rYxcQAuKHSD86ifoWweO3WI2io6xUSPjnY+MThp8xCihu+NocpmGTi/puRDHxw=="
+     },
+     {
+      "name": "@lynx-js/web-elements",
+      "version": "0.12.5",
+      "integrity": "sha512-plNOkiI/AvdSqTmsN8jDBtll3SOqfrnLUuqicn3DrMUT7tizUhX6569dLNae8dk9KQqnS1pukUK9d/P/Nw9edg=="
+     },
+     {
+      "name": "@lynx-js/web-elements",
+      "version": "0.8.11",
+      "integrity": "sha512-iLI+HMbtVRu/TxT6TQ+pxa3Mz9xdoKCRnXN1n/u0AxoXy0FsL4yBVgElieRX2T9st9/flvb/CXfezIb0BFmg1Q=="
+     },
+     {
+      "name": "@lynx-js/web-worker-rpc",
+      "version": "0.22.1",
+      "integrity": "sha512-nvC0axgTFJbpc8QcXbMVEG4EQcF3GCfdoDTmSAIE0J6bOOfvx2hK1ztG6MpRERU5dzMSfaHn425QpbPrume9QQ=="
+     },
+     {
+      "name": "playwright-core",
+      "version": "1.62.1",
+      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw=="
+     }
+    ]
+   },
+   "workload": {
+    "files": {
+     "packages/shared/src/workloads.mjs": "0eef1e168c2d12c4f503d0835d1baacc3222760a352e9811fe2db1cd9ecc55a1",
+     "packages/shared/src/driver-client.mjs": "a2526adee631ab1d866b2604ea10872a30552c9875fa89b13b03722c512a92d2",
+     "packages/shared/src/page-instrument.mjs": "1bba567b77eb113c9b271c26e763635dbe80e03fab6f7315293f69fae819a14a",
+     "packages/shared/src/pipeline.mjs": "9b5dcd542a819e1a3b1045e0b3a013ed610905148990fc990e128ab3e59c99ee",
+     "packages/shared/src/list-workloads.mjs": "f17a3243e34e95d8f31431583cfebb2efe787b64840b2309f570d83e8f8653a1",
+     "packages/shared/src/scorecard.mjs": "4f53ca39e32d2dbc931fe8a9caaee80de9534de6f964644eb8f42ab1d31bb5d2",
+     "packages/shared/src/qualification.mjs": "029397b12e6de6945ff058d6d6bc4c75f00966667eececc76399ad16149fe85a",
+     "packages/runner/src/pipeline-attribution.mjs": "7e7f0dad092caecf0bf54910e8250be7c07c1ad70bd283b9d06a66e26138297d",
+     "packages/runner/src/list-coverage.mjs": "09172327eee0cc33dfd6140e27cbabb80e029dbde532dc4a26f9147c6f9f5590",
+     "packages/runner/src/list-derivation.mjs": "e2a83e8fef9e50e8b21351d366671bab6000f6822ca55d2fbaab1e5c6b701416",
+     "packages/runner/src/storm-contract.mjs": "a94ce589a5d07ee1515ce8634ab9ed495312a20c78d345bcf21718904443bc62"
+    },
+    "sha256": "73fa23ae2302bc52c9e3030fb00e856876e04f3189744347cc4ece924b0ba462",
+    "roadmapScorecardVersion": 1,
+    "stormTicks": {
+     "updateStorm": 50,
+     "selectStorm": 30
+    },
+    "stormContract": {
+     "version": 1,
+     "cases": [
+      {
+       "name": "updateStorm",
+       "commitPolicy": "every-tick",
+       "ticks": 50,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "row-stride",
+        "stride": 10,
+        "field": "label"
+       },
+       "observation": {
+        "kind": "label-suffix",
+        "rowIndex": 0,
+        "suffix": " !!!"
+       },
+       "action": {
+        "kind": "button",
+        "label": "Update every 10th row"
+       }
+      },
+      {
+       "name": "updateStorm",
+       "commitPolicy": "final-state",
+       "ticks": 50,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "row-stride",
+        "stride": 10,
+        "field": "label"
+       },
+       "observation": {
+        "kind": "label-suffix",
+        "rowIndex": 0,
+        "suffix": " !!!"
+       },
+       "action": {
+        "kind": "button",
+        "label": "Update every 10th row"
+       }
+      },
+      {
+       "name": "selectStorm",
+       "commitPolicy": "every-tick",
+       "ticks": 30,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "single-row-selection"
+       },
+       "observation": {
+        "kind": "alternating-selection",
+        "rowIndices": [
+         1,
+         2
+        ]
+       },
+       "action": {
+        "kind": "alternating-cells",
+        "rowIndices": [
+         1,
+         2
+        ],
+        "cls": "col-label"
+       }
+      },
+      {
+       "name": "selectStorm",
+       "commitPolicy": "final-state",
+       "ticks": 30,
+       "tickIntervalMs": 8,
+       "scheduleToleranceMs": 50,
+       "mutationWidth": {
+        "kind": "single-row-selection"
+       },
+       "observation": {
+        "kind": "alternating-selection",
+        "rowIndices": [
+         1,
+         2
+        ]
+       },
+       "action": {
+        "kind": "alternating-cells",
+        "rowIndices": [
+         1,
+         2
+        ],
+        "cls": "col-label"
+       }
+      }
+     ]
+    }
+   },
+   "execution": {
+    "harness": "web",
+    "browser": {
+     "name": "chromium",
+     "version": "149.0.7827.55",
+     "executablePath": "/home/xuan.huang/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome"
+    },
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none",
+    "includeMemory": false,
+    "entryOrder": [
+     "vue-lynx-m4-vapor-default",
+     "octane-m4-final"
+    ],
+    "sessionId": "issue291-m4-v7-vapor-default-update1k-focus-BA18"
+   },
+   "sampling": {
+    "repetitions": {
+     "table": 20,
+     "storm": 3,
+     "startup": 5
+    },
+    "warmup": {
+     "table": {
+      "createClearCycles": 2,
+      "page": "shared-per-entry"
+     },
+     "storm": {
+      "cycles": 0,
+      "page": "fresh-per-attempt"
+     },
+     "startup": {
+      "cycles": 0,
+      "page": "fresh-per-attempt"
+     }
+    },
+    "acceptance": {
+     "table": "dom-predicate-completed-before-timeout",
+     "pipeline": "dom-predicate-completed-with-tree-and-call-multiset-controls",
+     "storm": "terminal-state-observed-with-explicit-commit-outcome-and-input-schedule-controls",
+     "startup": "first-content-observed-before-timeout"
+    },
+    "aggregation": "median-with-t-distribution-ci95",
+    "outliers": "none-removed"
+   },
+   "entryBundles": {
+    "vue-lynx-m4-vapor-default": {
+     "list/rows-1000/main.lynx.bundle": "8c511725ed3068939a2f96634af18a8efb2558153bf271338196ad3ced885a07",
+     "list/rows-1000/main.web.bundle": "6d56876216d0fc6d93d9c2b732a64f315f8535ad5d2fae3345c50a395eade182",
+     "list/rows-10000/main.lynx.bundle": "54c73b96a8d6c45358c1614a4a15b82003dc9acb7f2edb21c75577de041cbcec",
+     "list/rows-10000/main.web.bundle": "768844dc37407e33c38a389402dc485370b13e052e7e2f545f2fe0c9cb8f8d21",
+     "rows-0/main.lynx.bundle": "2d7f21fcc8afd038b7edee8454432651f21960bc9384cc34cadf622d06fca9b5",
+     "rows-0/main.web.bundle": "1e4c01f89137e182b0aab3bb0bbc187ca8f413d3bf967d053746b34a0e38f3b9",
+     "rows-1000/main.lynx.bundle": "dbc4f2da428099f787d23398e6307fffda585a089b1195a227cedb95be15241d",
+     "rows-1000/main.web.bundle": "1123ee7eb6506ee57bc898ce6bb8d2a2adfe8468c51657ec222fbdb7ec2f7fd2",
+     "rows-10000/main.lynx.bundle": "cb61b57751f06119d26c434ff5755c39550da3fadb606a2da57e6ce35fcd91dc",
+     "rows-10000/main.web.bundle": "dc0f39b134886fec1e9292b1897ac570d23c2b541806e027599eddb999de4546",
+     "rows-2000/main.lynx.bundle": "73db8b14af64e6b9db927ad8b6d7f410992258df61ccde5f073c1a8dd15a9d94",
+     "rows-2000/main.web.bundle": "c873d21521ccd72498109b9105885060103771e7e770dc4b9b40b6b67444e94f",
+     "rows-20000/main.lynx.bundle": "edb43cf50ea9f497fa981785ccb2581649044a3dba363895a43505ca45821ee5",
+     "rows-20000/main.web.bundle": "a06f1aaa3771d0109e37a9b485d5a290a57c9782dc620eaf0032a42c4f555bb8",
+     "rows-3000/main.lynx.bundle": "7d956fc72a0a7477bba51a45758ca908c25f95c4d9ae85bd0456c13d2c1c9261",
+     "rows-3000/main.web.bundle": "aecfb69587b342ef00af9b43a6515adb012e72d8c7c298162939615753c55825",
+     "rows-30000/main.lynx.bundle": "96651f75bca919e38e0476367e0bca81a48c5c3e1019d27cf7a3a3e916c9a84a",
+     "rows-30000/main.web.bundle": "73640dab92d7c855b24460aa4e3fff3526e6991ad2abb67709ee7791a80960f2",
+     "rows-5000/main.lynx.bundle": "e1cd08c8a96f4077bb2ef8e50ebe97268d6e452ddb8efe5a1bc11bf3c554f65e",
+     "rows-5000/main.web.bundle": "73d92d058bffa2dacf7ca777f6243595bdf7f2c87b9dc21cdb45d752797e3f62"
+    },
+    "octane-m4-final": {
+     "list/rows-1000/main.lynx.bundle": "28722cf1e3740406609146a21b199ead34db08d8c44871b59afcb9de163fc39a",
+     "list/rows-1000/main.web.bundle": "19de7272b5d7a98a2fe39bb458a4f87299d5b85ddeb8aeb30ea76f5fc9579d4f",
+     "list/rows-10000/main.lynx.bundle": "2e02ddcac083a3f5c60c4ac5641c068c42883ba163505127477c70ba201762b4",
+     "list/rows-10000/main.web.bundle": "0f2df11280fc77ed955a7e97d50d0be38724a8725358065c93942f881d2b4204",
+     "rows-0/main.lynx.bundle": "2ec8f74ef6ce16c3b25659181dd4dac7cdff354a5bd014e23d4d0ad064907946",
+     "rows-0/main.web.bundle": "51cc3ac6b5ab9ab4fd97058cd9f2550b2353eba3b825fed261fc995e9523263f",
+     "rows-1000/main.lynx.bundle": "3e706012ee79385f526fe0ba3e9c1fa08ebe5140427a3b847140fdb28fc06dd5",
+     "rows-1000/main.web.bundle": "9560c007c530496a6bb8d2db326b715c6e28635a57d31f9c4a0285dc08f040f5",
+     "rows-10000/main.lynx.bundle": "45481a4ef56175704c8bbf925d0035c100a2e7e85010ee261fbc24286de1540f",
+     "rows-10000/main.web.bundle": "d030d50edd18ff8e86f91f5cc442f4916caa44ce9a5d1f3aded07b13c4c24ca9",
+     "rows-2000/main.lynx.bundle": "ffec8bc862dc7644dd4a3c0d858d4e19b28814d415e6c2eef72ae617674de77d",
+     "rows-2000/main.web.bundle": "584ac2c920e55e187af28c46f7b3422df1cca0283ff1cdce98d60eb5dec181d1",
+     "rows-20000/main.lynx.bundle": "0590f30a43cbc7ab0262772d2d67b4d06cbf59717ea3eab0cfa2af8e14ff2485",
+     "rows-20000/main.web.bundle": "5b626f089ae4b2edaa62e531c1b72983f2b2869501fc3b7be7c783281065d973",
+     "rows-3000/main.lynx.bundle": "9c3b5ddac931d8d341be06a1886de090e5cb6454777a059319593625c71947bb",
+     "rows-3000/main.web.bundle": "4e24fd097c50dfb5cd2143ebce9296ff8bbb378bc026af0ff822e1f7a545756c",
+     "rows-30000/main.lynx.bundle": "7b974ddd7357a2ea5f0ba6f67fde4ffc6c8b45c22cf06e1c8cd14a775c9c768b",
+     "rows-30000/main.web.bundle": "a79754c40990c983f4d13b703e415f44c25709e89fa045e0e17e789de4f7d76d",
+     "rows-5000/main.lynx.bundle": "5c1bcf082e02ee2e40635d6a0a1aea6c777d13a31ef0fa9375b271f9b6045c42",
+     "rows-5000/main.web.bundle": "b378b650d9ce0dcaf749280b98a116b27d5cf85538d7da61e401e99432dcd31d"
+    }
+   },
+   "comparabilityCohort": "sha256:7974636840ece758bf32f72e85edecc1f8b4840d479e5f2b8648385be4487ce1"
+  }
+ },
+ "records": [
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    26.835000038146973,
+    25.53499984741211,
+    22.174999237060547,
+    17.05500030517578,
+    25.15499973297119,
+    13.005000114440918,
+    26.59000015258789,
+    27.244999885559082,
+    14.255000114440918,
+    28.405000686645508,
+    28.744999885559082,
+    23.300000190734863,
+    11.875,
+    14.975000381469727,
+    19.550000190734863,
+    20.4399995803833,
+    16.594999313354492,
+    10.690000534057617,
+    23.335000038146973,
+    21.170000076293945
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 21.672499656677246,
+   "mean": 20.84650001525879,
+   "std": 5.809636706067242,
+   "min": 10.690000534057617,
+   "max": 28.744999885559082,
+   "p95": 28.405000686645508,
+   "ci95": 2.718962426042766,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    0.806,
+    0.787,
+    1.036,
+    1.067,
+    0.785,
+    1.331,
+    1.337,
+    0.529,
+    1.065,
+    0.799,
+    1.09,
+    1.044,
+    0.808,
+    0.792,
+    0.823,
+    0.802,
+    0.798,
+    1.341,
+    0.815,
+    1.06
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 0.819,
+   "mean": 0.9457500000000001,
+   "std": 0.22021015680003211,
+   "min": 0.529,
+   "max": 1.341,
+   "p95": 1.337,
+   "ci95": 0.10306034137160093,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    23.23,
+    25.468,
+    22.247,
+    24.187,
+    20.322,
+    20.738,
+    23.108,
+    21.479,
+    22.654,
+    23.215,
+    24.512,
+    31.848,
+    25.218,
+    22.51,
+    21.124,
+    23.705,
+    33.929,
+    22.966,
+    23.845,
+    21.537
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 23.1615,
+   "mean": 23.8921,
+   "std": 3.3952776167401755,
+   "min": 20.322,
+   "max": 33.929,
+   "p95": 31.848,
+   "ci95": 1.589020576150587,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    405,
+    405,
+    405,
+    404,
+    405,
+    405,
+    404,
+    405,
+    405,
+    405,
+    405,
+    404,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405,
+    405
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 288
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    },
+    {
+     "byName": {
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 289
+      },
+      "ret_bg-to-main_6": {
+       "messages": 1,
+       "bytes": 60
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 289
+     },
+     "ret_bg-to-main_6": {
+      "messages": 1,
+      "bytes": 60
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 405,
+   "mean": 404.85,
+   "std": 0.3663475485325234,
+   "min": 404,
+   "max": 405,
+   "p95": 405,
+   "ci95": 0.17145395998558,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 3,
+   "mean": 3,
+   "std": 0,
+   "min": 3,
+   "max": 3,
+   "p95": 3,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687,
+    3687
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "callLepusMethod": {
+       "messages": 1,
+       "bytes": 3621
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "callLepusMethod": {
+      "messages": 1,
+      "bytes": 3621
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 3687,
+   "mean": 3687,
+   "std": 0,
+   "min": 3687,
+   "max": 3687,
+   "p95": 3687,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "latency",
+   "boundary": "pointerdown-to-dom-predicate",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    15.395000457763672,
+    25.359999656677246,
+    17.565000534057617,
+    14.654999732971191,
+    21.420000076293945,
+    22.55500030517578,
+    22.225000381469727,
+    16.335000038146973,
+    12.414999961853027,
+    16.434999465942383,
+    27.5649995803833,
+    12.710000038146973,
+    25.47000026702881,
+    15.359999656677246,
+    24.13499927520752,
+    13.579999923706055,
+    16.625,
+    27.869999885559082,
+    24.579999923706055,
+    18.210000038146973
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 17.887500286102295,
+   "mean": 19.52324995994568,
+   "std": 5.1026476846271995,
+   "min": 12.414999961853027,
+   "max": 27.869999885559082,
+   "p95": 27.5649995803833,
+   "ci95": 2.3880851815306077,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "btsCpu",
+   "boundary": "sampled-js-cpu-background-realm",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    3.497,
+    3.021,
+    4.023,
+    4.05,
+    4.023,
+    3.651,
+    3.255,
+    3.514,
+    3.48,
+    3.214,
+    2.908,
+    2.692,
+    3.479,
+    3.755,
+    3.18,
+    3.187,
+    3.536,
+    3.217,
+    4.218,
+    3.212
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 3.4795,
+   "mean": 3.4555999999999996,
+   "std": 0.40741901358623267,
+   "min": 2.692,
+   "max": 4.218,
+   "p95": 4.05,
+   "ci95": 0.1906757764111993,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsCpu",
+   "boundary": "sampled-js-cpu-ui-thread",
+   "unit": "ms",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    25.553,
+    24.45,
+    26.247,
+    22.923,
+    23.984,
+    24.375,
+    25.841,
+    24.554,
+    23.775,
+    22.767,
+    22.964,
+    23.698,
+    23.925,
+    25.493,
+    31.331,
+    24.419,
+    24.409,
+    23.77,
+    24.939,
+    24.733
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 24.414,
+   "mean": 24.707500000000003,
+   "std": 1.8234957896131383,
+   "min": 22.767,
+   "max": 31.331,
+   "p95": 26.247,
+   "ci95": 0.853412491494941,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    659,
+    659,
+    659,
+    658,
+    658,
+    659,
+    658,
+    659,
+    659,
+    659,
+    658,
+    659,
+    659,
+    659,
+    658,
+    659,
+    659,
+    659,
+    659,
+    659
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 318
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 318
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 318
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 318
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 318
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchCoreContextOnBackground": {
+       "messages": 2,
+       "bytes": 284
+      },
+      "postTimingFlags": {
+       "messages": 1,
+       "bytes": 56
+      },
+      "publicComponentEvent": {
+       "messages": 1,
+       "bytes": 319
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "dispatchCoreContextOnBackground": {
+      "messages": 2,
+      "bytes": 284
+     },
+     "postTimingFlags": {
+      "messages": 1,
+      "bytes": 56
+     },
+     "publicComponentEvent": {
+      "messages": 1,
+      "bytes": 319
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 659,
+   "mean": 658.75,
+   "std": 0.4442616583193193,
+   "min": 658,
+   "max": 659,
+   "p95": 659,
+   "ci95": 0.20791846675028525,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToBtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 4,
+   "mean": 4,
+   "std": 0,
+   "min": 4,
+   "max": 4,
+   "p95": 4,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsBytes",
+   "boundary": "web-core-rpc-channel",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922,
+    2922
+   ],
+   "detailSamples": [
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    },
+    {
+     "byName": {
+      "dispatchJSContextOnMainThread": {
+       "messages": 1,
+       "bytes": 2856
+      },
+      "dispatchLynxViewEvent": {
+       "messages": 1,
+       "bytes": 66
+      }
+     }
+    }
+   ],
+   "detail": {
+    "byName": {
+     "dispatchJSContextOnMainThread": {
+      "messages": 1,
+      "bytes": 2856
+     },
+     "dispatchLynxViewEvent": {
+      "messages": 1,
+      "bytes": 66
+     }
+    }
+   },
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 2922,
+   "mean": 2922,
+   "std": 0,
+   "min": 2922,
+   "max": 2922,
+   "p95": 2922,
+   "ci95": 0,
+   "detailKind": "sample-nearest-median"
+  },
+  {
+   "suite": "table",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "update10th",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "wireToMtsMsgs",
+   "boundary": "web-core-rpc-channel",
+   "unit": "count",
+   "comparabilityCohort": null,
+   "value": null,
+   "samples": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ],
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "attemptedCount": 20,
+   "acceptedCount": 20,
+   "n": 20,
+   "median": 2,
+   "mean": 2,
+   "std": 0,
+   "min": 2,
+   "max": 2,
+   "p95": 2,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 147639,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 147639,
+   "mean": 147639,
+   "std": 0,
+   "min": 147639,
+   "max": 147639,
+   "p95": 147639,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 50306,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 50306,
+   "mean": 50306,
+   "std": 0,
+   "min": 50306,
+   "max": 50306,
+   "p95": 50306,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9605,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9605,
+   "mean": 9605,
+   "std": 0,
+   "min": 9605,
+   "max": 9605,
+   "p95": 9605,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "btsSectionRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 115096,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 115096,
+   "mean": 115096,
+   "std": 0,
+   "min": 115096,
+   "max": 115096,
+   "p95": 115096,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "btsSectionGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 40273,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 40273,
+   "mean": 40273,
+   "std": 0,
+   "min": 40273,
+   "max": 40273,
+   "p95": 40273,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleLynxRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 151141,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 151141,
+   "mean": 151141,
+   "std": 0,
+   "min": 151141,
+   "max": 151141,
+   "p95": 151141,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleLynxGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 58651,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 58651,
+   "mean": 58651,
+   "std": 0,
+   "min": 58651,
+   "max": 58651,
+   "p95": 58651,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 147639,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 147639,
+   "mean": 147639,
+   "std": 0,
+   "min": 147639,
+   "max": 147639,
+   "p95": 147639,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "1e4c01f89137e182b0aab3bb0bbc187ca8f413d3bf967d053746b34a0e38f3b9",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 50306,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 50306,
+   "mean": 50306,
+   "std": 0,
+   "min": 50306,
+   "max": 50306,
+   "p95": 50306,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "1e4c01f89137e182b0aab3bb0bbc187ca8f413d3bf967d053746b34a0e38f3b9",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "1e4c01f89137e182b0aab3bb0bbc187ca8f413d3bf967d053746b34a0e38f3b9",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9605,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9605,
+   "mean": 9605,
+   "std": 0,
+   "min": 9605,
+   "max": 9605,
+   "p95": 9605,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "1e4c01f89137e182b0aab3bb0bbc187ca8f413d3bf967d053746b34a0e38f3b9",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 151141,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 151141,
+   "mean": 151141,
+   "std": 0,
+   "min": 151141,
+   "max": 151141,
+   "p95": 151141,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.lynx.bundle",
+    "sha256": "2d7f21fcc8afd038b7edee8454432651f21960bc9384cc34cadf622d06fca9b5",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 58651,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 58651,
+   "mean": 58651,
+   "std": 0,
+   "min": 58651,
+   "max": 58651,
+   "p95": 58651,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.lynx.bundle",
+    "sha256": "2d7f21fcc8afd038b7edee8454432651f21960bc9384cc34cadf622d06fca9b5",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 147947,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 147947,
+   "mean": 147947,
+   "std": 0,
+   "min": 147947,
+   "max": 147947,
+   "p95": 147947,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.web.bundle",
+    "sha256": "1123ee7eb6506ee57bc898ce6bb8d2a2adfe8468c51657ec222fbdb7ec2f7fd2",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 50427,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 50427,
+   "mean": 50427,
+   "std": 0,
+   "min": 50427,
+   "max": 50427,
+   "p95": 50427,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.web.bundle",
+    "sha256": "1123ee7eb6506ee57bc898ce6bb8d2a2adfe8468c51657ec222fbdb7ec2f7fd2",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.web.bundle",
+    "sha256": "1123ee7eb6506ee57bc898ce6bb8d2a2adfe8468c51657ec222fbdb7ec2f7fd2",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9605,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9605,
+   "mean": 9605,
+   "std": 0,
+   "min": 9605,
+   "max": 9605,
+   "p95": 9605,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.web.bundle",
+    "sha256": "1123ee7eb6506ee57bc898ce6bb8d2a2adfe8468c51657ec222fbdb7ec2f7fd2",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 151445,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 151445,
+   "mean": 151445,
+   "std": 0,
+   "min": 151445,
+   "max": 151445,
+   "p95": 151445,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.lynx.bundle",
+    "sha256": "dbc4f2da428099f787d23398e6307fffda585a089b1195a227cedb95be15241d",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 58757,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 58757,
+   "mean": 58757,
+   "std": 0,
+   "min": 58757,
+   "max": 58757,
+   "p95": 58757,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.lynx.bundle",
+    "sha256": "dbc4f2da428099f787d23398e6307fffda585a089b1195a227cedb95be15241d",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 147947,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 147947,
+   "mean": 147947,
+   "std": 0,
+   "min": 147947,
+   "max": 147947,
+   "p95": 147947,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.web.bundle",
+    "sha256": "dc0f39b134886fec1e9292b1897ac570d23c2b541806e027599eddb999de4546",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 50427,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 50427,
+   "mean": 50427,
+   "std": 0,
+   "min": 50427,
+   "max": 50427,
+   "p95": 50427,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.web.bundle",
+    "sha256": "dc0f39b134886fec1e9292b1897ac570d23c2b541806e027599eddb999de4546",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.web.bundle",
+    "sha256": "dc0f39b134886fec1e9292b1897ac570d23c2b541806e027599eddb999de4546",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9605,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9605,
+   "mean": 9605,
+   "std": 0,
+   "min": 9605,
+   "max": 9605,
+   "p95": 9605,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.web.bundle",
+    "sha256": "dc0f39b134886fec1e9292b1897ac570d23c2b541806e027599eddb999de4546",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 151445,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 151445,
+   "mean": 151445,
+   "std": 0,
+   "min": 151445,
+   "max": 151445,
+   "p95": 151445,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.lynx.bundle",
+    "sha256": "cb61b57751f06119d26c434ff5755c39550da3fadb606a2da57e6ce35fcd91dc",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 58760,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 58760,
+   "mean": 58760,
+   "std": 0,
+   "min": 58760,
+   "max": 58760,
+   "p95": 58760,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.lynx.bundle",
+    "sha256": "cb61b57751f06119d26c434ff5755c39550da3fadb606a2da57e6ce35fcd91dc",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 147947,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 147947,
+   "mean": 147947,
+   "std": 0,
+   "min": 147947,
+   "max": 147947,
+   "p95": 147947,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.web.bundle",
+    "sha256": "73640dab92d7c855b24460aa4e3fff3526e6991ad2abb67709ee7791a80960f2",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 50427,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 50427,
+   "mean": 50427,
+   "std": 0,
+   "min": 50427,
+   "max": 50427,
+   "p95": 50427,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.web.bundle",
+    "sha256": "73640dab92d7c855b24460aa4e3fff3526e6991ad2abb67709ee7791a80960f2",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 28525,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 28525,
+   "mean": 28525,
+   "std": 0,
+   "min": 28525,
+   "max": 28525,
+   "p95": 28525,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.web.bundle",
+    "sha256": "73640dab92d7c855b24460aa4e3fff3526e6991ad2abb67709ee7791a80960f2",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "mtsSectionGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 9605,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 9605,
+   "mean": 9605,
+   "std": 0,
+   "min": 9605,
+   "max": 9605,
+   "p95": 9605,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.web.bundle",
+    "sha256": "73640dab92d7c855b24460aa4e3fff3526e6991ad2abb67709ee7791a80960f2",
+    "flavor": "web",
+    "section": "lepusCode.root"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 151445,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 151445,
+   "mean": 151445,
+   "std": 0,
+   "min": 151445,
+   "max": 151445,
+   "p95": 151445,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.lynx.bundle",
+    "sha256": "96651f75bca919e38e0476367e0bca81a48c5c3e1019d27cf7a3a3e916c9a84a",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "vue-lynx-m4-vapor-default",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 58756,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 58756,
+   "mean": 58756,
+   "std": 0,
+   "min": 58756,
+   "max": 58756,
+   "p95": 58756,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.lynx.bundle",
+    "sha256": "96651f75bca919e38e0476367e0bca81a48c5c3e1019d27cf7a3a3e916c9a84a",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 204842,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 204842,
+   "mean": 204842,
+   "std": 0,
+   "min": 204842,
+   "max": 204842,
+   "p95": 204842,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleWebGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 62562,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62562,
+   "mean": 62562,
+   "std": 0,
+   "min": 62562,
+   "max": 62562,
+   "p95": 62562,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleLynxRaw",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 226278,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 226278,
+   "mean": 226278,
+   "std": 0,
+   "min": 226278,
+   "max": 226278,
+   "p95": 226278,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "bundleLynxGzip",
+   "boundary": "static",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 79492,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 79492,
+   "mean": 79492,
+   "std": 0,
+   "min": 79492,
+   "max": 79492,
+   "p95": 79492,
+   "ci95": 0,
+   "detailKind": null
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 204842,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 204842,
+   "mean": 204842,
+   "std": 0,
+   "min": 204842,
+   "max": 204842,
+   "p95": 204842,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "51cc3ac6b5ab9ab4fd97058cd9f2550b2353eba3b825fed261fc995e9523263f",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 62562,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62562,
+   "mean": 62562,
+   "std": 0,
+   "min": 62562,
+   "max": 62562,
+   "p95": 62562,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.web.bundle",
+    "sha256": "51cc3ac6b5ab9ab4fd97058cd9f2550b2353eba3b825fed261fc995e9523263f",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 226278,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 226278,
+   "mean": 226278,
+   "std": 0,
+   "min": 226278,
+   "max": 226278,
+   "p95": 226278,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.lynx.bundle",
+    "sha256": "2ec8f74ef6ce16c3b25659181dd4dac7cdff354a5bd014e23d4d0ad064907946",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 0,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 79492,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 79492,
+   "mean": 79492,
+   "std": 0,
+   "min": 79492,
+   "max": 79492,
+   "p95": 79492,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-0/main.lynx.bundle",
+    "sha256": "2ec8f74ef6ce16c3b25659181dd4dac7cdff354a5bd014e23d4d0ad064907946",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 205551,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 205551,
+   "mean": 205551,
+   "std": 0,
+   "min": 205551,
+   "max": 205551,
+   "p95": 205551,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.web.bundle",
+    "sha256": "9560c007c530496a6bb8d2db326b715c6e28635a57d31f9c4a0285dc08f040f5",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 62926,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62926,
+   "mean": 62926,
+   "std": 0,
+   "min": 62926,
+   "max": 62926,
+   "p95": 62926,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.web.bundle",
+    "sha256": "9560c007c530496a6bb8d2db326b715c6e28635a57d31f9c4a0285dc08f040f5",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 227255,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 227255,
+   "mean": 227255,
+   "std": 0,
+   "min": 227255,
+   "max": 227255,
+   "p95": 227255,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.lynx.bundle",
+    "sha256": "3e706012ee79385f526fe0ba3e9c1fa08ebe5140427a3b847140fdb28fc06dd5",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 1000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 79999,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 79999,
+   "mean": 79999,
+   "std": 0,
+   "min": 79999,
+   "max": 79999,
+   "p95": 79999,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-1000/main.lynx.bundle",
+    "sha256": "3e706012ee79385f526fe0ba3e9c1fa08ebe5140427a3b847140fdb28fc06dd5",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 205551,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 205551,
+   "mean": 205551,
+   "std": 0,
+   "min": 205551,
+   "max": 205551,
+   "p95": 205551,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.web.bundle",
+    "sha256": "d030d50edd18ff8e86f91f5cc442f4916caa44ce9a5d1f3aded07b13c4c24ca9",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 62927,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62927,
+   "mean": 62927,
+   "std": 0,
+   "min": 62927,
+   "max": 62927,
+   "p95": 62927,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.web.bundle",
+    "sha256": "d030d50edd18ff8e86f91f5cc442f4916caa44ce9a5d1f3aded07b13c4c24ca9",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 227255,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 227255,
+   "mean": 227255,
+   "std": 0,
+   "min": 227255,
+   "max": 227255,
+   "p95": 227255,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.lynx.bundle",
+    "sha256": "45481a4ef56175704c8bbf925d0035c100a2e7e85010ee261fbc24286de1540f",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 10000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 80000,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 80000,
+   "mean": 80000,
+   "std": 0,
+   "min": 80000,
+   "max": 80000,
+   "p95": 80000,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-10000/main.lynx.bundle",
+    "sha256": "45481a4ef56175704c8bbf925d0035c100a2e7e85010ee261fbc24286de1540f",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 205551,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 205551,
+   "mean": 205551,
+   "std": 0,
+   "min": 205551,
+   "max": 205551,
+   "p95": 205551,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.web.bundle",
+    "sha256": "a79754c40990c983f4d13b703e415f44c25709e89fa045e0e17e789de4f7d76d",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "web",
+   "environment": {
+    "jsRegime": "jit",
+    "jsFlags": "--expose-gc",
+    "cpuThrottle": 1,
+    "throttleScope": "none"
+   },
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 62928,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 62928,
+   "mean": 62928,
+   "std": 0,
+   "min": 62928,
+   "max": 62928,
+   "p95": 62928,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.web.bundle",
+    "sha256": "a79754c40990c983f4d13b703e415f44c25709e89fa045e0e17e789de4f7d76d",
+    "flavor": "web",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactRaw",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 227255,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 227255,
+   "mean": 227255,
+   "std": 0,
+   "min": 227255,
+   "max": 227255,
+   "p95": 227255,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.lynx.bundle",
+    "sha256": "7b974ddd7357a2ea5f0ba6f67fde4ffc6c8b45c22cf06e1c8cd14a775c9c768b",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  },
+  {
+   "suite": "bundle-scale",
+   "harness": "native",
+   "environment": "lynx-native-static-artifact",
+   "entry": "octane-m4-final",
+   "workload": "startup-bundle",
+   "scale": 30000,
+   "contractVersion": null,
+   "commitPolicy": null,
+   "metric": "totalArtifactGzip",
+   "boundary": "static-bundle-artifact-at-startup-scale",
+   "unit": "bytes",
+   "comparabilityCohort": null,
+   "value": 80002,
+   "samples": null,
+   "detailSamples": null,
+   "detail": null,
+   "dnfCount": 0,
+   "failures": [],
+   "n": 1,
+   "median": 80002,
+   "mean": 80002,
+   "std": 0,
+   "min": 80002,
+   "max": 80002,
+   "p95": 80002,
+   "ci95": 0,
+   "detailKind": null,
+   "artifact": {
+    "path": "dist/rows-30000/main.lynx.bundle",
+    "sha256": "7b974ddd7357a2ea5f0ba6f67fde4ffc6c8b45c22cf06e1c8cd14a775c9c768b",
+    "flavor": "lynx",
+    "section": "whole-artifact"
+   },
+   "rankingEligible": false,
+   "descriptiveEligible": true
+  }
+ ]
+}
